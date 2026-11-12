@@ -1,0 +1,23 @@
+{
+  "name": "@autoxide/sdk",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "msw": "^3.0.5",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

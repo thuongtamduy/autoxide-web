@@ -1,0 +1,78 @@
+{
+  "app": {
+    "name": "Autoxide",
+    "admin": "Quản trị"
+  },
+  "nav": {
+    "modules": "Module",
+    "signOut": "Đăng xuất",
+    "language": "Ngôn ngữ"
+  },
+  "login": {
+    "title": "Đăng nhập",
+    "description": "Đăng nhập bằng tài khoản của máy chủ Autoxide.",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "submit": "Đăng nhập",
+    "mfaTitle": "Đăng nhập hai bước",
+    "mfaDescription": "Nhập mã 6 số trong ứng dụng xác thực, hoặc một mã khôi phục.",
+    "code": "Mã",
+    "verify": "Xác nhận",
+    "restart": "Dùng tài khoản khác",
+    "invalidInput": "Hãy nhập email và mật khẩu.",
+    "invalidCode": "Hãy nhập mã.",
+    "mfaExpired": "Bước đăng nhập đã hết hạn. Hãy đăng nhập lại.",
+    "unreachable": "Máy chủ Autoxide không trả lời. Hãy thử lại sau chốc lát."
+  },
+  "modules": {
+    "title": "Module",
+    "description": "Các module đã cài trên máy chủ này, theo thứ tự khởi động. Module được biên dịch cùng máy chủ: cài hay gỡ một module nghĩa là build lại máy chủ.",
+    "name": "Tên",
+    "position": "Thứ tự",
+    "permissions": "Permission",
+    "events": "Event",
+    "jobs": "Job",
+    "tools": "Tool MCP",
+    "migrations": "Migration",
+    "internal": "Có sẵn",
+    "empty": "Không có module nào.",
+    "back": "Mọi module",
+    "apiPath": "Endpoint REST nằm dưới",
+    "noneDeclared": "Không có.",
+    "descriptionColumn": "Mô tả",
+    "subscriptions": "Event module nhận",
+    "allEvents": "mọi event",
+    "schedules": "Lịch chạy",
+    "every": "Mỗi {duration}",
+    "kind": "Loại job",
+    "interval": "Chu kỳ",
+    "readOnly": "chỉ đọc",
+    "destructive": "xoá dữ liệu",
+    "anySignedIn": "mọi người đã đăng nhập",
+    "deprecations": "Endpoint deprecated",
+    "since": "Từ ngày",
+    "sunset": "Gỡ vào ngày",
+    "successor": "Dùng thay",
+    "languages": "Bản dịch",
+    "migration": "Migration",
+    "status": "Trạng thái",
+    "applied": "Đã áp dụng",
+    "pending": "Chưa áp dụng",
+    "pendingHint": "Chạy `autoxide migrate up` trên máy chủ để áp dụng migration còn thiếu."
+  },
+  "duration": {
+    "seconds": "{count} giây",
+    "minutes": "{count} phút",
+    "hours": "{count} giờ",
+    "days": "{count} ngày"
+  },
+  "errors": {
+    "forbiddenTitle": "Không có quyền",
+    "forbidden": "Tài khoản của bạn thiếu permission `{permission}`. Hãy nhờ quản trị viên thêm nó vào một role của bạn.",
+    "notFoundTitle": "Không tìm thấy",
+    "notFound": "Trang này không tồn tại.",
+    "failedTitle": "Đã có lỗi",
+    "failed": "Không tải được trang. Hãy thử lại; nếu vẫn lỗi, kiểm tra máy chủ Autoxide có đang chạy không.",
+    "retry": "Thử lại"
+  }
+}

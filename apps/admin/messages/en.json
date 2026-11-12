@@ -1,0 +1,78 @@
+{
+  "app": {
+    "name": "Autoxide",
+    "admin": "Admin"
+  },
+  "nav": {
+    "modules": "Modules",
+    "signOut": "Sign out",
+    "language": "Language"
+  },
+  "login": {
+    "title": "Sign in",
+    "description": "Sign in with an account of the Autoxide server.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "mfaTitle": "Two-step sign-in",
+    "mfaDescription": "Enter the 6-digit code from your authenticator app, or a recovery code.",
+    "code": "Code",
+    "verify": "Verify",
+    "restart": "Use another account",
+    "invalidInput": "Enter your email and password.",
+    "invalidCode": "Enter the code.",
+    "mfaExpired": "The sign-in step expired. Sign in again.",
+    "unreachable": "The Autoxide server does not answer. Try again in a moment."
+  },
+  "modules": {
+    "title": "Modules",
+    "description": "Modules installed in this server, in start order. Modules are compiled into the server: installing or removing one means rebuilding it.",
+    "name": "Name",
+    "position": "Order",
+    "permissions": "Permissions",
+    "events": "Events",
+    "jobs": "Jobs",
+    "tools": "MCP tools",
+    "migrations": "Migrations",
+    "internal": "Built-in",
+    "empty": "No modules.",
+    "back": "All modules",
+    "apiPath": "REST endpoints under",
+    "noneDeclared": "None.",
+    "descriptionColumn": "Description",
+    "subscriptions": "Events it listens to",
+    "allEvents": "every event",
+    "schedules": "Schedules",
+    "every": "Every {duration}",
+    "kind": "Job kind",
+    "interval": "Interval",
+    "readOnly": "read-only",
+    "destructive": "destructive",
+    "anySignedIn": "any signed-in caller",
+    "deprecations": "Deprecated endpoints",
+    "since": "Since",
+    "sunset": "Removed on",
+    "successor": "Use instead",
+    "languages": "Translations",
+    "migration": "Migration",
+    "status": "Status",
+    "applied": "Applied",
+    "pending": "Not applied",
+    "pendingHint": "Run `autoxide migrate up` on the server to apply pending migrations."
+  },
+  "duration": {
+    "seconds": "{count, plural, one {# second} other {# seconds}}",
+    "minutes": "{count, plural, one {# minute} other {# minutes}}",
+    "hours": "{count, plural, one {# hour} other {# hours}}",
+    "days": "{count, plural, one {# day} other {# days}}"
+  },
+  "errors": {
+    "forbiddenTitle": "Not allowed",
+    "forbidden": "Your account lacks the permission `{permission}`. Ask an administrator to give it to one of your roles.",
+    "notFoundTitle": "Not found",
+    "notFound": "This page does not exist.",
+    "failedTitle": "Something went wrong",
+    "failed": "The page could not be loaded. Try again; if it keeps failing, check that the Autoxide server is running.",
+    "retry": "Try again"
+  }
+}

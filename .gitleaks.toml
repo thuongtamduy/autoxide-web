@@ -1,0 +1,12 @@
+# Cấu hình gitleaks (quét secret trong gate — `./gate.sh`): bộ luật mặc định, cộng ngoại lệ hẹp.
+title = "Autoxide Web"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Chủ thể event dạng `<module>.<loại>:<UUID>` trong ví dụ của openapi.json (chép từ core) là ID, không phải secret"
+regexTarget = "match"
+regexes = [
+  '''[a-z_]+\.[a-z_]+:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}''',
+]
