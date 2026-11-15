@@ -1,0 +1,328 @@
+/* Màu, chữ, bo góc của website — một chỗ duy nhất. Bố cục và luật hiển thị ở `shop.css` và
+   `site.css` chỉ dùng biến ở đây, nên đổi giao diện của khách chỉ là đổi biến.
+
+   Sáng / tối: `data-theme` trên <html> do người đọc chọn (cookie `ax_theme`, như trang quản trị);
+   không có thì theo máy (`prefers-color-scheme`). Kiểu giao diện: `data-variant` trên <html>
+   (`AUTOXIDE_STOREFRONT_THEME`: default, market, minimal, luxe — bảng `Main` và ba bảng `Style*` của
+   bản thiết kế). Mỗi kiểu chỉ đổi biến, không đổi bố cục.
+
+   Phông: không tải phông từ máy chủ ngoài (website công khai không gửi IP người đọc cho bên thứ ba);
+   dùng Be Vietnam Pro / Inter khi máy đã có, không thì phông hệ thống. */
+
+.sp {
+  --font-body:
+    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display:
+    "Be Vietnam Pro", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-btn: 12px;
+  --bg: #fafaf7;
+  --sheet: #ffffff;
+  --wash: #f2f1ec;
+  --ink: #17201b;
+  --ink-2: #47524b;
+  --ink-3: #5d6761;
+  --line: #e4e3dc;
+  --line-2: #cfcec5;
+  --brand: #1f6b4f;
+  --brand-h: #185a42;
+  --brand-ink: #1a5c44;
+  --brand-tint: #e3f0ea;
+  --on-brand: #ffffff;
+  --sale: #b4380f;
+  --sale-bg: #fcebe3;
+  --ok: #137a3a;
+  --ok-bg: #e3f4e9;
+  --warn: #8a4b06;
+  --warn-bg: #fdf1d3;
+  --bad: #b42318;
+  --bad-bg: #fde8e6;
+  --t1: #efe7da;
+  --t2: #e2ece6;
+  --t3: #e6e7ef;
+  --t4: #f3e3dc;
+  --t5: #eae6d7;
+  --art: #3a4a41;
+  --band: #17201b;
+  --band-ink: #eef2ef;
+  --band-ink-2: #b5c0b9;
+  --band-line: #2b3630;
+  --band-ok: #86ddb8;
+  --star: #b7791f;
+  --bubble: #b4380f;
+  --shadow: 0 1px 2px rgba(23, 32, 27, 0.06), 0 12px 32px rgba(23, 32, 27, 0.09);
+  --pop: 0 18px 48px rgba(23, 32, 27, 0.22), 0 2px 8px rgba(23, 32, 27, 0.08);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: light;
+}
+
+/* Tối: chọn rõ ràng, hoặc theo máy khi chưa chọn. Hai khối giống hệt nhau. */
+html[data-theme="dark"] .sp {
+  --bg: #0f1411;
+  --sheet: #161c18;
+  --wash: #1c231f;
+  --ink: #eceeec;
+  --ink-2: #b8c1bb;
+  --ink-3: #939e97;
+  --line: #26302a;
+  --line-2: #36423b;
+  --brand: #5fc79b;
+  --brand-h: #7ad6ae;
+  --brand-ink: #86ddb8;
+  --brand-tint: #173327;
+  --on-brand: #08140e;
+  --sale: #ff9b73;
+  --sale-bg: #3a1e13;
+  --ok: #7adba0;
+  --ok-bg: #12301f;
+  --warn: #f2c56b;
+  --warn-bg: #36290e;
+  --bad: #ff9b90;
+  --bad-bg: #3b1512;
+  --t1: #2a251e;
+  --t2: #1d2a23;
+  --t3: #22242e;
+  --t4: #2e211c;
+  --t5: #29271e;
+  --art: #c9d3cc;
+  --band: #0a0e0c;
+  --band-line: #222b26;
+  --star: #f2c56b;
+  --bubble: #c9401a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+  --pop: 0 18px 48px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .sp {
+    --bg: #0f1411;
+    --sheet: #161c18;
+    --wash: #1c231f;
+    --ink: #eceeec;
+    --ink-2: #b8c1bb;
+    --ink-3: #939e97;
+    --line: #26302a;
+    --line-2: #36423b;
+    --brand: #5fc79b;
+    --brand-h: #7ad6ae;
+    --brand-ink: #86ddb8;
+    --brand-tint: #173327;
+    --on-brand: #08140e;
+    --sale: #ff9b73;
+    --sale-bg: #3a1e13;
+    --ok: #7adba0;
+    --ok-bg: #12301f;
+    --warn: #f2c56b;
+    --warn-bg: #36290e;
+    --bad: #ff9b90;
+    --bad-bg: #3b1512;
+    --t1: #2a251e;
+    --t2: #1d2a23;
+    --t3: #22242e;
+    --t4: #2e211c;
+    --t5: #29271e;
+    --art: #c9d3cc;
+    --band: #0a0e0c;
+    --band-line: #222b26;
+    --star: #f2c56b;
+    --bubble: #c9401a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+    --pop: 0 18px 48px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+
+/* ===== Kiểu "market" (bảng StyleMarket): sàn, dày khuyến mại — đỏ cam, chữ đậm. */
+html[data-variant="market"] .sp {
+  --bg: #fff3eb;
+  --wash: #ffe6d8;
+  --ink: #2a1a14;
+  --ink-2: #5e4237;
+  --ink-3: #7a5a4e;
+  --line: #f5d9cb;
+  --line-2: #e9c2ae;
+  --brand: #c2321c;
+  --brand-h: #a8291a;
+  --brand-ink: #b02c18;
+  --brand-tint: #ffe6d8;
+  --sale: #c2321c;
+  --sale-bg: #ffe0d3;
+  --band: #2a1a14;
+  --band-line: #4a2f25;
+}
+/* ===== Kiểu "minimal" (bảng StyleMinimal): tối giản — nền trắng, xám trung tính, nút bo tròn. */
+html[data-variant="minimal"] .sp {
+  --bg: #ffffff;
+  --sheet: #ffffff;
+  --wash: #f5f5f7;
+  --ink: #1d1d1f;
+  --ink-2: #424245;
+  --ink-3: #6e6e73;
+  --line: #e3e3e8;
+  --line-2: #d2d2d7;
+  --band: #111113;
+  --band-ink: #f5f5f7;
+  --band-ink-2: #a1a1a6;
+  --band-line: #2a2a2e;
+  --t1: #f5f5f7;
+  --t2: #f2f2f4;
+  --t3: #efeff2;
+  --t4: #f4f2f2;
+  --t5: #f3f3f0;
+  --radius-btn: 999px;
+}
+/* ===== Kiểu "luxe" (bảng StyleLuxe): sang, chậm — giấy kem, nâu đất, tiêu đề chữ có chân. */
+html[data-variant="luxe"] .sp {
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --bg: #f5efe6;
+  --sheet: #fbf8f3;
+  --wash: #eadfcf;
+  --ink: #2a241f;
+  --ink-2: #4f453c;
+  --ink-3: #6e6255;
+  --line: #d8cbb8;
+  --line-2: #c9b9a2;
+  --brand: #7c5133;
+  --brand-h: #64412a;
+  --brand-ink: #6b4429;
+  --brand-tint: #eadfcf;
+  --t1: #eadfcf;
+  --t2: #e4dccd;
+  --t3: #e7e0d6;
+  --t4: #ecdccd;
+  --t5: #e6dccb;
+  --band: #1f1b17;
+  --band-line: #3a3129;
+  --radius-btn: 0;
+}
+/* Tối của kiểu "market". Khối tối của các kiểu đứng sau mọi khối sáng (thứ tự độ ưu tiên của CSS). */
+html[data-variant="market"][data-theme="dark"] .sp {
+  --bg: #1a1210;
+  --sheet: #241a17;
+  --wash: #3a221b;
+  --ink: #f6e9e2;
+  --ink-2: #dcc4b8;
+  --ink-3: #c9afa3;
+  --line: #3a2a24;
+  --line-2: #523a31;
+  --brand: #ff8f75;
+  --brand-h: #ffa58f;
+  --brand-ink: #ff8f75;
+  --brand-tint: #3a221b;
+  --on-brand: #1a0905;
+  --sale: #ff8f75;
+  --sale-bg: #3a221b;
+  --band: #0f0a08;
+  --band-line: #2e201b;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-variant="market"]:not([data-theme="light"]) .sp {
+    --bg: #1a1210;
+    --sheet: #241a17;
+    --wash: #3a221b;
+    --ink: #f6e9e2;
+    --ink-2: #dcc4b8;
+    --ink-3: #c9afa3;
+    --line: #3a2a24;
+    --line-2: #523a31;
+    --brand: #ff8f75;
+    --brand-h: #ffa58f;
+    --brand-ink: #ff8f75;
+    --brand-tint: #3a221b;
+    --on-brand: #1a0905;
+    --sale: #ff8f75;
+    --sale-bg: #3a221b;
+    --band: #0f0a08;
+    --band-line: #2e201b;
+  }
+}
+html[data-variant="market"] .sp .dsp {
+  font-weight: 800;
+}
+
+/* Tối của kiểu "minimal". */
+html[data-variant="minimal"][data-theme="dark"] .sp {
+  --bg: #000000;
+  --sheet: #101012;
+  --wash: #1c1c1f;
+  --ink: #f5f5f7;
+  --ink-2: #c7c7cc;
+  --ink-3: #a1a1a6;
+  --line: #2a2a2e;
+  --line-2: #3a3a3e;
+  --t1: #161618;
+  --t2: #141416;
+  --t3: #18181b;
+  --t4: #19171a;
+  --t5: #171715;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-variant="minimal"]:not([data-theme="light"]) .sp {
+    --bg: #000000;
+    --sheet: #101012;
+    --wash: #1c1c1f;
+    --ink: #f5f5f7;
+    --ink-2: #c7c7cc;
+    --ink-3: #a1a1a6;
+    --line: #2a2a2e;
+    --line-2: #3a3a3e;
+    --t1: #161618;
+    --t2: #141416;
+    --t3: #18181b;
+    --t4: #19171a;
+    --t5: #171715;
+  }
+}
+html[data-variant="minimal"] .sp .btn {
+  border-radius: var(--radius-btn);
+}
+
+/* Tối của kiểu "luxe". */
+html[data-variant="luxe"][data-theme="dark"] .sp {
+  --bg: #15110e;
+  --sheet: #1d1814;
+  --wash: #2a221c;
+  --ink: #e9dfd2;
+  --ink-2: #cdbfae;
+  --ink-3: #b3a595;
+  --line: #3a3129;
+  --line-2: #4a3e33;
+  --brand: #d2a57f;
+  --brand-h: #e0b893;
+  --brand-ink: #d2a57f;
+  --brand-tint: #2a221c;
+  --on-brand: #15110e;
+  --t1: #2a221c;
+  --t2: #26201a;
+  --t3: #29231d;
+  --t4: #2c221c;
+  --t5: #28221b;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-variant="luxe"]:not([data-theme="light"]) .sp {
+    --bg: #15110e;
+    --sheet: #1d1814;
+    --wash: #2a221c;
+    --ink: #e9dfd2;
+    --ink-2: #cdbfae;
+    --ink-3: #b3a595;
+    --line: #3a3129;
+    --line-2: #4a3e33;
+    --brand: #d2a57f;
+    --brand-h: #e0b893;
+    --brand-ink: #d2a57f;
+    --brand-tint: #2a221c;
+    --on-brand: #15110e;
+    --t1: #2a221c;
+    --t2: #26201a;
+    --t3: #29231d;
+    --t4: #2c221c;
+    --t5: #28221b;
+  }
+}
+html[data-variant="luxe"] .sp .btn {
+  border-radius: var(--radius-btn);
+}
+html[data-variant="luxe"] .sp .dsp {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { canMove, type OrderStatus } from "@/lib/orders";
 import {
   addRule,
   changeSession,
@@ -206,13 +207,10 @@ describe("hoa hồng từ đơn mẫu", () => {
       const tax = line?.taxes.reduce((s, t) => s + Number(t.amount.amount), 0) ?? 0;
       expect(Number(c.base.amount)).toBe(Number(line?.net.amount) - tax);
     }
-    // Chọn đơn còn huỷ được theo bảng chuyển trạng thái (đơn đã giao không huỷ được nữa).
+    // Chỉ đơn còn huỷ được: hoa hồng còn "pending" cả khi đơn đã giao (chờ hết hạn đổi trả), và đơn
+    // mẫu đã giao hay chưa tuỳ giờ chạy test — chọn theo trạng thái thì test không phụ thuộc giờ.
     const pending = data.find(
-      (c) =>
-        c.status === "pending" &&
-        (["pending_payment", "awaiting_acceptance", "confirmed", "preparing"] as const).some(
-          (s) => s === c.order_status,
-        ),
+      (c) => c.status === "pending" && canMove(c.order_status as OrderStatus, "cancelled"),
     );
     if (pending) {
       expect((await transitionOrder(pending.order_id, "cancelled")).ok).toBe(true);

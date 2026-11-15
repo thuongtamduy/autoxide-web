@@ -1,8 +1,9 @@
 # Autoxide Web
 
-Admin interface for [Autoxide](https://github.com/thuongtamduy/autoxide), the Rust backend
-core. It only talks to the core's public REST API. Its pages need a signed-in account of the
-core.
+Admin interface and public storefront website for [Autoxide](https://github.com/thuongtamduy/autoxide),
+the Rust backend core. Both only talk to the core's public REST API. The admin pages need a
+signed-in account of the core; the storefront (see [Storefront website](#storefront-website)) is
+open to everyone.
 
 [Tiếng Việt](README.vi.md)
 
@@ -134,6 +135,60 @@ Serve the app over HTTPS: its session cookies are marked `Secure` in production.
 If you run more than one copy of this app behind a load balancer, turn on sticky sessions. Each
 refresh token works once, and copies of the app do not share the refresh in progress.
 
+## Storefront website
+
+`apps/storefront` is the public website of one shop (decision D-200 of the core): home page,
+categories, products, cart and checkout, seller pages, articles with products, the buyer's
+account; the blog is one section of it. It follows the storefront boards of the Autoxide design
+(category bar with a mega menu, balanced grids, money that never wraps) in light and dark, and in
+four looks (`AUTOXIDE_STOREFRONT_THEME`).
+
+- **On the core's real API** (public endpoints only, called by the website's server): the header
+  and footer menus (`main`, `footer`), the blog with categories, tags, authors and paging, articles
+  and static pages at any address the core knows (redirects included), comments under articles
+  (guests can write when the core allows it), search in articles and pages, the newsletter sign-up
+  and the pages its mails link to, draft previews, `sitemap.xml`, `robots.txt` and an RSS feed.
+- **On sample data** (marked with a small "sample" tag and a notice bar), until the core has the
+  APIs: products, prices, discount codes, stock per store, stores, the cart, sellers. When sample
+  data is off these sections are hidden and the site shows only what the core serves. A menu the
+  core does not have yet is replaced by a sample menu while sample data is on.
+- **Languages in the address**: Vietnamese at `/`, English under `/en`, with `hreflang` links.
+
+Run it next to the admin:
+
+```bash
+cp apps/storefront/.env.example apps/storefront/.env.local   # then edit if needed
+pnpm --filter @autoxide/storefront dev                       # http://localhost:3300
+```
+
+| Variable                    | Default                 | Meaning                                                                  |
+| --------------------------- | ----------------------- | ------------------------------------------------------------------------ |
+| `AUTOXIDE_API_URL`          | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Browsers never call it directly. |
+| `AUTOXIDE_STOREFRONT_URL`   | `http://localhost:3000` | Public address of the website: canonical links, sitemap, RSS.            |
+| `AUTOXIDE_STOREFRONT_NAME`  | sample shop / Autoxide  | Name of the shop in the header, footer and titles.                       |
+| `AUTOXIDE_STOREFRONT_THEME` | `default`               | Look: `default`, `market`, `minimal` or `luxe`.                          |
+| `AUTOXIDE_WEB_SAMPLE_DATA`  | `false` in production   | Show the shop sections that use sample data.                             |
+
+Set these **on the core** so its mails link to the website:
+
+```bash
+AUTOXIDE_NEWSLETTER_CONFIRM_URL=https://www.example.com/newsletter/confirm?token={token}
+AUTOXIDE_NEWSLETTER_PREFERENCES_URL=https://www.example.com/newsletter/preferences?token={token}
+AUTOXIDE_NEWSLETTER_SITE_URL=https://www.example.com
+AUTOXIDE_COMMENTS_VERIFY_URL=https://www.example.com/comments/verify?token={token}
+AUTOXIDE_COMMENTS_UNSUBSCRIBE_URL=https://www.example.com/comments/unsubscribe?token={token}
+AUTOXIDE_COMMENTS_SITE_URL=https://www.example.com
+```
+
+The website's server sends comments and sign-ups to the core on behalf of visitors and passes on
+the `X-Forwarded-For` header it received, so the core can limit by the visitor's address: put the
+website behind a reverse proxy that sets that header, and list the website's server in the core's
+`AUTOXIDE_HTTP_TRUSTED_PROXIES` (with `AUTOXIDE_HTTP_CLIENT_IP_HEADER=X-Forwarded-For`). The
+newsletter form shows when the core has at least one public list. Draft previews open at
+`/preview?token=…`. In production: `pnpm build`, then
+`PORT=3000 AUTOXIDE_API_URL=… AUTOXIDE_STOREFRONT_URL=… pnpm --filter @autoxide/storefront start`,
+or `docker build --build-arg APP=storefront -t autoxide-storefront .`.
+
 ## How it works
 
 - **Sessions.** After sign-in, the core's access and refresh tokens are kept in `httpOnly`
@@ -164,7 +219,7 @@ pnpm lint          # Biome
 pnpm typecheck
 pnpm test          # Vitest
 pnpm build
-pnpm e2e           # Playwright, against a mock core (apps/admin/e2e/mock-core.ts)
+pnpm e2e           # Playwright for both apps, against a mock core (apps/admin/e2e/mock-core.ts)
 ```
 
 End-to-end tests need a Chromium: run `pnpm --filter @autoxide/admin exec playwright install
@@ -175,6 +230,7 @@ chromium`, or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to an existing one.
 | Path                | Contents                                                    |
 | ------------------- | ----------------------------------------------------------- |
 | `apps/admin`        | The admin app (Next.js, App Router)                         |
+| `apps/storefront`   | The public storefront website (Next.js, App Router)         |
 | `packages/sdk`      | Client and types generated from the core's OpenAPI document |
 | `docs/DECISIONS.md` | Decision log (Vietnamese)                                   |
 

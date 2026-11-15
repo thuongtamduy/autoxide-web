@@ -44,10 +44,11 @@ không bỏ qua test.
 
 ## Bố cục
 
-| Thư mục        | Gói               | Vai                                           |
-| -------------- | ----------------- | --------------------------------------------- |
-| `apps/admin`   | `@autoxide/admin` | Trang quản trị (Next.js App Router)           |
-| `packages/sdk` | `@autoxide/sdk`   | Client + kiểu sinh từ `openapi.json` của core |
+| Thư mục           | Gói                    | Vai                                           |
+| ----------------- | ---------------------- | --------------------------------------------- |
+| `apps/admin`      | `@autoxide/admin`      | Trang quản trị (Next.js App Router)           |
+| `apps/storefront` | `@autoxide/storefront` | Website bán hàng công khai (W-026)            |
+| `packages/sdk`    | `@autoxide/sdk`        | Client + kiểu sinh từ `openapi.json` của core |
 
 Phiên bản thư viện ghim trong `pnpm-lock.yaml`. Thêm thư viện thì ghi lý do vào
 `docs/DECISIONS.md`; vài chục dòng tự viết là đủ thì không thêm.

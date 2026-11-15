@@ -1,8 +1,8 @@
 # Autoxide Web
 
-Giao diện quản trị của [Autoxide](https://github.com/thuongtamduy/autoxide), lõi backend viết
-bằng Rust. Giao diện chỉ gọi REST API công khai của core. Các trang của nó cần một tài khoản
-core đã đăng nhập.
+Giao diện quản trị và website bán hàng công khai của [Autoxide](https://github.com/thuongtamduy/autoxide),
+lõi backend viết bằng Rust. Cả hai chỉ gọi REST API công khai của core. Trang quản trị cần một tài
+khoản core đã đăng nhập; website bán hàng (xem [Website bán hàng](#website-bán-hàng)) ai cũng mở được.
 
 [English](README.md)
 
@@ -128,6 +128,59 @@ Hãy phục vụ ứng dụng qua HTTPS: khi chạy production, cookie phiên đ
 Nếu chạy nhiều bản ứng dụng sau load balancer, hãy bật sticky session. Mỗi refresh token chỉ
 dùng được một lần, và các bản ứng dụng không chia sẻ lượt làm mới đang chạy.
 
+## Website bán hàng
+
+`apps/storefront` là website công khai của một cửa hàng (quyết định D-200 của core): trang chủ,
+danh mục, sản phẩm, giỏ và đặt hàng, gian hàng người bán, bài viết có gắn sản phẩm, tài khoản người
+mua; blog là một mục trong đó. Website theo các bảng mặt tiền của bản thiết kế Autoxide (thanh danh
+mục có bảng xổ, lưới cân đối, số tiền không bao giờ bị bẻ dòng), có sáng và tối, và bốn kiểu giao
+diện (`AUTOXIDE_STOREFRONT_THEME`).
+
+- **Dùng API thật của core** (chỉ endpoint công khai, máy chủ của website gọi): menu đầu trang và
+  chân trang (`main`, `footer`), blog có danh mục, thẻ, tác giả và phân trang, bài viết và trang tĩnh
+  ở mọi địa chỉ core biết (kể cả chuyển hướng), bình luận dưới bài (khách viết được khi core cho
+  phép), tìm trong bài viết và trang, đăng ký bản tin và các trang mà thư của nó trỏ tới, xem trước
+  bản nháp, `sitemap.xml`, `robots.txt` và RSS.
+- **Dùng dữ liệu mẫu** (có dấu "mẫu" nhỏ và một dải thông báo) tới khi core có API: sản phẩm, giá,
+  mã giảm giá, tồn theo cửa hàng, cửa hàng, giỏ hàng, người bán. Tắt dữ liệu mẫu thì các khối này
+  ẩn, website chỉ còn phần core phục vụ. Menu core chưa có thì dùng menu mẫu khi bật dữ liệu mẫu.
+- **Ngôn ngữ trên địa chỉ**: tiếng Việt ở `/`, tiếng Anh dưới `/en`, có link `hreflang`.
+
+Chạy cạnh trang quản trị:
+
+```bash
+cp apps/storefront/.env.example apps/storefront/.env.local   # rồi sửa nếu cần
+pnpm --filter @autoxide/storefront dev                       # http://localhost:3300
+```
+
+| Biến                        | Mặc định                | Ý nghĩa                                                                |
+| --------------------------- | ----------------------- | ---------------------------------------------------------------------- |
+| `AUTOXIDE_API_URL`          | `http://127.0.0.1:8080` | Địa chỉ của core, không có `/api/v1`. Trình duyệt không gọi trực tiếp. |
+| `AUTOXIDE_STOREFRONT_URL`   | `http://localhost:3000` | Địa chỉ công khai của website: link canonical, sitemap, RSS.           |
+| `AUTOXIDE_STOREFRONT_NAME`  | cửa hàng mẫu / Autoxide | Tên cửa hàng ở đầu trang, chân trang và tiêu đề.                       |
+| `AUTOXIDE_STOREFRONT_THEME` | `default`               | Kiểu giao diện: `default`, `market`, `minimal` hoặc `luxe`.            |
+| `AUTOXIDE_WEB_SAMPLE_DATA`  | `false` khi chạy thật   | Hiện các khối bán hàng dùng dữ liệu mẫu.                               |
+
+Đặt các biến này **ở core** để thư của core trỏ về website:
+
+```bash
+AUTOXIDE_NEWSLETTER_CONFIRM_URL=https://www.example.com/newsletter/confirm?token={token}
+AUTOXIDE_NEWSLETTER_PREFERENCES_URL=https://www.example.com/newsletter/preferences?token={token}
+AUTOXIDE_NEWSLETTER_SITE_URL=https://www.example.com
+AUTOXIDE_COMMENTS_VERIFY_URL=https://www.example.com/comments/verify?token={token}
+AUTOXIDE_COMMENTS_UNSUBSCRIBE_URL=https://www.example.com/comments/unsubscribe?token={token}
+AUTOXIDE_COMMENTS_SITE_URL=https://www.example.com
+```
+
+Máy chủ của website gửi bình luận và đăng ký bản tin tới core thay cho người đọc, kèm header
+`X-Forwarded-For` nó nhận được, để core giới hạn theo địa chỉ của người đọc: đặt website sau một
+reverse proxy có gắn header đó, và khai máy chủ website trong `AUTOXIDE_HTTP_TRUSTED_PROXIES` của
+core (cùng `AUTOXIDE_HTTP_CLIENT_IP_HEADER=X-Forwarded-For`). Ô đăng ký bản tin hiện khi core có ít
+nhất một danh sách công khai. Bản nháp xem trước ở
+`/preview?token=…`. Chạy thật: `pnpm build`, rồi
+`PORT=3000 AUTOXIDE_API_URL=… AUTOXIDE_STOREFRONT_URL=… pnpm --filter @autoxide/storefront start`,
+hoặc `docker build --build-arg APP=storefront -t autoxide-storefront .`.
+
 ## Cách hoạt động
 
 - **Phiên đăng nhập.** Sau khi đăng nhập, access token và refresh token của core được giữ trong
@@ -157,7 +210,7 @@ pnpm lint          # Biome
 pnpm typecheck
 pnpm test          # Vitest
 pnpm build
-pnpm e2e           # Playwright, chạy với một core giả (apps/admin/e2e/mock-core.ts)
+pnpm e2e           # Playwright cho cả hai app, chạy với một core giả (apps/admin/e2e/mock-core.ts)
 ```
 
 Test e2e cần Chromium: chạy `pnpm --filter @autoxide/admin exec playwright install chromium`,
@@ -168,6 +221,7 @@ hoặc đặt `PLAYWRIGHT_CHROMIUM_EXECUTABLE` trỏ tới một bản có sẵn
 | Đường dẫn           | Nội dung                                                 |
 | ------------------- | -------------------------------------------------------- |
 | `apps/admin`        | Ứng dụng quản trị (Next.js, App Router)                  |
+| `apps/storefront`   | Website bán hàng công khai (Next.js, App Router)         |
 | `packages/sdk`      | Client và kiểu dữ liệu sinh từ tài liệu OpenAPI của core |
 | `docs/DECISIONS.md` | Nhật ký quyết định (tiếng Việt)                          |
 

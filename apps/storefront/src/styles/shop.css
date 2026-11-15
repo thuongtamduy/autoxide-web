@@ -1,0 +1,2127 @@
+/* Luật hiển thị của mặt tiền (bản thiết kế 2, `shop-r38.css`), chép gần nguyên văn để hai agent
+   làm tiếp các trang thương mại dùng đúng lớp của bản thiết kế (`.pcard`, `.pgrid`, `.filters`,
+   `.buybar`, `.co-nav`, `.segtabs`…). Chỉ đổi ba điều:
+   - màu nằm ở `tokens.css` (sáng / tối / ba kiểu giao diện), không còn `.sp.dark`;
+   - trang đặt hàng khép kín bằng `<main class="enclosed">` (`.sp:has(.enclosed)`) thay cho lớp
+     `enclosed` trên `.sp`, vì đầu trang nằm ở layout chung;
+   - đường dẫn (breadcrumb) chọn bằng lớp `.crumbs` thay cho `aria-label` tiếng Việt.
+   Lớp riêng của từng trang của website ở `site.css`. */
+.sp {
+  transition:
+    background 0.25s var(--ease),
+    color 0.25s var(--ease);
+}
+.sp *,
+.sp *::before,
+.sp *::after {
+  box-sizing: border-box;
+}
+.sp :focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.sp button,
+.sp input,
+.sp select,
+.sp textarea {
+  font-family: inherit;
+}
+.sp .wrap {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.sp .dsp {
+  font-family: var(--font-display);
+}
+.sp .num {
+  font-variant-numeric: tabular-nums;
+}
+.sp .ell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp .kick {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-ink);
+}
+.sp .muted {
+  color: var(--ink-3);
+}
+.sp .ic {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sp .ic.s {
+  width: 16px;
+  height: 16px;
+}
+
+/* Đầu trang */
+.sp .strip {
+  background: var(--band);
+  color: var(--band-ink);
+  font-size: 13px;
+}
+.sp .hdr {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--sheet) 94%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.sp .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.sp .mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.sp .cat-a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.sp .cat-a:hover,
+.sp .cat-a.on {
+  color: var(--ink);
+}
+.sp .cat-a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--brand);
+  transform: scaleX(0);
+  transition: transform 0.25s var(--ease);
+}
+.sp .cat-a:hover::after,
+.sp .cat-a.on::after {
+  transform: scaleX(1);
+}
+.sp .iconbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sp .iconbtn:hover {
+  background: var(--wash);
+}
+.sp .bubble {
+  position: absolute;
+  top: 3px;
+  left: 21px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--bubble);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Hàng danh mục cuộn ngang trên màn hẹp, không hiện thanh cuộn */
+.sp .catnav {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.sp .catnav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Nút, ô nhập, nhãn */
+.sp .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.08s,
+    box-shadow 0.15s;
+}
+.sp .btn:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+.sp .btn:active {
+  transform: translateY(1px);
+}
+.sp .btn.pri {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-brand);
+}
+.sp .btn.pri:hover {
+  background: var(--brand-h);
+  border-color: var(--brand-h);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 32%, transparent);
+}
+.sp .btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.sp .btn.sm {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13.5px;
+  border-radius: 10px;
+}
+.sp .btn.sq {
+  width: 46px;
+  padding: 0;
+}
+.sp .btn.sm.sq {
+  width: 36px;
+}
+.sp .btn.wide {
+  width: 100%;
+}
+.sp .lnk {
+  color: var(--brand-ink);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--brand) 35%, transparent);
+  text-underline-offset: 3px;
+}
+.sp .lnk:hover {
+  text-decoration-color: currentColor;
+}
+.sp .inp,
+.sp .sel {
+  height: 46px;
+  width: 100%;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 15px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.sp .sel {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 38px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-3) 50%),
+    linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) 20px,
+    calc(100% - 15px) 20px;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.sp .inp::placeholder {
+  color: var(--ink-3);
+}
+.sp .inp:focus,
+.sp .sel:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.sp .inp.err {
+  border-color: var(--bad);
+}
+.sp .lab {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.sp .help {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.sp .errtxt {
+  font-size: 13px;
+  color: var(--bad);
+  font-weight: 500;
+}
+.sp .chk {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: none;
+  border: 1.5px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--sheet);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+.sp .chk:checked {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.sp .chk:checked::after {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 6px;
+  margin: 4px 0 0 3.5px;
+  border-left: 2px solid var(--on-brand);
+  border-bottom: 2px solid var(--on-brand);
+  transform: rotate(-45deg);
+}
+.sp .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+.sp .chip:hover {
+  border-color: var(--ink-3);
+  color: var(--ink);
+}
+.sp .chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.sp .opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 14.5px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.sp .opt:hover {
+  border-color: var(--ink-3);
+}
+.sp .opt.on {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+.sp .dotr {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-2);
+  background: var(--sheet);
+}
+.sp .opt.on .dotr {
+  border: 5.5px solid var(--brand);
+}
+.sp .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sp .b-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.sp .b-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.sp .b-bad {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+.sp .b-brand {
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+}
+.sp .b-sale {
+  background: var(--sale-bg);
+  color: var(--sale);
+}
+.sp .b-plain {
+  background: var(--wash);
+  color: var(--ink-2);
+}
+.sp .dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Thẻ sản phẩm */
+.sp .card {
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.sp .pcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.sp .thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.sp .thumb svg {
+  width: 46%;
+  height: 46%;
+  fill: none;
+  stroke: var(--art);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.5s var(--ease);
+}
+.sp .pcard:hover .thumb svg {
+  transform: scale(1.07) rotate(-3deg);
+}
+.sp .t1 {
+  background: var(--t1);
+}
+.sp .t2 {
+  background: var(--t2);
+}
+.sp .t3 {
+  background: var(--t3);
+}
+.sp .t4 {
+  background: var(--t4);
+}
+.sp .t5 {
+  background: var(--t5);
+}
+.sp .flag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  gap: 6px;
+}
+.sp .quick {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.2s,
+    transform 0.25s var(--ease);
+}
+.sp .pcard:hover .quick,
+.sp .pcard:focus-within .quick {
+  opacity: 1;
+  transform: none;
+}
+.sp .price {
+  font-weight: 700;
+  font-size: 16px;
+}
+.sp .price.sale {
+  color: var(--sale);
+}
+.sp .was {
+  color: var(--ink-3);
+  text-decoration: line-through;
+  font-size: 13.5px;
+}
+.sp .stars {
+  color: var(--star);
+  letter-spacing: 1px;
+}
+
+/* Chân trang */
+.sp .ftr {
+  background: var(--band);
+  color: var(--band-ink);
+}
+.sp .ftr a {
+  color: var(--band-ink-2);
+  text-decoration: none;
+}
+.sp .ftr a:hover {
+  color: var(--band-ink);
+  text-decoration: underline;
+}
+.sp .moit {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--band-line);
+  color: var(--band-ink-2);
+  font-size: 12.5px;
+}
+
+/* Chuyển động, thông báo */
+.sp .rise {
+  animation: sp-rise 0.55s var(--ease) both;
+}
+.sp .d1 {
+  animation-delay: 0.05s;
+}
+.sp .d2 {
+  animation-delay: 0.1s;
+}
+.sp .d3 {
+  animation-delay: 0.16s;
+}
+.sp .d4 {
+  animation-delay: 0.22s;
+}
+.sp .pop {
+  animation: sp-pop 0.2s var(--ease) both;
+}
+/* Thông báo nổi: canh giữa bằng hai mép + margin auto (không dùng left: 50%, vì cách đó chỉ chừa nửa màn hình cho chữ) */
+.sp .toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 24px;
+  margin: 0 auto;
+  width: max-content;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, calc(100% - 32px));
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  line-height: 1.4;
+  text-wrap: pretty;
+  background: #17201b;
+  color: #eef2ef;
+  font-weight: 500;
+  box-shadow: var(--pop);
+  animation: sp-up 0.28s var(--ease) both;
+}
+.sp .toast .ic {
+  color: #5fc79b;
+}
+@keyframes sp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sp-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sp-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Điện thoại: đầu trang gọn và không dính; bộ lọc thành tấm toàn màn; thanh mua dính đáy */
+.sp .only-mobile {
+  display: none;
+}
+@media (max-width: 720px) {
+  .sp .hdr {
+    position: static;
+  }
+  .sp .hdr-row {
+    gap: 8px 4px;
+  }
+  .sp .hdr .logo {
+    order: 1;
+  }
+  .sp .hdr-gap {
+    order: 2;
+  }
+  .sp .hdr-acc {
+    order: 3;
+  }
+  .sp .hdr-cart {
+    order: 4;
+  }
+  .sp .hdr-search {
+    order: 5;
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .sp .hdr-store {
+    order: 6;
+  }
+  .sp .hdr-theme,
+  .sp .hide-mobile {
+    display: none;
+  }
+  .sp .strip span:nth-child(n + 2) {
+    display: none;
+  }
+  .sp .only-mobile {
+    display: flex;
+  }
+  .sp .filters {
+    display: none;
+  }
+  .sp .filters.open {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    max-width: none;
+    padding: 20px 20px 96px;
+    background: var(--bg);
+    overflow-y: auto;
+  }
+  .sp .buybar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--sheet);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
+  }
+  .sp .pad-buybar {
+    padding-bottom: 96px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp *,
+  .sp *::before,
+  .sp *::after {
+    animation: none;
+    transition: none;
+  }
+}
+
+.sp .toast .ic {
+  flex: none;
+}
+/* Điện thoại: thông báo trải ngang; trang có thanh mua dưới đáy thì nằm trên thanh đó */
+@media (max-width: 720px) {
+  .sp .toast {
+    width: auto;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .sp:has(.buybar) .toast {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Điện thoại: rà toàn bộ giao diện */
+@media (max-width: 720px) {
+  /* Lưới sản phẩm, danh mục, người bán: 2 cột như các sàn trên điện thoại (một cột làm trang dài gấp đôi) */
+  .sp .pgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 12px;
+  }
+  .sp .pgrid .pcard {
+    gap: 8px;
+    font-size: 14px;
+  }
+  .sp .pgrid .price {
+    font-size: 15.5px;
+  }
+  .sp .pgrid .quick {
+    display: none;
+  }
+  /* Ảnh lớn đầu trang: nhãn giá không bị cắt */
+  .sp .herothumb {
+    min-height: 280px;
+  }
+  .sp .herotag {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 10px 12px;
+  }
+  .sp .herotag > span {
+    white-space: normal;
+  }
+  /* Tab và các bước: một hàng kéo ngang thay vì xuống hai dòng */
+  .sp .tabrow,
+  .sp .steps {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sp .tabrow > *,
+  .sp .steps > * {
+    flex: none;
+    white-space: nowrap;
+  }
+  /* Trang đặt hàng: tổng tiền và nút tiếp tục luôn nằm ở đáy màn hình */
+  .sp .co-nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    flex-wrap: nowrap;
+    margin: 0 -16px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--sheet);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
+  }
+  .sp .co-nav > div[style*="flex: 1"] {
+    display: none;
+  }
+  .sp .co-nav .btn.pri {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-left: auto;
+  }
+  .sp .co-nav .btn.ghost {
+    padding: 0 10px;
+  }
+  /* Tài khoản: menu thành hàng tab kéo ngang */
+  .sp .accnav {
+    flex: 1 1 100%;
+    max-width: none;
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px;
+  }
+  .sp .accnav > * {
+    flex: none;
+  }
+  /* Gian hàng: bỏ khoảng trống dành cho logo trồi lên ở màn rộng */
+  .sp .seller-head {
+    padding-top: 0;
+  }
+  /* Thanh mua cố định ở đáy không che chân trang */
+  .sp:has(.buybar) .ftr {
+    padding-bottom: 76px;
+  }
+  /* Vùng chạm tối thiểu cho liên kết chân trang và đường dẫn */
+  .sp .ftr a:not(.moit):not(.btn) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+  }
+  .sp .crumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+  /* iPhone tự phóng to trang khi chạm ô nhập chữ dưới 16px */
+  .sp input:not([type="checkbox"]):not([type="radio"]),
+  .sp select,
+  .sp textarea {
+    font-size: 16px;
+  }
+}
+
+/* Trang đặt hàng (enclosed): nhãn an toàn cạnh logo */
+.sp .hdr-secure {
+  display: none;
+}
+.sp:has(.enclosed) .hdr-secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  /* Đặt hàng trên điện thoại: bỏ dòng khuyến mãi, ô tìm, chọn cửa hàng, menu danh mục — chỉ giữ logo, nhãn an toàn, tài khoản, giỏ */
+  .sp:has(.enclosed) .strip,
+  .sp:has(.enclosed) .hdr-search,
+  .sp:has(.enclosed) .hdr-store,
+  .sp:has(.enclosed) .catnav {
+    display: none;
+  }
+  .sp:has(.enclosed) .hdr-row {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+  /* Trang đặt hàng đã có nút "Đăng nhập" ở bước giao hàng: bỏ biểu tượng tài khoản để đủ chỗ cho giỏ */
+  .sp:has(.enclosed) .hdr-acc {
+    display: none;
+  }
+  .sp:has(.enclosed) .hdr .logo {
+    flex: none;
+  }
+  .sp:has(.enclosed) .hdr-secure {
+    order: 1;
+    flex: none;
+    font-size: 12px;
+    padding: 3px 8px;
+    white-space: nowrap;
+  }
+  /* Các bước: chỉ bước hiện tại có chữ, các bước khác còn số — vừa một hàng, không phải kéo */
+  .sp .steps li:not(.cur) .st-lab {
+    display: none;
+  }
+  .sp .steps li > span[aria-hidden] {
+    width: 18px;
+  }
+  .sp .steps {
+    overflow: visible;
+  }
+}
+.sp .hdr-secure .sec-b {
+  display: none;
+}
+@media (max-width: 380px) {
+  .sp:has(.enclosed) .hdr-secure .sec-a {
+    display: none;
+  }
+  .sp:has(.enclosed) .hdr-secure .sec-b {
+    display: inline;
+  }
+}
+@media (max-width: 720px) {
+  /* Đầu trang: ô tìm và chọn cửa hàng chung một dòng (bớt một dòng cao ~56px trên mọi trang) */
+  .sp .hdr-search {
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+  .sp .hdr-store {
+    flex: none;
+  }
+  .sp .hdr-store > svg {
+    display: none;
+  }
+  .sp .hdr-store .sel {
+    height: 46px;
+    padding: 0 30px 0 12px;
+  }
+  /* Ba ô cam kết: một thẻ, ba dòng có vạch ngăn */
+  .sp .perks {
+    grid-template-columns: 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .sp .perks > * {
+    border: 0;
+    border-radius: 0;
+  }
+  .sp .perks > * + * {
+    border-top: 1px solid var(--line);
+  }
+}
+@media (max-width: 720px) {
+  .sp .crumbs {
+    align-items: center;
+  }
+}
+@media (max-width: 720px) {
+  /* Bảng thông số: cột tên 40%, cột giá trị đủ rộng để không xuống dòng từng chữ */
+  .sp .specrow {
+    grid-template-columns: minmax(0, 40%) minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  /* Chân trang: các cột liên kết xếp 2 cột, liên kết sát nhau (mỗi dòng đã cao 36px để dễ chạm) */
+  .sp .fcols {
+    gap: 28px 20px;
+  }
+  .sp .fcol {
+    flex: 1 1 140px;
+    gap: 0;
+  }
+  .sp .fcol > span {
+    padding-bottom: 4px;
+  }
+  /* Hàng tab kéo ngang: mờ dần ở mép phải để biết còn tab phía sau */
+  .sp .tabrow {
+    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent);
+    mask-image: linear-gradient(to right, #000 82%, transparent);
+    padding-right: 32px;
+  }
+}
+
+/* Tiêu đề lớn chia dòng cân đối, không để một chữ trơ trọi ở dòng cuối */
+.sp h1,
+.sp h2,
+.sp .dsp {
+  text-wrap: balance;
+}
+
+/* ===== Trợ giúp trong giao diện (học theo Carbon, Polaris, Stripe, Atlassian) =====
+   1. Nút ⓘ (toggletip): bấm hoặc chạm mới mở — dùng được trên điện thoại, chứa được liên kết.
+   2. Chú thích khi rê chuột (data-tip): chỉ cho nút chỉ có biểu tượng, chỉ trên thiết bị có chuột.
+   3. Bảng "Trợ giúp" theo trang: bài hướng dẫn của đúng trang, phím tắt, hỏi trợ lý, liên hệ. */
+.sp .qi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -6px -4px -6px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-3);
+  vertical-align: middle;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+.sp .qi:hover,
+.sp .qi:focus-visible {
+  color: var(--ink);
+  background: var(--wash);
+}
+.sp .qi .ic {
+  width: 16px;
+  height: 16px;
+}
+.sp .tip {
+  position: fixed;
+  position-area: block-end span-inline-end;
+  position-try-fallbacks:
+    flip-block,
+    flip-inline,
+    flip-block flip-inline;
+  margin: 6px 0;
+  inset: auto;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 14px 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow:
+    0 16px 48px rgba(20, 23, 31, 0.18),
+    0 2px 8px rgba(20, 23, 31, 0.08);
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  text-wrap: pretty;
+}
+.sp .tip:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: help-in 0.16s ease-out both;
+}
+.sp .tip-t {
+  font-size: 14px;
+  font-weight: 650;
+}
+.sp .tip-b {
+  color: var(--ink-2);
+}
+.sp .tip-ex {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--wash);
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.sp .tip-f {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+.sp .tip-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--brand-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.sp .tip-more .ic {
+  width: 14px;
+  height: 14px;
+}
+.sp .tip-ok {
+  display: none;
+  margin-left: auto;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+@keyframes help-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Trình duyệt chưa hỗ trợ định vị theo nút: hộp hiện ở đáy màn hình */
+@supports not (position-area: block-end) {
+  .sp .tip {
+    inset: auto 12px 12px 12px;
+    margin: 0 auto;
+  }
+}
+/* Chú thích khi rê chuột: chỉ thiết bị có chuột, sau 0,4 giây, không che nội dung chính */
+@media (hover: hover) {
+  .sp [data-tip] {
+    position: relative;
+  }
+  .sp [data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    z-index: 60;
+    transform: translate(-50%, -2px);
+    padding: 5px 8px;
+    border-radius: 7px;
+    background: #14171f;
+    color: #f2f3f6;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      opacity 0.12s,
+      transform 0.12s;
+  }
+  .sp [data-tip]:hover::after,
+  .sp [data-tip]:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition-delay: 0.4s;
+  }
+  .sp [data-tip][data-tip-end]::after {
+    left: auto;
+    right: 0;
+    transform: translateY(-2px);
+  }
+  .sp [data-tip][data-tip-end]:hover::after {
+    transform: none;
+  }
+}
+/* Bảng Trợ giúp: trượt ra bên phải trên máy tính */
+.sp .helppanel {
+  position: fixed;
+  inset: 8px 8px 8px auto;
+  margin: 0;
+  width: min(380px, calc(100vw - 16px));
+  height: auto;
+  max-height: none;
+  padding: 0 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: 0 16px 48px rgba(20, 23, 31, 0.22);
+  overflow-y: auto;
+  font-size: 14px;
+}
+.sp .helppanel:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: help-side 0.22s ease-out both;
+}
+@keyframes help-side {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.sp .helppanel > * {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+.sp .hp-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  padding: 12px 12px 12px 18px;
+  background: var(--sheet);
+  border-bottom: 1px solid var(--line);
+}
+.sp .hp-head b {
+  flex: 1;
+  font-size: 15px;
+}
+.sp .hp-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.sp .hp-search .ic {
+  position: absolute;
+  left: 12px;
+  color: var(--ink-3);
+}
+.sp .hp-search .inp {
+  padding-left: 38px;
+}
+.sp .helppanel .cap {
+  margin-top: 10px;
+}
+.sp .hp-art {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.sp .hp-art:hover {
+  background: var(--wash);
+}
+.sp .hp-art span {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.sp .hp-hint {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--wash);
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.sp .hp-hint .ic {
+  flex: none;
+  margin-top: 2px;
+}
+.sp .hp-keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 4px 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.sp .hp-keys > span:nth-child(odd) {
+  display: flex;
+  gap: 4px;
+}
+.sp .hp-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.sp .hp-link:hover {
+  background: var(--wash);
+}
+.sp .hp-link .ic {
+  flex: none;
+  margin-top: 2px;
+  color: var(--brand);
+}
+.sp .hp-link > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sp .hp-link > span > span {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.sp .helppanel::backdrop,
+.sp .tip::backdrop {
+  background: transparent;
+}
+/* Giới thiệu tính năng mới: một thẻ nhỏ, tắt được, không chặn thao tác */
+.sp .intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sheet);
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.sp .intro b {
+  color: var(--ink);
+}
+.sp .intro-badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.sp .intro > span:nth-child(2) {
+  flex: 1 1 240px;
+}
+/* Điện thoại: hộp giải thích và bảng trợ giúp thành tấm trượt từ đáy, có nút "Đã hiểu" */
+@media (max-width: 720px) {
+  .sp .tip {
+    inset: auto 0 0 0;
+    position-area: none;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    padding: 18px 18px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 18px 18px 0 0;
+    font-size: 15px;
+  }
+  .sp .tip-t {
+    font-size: 16px;
+  }
+  .sp .tip-ok {
+    display: inline-flex;
+    align-items: center;
+  }
+  .sp .tip::backdrop,
+  .sp .helppanel::backdrop {
+    background: rgba(20, 23, 31, 0.4);
+  }
+  .sp .helppanel {
+    inset: auto 0 0 0;
+    width: 100%;
+    max-height: 88vh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .sp .qi {
+    width: 32px;
+    height: 32px;
+  }
+}
+/* "Cần giúp?" chỉ hiện ở trang đặt hàng; các trang khác đã có chân trang và tra cứu đơn */
+.sp .hdr-help {
+  display: none;
+}
+.sp:has(.enclosed) .hdr-help {
+  display: inline-flex;
+  order: 3;
+}
+.sp .helppanel .hp-head {
+  margin-bottom: 8px;
+}
+.sp .helppanel .hp-hint {
+  margin-bottom: 4px;
+}
+@media (max-width: 720px) {
+  .sp:has(.enclosed) .hdr-help {
+    order: 3;
+  }
+}
+@media (max-width: 720px) {
+  /* Trang đặt hàng trên điện thoại: nhãn an toàn rút gọn để đủ chỗ cho "Cần giúp?" và giỏ hàng */
+  .sp:has(.enclosed) .hdr-secure .sec-a {
+    display: none;
+  }
+  .sp:has(.enclosed) .hdr-secure .sec-b {
+    display: inline;
+  }
+  .sp:has(.enclosed) .hdr-help {
+    margin-left: auto;
+  }
+  .sp:has(.enclosed) .hdr-gap {
+    display: none;
+  }
+}
+
+/* Lưới có số thẻ cố định: số cột luôn chia hết số thẻ ở mọi khổ, không để một thẻ lẻ ở hàng cuối. */
+.sp .g2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.sp .g3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.sp .g4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.sp .g6 {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+@media (max-width: 1000px) {
+  .sp .g6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .sp .g4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .sp .g2,
+  .sp .g3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sp .g6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Danh sách người bán: thẻ dọc trên màn rộng, hàng ngang (ảnh vuông bên trái) trên điện thoại. */
+.sp .sgrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.sp .sgrid > .card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  text-decoration: none;
+}
+.sp .sgrid .sbody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .sp .sgrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .sp .sgrid > .card {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+  }
+  .sp .sgrid .thumb {
+    flex: none;
+    width: 72px;
+    aspect-ratio: 1 / 1;
+  }
+}
+/* Màn rộng: ô tìm chiếm phần giữa đầu trang (tìm là cách mua chính), không để khoảng trống sau nó;
+   khoảng hai bên ô tìm bằng nhau.
+   Trang thanh toán ẩn ô tìm nên vẫn giữ khối đệm để đẩy các nút sang phải. */
+@media (min-width: 721px) {
+  .sp:not(:has(.enclosed)) .hdr-gap {
+    display: none;
+  }
+  .sp .hdr-search {
+    flex: 1 1 280px;
+    max-width: none;
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+}
+/* Khổ vừa (721–1100): đầu trang giữ một hàng — ô tìm co trước, giỏ hàng chỉ còn biểu tượng và số */
+@media (min-width: 721px) and (max-width: 1100px) {
+  .sp .hdr-row {
+    flex-wrap: nowrap;
+    gap: 10px 12px;
+  }
+  .sp .hdr-search {
+    flex-basis: 140px;
+    min-width: 0;
+  }
+  .sp .hdr-store > svg,
+  .sp .hdr-cart > .hide-mobile {
+    display: none;
+  }
+  .sp .hdr-secure .sec-a {
+    display: none;
+  }
+  .sp .hdr-secure .sec-b {
+    display: inline;
+  }
+  .sp .hdr-row > .logo,
+  .sp .hdr-secure,
+  .sp .hdr-store {
+    flex: none;
+    white-space: nowrap;
+  }
+  .sp .hdr-help > .hide-mobile {
+    display: none;
+  }
+}
+
+/* ===== Thanh danh mục (14/11/2026) =====
+   Danh mục sản phẩm có biểu tượng; lối vào đặc biệt (Khuyến mại, Chợ, Góc bếp) dồn phải, có màu riêng.
+   Máy có chuột, từ 1024px: rê chuột hoặc dùng bàn phím vào một mục thì mở bảng xổ (nhóm con, bán chạy, gợi ý)
+   ngay dưới đầu trang — CSS thuần, không cần mã chạy. Màn hẹp hơn: dải chip cuộn ngang, không bảng xổ. */
+.sp .catnav {
+  align-items: center;
+  gap: 0 22px;
+}
+.sp .cn-item {
+  display: flex;
+}
+.sp .cat-a .ic {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-3);
+  transition: color 0.15s;
+}
+.sp .cat-a:hover .ic,
+.sp .cat-a.on .ic,
+.sp .cn-item:focus-within > .cat-a .ic {
+  color: var(--brand);
+}
+.sp .cn-all > .cat-a {
+  color: var(--ink);
+  font-weight: 600;
+}
+.sp .cn-gap {
+  flex: 1 1 0;
+  min-width: 8px;
+}
+.sp .catnav .cat-sp.sp-sale,
+.sp .catnav .cat-sp.sp-sale .ic {
+  color: var(--sale);
+  font-weight: 600;
+}
+.sp .cat-sp.sp-sale::after {
+  background: var(--sale);
+}
+.sp .catnav .cat-sp.sp-mkt .ic,
+.sp .catnav .cat-sp.sp-blog .ic {
+  color: var(--brand);
+}
+.sp .mega {
+  display: none;
+}
+.sp .mega-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sp .mega-col a {
+  padding: 6px 0;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  text-decoration: none;
+}
+.sp .mega-col a:hover {
+  color: var(--brand);
+}
+.sp .mega-col .mega-h {
+  margin-top: 6px;
+  color: var(--ink);
+  font-weight: 700;
+}
+.sp .mega-k {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sp .mega-top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.sp .mega-p {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px;
+  border-radius: 14px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.sp .mega-p:hover {
+  background: var(--wash);
+}
+.sp .mega-p .thumb {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+}
+.sp .mega-top .mega-p .thumb svg {
+  width: 58%;
+  height: 58%;
+}
+.sp .mega-promo {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 168px;
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--brand-tint);
+  color: var(--ink);
+  text-decoration: none;
+}
+.sp .mega-promo:hover {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+@media (min-width: 1024px) and (hover: hover) {
+  .sp .catnav {
+    overflow: visible;
+  }
+  .sp .mega {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 30;
+    background: var(--sheet);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 28px 40px -28px rgba(23, 32, 27, 0.35);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 0.16s var(--ease),
+      transform 0.16s var(--ease),
+      visibility 0s linear 0.16s;
+  }
+  .sp .cn-item:hover > .mega,
+  .sp .cn-item:focus-within > .mega {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.3s, 0.3s, 0.3s;
+  }
+  .sp .mega-in {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 40px;
+    padding-top: 26px;
+    padding-bottom: 30px;
+  }
+  .sp .mega-allgrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1240px) {
+  .sp .catnav {
+    gap: 0 12px;
+  }
+  .sp .catnav .cat-a {
+    font-size: 14px;
+  }
+  .sp .cat-a .ic {
+    display: none;
+  }
+  .sp .cn-all > .cat-a .ic {
+    display: inline;
+  }
+}
+@media (max-width: 1023px) {
+  .sp .catnav {
+    gap: 8px;
+    padding-top: 6px;
+    padding-bottom: 10px;
+  }
+  .sp .cn-gap {
+    display: none;
+  }
+  .sp .catnav .cat-a {
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--wash);
+    font-size: 14px;
+  }
+  .sp .catnav .cat-a::after {
+    display: none;
+  }
+  .sp .catnav .cat-a.on {
+    background: var(--brand-tint);
+    color: var(--brand-ink);
+  }
+  .sp .catnav .cat-sp.sp-sale {
+    background: var(--sale-bg);
+  }
+}
+/* Đánh giá sản phẩm: cột điểm số dính khi cuộn danh sách dài (máy tính); thanh số sao là nút lọc */
+.sp .rev-bar:hover {
+  background: var(--wash);
+}
+@media (min-width: 1024px) {
+  .sp .rev-side {
+    position: sticky;
+    top: 156px;
+  }
+}
+/* Đặt hàng trên màn hẹp: tóm tắt đơn trải hết bề rộng; điện thoại thu gọn tóm tắt thành một dải ở đầu trang
+   (bấm để mở), thanh hành động cố định ở đáy màn hình — như các trang bán hàng lớn */
+.sp .co-sumbar {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .sp .co-sum {
+    max-width: none;
+    position: static;
+  }
+}
+@media (max-width: 720px) {
+  .sp .co-sumbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 52px;
+    margin-top: -8px;
+    padding: 0 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--wash);
+    color: var(--ink);
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sp .co-sumbar .co-sumchev {
+    transition: transform 0.2s var(--ease);
+  }
+  .sp .co-sumbar[aria-expanded="true"] .co-sumchev {
+    transform: rotate(180deg);
+  }
+  .sp .co-sum {
+    order: -1;
+    display: none;
+  }
+  .sp .co-sum.open {
+    display: flex;
+  }
+  .sp .co-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    box-shadow: 0 -10px 24px -14px rgba(23, 32, 27, 0.3);
+  }
+  .sp:has(.co-nav) .ftr {
+    padding-bottom: 96px;
+  }
+}
+/* Hàng tab của trang sản phẩm và gian hàng: máy tính giữ dạng tab; điện thoại thành lưới hiện đủ mọi mục
+   (tên ngắn + dòng phụ) để người mua thấy ngay còn Đánh giá, Hỏi đáp — không giấu sau thanh cuộn ngang */
+.sp .seg-tab .st-short,
+.sp .seg-tab .st-meta {
+  display: none;
+}
+@media (max-width: 720px) {
+  .sp .tabrow.segtabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+    padding: 0 0 14px;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .sp .tabrow.segtabs:has(> :nth-child(3):last-child) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sp .segtabs .seg-tab {
+    height: auto;
+    min-height: 60px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--sheet);
+    white-space: normal;
+    text-align: left;
+  }
+  .sp .segtabs .seg-tab::after {
+    display: none;
+  }
+  .sp .segtabs .seg-tab.on {
+    border-color: var(--brand);
+    background: var(--brand-tint);
+    color: var(--brand-ink);
+  }
+  .sp .seg-tab .st-long {
+    display: none;
+  }
+  .sp .seg-tab .st-short {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .sp .seg-tab .st-meta {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+}
+/* Trang danh mục trên điện thoại: mô tả 2 dòng; chip loại hàng một dải cuộn ngang; thanh [Bộ lọc][Sắp xếp]
+   chia đôi, dính khi cuộn, số sản phẩm và bộ lọc đang bật ở hàng dưới — gọn như các trang bán hàng lớn */
+@media (max-width: 720px) {
+  .sp .cat-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 15px;
+  }
+  .sp .cat-types {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 0 32px 0 16px;
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+  }
+  .sp .cat-types::-webkit-scrollbar {
+    display: none;
+  }
+  .sp .cat-types > * {
+    flex: none;
+  }
+  .sp .cat-bar {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 10px 16px;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .sp .cat-bar > .cat-fbtn,
+  .sp .cat-bar > .cat-sort {
+    order: -1;
+    flex: 1 1 40%;
+    min-width: 0;
+  }
+  .sp .cat-bar > .cat-fbtn {
+    height: 44px;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .sp .cat-bar .cat-sortlab,
+  .sp .cat-bar > .cat-gap {
+    display: none;
+  }
+  .sp .cat-bar .cat-sort select {
+    width: 100%;
+    height: 44px;
+  }
+  .sp .cat-bar > .cat-count {
+    flex: 1 1 100%;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+}
+/* Số tiền không bao giờ bị bẻ dòng giữa số và "₫" (vnd() cũng dùng khoảng trắng không ngắt) */
+.sp .num,
+.sp .price,
+.sp .was {
+  white-space: nowrap;
+}
+
+/* ===== Đợt sửa theo nghiên cứu (14/11/2026) ===== */
+.sp {
+  --hdr-m: 0px;
+}
+/* Bảng xổ mở sau 300 ms khi rê chuột (R2: tránh mở nhầm khi lướt qua); dùng bàn phím thì mở ngay */
+@media (min-width: 1024px) and (hover: hover) {
+  .sp .cn-item:focus-within > .mega {
+    transition-delay: 0s, 0s, 0s;
+  }
+}
+/* Tiêu đề: dấu tiếng Việt không chạm dòng trên (R3 mục 6) */
+.sp h1.dsp {
+  line-height: 1.14;
+}
+.sp h2.dsp {
+  line-height: 1.24;
+}
+/* Huy hiệu giỏ: chế độ tối đủ tương phản (R3). Bảng màu đã kiểm: mọi cặp chữ / nền chính ≥ 4,5:1 (WCAG AA) */
+.sp .bubble {
+  background: var(--bubble);
+}
+/* Đầu trang trên điện thoại (R3 mục 8, N2): hàng 1 logo · cửa hàng · tài khoản · giỏ; hàng 2 ô tìm rộng hết.
+   Hai hàng này dính khi cuộn; dải chip danh mục cuộn theo trang; bỏ dải thông báo (cam kết đã có ở trang) */
+@media (max-width: 720px) {
+  .sp {
+    --hdr-m: 113px;
+  }
+  .sp .strip {
+    display: none;
+  }
+  .sp .hdr {
+    display: contents;
+  }
+  .sp:not(:has(.enclosed)) .hdr-row .iconbtn {
+    min-width: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+  .sp .hdr-row {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background: var(--sheet);
+    border-bottom: 1px solid var(--line);
+  }
+  .sp:not(:has(.enclosed)) .hdr-row {
+    gap: 8px 4px;
+  }
+  .sp:not(:has(.enclosed)) .hdr .logo .dsp {
+    font-size: 19px;
+  }
+  .sp:not(:has(.enclosed)) .hdr-gap {
+    display: block;
+    order: 2;
+    flex: 1 1 0;
+  }
+  .sp:not(:has(.enclosed)) .hdr-store {
+    order: 3;
+  }
+  .sp:not(:has(.enclosed)) .hdr-store .sel {
+    height: 40px;
+    font-size: 13px;
+    padding-left: 10px;
+  }
+  .sp:not(:has(.enclosed)) .hdr-acc {
+    order: 4;
+  }
+  .sp:not(:has(.enclosed)) .hdr-cart {
+    order: 5;
+  }
+  .sp:not(:has(.enclosed)) .hdr-search {
+    order: 6;
+    flex: 1 1 100%;
+    margin: 0;
+  }
+  .sp:not(:has(.enclosed)) .hdr-search .inp {
+    height: 44px;
+  }
+  .sp .catnav {
+    background: var(--sheet);
+    border-bottom: 1px solid var(--line);
+  }
+  .sp .cat-bar {
+    top: var(--hdr-m);
+    margin: 0 -24px;
+    padding: 10px 24px;
+    background: var(--bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (max-width: 413px) {
+  .sp:not(:has(.enclosed)) .hdr .logo .dsp {
+    display: none;
+  }
+}
+/* Thẻ sản phẩm (R3 mục 4): dòng người bán ở cuối để tên và giá các thẻ cùng hàng thẳng nhau; mỗi mục của dòng phụ
+   không bẻ đôi ("· 3 cỡ" không rơi lẻ đầu dòng); chấm tình trạng kho căn theo dòng chữ đầu */
+.sp .pc-meta > * {
+  white-space: nowrap;
+}
+.sp .pc-avail {
+  align-items: flex-start;
+}
+.sp .pc-avail > .dot {
+  margin-top: 0.5em;
+}
+@media (max-width: 720px) {
+  .sp .pc-meta > :nth-child(n + 4) {
+    display: none;
+  }
+}
+/* Trang danh mục ở khổ máy tính bảng 721–1023 (R3 N6): bộ lọc thành ngăn kéo bên phải mở bằng nút "Bộ lọc",
+   lưới sản phẩm lên ngay đầu trang thay vì bị bộ lọc đẩy xuống ~1.000px */
+@media (min-width: 721px) and (max-width: 1023px) {
+  .sp .filters {
+    display: none;
+  }
+  .sp .filters.open {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: min(420px, 90vw);
+    z-index: 60;
+    max-width: none;
+    padding: 20px 20px 96px;
+    background: var(--bg);
+    overflow-y: auto;
+    box-shadow: -24px 0 48px rgba(23, 32, 27, 0.2);
+  }
+  .sp .cat-sheet-x,
+  .sp .cat-fbtn {
+    display: flex;
+  }
+  .sp .filters.open .cat-sheet-foot {
+    left: auto;
+    width: min(420px, 90vw);
+  }
+}
+@media (min-width: 721px) and (max-width: 1023px) {
+  .sp .cat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px 16px;
+  }
+}
+/* Trang chủ trên điện thoại (R3, R1): màn đầu thấy được danh mục — bỏ cụm ảnh minh hoạ, tiêu đề gọn,
+   6 danh mục thành lưới 3 × 2 ảnh vuông nhỏ (kiểu lưới biểu tượng của các sàn Việt Nam) */
+@media (max-width: 720px) {
+  .sp .home-hero {
+    padding-top: 20px;
+    gap: 16px;
+  }
+  .sp .home-hero h1.dsp {
+    font-size: 32px;
+  }
+  .sp .home-hero p {
+    font-size: 15.5px;
+  }
+  .sp .home-collage {
+    display: none;
+  }
+  .sp .home-cats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px 10px;
+  }
+  .sp .home-cats .pcard {
+    gap: 6px;
+    text-align: center;
+  }
+  .sp .home-cats .thumb {
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+  }
+  .sp .home-cats .thumb svg {
+    width: 46%;
+    height: 46%;
+  }
+  .sp .home-cats .pcard > span {
+    align-items: center;
+  }
+  .sp .home-cats .pcard > span > span:first-child {
+    font-size: 13.5px;
+    line-height: 1.3;
+  }
+  .sp .home-cats .pcard .muted {
+    display: none;
+  }
+}
+@media (max-width: 720px) {
+  .sp main:has(> .home-hero) {
+    gap: 44px;
+  }
+  .sp .home-hero > .rise > div:last-child {
+    display: none;
+  }
+  .sp .home-hero > .rise > div:has(> .btn) {
+    flex-wrap: nowrap;
+  }
+  .sp .home-hero > .rise > div:has(> .btn) > .btn {
+    flex: 1 1 0;
+    justify-content: center;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .sp main:has(> .home-hero) h2.dsp {
+    font-size: 24px;
+  }
+}
+@media (max-width: 720px) {
+  .sp section:has(> .home-cats) > div:first-child > a.lnk {
+    display: none;
+  }
+}
+/* Nút ở trạng thái đã bấm (vd "Hữu ích"): dùng chung cho mọi trang */
+.sp .btn.on {
+  background: var(--brand-tint);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+/* Nút bị tắt: mờ và báo không bấm được; nút nhỏ đủ vùng chạm 44px trên điện thoại (dùng chung mọi trang) */
+.sp .btn:disabled,
+.sp .btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (max-width: 720px) {
+  .sp .btn.sm {
+    min-height: 44px;
+  }
+}
+
+/* Trang đặt hàng khép kín ở mọi khổ (chuẩn của các trang bán hàng lớn): không ô tìm, không danh mục,
+   không dòng khuyến mãi, không chọn cửa hàng (đã chọn ở bước giao hàng) — người mua không bị kéo đi giữa chừng */
+.sp:has(.enclosed) .strip,
+.sp:has(.enclosed) .hdr-search,
+.sp:has(.enclosed) .hdr-store,
+.sp:has(.enclosed) .catnav {
+  display: none;
+}
+.sp:has(.enclosed) .hdr-row {
+  padding-bottom: 12px;
+}

@@ -1,0 +1,260 @@
+{
+  "site": {
+    "defaultName": "Autoxide",
+    "blog": "Articles",
+    "description": "{name}: shop online, pick up in store, read our guides."
+  },
+  "nav": {
+    "home": "Home",
+    "breadcrumbs": "Breadcrumb",
+    "skip": "Skip to main content",
+    "categories": "Categories",
+    "all": "Categories",
+    "groups": "Browse",
+    "seeAll": "See all {label}",
+    "bestSellers": "Best sellers",
+    "suggestion": "Featured",
+    "sampleMenu": "The core has no `{key}` menu yet: showing a sample menu. Create the menu in the admin to replace it."
+  },
+  "header": {
+    "home": "{name}, home page",
+    "secure": "Secure checkout",
+    "secureShort": "Secure",
+    "searchPlaceholder": "Search products, articles…",
+    "searchLabel": "Search products, articles, stores",
+    "store": "Your store",
+    "account": "Account",
+    "theme": "Switch light / dark",
+    "cart": "Cart",
+    "cartCount": "Cart, {count, plural, one {# item} other {# items}}"
+  },
+  "sample": {
+    "mark": "sample",
+    "noticeShort": "Preview build: parts marked “sample” use sample data.",
+    "missing": "Sample data: the core has no {endpoint} yet (step {step}).",
+    "notice": "Preview build: products, prices, stores and the cart are sample data (marked “sample”). Articles, menus, comments and the newsletter are real."
+  },
+  "product": {
+    "add": "Add",
+    "addNamed": "Add {name} to cart",
+    "added": "Added {name} to your cart",
+    "withCode": "with code {code}",
+    "ratingLabel": "Rated {score} out of 5, {count, plural, one {# review} other {# reviews}}",
+    "options": "{count} options",
+    "soldBy": "Sold by {seller}",
+    "flagCoupon": "−10% with code",
+    "flagNew": "New",
+    "availability": {
+      "in_store": "In stock at {store}",
+      "low": "Only {left} left at {store}",
+      "out": "Out at {store} · ships from warehouse",
+      "warehouse": "Ships from warehouse, 1–2 days",
+      "seller": "Shipped by the seller, 2–4 days"
+    }
+  },
+  "footer": {
+    "about": "Shop online, pick up in store or get it delivered.",
+    "links": "Links",
+    "sampleMenu": "The core has no `footer` menu yet: showing a sample menu.",
+    "legal": "Company [LEGAL NAME] · Tax code [TAX CODE] · Address [REGISTERED ADDRESS] · Phone [PHONE] · Email [EMAIL] · Legal representative [FULL NAME]",
+    "moit": "The “Notified to the Ministry of Industry and Trade” logo issued by the authority goes here",
+    "copyright": "© {year} {name}",
+    "poweredBy": "Runs on Autoxide, open source",
+    "rss": "RSS",
+    "language": "Language"
+  },
+  "newsletter": {
+    "lead": "Get {blog} and offers every week. You confirm by email before you are added.",
+    "email": "Email for the newsletter",
+    "placeholder": "you@example.com",
+    "submit": "Subscribe",
+    "consent": "By subscribing you agree to receive our emails; every email has an unsubscribe link.",
+    "lists": "Lists",
+    "emailRequired": "Enter your email, for example you@example.com.",
+    "listRequired": "Choose at least one list.",
+    "checkInbox": "We sent a confirmation email to {email}. Click the link in it to finish.",
+    "subscribed": "You are subscribed. Thank you!",
+    "failed": "Could not send right now. Please try again later.",
+    "confirm": {
+      "title": "Confirm your subscription",
+      "body": "Click the button below to confirm your email.",
+      "button": "Confirm",
+      "done": "Confirmed: {lists}.",
+      "doneNone": "Confirmed.",
+      "invalid": "This link no longer works. You may have confirmed already, or it has expired."
+    },
+    "unsubscribe": {
+      "title": "Unsubscribe",
+      "body": "Click the button below to stop receiving all newsletter emails.",
+      "button": "Unsubscribe",
+      "done": "You are unsubscribed and will not receive newsletter emails any more.",
+      "preferences": "Just want fewer emails? Choose your lists"
+    },
+    "preferences": {
+      "title": "Email preferences",
+      "body": "Choose the lists you want for {email}.",
+      "save": "Save choices",
+      "saved": "Saved.",
+      "all": "Unsubscribe from all",
+      "invalid": "This link no longer works. Open the link in your latest email.",
+      "status": "Status: {status}",
+      "unconfirmed": "waiting for confirmation",
+      "confirmed": "subscribed",
+      "unsubscribed": "unsubscribed"
+    }
+  },
+  "errors": {
+    "title": "This page could not be loaded",
+    "body": "The server is busy or unreachable. Please try again in a few minutes.",
+    "retry": "Try again",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The address may have changed or the page was removed. Search again or go home.",
+    "home": "Go to the home page",
+    "search": "Search"
+  },
+  "home": {
+    "allProducts": "All products",
+    "categories": "Shop by category",
+    "productCount": "{count, plural, one {# product} other {# products}}",
+    "best": "Best sellers this week",
+    "bestSub": "Availability at {store}",
+    "more": "See more",
+    "allPosts": "All articles",
+    "hero": {
+      "shop": "Shop cookware",
+      "stores": "Stores near you",
+      "withCode": "with code {code}"
+    },
+    "plain": {
+      "lead": "Articles, guides and the latest news.",
+      "read": "Read {blog}"
+    },
+    "coupon": {
+      "label": "Current discount code",
+      "until": "Until {date}",
+      "left": "{count} uses left.",
+      "copy": "Copy code",
+      "copied": "Copied code {code}"
+    },
+    "meal": {
+      "title": "What to cook today?",
+      "sub": "Pick a dish, see how to make it and get every tool into your cart at once.",
+      "pick": "Choose a dish",
+      "time": "{minutes} min · serves {people}",
+      "tools": "Tools for this dish",
+      "toolsHint": "Untick what you already have.",
+      "postLink": "How to make it",
+      "count": "{picked} of {total} tools · subtotal",
+      "add": "Add {all, select, yes {these} other {{count}}} tools to cart",
+      "addedButton": "Added {count} tools to cart",
+      "added": "Added {count} tools for {name} to your cart",
+      "none": "Choose at least one tool",
+      "toolLabel": "Include {name}",
+      "image": "Illustration of {name}",
+      "noteCoupon": "10% off with code {code}",
+      "noteShop": "Sold and shipped by the shop"
+    },
+    "stores": {
+      "title": "Our stores",
+      "sub": "Choose a store to see what is in stock and pick up your order.",
+      "yours": "Your store",
+      "choose": "Choose this store",
+      "opens": "Open {hours}",
+      "pickup": "Pick up in 2 hours"
+    },
+    "market": {
+      "title": "Workshops and makers sell directly",
+      "lead": "{count} sellers verified their identity before listing. Every product says who sells it and from where; payments go through a licensed partner and reach the seller only after the return period.",
+      "enter": "Visit {name}",
+      "verified": "Verified",
+      "meta": "{rating} ★ · {count} products"
+    }
+  },
+  "blog": {
+    "readingTime": "{minutes} min read",
+    "intro": "Guides, tips and stories from the shop.",
+    "older": "Older articles",
+    "newest": "Back to the newest",
+    "empty": "No articles yet.",
+    "topics": "Topics",
+    "page": "Next page",
+    "rss": "Follow via RSS",
+    "category": "Category",
+    "tag": "Tag",
+    "termEmpty": "No articles here yet.",
+    "authorPosts": "Articles by {name}",
+    "website": "Website"
+  },
+  "article": {
+    "toc": "In this article",
+    "tocShort": "Contents",
+    "comments": "Comments",
+    "readNext": "Read next in {blog}",
+    "mentioned": "Products in this article",
+    "mentionedNote": "Products in the article are sold by the shop.",
+    "aiNotice": "This article was created with the help of AI.",
+    "aiReviewed": "This article was created with the help of AI and reviewed by an editor.",
+    "languages": "Article language",
+    "updated": "Updated {date}",
+    "by": "Author"
+  },
+  "comments": {
+    "title": "Comments ({count})",
+    "closed": "Comments are closed.",
+    "signIn": "Commenting here needs an account. The website does not have buyer sign-in yet.",
+    "label": "Write a comment",
+    "name": "Display name",
+    "email": "Email (never shown)",
+    "notify": "Email me when someone replies",
+    "placeholder": "Share your experience…",
+    "markdown": "You can write **bold**, *italic*, [links](https://…), > quotes, `code`.",
+    "moderated": "Comments may be reviewed before they appear.",
+    "submit": "Post comment",
+    "pending": "Sent. Your comment is waiting for approval and will appear once approved.",
+    "published": "Your comment is posted.",
+    "failed": "Could not send right now. Please try again later.",
+    "empty": "No comments yet. Be the first.",
+    "reply": "Reply",
+    "replyTo": "Reply to {name}",
+    "cancel": "Cancel",
+    "more": "More comments",
+    "moreReplies": "{count, plural, one {# more reply} other {# more replies}}",
+    "deleted": "This comment was deleted.",
+    "deletedName": "Deleted",
+    "edited": "edited",
+    "guest": "Guest",
+    "badge_seller": "Shop",
+    "badge_verified_buyer": "Verified buyer",
+    "verifyTitle": "Confirm your email for replies",
+    "verifyBody": "Click the button below to get an email when someone replies to your comment.",
+    "verifyButton": "Confirm",
+    "verified": "Confirmed. You will get an email when someone replies.",
+    "unsubscribeTitle": "Stop reply emails",
+    "unsubscribeBody": "Click the button below to stop emails about replies to your comments.",
+    "unsubscribeButton": "Stop emails",
+    "unsubscribed": "Done. You will not get reply emails any more.",
+    "linkInvalid": "This link no longer works."
+  },
+  "search": {
+    "title": "Search",
+    "resultsFor": "Results for “{q}”",
+    "label": "Search products and articles",
+    "submit": "Search",
+    "hint": "Accents are optional.",
+    "products": "Products",
+    "content": "Articles and pages",
+    "none": "Nothing found for “{q}”. Try a shorter word.",
+    "noContent": "No articles match.",
+    "page": "Page",
+    "post": "Article",
+    "start": "Type a word to search products and articles."
+  },
+  "preview": {
+    "title": "Draft preview",
+    "banner": "Preview: not published; only people with the link can see it.",
+    "invalid": "This preview link no longer works (expired or wrong). Create a new one in the editor."
+  },
+  "page": {
+    "updated": "Updated {date}"
+  }
+}
