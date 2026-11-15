@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { draftRequiredPage, moveToWebsite } from "@/app/(admin)/content/sample-actions";
+import { TipHeading } from "@/components/help/info-tip";
 import { SampleBadge } from "@/components/sample-badge";
 import { useToast } from "@/components/ui/toast";
 import type { Checklist, Website } from "@/sample/content";
@@ -24,9 +25,9 @@ export function SiteChips({
   return (
     <section className="ce-sites" aria-labelledby="ce-sites-h">
       <div className="block-head">
-        <h2 id="ce-sites-h" className="cap">
+        <TipHeading id="ce-sites-h" tip="websites" className="cap">
           {t("sites")}
-        </h2>
+        </TipHeading>
         <SampleBadge step="37" endpoint="GET /api/v1/compliance/websites" />
       </div>
       <div className="ce-sitechips">
@@ -59,9 +60,9 @@ export function RequiredPages({ website, checklist }: { website: Website; checkl
   return (
     <section className="card ce-required" aria-labelledby="ce-req-h">
       <div className="block-head">
-        <h2 id="ce-req-h" className="h2">
+        <TipHeading id="ce-req-h" tip="required_pages">
           {t("required")}
-        </h2>
+        </TipHeading>
         <span className={full ? "badge b-ok" : "badge b-warn"}>
           <span className="dot" />
           {t("summary", { done, total: checklist.pages.length })}

@@ -2,6 +2,7 @@ import type { components } from "@autoxide/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { revokeApiKey } from "@/app/(admin)/settings/actions";
+import { TipHeading } from "@/components/help/info-tip";
 import { ConfirmAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -25,9 +26,9 @@ export default async function ApiKeysPage(props: PageProps<"/settings/api-keys">
     <div className="blocks">
       <section className="block" aria-labelledby="keys-h">
         <div className="block-head">
-          <h2 id="keys-h" className="h2">
+          <TipHeading id="keys-h" tip="agent_keys">
             {k("title")}
-          </h2>
+          </TipHeading>
         </div>
         <p className="fhint">{k("about")}</p>
         <div className="card tcard">

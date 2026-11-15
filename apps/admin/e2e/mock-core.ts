@@ -8,6 +8,7 @@
 //
 // Quản trị người dùng, role và trang công khai của link trong thư: `mock-access.ts`.
 // Webhook, API key, audit, trạng thái AI, OpenAPI: `mock-settings.ts`.
+// Cờ giao diện theo người dùng (`/api/v1/me/flags`): `mock-flags.ts`.
 // Màn Nội dung (bài viết, trình soạn, xem trước): `mock-content.ts`.
 // Phân hệ Tiếp thị (biểu mẫu, bản tin, bình luận): `mock-engage.ts`.
 //
@@ -33,6 +34,7 @@ import {
   setAiEnabled,
 } from "./mock-content.ts";
 import { ENGAGE_MODULES, engageRoutes, resetEngage } from "./mock-engage.ts";
+import { flagRoutes, resetFlags } from "./mock-flags.ts";
 import {
   type Account,
   empty,
@@ -205,6 +207,7 @@ const server = createServer(async (request, response) => {
     resetContent();
     resetMedia();
     resetEngage();
+    resetFlags();
     return send(response, 204);
   }
   if (route === "POST /__webhooks/fire") {
@@ -331,6 +334,7 @@ const server = createServer(async (request, response) => {
     },
   );
   if (handled) return;
+  if (await flagRoutes(request, response, url, account)) return;
   if (await settingsRoutes(request, response, url, account)) return;
   if (await engageRoutes(request, response, url, route)) return;
   if (url.pathname.startsWith("/api/v1/kernel/modules")) {

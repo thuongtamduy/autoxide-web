@@ -12,6 +12,11 @@ Khung quản trị theo bản thiết kế quản trị của Autoxide: thanh ph
 thoại), menu các màn của từng phân hệ, bảng lệnh (Ctrl K / ⌘K) và giao diện sáng, tối hoặc theo
 máy. Một phân hệ chỉ hiện khi module của nó đã cài trên core và role của bạn có permission của nó.
 
+Trợ giúp trong giao diện: nút **?** ở mọi trang (hoặc phím `?`) mở hướng dẫn của trang đó, phím tắt
+và tin "Có gì mới"; biểu tượng ⓘ cạnh một mục giải thích mục đó ngay tại chỗ; một thẻ ngắn giới thiệu
+tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và tin đã xem được core nhớ theo tài khoản
+(`/api/v1/me/flags`), nên đổi máy cũng không hiện lại.
+
 Các màn đã có:
 
 - **Tổng quan**: các phân hệ bạn dùng được.

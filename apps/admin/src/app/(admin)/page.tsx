@@ -20,6 +20,7 @@ import { readSetup, SETUP_ENDPOINT } from "@/work/setup";
 import type { MetricView } from "@/work/types";
 import "@/components/engage/engage.css";
 import "@/components/work/work.css";
+import { TipHeading } from "@/components/help/info-tip";
 
 /** Số việc gấp nhất hiện ở Tổng quan; đủ mọi việc ở màn Việc và hoạt động. */
 const TOP = 8;
@@ -150,9 +151,9 @@ export default async function DashboardPage() {
         <div className="dash-grid">
           <section className="card dash-tasks" aria-labelledby="dash-tasks-h">
             <div className="dash-head">
-              <h2 id="dash-tasks-h" className="h2">
+              <TipHeading id="dash-tasks-h" tip="tasks">
                 {t("tasks.title")}
-              </h2>
+              </TipHeading>
               <span className="cnt hot">{open.length}</span>
               <span className="dash-hint">{t("tasks.hint")}</span>
             </div>
@@ -185,9 +186,9 @@ export default async function DashboardPage() {
             {setup.length > 0 ? (
               <section className="card dash-card" aria-labelledby="dash-setup-h">
                 <div className="dash-head">
-                  <h2 id="dash-setup-h" className="h2">
+                  <TipHeading id="dash-setup-h" tip="setup">
                     {t("setup.title")}
-                  </h2>
+                  </TipHeading>
                   <span className="num dash-count">
                     {t("setup.done", { done, total: setup.length })}
                   </span>

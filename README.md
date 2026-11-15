@@ -13,6 +13,11 @@ the screens of each area, a command palette (Ctrl K / ⌘K) and light, dark or s
 An area shows up only when its module is installed in the core and your role grants its
 permission.
 
+In-app help: a **?** button on every page (or the `?` key) opens the guides of that page, keyboard
+shortcuts and what's new; an ⓘ icon next to a section explains it in place; a short card
+introduces a new feature until you press "Got it". Dismissed cards and seen news are remembered
+per account by the core (`/api/v1/me/flags`), so they stay dismissed on every device.
+
 Screens so far:
 
 - **Overview**: the areas you can use.
