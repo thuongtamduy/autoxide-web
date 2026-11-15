@@ -196,7 +196,7 @@ describe("phân hệ Nội dung trong sổ thật", () => {
 describe("nhóm Tiếp thị", () => {
   it("đứng sau Tổng quan và Sản phẩm; mỗi màn theo module và permission của nó", async () => {
     const { NAV: real } = await import("./nav");
-    expect(real.map((g) => g.id).slice(0, 3)).toEqual(["home", "catalog", "mkt"]);
+    expect(real.map((g) => g.id).slice(0, 4)).toEqual(["home", "sales", "catalog", "mkt"]);
     const nav = visibleNav(
       {
         allPermissions: false,
@@ -321,5 +321,40 @@ describe("nhóm Tài chính (dữ liệu mẫu, bước 36)", () => {
     );
     expect(stranger.some((g) => g.id === "finance")).toBe(false);
     expect(activePage(real, "/finance/einvoices")?.page.id).toBe("finance");
+  });
+});
+
+describe("Khuyến mại và Vận chuyển (dữ liệu mẫu, bước 43–44)", () => {
+  it("Khuyến mại đứng đầu nhóm Tiếp thị; Vận chuyển ở nhóm Bán hàng (biểu tượng cart)", async () => {
+    const { NAV: real } = await import("./nav");
+    const admin: Viewer = {
+      allPermissions: true,
+      permissions: [],
+      modules: ["forms", "newsletter", "comments"],
+      sample: true,
+    };
+    const nav = visibleNav(admin, real);
+    expect(nav.find((g) => g.id === "mkt")?.pages.map((p) => p.id)).toEqual([
+      "promotions",
+      "forms",
+      "newsletter",
+      "comments",
+    ]);
+    const sales = real.find((g) => g.id === "sales");
+    expect(sales?.icon).toBe("cart");
+    expect(sales?.pages.map((p) => p.href)).toEqual(["/sales/shipping"]);
+    // Tắt dữ liệu mẫu: không còn Khuyến mại, cả nhóm Bán hàng biến mất.
+    const off = visibleNav({ ...admin, sample: false }, real);
+    expect(off.some((g) => g.id === "sales")).toBe(false);
+    expect(off.find((g) => g.id === "mkt")?.pages[0]?.id).toBe("forms");
+    // Nhân viên chỉ có quyền đối soát COD vẫn thấy Vận chuyển; không có quyền khuyến mại thì không thấy.
+    const clerk = visibleNav(
+      { allPermissions: false, permissions: ["shipping.cod.manage"], modules: [], sample: true },
+      real,
+    );
+    // (Cài đặt luôn có màn API key của chính người đăng nhập.)
+    expect(clerk.map((g) => g.id)).toEqual(["home", "sales", "settings"]);
+    expect(activePage(real, "/sales/shipping/cod")?.page.id).toBe("shipping");
+    expect(activePage(real, "/marketing/promotions/flash")?.page.id).toBe("promotions");
   });
 });

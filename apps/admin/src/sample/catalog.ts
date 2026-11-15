@@ -526,6 +526,8 @@ const CAT = {
   storage: uid("c3", 10),
   textiles: uid("c3", 11),
 } as const;
+/** ID danh mục cố định, cho khuyến mại theo danh mục (bước 43) và các phân hệ sau. */
+export const CATEGORY_ID = CAT;
 
 const ATTR = {
   origin: uid("c4", 1),

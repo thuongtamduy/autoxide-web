@@ -1,0 +1,118 @@
+/* Hai màn Khuyến mại và Vận chuyển (bản thiết kế Promotions, Shipping). Lớp `pm-`, đặt dưới `.ax`;
+   phần khung bảng / dòng mở rộng dùng lại `cat-` của phân hệ Sản phẩm. */
+
+/* Ô "đã dùng": số và thanh mức */
+.ax .pm-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  font-size: 13px;
+}
+.ax .pm-meter.hi progress.bar::-webkit-progress-value {
+  background: var(--warn);
+}
+.ax .pm-meter.hi progress.bar::-moz-progress-bar {
+  background: var(--warn);
+}
+
+/* Kết quả "Thử giỏ hàng" */
+.ax .pm-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ax .pm-line > .cell2 {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+.ax .pm-line .badge {
+  margin-left: 6px;
+}
+.ax .pm-was {
+  color: var(--ink-3);
+  font-weight: 400;
+  margin-right: 4px;
+}
+.ax .pm-total {
+  font-weight: 600;
+}
+.ax .pm-h {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* Thẻ "Kiểm trước khi bật": mỗi điều kiện một thẻ, màu theo kết quả */
+.ax .pm-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .pm-check {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--sheet);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 13.5px;
+}
+.ax .pm-check[data-tone="bad"] {
+  box-shadow: inset 0 0 0 1px var(--bad);
+}
+.ax .pm-check > .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.ax .pm-check .sub {
+  overflow-wrap: anywhere;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+/* Hai khối nằm cạnh nhau trên máy tính, chồng lên nhau trên điện thoại */
+.ax .pm-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+/* Ô ví dụ ngày giao dự kiến */
+.ax .pm-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.ax .pm-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+}
+.ax .pm-tile .big {
+  font-size: 20px;
+  font-weight: 600;
+}
+.ax .pm-tile .sub {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+/* Một cột khối trong `pm-pair` (tiêu đề, mô tả, bảng / form) */
+.ax .pm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}

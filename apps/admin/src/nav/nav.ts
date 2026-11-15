@@ -43,6 +43,14 @@ import {
   USERS_READ,
   WEBHOOKS_MANAGE,
 } from "@/lib/permissions";
+import { PROMOTIONS_READ } from "@/lib/promotions";
+import {
+  SHIPPING_CARRIERS_MANAGE,
+  SHIPPING_COD_MANAGE,
+  SHIPPING_READ,
+  SHIPPING_SETTINGS_MANAGE,
+  SHIPPING_SHIPMENTS_READ,
+} from "@/lib/shipping";
 
 export interface NavPage {
   /** Khoá của nhãn trong `messages/*.json` → `nav.pages.<id>`. */
@@ -75,6 +83,28 @@ export interface NavGroup {
 export const NAV: NavGroup[] = [
   { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
   {
+    // Bán hàng: theo bản thiết kế gồm Đơn hàng, Vận chuyển, Cửa hàng, Kênh bán. Đơn hàng (bước 45)
+    // sẽ đứng ĐẦU nhóm, trước Vận chuyển; Cửa hàng, Kênh bán (bước 45, 48) theo sau. Vận chuyển dựng
+    // bằng dữ liệu mẫu vì core chưa có module `shipping` (bước 44, W-015); hiện khi xem được một
+    // trong các tab của nó.
+    id: "sales",
+    icon: "cart",
+    pages: [
+      {
+        id: "shipping",
+        href: "/sales/shipping",
+        permission: [
+          SHIPPING_SHIPMENTS_READ,
+          SHIPPING_READ,
+          SHIPPING_SETTINGS_MANAGE,
+          SHIPPING_COD_MANAGE,
+          SHIPPING_CARRIERS_MANAGE,
+        ],
+        sample: { step: "44" },
+      },
+    ],
+  },
+  {
     // Sản phẩm: module `catalog` và `inventory` của core chưa có (bước 41, 42), nên hai màn dựng
     // bằng dữ liệu mẫu (W-006, W-013); vẫn lọc theo permission dự kiến của đặc tả.
     id: "catalog",
@@ -95,11 +125,18 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
-    // Tiếp thị: biểu mẫu, bản tin, bình luận (module `forms`, `newsletter`, `comments`). Khuyến
-    // mại và tiếp thị liên kết (bước 43, 49) vào nhóm này khi dựng.
+    // Tiếp thị: khuyến mại (dữ liệu mẫu, chờ module `promotions` của bước 43, W-015) đứng đầu như
+    // bản thiết kế; rồi biểu mẫu, bản tin, bình luận (module `forms`, `newsletter`, `comments`).
+    // Tiếp thị liên kết (bước 49) vào nhóm này khi dựng.
     id: "mkt",
     icon: "mega",
     pages: [
+      {
+        id: "promotions",
+        href: "/marketing/promotions",
+        permission: PROMOTIONS_READ,
+        sample: { step: "43" },
+      },
       {
         id: "forms",
         href: "/marketing/forms",
