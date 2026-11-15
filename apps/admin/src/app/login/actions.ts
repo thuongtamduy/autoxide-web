@@ -8,6 +8,7 @@ import { z } from "zod";
 import { anonymousClient } from "@/lib/core";
 import { secureCookies } from "@/lib/env";
 import { MFA_COOKIE, mfaCookie, safeNext, tokenCookies } from "@/lib/session";
+import { applyThemeCookie, savedTheme } from "@/lib/theme-sync";
 
 /** Trạng thái form đăng nhập, giữ giữa các lần gửi. */
 export type LoginState = {
@@ -70,6 +71,7 @@ async function signIn(_state: LoginState, formData: FormData): Promise<LoginStat
     for (const cookie of tokenCookies(data.data, secureCookies())) {
       store.set(cookie.name, cookie.value, cookie.options);
     }
+    await restoreTheme(store, data.data.access_token);
     redirect(safeNext(input.data.next));
   }
   const failure = toApiError(response, error);
@@ -79,6 +81,15 @@ async function signIn(_state: LoginState, formData: FormData): Promise<LoginStat
     code: failure.code,
     email: input.data.email,
   };
+}
+
+/** Giao diện sáng / tối đã chọn ở máy khác (cờ `ui.theme` của core) áp cho máy này khi đăng nhập. */
+async function restoreTheme(
+  store: Awaited<ReturnType<typeof cookies>>,
+  accessToken: string,
+): Promise<void> {
+  const theme = await savedTheme(accessToken);
+  if (theme) applyThemeCookie(store, theme);
 }
 
 async function callLogin(email: string, password: string) {
@@ -110,6 +121,7 @@ async function verifyCode(_state: LoginState, formData: FormData): Promise<Login
     for (const cookie of tokenCookies(data.data, secureCookies())) {
       store.set(cookie.name, cookie.value, cookie.options);
     }
+    await restoreTheme(store, data.data.access_token);
     redirect(safeNext(input.data.next));
   }
   const failure = toApiError(response, error);

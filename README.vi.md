@@ -10,7 +10,7 @@ core đã đăng nhập.
 
 Trang quản trị theo bản thiết kế quản trị của Autoxide: thanh phân hệ (thanh đáy trên điện thoại),
 menu các màn của từng phân hệ kèm số việc đang chờ cạnh mỗi màn, bảng lệnh (Ctrl K / ⌘K) và giao
-diện sáng, tối hay theo hệ thống. Một phân hệ chỉ hiện khi module của nó được cài trong core và role
+diện sáng, tối hay theo hệ thống (nhớ theo tài khoản, nên đăng nhập ở máy khác cũng giữ lựa chọn). Một phân hệ chỉ hiện khi module của nó được cài trong core và role
 của bạn có permission tương ứng.
 
 Trợ giúp trong giao diện: nút **?** ở mọi trang (hoặc phím `?`) mở hướng dẫn của trang đó, phím tắt

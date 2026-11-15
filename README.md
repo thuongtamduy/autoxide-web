@@ -10,7 +10,8 @@ core.
 
 The admin follows the Autoxide admin design: an area bar (bottom bar on phones), a menu for the
 screens of each area with a count of waiting work next to each screen, a command palette
-(Ctrl K / ⌘K) and light, dark or system appearance. An area shows up only when its module is
+(Ctrl K / ⌘K) and light, dark or system appearance (remembered per account, so it follows you to
+another device when you sign in). An area shows up only when its module is
 installed in the core and your role grants its permission.
 
 In-app help: a **?** button on every page (or the `?` key) opens the guides of that page, keyboard

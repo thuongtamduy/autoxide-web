@@ -1075,3 +1075,27 @@ nút trợ lý AI — liên kết giả.
 
 Thiếu ở core (ghi lại để thêm sau): API bài hướng dẫn theo trang, nguồn tin "Có gì mới", `definition`
 của số liệu (bước 51 P4).
+
+## W-024 · Giao diện sáng / tối nhớ theo tài khoản bằng cờ `ui.theme`; sửa ba lỗi làm bài thử chập chờn — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- **Sáng / tối theo tài khoản**: cookie `ax_theme` vẫn quyết định lúc vẽ trang (trang đăng nhập và mọi trang
+  không phải gọi thêm core). Đổi lựa chọn thì ghi thêm cờ `ui.theme` (`/me/flags` của core v0.14.0); đăng nhập
+  (mật khẩu hay mã xác thực hai bước) thì đọc cờ đó bằng access token mới và đặt lại cookie. Lỗi khi đọc hay ghi
+  cờ không chặn việc đổi giao diện hay đăng nhập. Mã ở `src/lib/theme-sync.ts`.
+- **`useSubmit` giữ cập nhật sau `await` trong transition**: React 19 không tự giữ transition qua `await`, nên
+  thông báo lỗi hiện ở một lần vẽ còn việc React đặt lại form sau lần gửi đến ở lần vẽ sau; chữ người dùng gõ sửa
+  trong khoảng giữa bị đè về giá trị cũ. Báo thành công (`onDone`) vẫn chạy ngay, không chờ trang làm mới.
+- **Trình sửa Menu không bao giờ ghi đè bản nháp đang sửa** bằng bản của người khác khi trang làm mới: giữ bản
+  nháp, báo xung đột (`conflictRemote`), người dùng tự bấm "Tải bản mới". Tự nhận bản mới chỉ khi đó là lần lưu
+  của chính mình hoặc bản nháp chưa sửa gì.
+- **Dữ liệu mẫu có giờ trong ngày** đặt tương đối với lúc mở màn (flash sale cuối tuần: tối mai), không đặt giờ
+  cố định của hôm nay.
+
+Lý do: ba lỗi trên làm e2e hỏng ngẫu nhiên khoảng một bài mỗi lượt; cả ba đều là lỗi người dùng gặp được (mất
+chữ vừa sửa, mất bản nháp, chương trình mẫu không bật được sau 22:00). Lựa chọn giao diện là dữ liệu nhỏ của
+người dùng mà core đã có chỗ giữ (D-207 của core), không cần API mới.
+
+Đã cân nhắc: đọc cờ giao diện ở mọi trang thay cho cookie — thêm một lời gọi core cho mỗi trang, và trang đăng
+nhập chưa có token; sửa bài thử cho chờ lâu hơn — che lỗi thật thay vì sửa.

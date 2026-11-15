@@ -107,3 +107,24 @@ test("thẻ giới thiệu tắt rồi không hiện lại, kể cả ở trình
   await expect(second.getByRole("note").filter({ hasText: "Save views" })).toHaveCount(0);
   await other.close();
 });
+
+test("giao diện tối chọn ở một máy theo tài khoản sang máy khác khi đăng nhập (cờ ui.theme)", async ({
+  page,
+  browser,
+}) => {
+  await signIn(page, "/");
+  await page.getByRole("button", { name: /^Account menu of / }).click();
+  const menu = page.getByRole("dialog", { name: "Account" });
+  await menu
+    .getByRole("form", { name: "Appearance" })
+    .getByRole("button", { name: "Dark" })
+    .click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+
+  // Máy khác (trình duyệt mới, chưa có cookie): đăng nhập xong là tối luôn.
+  const other = await browser.newContext();
+  const second = await other.newPage();
+  await signIn(second, "/");
+  await expect(second.locator("html")).toHaveClass(/dark/);
+  await other.close();
+});
