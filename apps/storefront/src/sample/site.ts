@@ -47,7 +47,11 @@ export interface SampleSeller {
   tone: Tone;
 }
 
-/** Người bán trên sàn (`apps/admin/src/sample/market-data.ts` và menu mẫu của trang quản trị). */
+/**
+ * Người bán trên sàn (`apps/admin/src/sample/market-data.ts` và menu mẫu của trang quản trị), cùng số
+ * liệu với hồ sơ gian hàng ở `market.ts`. Chỉ người bán đang bán: Gia Dụng Nhà Na đang tạm khoá ở
+ * trang quản trị nên không giới thiệu ở trang chủ (W-030).
+ */
 export const SELLERS: readonly SampleSeller[] = [
   {
     slug: "gom-su-bat-trang-xua",
@@ -58,11 +62,11 @@ export const SELLERS: readonly SampleSeller[] = [
     tone: "t4",
   },
   {
-    slug: "gia-dung-nha-na",
-    name: "Gia Dụng Nhà Na",
-    rating: 4.7,
-    products: 140,
-    art: "glass",
+    slug: "khan-bong-ha-long",
+    name: "Khăn Bông Hạ Long",
+    rating: 4.1,
+    products: 18,
+    art: "towel",
     tone: "t3",
   },
   {

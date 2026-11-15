@@ -1342,3 +1342,87 @@ tên người sửa của phiên bản, cây trang quá 200 trang. Ngôn ngữ c
 
 Đã cân nhắc: giữ kho mẫu `decorative` làm phương án dự phòng cho core cũ — bỏ, vì README đã yêu cầu core `27380c9`;
 đọc tên người tải lên bằng `GET /auth/users/{id}` cho khung chi tiết — bỏ, dòng của danh sách đã có tên.
+
+## W-030 · Website: giỏ hàng, đặt hàng, tài khoản người mua, tra cứu đơn, gian hàng, mời bán hàng (mẫu theo bước 44–47) — 2026-11-15 — agent quyết
+
+Làm tiếp W-026 theo các bảng `Checkout`, `Account`, `Lookup`, `Seller`, `SellOn` của bản thiết kế mặt tiền, đặc tả
+bước 44 (phí, ngày giao), 45 (giỏ, đặt hàng, thanh toán, tra cứu đơn), 46 (sàn), 47 (người mua, điểm), 37 (đồng ý,
+quyền với dữ liệu cá nhân) và D-186 / D-187 của core (luật Việt Nam; core không giữ tiền của người mua).
+
+Quyết định:
+
+- **Trang** (đường dẫn ở `src/lib/routes.ts`): `/gio-hang` (dòng chia theo nơi bán — Bếp Mộc và mỗi người bán một
+  nhóm, mỗi nhóm thành một đơn riêng như D-216; số lượng và bỏ dòng bằng form gửi Server Action, chạy cả khi tắt
+  JavaScript; mã giảm BEPMOC10 của trang quản trị), `/thanh-toan` (bước "Giao hàng" rồi "Thanh toán" trong một form:
+  người nhận, giao tận nơi / nhận tại cửa hàng, địa chỉ hai cấp, điểm, VietQR qua đối tác thu hộ / thẻ qua cổng /
+  trả khi nhận, hoá đơn công ty, đồng ý điều khoản và nhận tin), `/thanh-toan/xong` (các đơn vừa đặt, cách trả tiếp
+  theo), `/tai-khoan` (đăng nhập / tạo tài khoản bằng số điện thoại + mã; mục `?muc=` đơn hàng — mốc giao, vận đơn,
+  huỷ, đổi trả —, đã lưu, điểm và hạng, sổ địa chỉ, quyền riêng tư), `/tra-cuu-don-hang` (mã đơn + số điện thoại →
+  mã xác nhận → đơn, địa chỉ chỉ tới phường, số đã che), `/nguoi-ban` (người bán đang bán), `/nguoi-ban/<slug>` (sản
+  phẩm lọc theo nhóm, đánh giá, chính sách, thông tin người bán bắt buộc công khai, gian hàng tạm ngừng khi người
+  bán chưa xác thực lại), `/ban-tren-cho` (phí có ngày hiệu lực, năm bước, giấy tờ, hỏi nhanh, form đăng ký).
+  Giỏ, đặt hàng, đặt xong là trang khép kín (`enclosed`) và `noindex`, có nút "Cần giúp?" (bảng `popover` của HTML,
+  không cần JavaScript) trỏ tới tra cứu đơn và tài khoản; tài khoản cũng `noindex`.
+- **Dữ liệu mẫu** (W-006): `src/sample/market.ts` (hồ sơ người bán theo `market-data.ts` của trang quản trị, sản
+  phẩm người bán, đánh giá, dòng phí), `offers.ts` (một dòng giỏ: SKU Bếp Mộc hay SKU người bán; giỏ nhận cả hai,
+  bỏ hàng của người bán đang tạm khoá), `address.ts` (tỉnh → phường, xã mẫu: `openapi.json` chưa có endpoint công
+  khai của module `address`), `shipping.ts` (bảng phí và lịch giao chép từ `shipping.ts` của trang quản trị: vùng,
+  bậc cân, miễn phí từ 1.000.000 ₫, CN Cầu Giấy có phí Hà Nội riêng, chốt 16:00, không giao Chủ nhật), `checkout.ts`
+  (báo giá và kiểm form — hàm thuần, trình duyệt dùng để tổng tiền đổi ngay, Server Action dùng lại để kiểm lần
+  cuối), `orders.ts` (đơn của tài khoản mẫu Lan Chi, mốc, hạn đổi trả), `account.ts`, `order-store.ts` (đơn đặt trên
+  website: bộ nhớ của tiến trình, như kho mẫu của trang quản trị). Mỗi file ghi endpoint thay thế. Mã đơn theo dạng
+  `BM-2611-xxxx`: trang quản trị dùng tới 0419, tài khoản mẫu dùng 0420–0425, đơn đặt trên website lấy tiếp từ 0426.
+  Sàn có đủ sáu người bán của trang quản trị (để link tới gian hàng từ trang sản phẩm, menu không 404): người bán
+  `pending_verification` / `pending_review` hiện "chưa mở bán" (không vào chỉ mục), tạm khoá hiện "tạm ngừng nhận đơn";
+  trang `/nguoi-ban` chỉ liệt kê người bán đang bán. Trang chủ đổi "Gia Dụng Nhà Na" (đang tạm khoá ở trang quản trị) thành "Khăn Bông Hạ Long", số liệu khớp hồ sơ.
+- **Trạng thái của người xem** chỉ trong cookie `httpOnly` ngắn, không bí mật: `sf_code` (mã giảm), `sf_orders` (mã
+  đơn đặt trên trình duyệt này — trang "đặt xong" chỉ hiện các đơn này, như token xem đơn D-202), `sf_buyer` (tài
+  khoản mẫu), `sf_acct` (đổi trả, huỷ đơn mẫu). **Không có mật khẩu**: đăng nhập mẫu là số điện thoại + mã cố định
+  246810 (core thật gửi qua SMS); tài khoản mới chỉ có trên trình duyệt đó. Tắt dữ liệu mẫu thì mọi trang này trả 404
+  (trừ `/ban-tren-cho` khi khách có biểu mẫu thật).
+- **Lỗi như core**: hàm kiểm trả `{field, code, params}` như `errors[]` của Problem `validation_failed`, gom mọi lỗi
+  của bước một lần (mỗi ô một lỗi); giao diện dịch `code` ở `formErrors.<code>`, đưa con trỏ tới ô lỗi đầu, dải "Còn N
+  chỗ cần sửa". Máy chủ kiểm lại toàn bộ với báo giá tính trên máy chủ (không tin giá trên trình duyệt).
+- **Đặt một lần**: mỗi lần mở trang đặt hàng có một `Idempotency-Key` (UUID của máy chủ); cùng khoá thì trả mã đơn cũ
+  (bấm hai lần, gửi lại vì mạng); nút khoá khi đang gửi. Thay bằng header bắt buộc của `POST /checkout`.
+- **Tiền** (D-187): VietQR qua tài khoản thu hộ của đối tác (số tài khoản để `[...]`), thẻ trên trang cổng thanh toán,
+  COD do hãng vận chuyển thu; COD tắt khi giỏ có người bán không nhận COD. Nút "Tôi đã chuyển (mẫu)" ghi rõ: cửa hàng
+  thật xác nhận theo tin của đối tác. Điểm: 1 điểm = 100 ₫, từ 100 điểm, tối đa 30% đơn Bếp Mộc, không dùng cho
+  hàng người bán. Thuế GTGT là dữ liệu có ngày hiệu lực (8% tới hết 2026, rồi 10% — cần đối chiếu văn bản gốc).
+- **Mời bán hàng dùng API thật khi có**: `GET /api/v1/forms/public/ban-tren-cho`; khách đã tạo biểu mẫu thì website
+  dựng đúng các trường và gửi `POST …/submissions` (token chống spam xin khi người đọc bắt đầu điền, lỗi theo trường
+  là `detail` của core — `src/lib/forms-actions.ts`); chưa có (404) thì form mẫu bốn ô, chỉ kiểm, không lưu. Core giả
+  có biểu mẫu này, bật bằng `POST /__storefront/sell-form`.
+- **CSS** ở file mới `src/styles/buyer.css` (nạp sau `site.css`, trước `shop.css`), tiền tố theo trang (`co-`, `pl-`,
+  `ac-`/`acx-`, `lk-`, `sl-`, `mk-`, `so-`, phần chung `by-`) thay vì thêm vào `site.css` như W-026 gợi ý: hai agent
+  làm song song, file riêng để khi gộp không xung đột. Thêm biểu tượng `qr`, `cash`, `minus`, `trash`, `pin`, `key`,
+  `flag`, `box` vào `icon.tsx`.
+- **Test**: Vitest cho báo giá (chia theo nơi bán, mã, phí theo tỉnh và cân, miễn phí giao, nhận tại cửa hàng, điểm,
+  COD, thuế), ngày giao, kiểm form, kho đơn (Idempotency-Key, báo đã trả, tra cứu), sàn mẫu, `OrderView`,
+  `QuoteSummary`; Playwright `e2e/buyer.spec.ts` (thêm vào giỏ → đặt hàng có lỗi → bấm đặt hai lần vẫn hai đơn của
+  hai nơi bán → tra cứu đơn vừa đặt; tra cứu; tài khoản và đổi trả; gian hàng; mời bán hàng cả hai đường; tiếng Anh;
+  bố cục 360–1440 khi có giỏ và đã đăng nhập) và vòng lặp bố cục của `storefront.spec.ts`.
+
+Chỗ core còn thiếu cho các trang này (ngoài những endpoint đặc tả 44–47 đã có, ghi thêm vào bảng thiếu API):
+
+- đăng nhập / tạo tài khoản người mua bằng số điện thoại + OTP (và passkey) trên website — bước 47 có `/me…` với
+  `customers.self` nhưng chưa có luồng đăng nhập công khai cho người mua;
+- danh mục đơn vị hành chính công khai của module `address` (D-193) trong `openapi.json`;
+- báo giá giỏ (`GET /carts/{id}`) nên trả thêm: điểm tối đa dùng được cho giỏ (`points_cap`, theo quy tắc của bước 47),
+  cách trả dùng được cho giỏ (COD theo `cod_enabled` của từng người bán), ngày giao dự kiến theo từng nơi bán;
+- đơn của người mua (`/me/orders`, đơn tra cứu) nên có hạn đổi trả (`return_until`) và có huỷ được không
+  (`buyer_cancel_until`) để giao diện khỏi tự tính;
+- catalog công khai lọc theo người bán (`owner_org_id`) và đường dẫn trang sản phẩm của hàng người bán (bước 41);
+- hồ sơ người bán công khai: số sản phẩm theo nhóm, tỉ lệ giao đúng hạn, trạng thái tạm ngừng (để hiện thay vì 404);
+- phí sàn công khai đang hiệu lực cho trang mời bán (`/fee-rules/preview` đòi `marketplace.sell`), và đăng ký bán hàng
+  trước khi có tài khoản (`POST /sellers` đòi đăng nhập) — tạm dùng biểu mẫu `ban-tren-cho` của module `forms`;
+- yêu cầu của chủ thể dữ liệu từ website (tải về, xoá tài khoản, xem văn bản đã chấp nhận) cho người mua — bước 37 có
+  sổ đồng ý và `POST /public/consents/withdraw`, cần đối chiếu đủ endpoint cho tải về / xoá.
+
+Lý do: chủ dự án giao các bảng đặt hàng, tài khoản, tra cứu, gian hàng, mời bán; core chưa có bước 41–47 nên dựng bằng
+dữ liệu mẫu đúng hình dạng đặc tả để khi core có chỉ đổi phần đọc / ghi, giữ nguyên giao diện và luồng.
+
+Đã cân nhắc: lưu đơn mẫu vào cookie (đơn đặt xong cần thấy được ở trang tài khoản và tra cứu — bộ nhớ của tiến trình
+đơn giản hơn và giống kho mẫu của trang quản trị); bước đặt hàng mỗi bước một địa chỉ (`/thanh-toan/giao-hang`…) —
+một form giữ được dữ liệu khi quay lại bước trước mà không cần lưu tạm; đăng nhập mẫu có mật khẩu — không, website
+không bao giờ nhận mật khẩu của người mua.

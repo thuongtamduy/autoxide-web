@@ -140,7 +140,16 @@ diện (`AUTOXIDE_STOREFRONT_THEME`).
   chân trang (`main`, `footer`), blog có danh mục, thẻ, tác giả và phân trang, bài viết và trang tĩnh
   ở mọi địa chỉ core biết (kể cả chuyển hướng), bình luận dưới bài (khách viết được khi core cho
   phép), tìm trong bài viết và trang, đăng ký bản tin và các trang mà thư của nó trỏ tới, xem trước
-  bản nháp, `sitemap.xml`, `robots.txt` và RSS.
+  bản nháp, `sitemap.xml`, `robots.txt` và RSS. Trang "Bán trên sàn" (`/ban-tren-cho`) dùng biểu mẫu
+  công khai của core có khoá `ban-tren-cho` khi cửa hàng đã tạo, chưa có thì dùng form mẫu.
+- **Trang người mua và sàn** (mẫu, xem quyết định W-030): giỏ chia theo nơi bán (`/gio-hang`), đặt
+  hàng có giao tận nơi, nhận tại cửa hàng, điểm, chuyển khoản QR / thẻ / trả khi nhận và hoá đơn công
+  ty (`/thanh-toan`), trang đặt hàng thành công, tra cứu đơn bằng mã đơn và số điện thoại không cần
+  tài khoản (`/tra-cuu-don-hang`), tài khoản người mua có đơn hàng, đổi trả, đã lưu, điểm, sổ địa chỉ
+  và quyền với dữ liệu cá nhân (`/tai-khoan`, đăng nhập bằng mã qua số điện thoại, không có mật khẩu),
+  trang sàn và gian hàng người bán kèm thông tin người bán bắt buộc công khai (`/nguoi-ban`,
+  `/nguoi-ban/<slug>`). Không thu tiền, không giao hàng thật; core không bao giờ giữ tiền của người mua
+  (thanh toán qua đối tác có giấy phép).
 - **Dùng dữ liệu mẫu** (có dấu "mẫu" nhỏ và một dải thông báo) tới khi core có API: sản phẩm, giá,
   mã giảm giá, tồn theo cửa hàng, cửa hàng, giỏ hàng, người bán. Tắt dữ liệu mẫu thì các khối này
   ẩn, website chỉ còn phần core phục vụ. Menu core chưa có thì dùng menu mẫu khi bật dữ liệu mẫu.

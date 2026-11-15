@@ -18,7 +18,12 @@ export const routes = {
   product: (slug: string) => `/san-pham/${encodeURIComponent(slug)}`,
   cart: () => "/gio-hang",
   checkout: () => "/thanh-toan",
+  /** Trang "đặt hàng thành công" của các đơn vừa đặt (một lần thanh toán, mỗi nơi bán một đơn). */
+  orderPlaced: (numbers: readonly string[]) =>
+    `/thanh-toan/xong?ma=${encodeURIComponent(numbers.join(","))}`,
   account: () => "/tai-khoan",
+  /** Một mục của trang tài khoản (`don-hang`, `da-luu`, `diem`, `dia-chi`, `quyen-rieng-tu`). */
+  accountSection: (section: string) => `/tai-khoan?muc=${encodeURIComponent(section)}`,
   orderLookup: () => "/tra-cuu-don-hang",
   deals: () => "/khuyen-mai",
   live: () => "/livestream",

@@ -11,10 +11,12 @@ import { siteUrl, themeVariant } from "@/lib/env";
 import { siteIdentity } from "@/lib/site";
 import { THEME_COOKIE, themeAttr } from "@/lib/theme";
 import { sampleDataEnabled } from "@/sample";
-// Thứ tự có nghĩa: biến → lớp của website (thay cho `style="…"` của bản thiết kế) → luật của bản
-// thiết kế (`shop.css`, gồm luật theo khổ màn ghi đè lên lớp của website, như bản gốc ghi đè style).
+// Thứ tự có nghĩa: biến → lớp của website (thay cho `style="…"` của bản thiết kế; `buyer.css` cho
+// trang người mua và sàn, W-030) → luật của bản thiết kế (`shop.css`, gồm luật theo khổ màn ghi đè
+// lên lớp của website, như bản gốc ghi đè style).
 import "@/styles/tokens.css";
 import "@/styles/site.css";
+import "@/styles/buyer.css";
 import "@/styles/shop.css";
 
 // Layout gốc của website (mọi trang nằm dưới `[locale]`). Server Component: đầu trang, chân trang và

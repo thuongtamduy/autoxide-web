@@ -12,6 +12,7 @@ import { CATEGORIES, productsInCategory, STORES } from "@/sample/catalog";
 import { readCart, readStore } from "@/sample/server";
 import { SITE } from "@/sample/site";
 import { menuBadgeTone } from "./badge";
+import { HelpPanel } from "./buyer/help-panel";
 import { ART, Art, Icon } from "./icon";
 import { NavAnchor } from "./nav-link";
 import { Price } from "./price";
@@ -174,6 +175,7 @@ export async function SiteHeader({ locale, site }: { locale: Locale; site: SiteI
             </Link>
           ) : null}
           <ThemeToggle label={t("theme")} />
+          {sample ? <HelpPanel /> : null}
           {sample ? (
             <Link
               className="iconbtn hdr-cart"
