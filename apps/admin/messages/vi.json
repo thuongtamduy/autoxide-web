@@ -985,6 +985,40 @@
       "create": "Tạo bản nháp",
       "cancel": "Huỷ",
       "draftNote": "SEO, tác giả, danh mục, xem trước và đăng nằm trong trình soạn sau khi tạo bản nháp."
+    },
+    "sample": {
+      "sites": "Website",
+      "sitesNote": "Mỗi tên miền là một website, gắn với một nút tổ chức. Bài viết chưa gắn với website: danh sách hiện mọi bài.",
+      "kindSales": "website bán hàng",
+      "kindPlatform": "sàn",
+      "required": "Trang bắt buộc",
+      "summary": "{done} / {total} đã đăng",
+      "requiredSales": "Website bán hàng phải công bố các trang này trước khi thông báo với Bộ Công Thương (NĐ 52/2013, sửa bởi NĐ 85/2021; cần đối chiếu văn bản gốc).",
+      "requiredPlatform": "Sàn cần thêm quy chế hoạt động, mẫu hợp đồng với người bán và thông tin người bán trên trang sản phẩm trước khi đăng ký.",
+      "state": {
+        "published": "Đã đăng",
+        "draft": "Có bản nháp, chưa đăng",
+        "missing": "Còn thiếu"
+      },
+      "configuredElsewhere": "Cấu hình ở Sàn › Người bán",
+      "fromTemplate": "Tạo từ mẫu",
+      "drafted": "Đã tạo bản nháp từ mẫu; điền thông tin của bạn rồi đăng",
+      "pages": {
+        "owner_info": "Thông tin chủ sở hữu website",
+        "privacy_policy": "Chính sách bảo vệ dữ liệu cá nhân",
+        "return_policy": "Chính sách đổi trả",
+        "shipping_policy": "Chính sách vận chuyển",
+        "payment_policy": "Chính sách thanh toán",
+        "inspection_policy": "Chính sách kiểm hàng",
+        "complaints": "Giải quyết khiếu nại",
+        "terms_of_use": "Điều khoản sử dụng",
+        "platform_rules": "Quy chế hoạt động của sàn",
+        "seller_contract": "Mẫu hợp đồng với người bán",
+        "seller_info": "Thông tin người bán trên trang sản phẩm"
+      },
+      "website": "Website",
+      "owner": "Thuộc {owner}: người ở nút đó và nút cha sửa được.",
+      "moved": "Đã chuyển sang {domain}"
     }
   }
 }

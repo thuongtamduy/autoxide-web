@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
-import { CONTENT_LOCALES, type Entry, type ListFilters } from "@/lib/content";
+import { CONTENT_LOCALES, type Entry, filtersHref, type ListFilters } from "@/lib/content";
 import { EntryStatusBadges } from "./status";
 
 /** Ô tìm và lọc theo loại, ngôn ngữ. Form GET: kết quả nằm trên địa chỉ, chạy cả khi chưa có JS. */
@@ -12,6 +12,7 @@ export function EntryFilters({ filters }: { filters: ListFilters }) {
   const locales = useTranslations("content.locales");
   return (
     <Form action="/content" className="ce-filters" role="search" aria-label={t("filterLabel")}>
+      {filters.site ? <input type="hidden" name="site" value={filters.site} /> : null}
       {filters.status !== "all" ? (
         <input type="hidden" name="status" value={filters.status} />
       ) : null}
@@ -51,7 +52,10 @@ export function EntryFilters({ filters }: { filters: ListFilters }) {
       {filters.q || filters.kind || filters.locale ? (
         <Link
           className="btn ghost"
-          href={filters.status === "all" ? "/content" : `/content?status=${filters.status}`}
+          href={filtersHref({
+            status: filters.status,
+            ...(filters.site ? { site: filters.site } : {}),
+          })}
         >
           {t("clear")}
         </Link>
@@ -110,7 +114,7 @@ export function EntryTable({
                 <span className="loc">{entry.locale.toUpperCase()}</span>
               </Td>
               <Td label={t("colAuthors")}>{names.length > 0 ? names.join(", ") : "—"}</Td>
-              <Td label={t("colUpdated")}>
+              <Td label={t("colUpdated")} className="ce-nowrap">
                 <Time value={entry.updated_at} />
               </Td>
             </tr>

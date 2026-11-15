@@ -985,6 +985,40 @@
       "create": "Create draft",
       "cancel": "Cancel",
       "draftNote": "SEO, authors, categories, preview and publishing are in the editor once the draft is created."
+    },
+    "sample": {
+      "sites": "Websites",
+      "sitesNote": "Each domain is a website owned by an organization unit. Posts are not tied to a website yet: the list shows every post.",
+      "kindSales": "online shop",
+      "kindPlatform": "marketplace",
+      "required": "Required pages",
+      "summary": "{done} / {total} published",
+      "requiredSales": "An online shop must publish these pages before notifying the Ministry of Industry and Trade (Decree 52/2013, amended by Decree 85/2021; check the original text).",
+      "requiredPlatform": "A marketplace also needs its operating rules, a contract template for sellers and seller information on product pages before registering.",
+      "state": {
+        "published": "Published",
+        "draft": "Draft exists, not published",
+        "missing": "Missing"
+      },
+      "configuredElsewhere": "Set up in Marketplace › Sellers",
+      "fromTemplate": "Create from template",
+      "drafted": "Draft created from the template; fill in your details, then publish",
+      "pages": {
+        "owner_info": "Website owner information",
+        "privacy_policy": "Personal data protection policy",
+        "return_policy": "Return policy",
+        "shipping_policy": "Shipping policy",
+        "payment_policy": "Payment policy",
+        "inspection_policy": "Goods inspection policy",
+        "complaints": "Complaint handling",
+        "terms_of_use": "Terms of use",
+        "platform_rules": "Marketplace operating rules",
+        "seller_contract": "Seller contract template",
+        "seller_info": "Seller information on product pages"
+      },
+      "website": "Website",
+      "owner": "Owned by {owner}: people there and in parent units can edit it.",
+      "moved": "Now on {domain}"
     }
   }
 }

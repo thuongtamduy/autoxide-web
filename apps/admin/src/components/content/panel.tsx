@@ -13,6 +13,7 @@ import {
   suggestSeo,
   translateWithAi,
 } from "@/app/(admin)/content/actions";
+import { CheckField } from "@/components/ui/form";
 import { Time } from "@/components/ui/time";
 import { useToast } from "@/components/ui/toast";
 import { CONTENT_LOCALES, type EntryErrors, type SeoSuggestion, type Term } from "@/lib/content";
@@ -20,6 +21,7 @@ import { useEditorApi } from "./context";
 import type { Draft, EditorData } from "./editor";
 import { ConfirmDialog, ScheduleDialog } from "./entry-dialogs";
 import { TextField } from "./fields";
+import { EntryWebsitePicker } from "./sample-sites";
 import { EntryStatusBadges } from "./status";
 
 type Tab = "settings" | "seo" | "languages" | "history";
@@ -60,7 +62,7 @@ export function EntryPanel({
             id={`ce-tab-${id}`}
             type="button"
             role="tab"
-            className={tab === id ? "tab on" : "tab"}
+            className={tab === id ? "ce-tab on" : "ce-tab"}
             aria-selected={tab === id}
             aria-controls={`ce-pane-${id}`}
             tabIndex={tab === id ? 0 : -1}
@@ -213,6 +215,15 @@ function SettingsPane({
         />
       </section>
 
+      {data.sample ? (
+        <EntryWebsitePicker
+          entryId={entry.id}
+          websites={data.sample.websites}
+          current={data.sample.current}
+          disabled={!api.can.write}
+        />
+      ) : null}
+
       <AuthorsSection data={data} />
       <TermsSection data={data} />
 
@@ -316,7 +327,7 @@ function PickSection({
           {options
             .filter((o) => (o.group ?? "") === group)
             .map((option) => (
-              <label key={option.id} className="chip ce-pick">
+              <label key={option.id} className="ce-chip ce-pick">
                 <input
                   type="checkbox"
                   checked={chosen.includes(option.id)}
@@ -511,18 +522,14 @@ function SeoPane({
         mono
         disabled={!api.can.write}
       />
-      <label className="ce-check">
-        <input
-          type="checkbox"
-          checked={draft.noindex}
-          disabled={!api.can.write}
-          onChange={(event) => edit("noindex", event.target.checked)}
-        />
-        <span>
-          <b>{t("noindex")}</b>
-          <span className="fhint">{t("noindexHint")}</span>
-        </span>
-      </label>
+      <CheckField
+        label={t("noindex")}
+        hint={t("noindexHint")}
+        name="noindex"
+        checked={draft.noindex}
+        disabled={!api.can.write}
+        onChange={(event) => edit("noindex", event.target.checked)}
+      />
 
       {api.can.write ? (
         <section className="ce-sec" aria-labelledby="ce-aiseo-h">

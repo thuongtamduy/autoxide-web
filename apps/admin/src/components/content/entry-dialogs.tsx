@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { type ReactNode, useId, useState } from "react";
 import { makePreview, publishEntry, scheduleEntry } from "@/app/(admin)/content/actions";
 import { Dialog } from "@/components/ui/dialog";
-import { DialogButtons } from "@/components/ui/form";
+import { CheckField, DialogButtons, Field } from "@/components/ui/form";
 import { Time } from "@/components/ui/time";
 import { useToast } from "@/components/ui/toast";
 import { localToIso, type SeoFinding } from "@/lib/content";
@@ -115,7 +115,7 @@ export function PublishDialog({
           {api.dirty ? <p>{t("savesFirst")}</p> : null}
           {nothingNew ? <p>{t("nothingNew")}</p> : null}
           {(findings?.filter((f) => f.level === "error").length ?? 0) > 0 ? (
-            <p className="tone-warn">{t("seoErrors")}</p>
+            <p className="ce-warn">{t("seoErrors")}</p>
           ) : null}
         </>
       }
@@ -182,7 +182,7 @@ function PublishForm({ close, aiUsed }: { close: () => void; aiUsed: boolean }) 
       }}
     >
       {api.can.publishAll ? (
-        <fieldset className="seg" aria-label={t("timing")}>
+        <fieldset className="ce-seg" aria-label={t("timing")}>
           <label className={later ? "" : "on"}>
             <input type="radio" name="timing" checked={!later} onChange={() => setLater(false)} />
             {t("now")}
@@ -200,23 +200,20 @@ function PublishForm({ close, aiUsed }: { close: () => void; aiUsed: boolean }) 
         </>
       ) : null}
       {needsReview ? (
-        <label className="ce-check">
-          <input
-            type="checkbox"
+        <div className="fld">
+          <CheckField
+            label={t("aiReviewed")}
+            hint={t("aiReviewedHint")}
             name="ai_reviewed"
             aria-invalid={errors.review ? true : undefined}
             aria-describedby={errors.review ? "ce-review-err" : undefined}
           />
-          <span>
-            <b>{t("aiReviewed")}</b>
-            <span className="fhint">{t("aiReviewedHint")}</span>
-            {errors.review ? (
-              <span id="ce-review-err" className="ferr">
-                {errors.review}
-              </span>
-            ) : null}
-          </span>
-        </label>
+          {errors.review ? (
+            <span id="ce-review-err" className="ferr">
+              {errors.review}
+            </span>
+          ) : null}
+        </div>
       ) : null}
       {errors.core ? (
         <p role="alert" className="falert">
@@ -307,21 +304,18 @@ function PreviewForm({ close }: { close: () => void }) {
   const [link, setLink] = useState<{ url: string; expires: string } | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const id = useId();
   return (
     <div className="dlg-form">
       {api.dirty ? <p className="fhint">{t("savesFirst")}</p> : null}
       {link ? (
-        <div className="fld">
-          <label className="lab" htmlFor={id}>
-            {t("link")}
-          </label>
-          <input
-            id={id}
-            className="inp mono"
+        <div className="ce-sec">
+          <Field
+            label={t("link")}
+            name="preview_link"
+            mono
             readOnly
             value={link.url}
-            onFocus={(e) => e.target.select()}
+            onFocus={(event) => event.target.select()}
           />
           <span className="fhint">
             {t("expires")} <Time value={link.expires} />

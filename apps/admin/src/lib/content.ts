@@ -37,6 +37,8 @@ export interface ListFilters {
   locale?: string;
   q?: string;
   cursor?: string;
+  /** Website đang chọn (phần dữ liệu mẫu, W-006); không gửi cho core. */
+  site?: string;
 }
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -54,6 +56,7 @@ export function parseFilters(params: SearchParams): ListFilters {
   const locale = one(params, "locale");
   const q = one(params, "q")?.slice(0, 200);
   const cursor = one(params, "cursor");
+  const site = one(params, "site");
   const filters: ListFilters = {
     status: STATUS_TABS.includes(status as StatusTab) ? (status as StatusTab) : "all",
   };
@@ -61,6 +64,7 @@ export function parseFilters(params: SearchParams): ListFilters {
   if (locale && (CONTENT_LOCALES as readonly string[]).includes(locale)) filters.locale = locale;
   if (q) filters.q = q;
   if (cursor) filters.cursor = cursor;
+  if (site && /^[0-9a-f-]{36}$/.test(site)) filters.site = site;
   return filters;
 }
 
@@ -77,6 +81,7 @@ export function filtersHref(filters: ListFilters, change: Partial<ListFilters> =
   if (next.locale) query.set("locale", next.locale);
   if (next.q) query.set("q", next.q);
   if (next.cursor) query.set("cursor", next.cursor);
+  if (next.site) query.set("site", next.site);
   const text = query.toString();
   return text ? `/content?${text}` : "/content";
 }

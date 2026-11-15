@@ -21,6 +21,7 @@ import {
   type Term,
   type TranslationRequest,
 } from "@/lib/content";
+import type { Website } from "@/sample/content";
 import { BodyEditor, type BodyEditorHandle } from "./body-editor";
 import { type EditorApi, EditorContext } from "./context";
 import { PreviewDialog, PublishDialog } from "./entry-dialogs";
@@ -65,6 +66,8 @@ export interface EditorData {
   requests: TranslationRequest[];
   /** Đầu đường dẫn của bài viết (`/blog/`); trang thì theo trang cha. */
   pathPrefix: string;
+  /** Website của bài (dữ liệu mẫu, W-006); `null` khi tắt dữ liệu mẫu. */
+  sample: { websites: Website[]; current: string } | null;
 }
 
 /** Trình soạn một bài: bản nháp ở giữa, thiết lập ở thanh bên, lệnh đăng ở đầu trang. */

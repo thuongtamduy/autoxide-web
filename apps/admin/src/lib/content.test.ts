@@ -30,6 +30,12 @@ describe("parseFilters / filtersHref / listQuery", () => {
       "/content?status=draft&q=b%E1%BA%BFp&cursor=c2",
     );
     expect(filtersHref({ status: "all" })).toBe("/content");
+    // Website đang chọn (dữ liệu mẫu) đi theo mọi link, không gửi cho core.
+    const site = "01a1e000-0000-7000-8000-00000000c502";
+    expect(filtersHref(parseFilters({ site }), { status: "draft" })).toBe(
+      `/content?status=draft&site=${site}`,
+    );
+    expect(listQuery(parseFilters({ site }))).not.toHaveProperty("site");
   });
 
   it("tham số cho core: mới sửa lên đầu, chỉ gửi bộ lọc có giá trị", () => {

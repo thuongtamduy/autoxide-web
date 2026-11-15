@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useId, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { createEntry } from "@/app/(admin)/content/actions";
+import { SelectField } from "@/components/ui/form";
 import { CONTENT_LOCALES, type EntryErrors, type EntryKind, entryErrors } from "@/lib/content";
 import { BodyEditor, type BodyEditorHandle } from "./body-editor";
 import { TextField } from "./fields";
@@ -29,8 +30,6 @@ export function NewEntryForm({
   const [errors, setErrors] = useState<EntryErrors | null>(null);
   const [pending, startTransition] = useTransition();
   const body = useRef<BodyEditorHandle>(null);
-  const localeId = useId();
-  const parentId = useId();
   const sameLocale = parents.filter((p) => p.locale === locale);
 
   return (
@@ -122,46 +121,28 @@ export function NewEntryForm({
         </section>
         <aside className="card ce-side" aria-label={t("settingsLabel")}>
           <div className="ce-sections">
-            <div className="fld">
-              <label className="lab" htmlFor={localeId}>
-                {n("locale")}
-              </label>
-              <select
-                id={localeId}
-                className="inp"
-                value={locale}
-                onChange={(event) => {
-                  setLocale(event.target.value);
-                  setParent("");
-                }}
-              >
-                {CONTENT_LOCALES.map((code) => (
-                  <option key={code} value={code}>
-                    {locales(code)}
-                  </option>
-                ))}
-              </select>
-              <span className="fhint">{n("localeHint")}</span>
-            </div>
+            <SelectField
+              label={n("locale")}
+              name="locale"
+              hint={n("localeHint")}
+              value={locale}
+              onChange={(event) => {
+                setLocale(event.target.value);
+                setParent("");
+              }}
+              options={CONTENT_LOCALES.map((code) => ({ value: code, label: locales(code) }))}
+            />
             {kind === "page" ? (
-              <div className="fld">
-                <label className="lab" htmlFor={parentId}>
-                  {n("parent")}
-                </label>
-                <select
-                  id={parentId}
-                  className="inp"
-                  value={parent}
-                  onChange={(event) => setParent(event.target.value)}
-                >
-                  <option value="">{n("root")}</option>
-                  {sameLocale.map((page) => (
-                    <option key={page.id} value={page.id}>
-                      {page.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SelectField
+                label={n("parent")}
+                name="parent_id"
+                value={parent}
+                onChange={(event) => setParent(event.target.value)}
+                options={[
+                  { value: "", label: n("root") },
+                  ...sameLocale.map((page) => ({ value: page.id, label: page.title })),
+                ]}
+              />
             ) : null}
             <TextField
               label={n("slug")}

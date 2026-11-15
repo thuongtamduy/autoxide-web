@@ -10,6 +10,7 @@ import { type Editor, EditorContent, useEditor, useEditorState } from "@tiptap/r
 import StarterKit from "@tiptap/starter-kit";
 import { useTranslations } from "next-intl";
 import { type Ref, useId, useImperativeHandle, useRef, useState } from "react";
+import { Field } from "@/components/ui/form";
 import { type BodyNode, isSafeHref, toCoreBody } from "@/lib/content";
 
 /** Ảnh trong thân bài: chỉ giữ id của media (core không nhận `src`). */
@@ -355,30 +356,17 @@ function UrlDialog({
           submit(url);
         }}
       >
-        <div className="fld">
-          <label className="lab" htmlFor={id}>
-            {t("url")}
-          </label>
-          <input
-            id={id}
-            name="url"
-            className="inp mono"
-            inputMode="url"
-            autoComplete="off"
-            placeholder={kind === "link" ? "https://" : "https://www.youtube.com/watch?v=…"}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={`${id}-h${error ? ` ${id}-e` : ""}`}
-            autoFocus
-          />
-          <span id={`${id}-h`} className="fhint">
-            {t(`${kind}Hint`)}
-          </span>
-          {error ? (
-            <span id={`${id}-e`} className="ferr">
-              {error}
-            </span>
-          ) : null}
-        </div>
+        <Field
+          label={t("url")}
+          name="url"
+          mono
+          inputMode="url"
+          autoComplete="off"
+          placeholder={kind === "link" ? "https://" : "https://www.youtube.com/watch?v=…"}
+          hint={t(`${kind}Hint`)}
+          error={error || undefined}
+          autoFocus
+        />
         <div className="dlg-acts">
           <button type="button" className="btn" onClick={() => ref.current?.close()}>
             {form("cancel")}

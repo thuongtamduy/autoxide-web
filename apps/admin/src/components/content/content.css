@@ -1,14 +1,6 @@
 /* Màn Nội dung (danh sách bài viết, trình soạn, xem trước), theo Content.dc.html và
    ContentEditor.dc.html. Lớp mang tiền tố `ce-` để không đụng khung chung (shell.css). */
 
-.ax .vh {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 .ax .loc {
   display: inline-flex;
   align-items: center;
@@ -47,9 +39,6 @@
 }
 .ax .ce-select {
   flex: 0 1 180px;
-}
-.ax select.inp {
-  padding-right: 28px;
 }
 .ax .ce-title-link {
   font-weight: 500;
@@ -135,7 +124,7 @@
   font-size: 22px;
   font-weight: 600;
 }
-.ax textarea.inp {
+.ax textarea.ce-area {
   height: auto;
   min-height: 64px;
   padding: 10px 12px;
@@ -338,7 +327,7 @@
   overflow-x: auto;
   scrollbar-width: none;
 }
-.ax .tab {
+.ax .ce-tab {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -354,10 +343,10 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.ax .tab.on {
+.ax .ce-tab.on {
   color: var(--ink);
 }
-.ax .tab.on::after {
+.ax .ce-tab.on::after {
   content: "";
   position: absolute;
   left: 0;
@@ -367,7 +356,7 @@
   border-radius: 2px;
   background: var(--accent);
 }
-.ax .cnt.hot {
+.ax .ce-tabs .cnt.hot {
   background: var(--accent);
   color: var(--on-accent);
 }
@@ -445,7 +434,7 @@
   width: 100%;
   margin-bottom: 4px;
 }
-.ax .chip {
+.ax .ce-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -457,32 +446,13 @@
   font-size: 13px;
   cursor: pointer;
 }
-.ax .chip:has(input:checked) {
+.ax .ce-chip:has(input:checked) {
   border-color: var(--accent);
   background: var(--accent-tint);
   color: var(--accent-ink);
 }
 .ax .ce-pick input {
   accent-color: var(--accent);
-}
-.ax .ce-check {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 13.5px;
-  cursor: pointer;
-}
-.ax .ce-check input {
-  margin-top: 3px;
-  width: 18px;
-  height: 18px;
-  flex: none;
-  accent-color: var(--accent);
-}
-.ax .ce-check > span {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 .ax .ce-findings {
   display: flex;
@@ -561,12 +531,12 @@
 .ax .ce-revs > li + li {
   border-top: 1px solid var(--line);
 }
-.ax .tone-warn {
+.ax .ce-warn {
   color: var(--warn);
 }
 
 /* Đăng ngay / hẹn giờ */
-.ax .seg {
+.ax .ce-seg {
   display: inline-flex;
   margin: 0;
   padding: 3px;
@@ -575,7 +545,7 @@
   background: var(--panel);
   gap: 2px;
 }
-.ax .seg label {
+.ax .ce-seg label {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
@@ -586,17 +556,17 @@
   color: var(--ink-2);
   cursor: pointer;
 }
-.ax .seg label.on {
+.ax .ce-seg label.on {
   background: var(--sheet);
   color: var(--ink);
   box-shadow: 0 1px 2px rgba(20, 23, 31, 0.12);
 }
-.ax .seg input {
+.ax .ce-seg input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
-.ax .seg label:has(input:focus-visible) {
+.ax .ce-seg label:has(input:focus-visible) {
   outline: 2px solid var(--accent);
 }
 .ax .btn.ce-nothing {
@@ -689,16 +659,102 @@
     min-height: 44px;
     min-width: 44px;
   }
-  .ax .tab {
+  .ax .ce-tab {
     min-height: 48px;
   }
-  .ax .chip {
+  .ax .ce-chip {
     min-height: 44px;
   }
-  .ax .seg label {
+  .ax .ce-seg label {
     min-height: 44px;
   }
   .ax .inp.ce-big {
     font-size: 19px;
   }
+}
+
+/* Website và trang bắt buộc (dữ liệu mẫu, W-006) */
+.ax .ce-sites {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ax .ce-sitechips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ax .ce-site {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 48px;
+  padding: 6px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--ink);
+  text-decoration: none;
+  line-height: 1.25;
+}
+.ax .ce-site .mono {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.ax .ce-site-owner {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax .ce-site.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.ax .ce-listgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 20px;
+}
+.ax .ce-listmain {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.ax .ce-required {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+}
+.ax .ce-checklist {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .ce-req {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.ax .ce-req .sq-ic {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+@media (max-width: 1080px) {
+  .ax .ce-listgrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ax .ce-nowrap {
+  white-space: nowrap;
 }

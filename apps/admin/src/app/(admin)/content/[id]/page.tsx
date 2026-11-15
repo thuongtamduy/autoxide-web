@@ -7,6 +7,8 @@ import { abilities } from "@/lib/content";
 import { loadAi, loadAuthors, loadEntry, loadTerms, optional } from "@/lib/content-server";
 import { isForbidden, load } from "@/lib/core";
 import { getMe } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
+import { entryWebsite, listWebsites } from "@/sample/content";
 
 // Trình soạn một bài: đọc bài (kèm ETag), và mọi thứ thanh bên cần, song song. Phần phụ (lịch,
 // phiên bản, SEO, bản dịch) lỗi thì thanh bên báo "chưa xem được", trình soạn vẫn mở.
@@ -64,6 +66,14 @@ export default async function EntryPage(props: PageProps<"/content/[id]">) {
       ),
     ]);
 
+  // Bài thuộc website nào: dữ liệu mẫu (W-006), core chưa có API.
+  const sample = sampleDataEnabled()
+    ? {
+        websites: (await listWebsites()).data,
+        current: (await entryWebsite(entry.id)).data.website_id,
+      }
+    : null;
+
   return (
     <EntryEditor
       // Đổi bài (vd mở bản dịch) thì dựng lại trình soạn từ đầu.
@@ -82,6 +92,7 @@ export default async function EntryPage(props: PageProps<"/content/[id]">) {
       // Core đặt đầu đường dẫn bằng AUTOXIDE_CONTENT_POST_PATH_PREFIX (mặc định `blog`) nhưng
       // chưa có API đọc nó: dùng giá trị mặc định.
       pathPrefix="/blog/"
+      sample={sample}
     />
   );
 }
