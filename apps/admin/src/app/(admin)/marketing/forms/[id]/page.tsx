@@ -143,10 +143,12 @@ export default async function FormPage(props: PageProps<"/marketing/forms/[id]">
           label={t("filterSubmissions")}
           chips={[
             { href: hrefWith(base, { q }), label: t("inbox"), on: !status },
+            // Số trên chip: số bài theo trạng thái của cả form (`submissions` của core).
             ...SUBMISSION_STATUSES.map((s) => ({
               href: hrefWith(base, { status: s, q }),
               label: t(`sub.${s}`),
               on: status === s,
+              ...(form.submissions ? { count: form.submissions[s] } : {}),
             })),
           ]}
         />

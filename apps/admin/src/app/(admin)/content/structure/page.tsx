@@ -4,15 +4,16 @@ import { EntryStatusBadges } from "@/components/content/status";
 import { MessagePanel } from "@/components/message-panel";
 import { MovePageDialog } from "@/components/structure/forms";
 import { Table, Td, Th } from "@/components/ui/table";
-import { abilities, CONTENT_LOCALES, type Entry } from "@/lib/content";
+import { abilities, CONTENT_LOCALES, type Entry, entryPath } from "@/lib/content";
 import { isForbidden, load } from "@/lib/core";
 import { CONTENT_READ } from "@/lib/permissions";
 import { flattenTree, pagePath, parentChoices } from "@/lib/structure";
 import { getMe } from "@/lib/viewer";
 
-// Tab "Trang": mọi trang (cả bản nháp) xếp thành cây cha con theo `parent_id`, đường dẫn ghép theo
-// cây. "Chuyển trang cha" gọi `POST /content/entries/{id}/move`: core đổi đường dẫn của cả cây con
-// và tự tạo chuyển hướng từ đường dẫn cũ. Mở trang thì dùng trình soạn có sẵn.
+// Tab "Trang": mọi trang (cả bản nháp) xếp thành cây cha con theo `parent_id`. Đường dẫn là `path`
+// công khai của core (trang đã đăng); trang chưa đăng thì ghép slug theo cây. "Chuyển trang cha"
+// gọi `POST /content/entries/{id}/move` với `version` của dòng làm `If-Match`: core đổi đường dẫn
+// của cả cây con và tự tạo chuyển hướng từ đường dẫn cũ. Mở trang thì dùng trình soạn có sẵn.
 export default async function PagesTab(props: PageProps<"/content/structure">) {
   const t = await getTranslations("structure.pages");
   const { locale: wanted } = await props.searchParams;
@@ -51,7 +52,9 @@ export default async function PagesTab(props: PageProps<"/content/structure">) {
       page.locale,
     ]);
   }
-  const label = (page: Entry) => `${pagePath(page, pages)} · ${page.title || t("untitled")}`;
+  // Đường dẫn công khai của core khi trang đã đăng; bản nháp chưa có thì ghép theo cây.
+  const pathOf = (page: Entry) => (page.path ? entryPath(page) : pagePath(page, pages));
+  const label = (page: Entry) => `${pathOf(page)} · ${page.title || t("untitled")}`;
 
   return (
     <div className="blocks">
@@ -121,7 +124,7 @@ export default async function PagesTab(props: PageProps<"/content/structure">) {
                       </span>
                     </Td>
                     <Td label={t("path")}>
-                      <span className="mono ell">{pagePath(page, pages)}</span>
+                      <span className="mono ell">{pathOf(page)}</span>
                     </Td>
                     <Td label={t("languages")}>
                       {[...new Set(groups.get(page.translation_group_id) ?? [page.locale])]
@@ -139,7 +142,7 @@ export default async function PagesTab(props: PageProps<"/content/structure">) {
                             id: page.id,
                             title: page.title,
                             parent_id: page.parent_id ?? null,
-                            updated_at: page.updated_at,
+                            version: page.version,
                           }}
                           choices={parentChoices(page, pages).map((p) => ({
                             id: p.id,

@@ -1128,3 +1128,61 @@ lâu; chủ dự án muốn làm tiếp không chờ. Ghim theo commit giữ đ�
 
 Đã cân nhắc: ghim theo "main mới nhất" — mỗi lần sinh lại SDK có thể ra hợp đồng khác, giao diện hỏng mà không
 biết vì sao; chờ bản phát hành — không biết bao giờ.
+
+## W-028 · Nội dung, media, menu, biểu mẫu, bản tin, bình luận dùng API mới của core (đề bài A–C); bỏ cách làm tạm — 2026-11-15 — agent quyết
+
+Core `27380c9` làm xong đề bài giao diện (D-264, D-266–D-271 của core). Các màn dưới đây bỏ cách làm tạm (gọi
+một lần cho mỗi dòng, lọc trên trang đang xem, dữ liệu mẫu, đoán giá trị mặc định) và gọi API thật. Thay các
+đoạn "core chưa có…" của W-021 (ảnh trang trí), W-022 (giữ mục đang chọn theo vị trí) và W-020 (bài chờ duyệt).
+
+Quyết định:
+
+- **Bài viết** (`/content`): tab "Chờ duyệt" (`review_requested=true`) và "Sắp đăng" (`GET /content/schedules?
+  status=scheduled`, tên bài lấy bằng **một** lần đọc `scheduled=true`, xếp theo giờ chạy trong trang); chip "Bài của
+  tôi" (`created_by=me`), "Có nhãn AI" (`ai_generated=true`); ô "Thiếu bản dịch" (`missing_locale`); số bài của danh
+  mục / tác giả mở danh sách lọc `term_id` / `author_id`. Dòng hiện `path` công khai và `published_at` của core.
+  Lịch đăng gửi `ai_reviewed` khi người đặt lịch xác nhận đã duyệt phần AI. Kết quả kiểm SEO hiện nguyên `message`
+  của core (đã theo `Accept-Language`); bỏ bảng dịch theo `code` ở giao diện. Đầu đường dẫn bài lấy từ
+  `GET /kernel/client-config`.
+- **Bản xem trước** hiện ảnh thật từ `featured_media` / `body_media` (địa chỉ có phiên bản, kích thước, `srcset`),
+  qua route `/media/{id}/content` của giao diện. Ảnh không có trong đó (riêng tư, đã xoá) là ô giữ chỗ có chữ —
+  đúng điều core cho người cầm link thấy.
+- **Trang và cấu trúc**: chuyển trang cha gửi `version` của dòng (chính là `ETag`) trong `If-Match`, không đọc lại
+  bài. Danh mục, thẻ, tác giả có cột số bài (`entry_count`) và ô tìm (`q`); trình soạn hiện ô tìm khi core còn
+  danh mục / tác giả ngoài 200 mục đầu. Danh mục, thẻ, tác giả, chuyển hướng chưa có `version` trong danh sách:
+  vẫn đọc lại trước khi sửa.
+- **Thư viện media**: cờ `decorative` của core (lưu cùng `PATCH` với alt); bỏ kho mẫu `src/sample/media.ts`. Lọc
+  "thiếu alt" là `alt_missing=true`; số ở đầu trang là `GET /media/summary` (cả thư viện, kèm thùng rác); thư mục
+  có số tệp (`item_count`); tên người tải lên (`include=uploader`; chi tiết lấy từ dòng của danh sách vì
+  `GET /media/{id}` không có tên). Ngôn ngữ alt và giới hạn tải lên đọc từ `GET /kernel/client-config`: tệp quá cỡ
+  hay sai loại báo ngay, không gửi; core vẫn kiểm. Không đọc được cấu hình (core cũ) thì dùng ngôn ngữ của nội dung
+  và để core báo lỗi như trước.
+- **Menu**: lưu gửi `id` của mục đã lưu (core giữ id); mục mới thêm mang id `new-…` của trình sửa và không gửi id;
+  chép menu sang menu mới không gửi id (`POST` không nhận). Mục đang chọn giữ theo id; chỉ mục vừa thêm (core cấp id
+  khi lưu) giữ theo vị trí. Danh sách có cột số mục và "bởi {tên}" (`updated_by`; tên đọc bằng
+  `GET /auth/users/{id}` mỗi người một lần khi có `auth.users.read`, người đang xem thì khỏi đọc). `POST /menus`
+  trả `ETag` nhưng trang vẫn đọc menu khi mở (trang dựng ở máy chủ), nên không có lần đọc nào để bỏ.
+- **Biểu mẫu**: số bài mới và số trên chip lọc lấy từ `submissions` của form, bỏ một lời gọi cho mỗi form (cả ở nguồn
+  việc của Tổng quan: chỉ form có bài mới mới đọc một bài cũ nhất để tính hạn). Nhãn lựa chọn của câu trả lời theo
+  `choices` (phiên bản form lúc gửi); core cũ thì theo form hiện tại.
+- **Bản tin**: `GET /newsletter/settings` cho nhãn và giới hạn thư quảng cáo, tốc độ gửi, biến môi trường còn thiếu
+  (báo trước khi gửi). Trang chiến dịch có khối "Thư như khi gửi" (`GET /campaigns/{id}/preview`, kèm chân thư;
+  thiếu cấu hình thì hiện đúng lỗi 503 của core) và hai ô số "Bị trả về", "Huỷ đăng ký". Người đăng ký lọc được
+  "Bị chặn" (`blocked=true`).
+- **Bình luận**: tiêu đề và địa chỉ của đích lấy từ `target_title` / `target_url` của bình luận; bỏ
+  `src/lib/comments-server.ts` (đọc bài qua API `content` cho từng đích). Tab "Theo bài" dùng `GET /comments/targets`
+  (lọc trạng thái, còn chờ duyệt, loại; phân trang). Trang một đích lấy tiêu đề từ một bình luận của nó. Core chỉ trả
+  tiêu đề khi đích **đang công khai** (bài nháp hiện id) — đúng ý D-270, không đọc thêm để lộ tiêu đề bản nháp.
+- **Tổng quan / Việc**: nguồn "bài chờ duyệt" dùng `review_requested=true` (không lọc một trang bản nháp nữa) và
+  dẫn tới tab "Chờ duyệt". Hồ sơ "Nhãn AI" của Tuân thủ dùng `ai_generated=true`.
+- `src/lib/client-config.ts` (`getClientConfig`) giống hệt bản của nhánh làm phần tài khoản (W-027), commit riêng,
+  để hai nhánh gộp không xung đột. README ghi commit tối thiểu của core là `27380c9`.
+
+Còn là dữ liệu mẫu hay cách làm tạm vì core chưa có API: website và trang bắt buộc (bước 37), bài theo website / nút
+sở hữu (bước 34), "đang dùng ở đâu" của media (bước 51), sổ đối tượng thương mại của menu và tiêu đề / trạng thái
+của từng đích khi đọc menu, lệnh nhập menu cũ, cài đặt bình luận theo khách (33, 37), số đếm trên tab và menu (51),
+tên người sửa của phiên bản, cây trang quá 200 trang. Ngôn ngữ của nội dung vẫn là `en`, `vi` viết ở giao diện
+(`CONTENT_LOCALES`); đổi sang `content.locales` của client-config là việc sau.
+
+Đã cân nhắc: giữ kho mẫu `decorative` làm phương án dự phòng cho core cũ — bỏ, vì README đã yêu cầu core `27380c9`;
+đọc tên người tải lên bằng `GET /auth/users/{id}` cho khung chi tiết — bỏ, dòng của danh sách đã có tên.

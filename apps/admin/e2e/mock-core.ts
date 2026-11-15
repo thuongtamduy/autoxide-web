@@ -393,7 +393,7 @@ const server = createServer(async (request, response) => {
     return send(response, 200, { data: module });
   }
   if (url.pathname === "/api/v1/menus" || url.pathname.startsWith("/api/v1/menus/")) {
-    return menusRoutes(request, response, url, route);
+    return menusRoutes(request, response, url, route, caller(request)?.account.id ?? null);
   }
   if (url.pathname === "/api/v1/media" || url.pathname.startsWith("/api/v1/media/")) {
     return mediaRoutes(request, response, url, route);

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { type Entry, localToIso } from "@/lib/content";
 import { renderIntl } from "@/test/render";
 import { BodyView } from "./body-view";
-import { EntryTable } from "./entry-list";
+import { EntryTable, UpcomingTable } from "./entry-list";
 
 afterEach(cleanup);
 
@@ -145,6 +145,76 @@ describe("BodyView", () => {
     expect(container.textContent).toContain("kia");
     expect(container.textContent).not.toContain("alert");
     expect(screen.getByRole("listitem").textContent).toBe("một");
+  });
+});
+
+describe("BodyView với ảnh của bản xem trước", () => {
+  const PUBLIC = "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e21";
+  const PRIVATE = "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e22";
+  it("ảnh công khai tải theo địa chỉ có phiên bản của core; ảnh không có trong đó thành ô giữ chỗ", () => {
+    const { container } = renderIntl(
+      <BodyView
+        body={{
+          type: "doc",
+          content: [
+            { type: "image", attrs: { mediaId: PUBLIC, alt: "" } },
+            { type: "image", attrs: { mediaId: PRIVATE, alt: "Riêng" } },
+          ],
+        }}
+        media={[
+          {
+            id: PUBLIC,
+            url: `/api/v1/media/${PUBLIC}/content?v=v1`,
+            alt: "Chảo gang",
+            width: 1200,
+            height: 800,
+            variants: [
+              {
+                width: 640,
+                height: 427,
+                url: `/api/v1/media/${PUBLIC}/content?v=v1&w=640`,
+              },
+            ],
+          },
+        ]}
+        missingImage="Ảnh không hiện"
+      />,
+    );
+    const images = container.querySelectorAll("img");
+    expect(images).toHaveLength(1);
+    expect(images[0]?.getAttribute("src")).toBe(`/media/${PUBLIC}/content?v=v1`);
+    expect(images[0]?.getAttribute("srcset")).toBe(`/media/${PUBLIC}/content?v=v1&w=640 640w`);
+    // Alt của node trống thì dùng alt của tệp.
+    expect(images[0]?.getAttribute("alt")).toBe("Chảo gang");
+    expect(screen.getByRole("img", { name: "Ảnh không hiện" })).toBeTruthy();
+  });
+});
+
+describe("UpcomingTable", () => {
+  it("lịch sớm nhất trước, kèm tên bài; bài không đọc được vẫn có dòng", () => {
+    const schedule = (id: string, entry_id: string, run_at: string) => ({
+      id,
+      entry_id,
+      action: "publish" as const,
+      run_at,
+      status: "scheduled",
+      ai_reviewed: id === "s2",
+      created_at: "2026-11-01T00:00:00Z",
+      updated_at: "2026-11-01T00:00:00Z",
+    });
+    renderIntl(
+      <UpcomingTable
+        schedules={[
+          schedule("s1", "missing", "2026-12-02T00:00:00Z"),
+          schedule("s2", entry().id, "2026-12-01T00:00:00Z"),
+        ]}
+        entries={[entry()]}
+      />,
+    );
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows[0]?.textContent).toContain("Chọn chảo gang cho bếp từ");
+    expect(rows[0]?.textContent).toContain("AI content reviewed");
+    expect(rows[1]?.textContent).toContain("(post not found)");
   });
 });
 

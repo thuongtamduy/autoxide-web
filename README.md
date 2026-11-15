@@ -24,11 +24,15 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
 - **Overview** and **Work and activity**: greeting, figures, the work waiting for you gathered from
   every area (snooze or hand over an item), setup steps and recent activity from the audit log.
 - **Content**: posts and pages with the block editor, review and scheduling, version history;
-  pages, categories, tags, authors and redirects; **website menus** (category bar, mega menu,
-  footer; items point to posts, categories or addresses; storefront preview); the **media
-  library** (upload, folders, tags, alt text per language with optional AI suggestions, trash).
-- **Marketing**: forms and their submissions (CSV export, also in the background for large forms),
-  newsletter lists, campaigns and subscribers, comment moderation (plain text or Markdown).
+  filters for posts awaiting review, my posts, AI-labelled posts and missing translations, and the
+  upcoming schedule of every post; pages, categories, tags, authors (with post counts) and
+  redirects; **website menus** (category bar, mega menu, footer; items point to posts, categories
+  or addresses; storefront preview); the **media library** (upload, folders, tags, alt text per
+  language with optional AI suggestions, decorative images, library totals, trash).
+- **Marketing**: forms and their submissions (counts per status, CSV export, also in the
+  background for large forms), newsletter lists, campaigns (the mail exactly as sent, bounces and
+  unsubscribes) and subscribers, comment moderation (plain text or Markdown) and the posts that
+  have comments.
 - **Organization › Users and roles**: accounts, roles with a permission picker (risky permissions
   are labelled), sign-out everywhere, two-step sign-in reset, removing the passkeys of someone who
   lost their device.
@@ -47,7 +51,7 @@ has no API for yet use sample data the same way. Sample data shows only when
 app's memory and lost on restart. The sample records agree across screens (an order, its
 shipment, its ledger entries and its invoice are the same order).
 
-Works with Autoxide core from commit `e2c3596` of its `main` branch or newer (the next release,
+Works with Autoxide core from commit `27380c9` of its `main` branch or newer (the next release,
 v0.15.0, will include it).
 
 ## Requirements

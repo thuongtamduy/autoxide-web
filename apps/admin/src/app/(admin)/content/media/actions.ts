@@ -12,8 +12,6 @@ import { type Outcome, send } from "@/lib/action";
 import { defined } from "@/lib/content";
 import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
 import type { AltSuggestion, MediaItem } from "@/lib/media";
-import { sampleGuard } from "@/lib/sample-action";
-import { putMediaDecorative } from "@/sample/media";
 
 const id = z.uuid();
 const version = z.string().min(1).max(200);
@@ -44,6 +42,8 @@ const Changes = z
     folder_id: z.uuid().nullable(),
     tags: z.array(z.string().max(100)).max(40),
     visibility: z.enum(["public", "private"]),
+    // Ảnh chỉ để trang trí: alt trống có chủ ý, không tính là "thiếu alt".
+    decorative: z.boolean(),
   })
   .partial();
 export type MediaChanges = z.input<typeof Changes>;
@@ -140,29 +140,6 @@ export async function setMediaAlt(
   });
   if (!result.ok) return result;
   return { ok: true, item: result.data.data, version: etag };
-}
-
-/** Cờ "ảnh chỉ để trang trí" (dữ liệu mẫu, W-006: core chưa có trường này). */
-export async function setMediaDecorative(
-  itemId: string,
-  decorative: boolean,
-): Promise<Outcome<boolean>> {
-  const off = await sampleGuard();
-  if (off) {
-    return {
-      ok: false,
-      problem: {
-        type: "about:blank",
-        title: "Not Found",
-        status: 404,
-        code: "sample_data_off",
-        detail: off.error ?? "",
-      },
-    };
-  }
-  if (!id.safeParse(itemId).success) return invalid();
-  const result = await putMediaDecorative(itemId, decorative);
-  return { ok: true, data: result.data };
 }
 
 // ---------------------------------------------------------------- Thùng rác (hộp thoại xác nhận)

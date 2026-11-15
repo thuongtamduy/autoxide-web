@@ -110,7 +110,8 @@ export function MovePageDialog({
   page,
   choices,
 }: {
-  page: { id: string; title: string; parent_id?: string | null; updated_at: string };
+  /** `version` là `ETag` của trang trong danh sách: gửi thẳng trong `If-Match`, không đọc lại. */
+  page: { id: string; title: string; parent_id?: string | null; version: string };
   choices: { id: string; label: string }[];
 }) {
   const t = useTranslations("structure.pages");
@@ -122,7 +123,7 @@ export function MovePageDialog({
       submit={t("move")}
       done={t("moved")}
       action={movePage}
-      hidden={{ id: page.id, updated_at: page.updated_at }}
+      hidden={{ id: page.id, version: page.version }}
     >
       {(state) => (
         <SelectField

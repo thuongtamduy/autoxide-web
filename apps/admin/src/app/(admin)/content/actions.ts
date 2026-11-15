@@ -12,10 +12,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type Outcome, send } from "@/lib/action";
 import {
+  type Author,
   CONTENT_LOCALES,
   defined,
   type Entry,
   type SeoSuggestion,
+  type Term,
   type TranslationRequest,
   toCoreBody,
 } from "@/lib/content";
@@ -212,6 +214,9 @@ export async function changeState(
 const ScheduleInput = z.object({
   action: z.enum(["publish", "unpublish"]),
   run_at: z.iso.datetime({ offset: true }),
+  // Người đặt lịch xác nhận đã duyệt phần do AI tạo; core ghi người duyệt là người đặt lịch và
+  // từ chối dấu này khi gọi bằng API key (`content.ai_review_requires_human`).
+  ai_reviewed: z.boolean().optional(),
 });
 
 /**
@@ -233,7 +238,7 @@ export async function scheduleEntry(
   const result = await send((client) =>
     client.POST("/api/v1/content/entries/{id}/schedules", {
       params: { path: { id: entryId }, header: { "If-Match": saved.version } },
-      body: parsed.data,
+      body: defined({ ...parsed.data, ai_reviewed: parsed.data.ai_reviewed || undefined }),
     }),
   );
   refresh();
@@ -285,6 +290,28 @@ export async function setAuthors(entryId: string, authorIds: string[]): Promise<
   if (!result.ok) return result;
   refresh();
   return { ok: true, data: result.data.data.author_ids };
+}
+
+const Query = z.string().trim().min(1).max(200);
+
+/** Tìm tác giả theo tên (`q` của core, không dấu vẫn ra), cho trình soạn khi hơn một trang. */
+export async function findAuthors(q: string): Promise<Outcome<Author[]>> {
+  const parsed = Query.safeParse(q);
+  if (!parsed.success) return invalid();
+  const result = await send((client) =>
+    client.GET("/api/v1/content/authors", { params: { query: { q: parsed.data, limit: 50 } } }),
+  );
+  return result.ok ? { ok: true, data: result.data.data } : result;
+}
+
+/** Tìm danh mục và thẻ theo tên ở mọi ngôn ngữ (`q` của core). */
+export async function findTerms(q: string): Promise<Outcome<Term[]>> {
+  const parsed = Query.safeParse(q);
+  if (!parsed.success) return invalid();
+  const result = await send((client) =>
+    client.GET("/api/v1/content/terms", { params: { query: { q: parsed.data, limit: 50 } } }),
+  );
+  return result.ok ? { ok: true, data: result.data.data } : result;
 }
 
 // ---------------------------------------------------------------- Lịch sử, xem trước

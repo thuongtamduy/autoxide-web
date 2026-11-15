@@ -29,6 +29,28 @@ function view(item: Item): Schemas["MediaItemResponse"] {
   return rest;
 }
 
+/** Người tải lên trong core giả (`include=uploader` trả tên qua sổ đối tượng, D-267 mục 4). */
+const UPLOADER = { id: "01a1dd85-0000-7000-8000-00000000a001", name: "admin" };
+
+/** Ảnh thiếu alt như core (D-267 mục 1): ảnh, `alt` mặc định trống, không trang trí. */
+function missingAlt(item: Item): boolean {
+  return item.content_type.startsWith("image/") && item.alt.trim() === "" && !item.decorative;
+}
+
+/** Ảnh công khai như bản xem trước của `content` trả (`PublicMedia`); tệp riêng tư thì `null`. */
+export function publicMediaOf(id: string): Schemas["PublicMedia"] | null {
+  const item = items.find((i) => i.id === id);
+  if (!item || item.trashed_at || item.visibility !== "public") return null;
+  return {
+    id: item.id,
+    url: item.url,
+    alt: item.alt,
+    width: item.width ?? null,
+    height: item.height ?? null,
+    variants: [],
+  };
+}
+
 function sendItem(response: ServerResponse, status: number, item: Item) {
   response.writeHead(status, {
     "Content-Type": "application/json",
@@ -157,11 +179,18 @@ export async function mediaRoutes(
       .filter(
         (i) => !q.get("tag") || i.tags.some((t) => t.toLowerCase() === q.get("tag")?.toLowerCase()),
       )
+      .filter(
+        (i) => q.get("alt_missing") === null || missingAlt(i) === (q.get("alt_missing") === "true"),
+      )
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
     const limit = Number(q.get("limit") ?? 50);
     const start = Number(q.get("cursor") ?? 0);
+    const withName = q.get("include") === "uploader";
     return send(response, 200, {
-      data: list.slice(start, start + limit).map(view),
+      data: list.slice(start, start + limit).map((i) => ({
+        ...view(i),
+        ...(withName && i.uploaded_by === UPLOADER.id ? { uploaded_by_name: UPLOADER.name } : {}),
+      })),
       pagination: {
         limit,
         next_cursor: start + limit < list.length ? String(start + limit) : null,
@@ -201,7 +230,7 @@ export async function mediaRoutes(
       created_at: at,
       updated_at: at,
       trashed_at: null,
-      uploaded_by: null,
+      uploaded_by: UPLOADER.id,
       tags: [],
       variants: [],
       bytes,
@@ -222,6 +251,17 @@ export async function mediaRoutes(
   }
   if (url.pathname.startsWith(`${P}/folders`)) {
     return folderRoutes(request, response, url);
+  }
+  if (route === `GET ${P}/summary`) {
+    const live = items.filter((i) => !i.trashed_at);
+    return send(response, 200, {
+      data: {
+        items: live.length,
+        bytes: live.reduce((sum, i) => sum + i.size, 0),
+        images_missing_alt: live.filter(missingAlt).length,
+        trashed_items: items.length - live.length,
+      },
+    } satisfies Schemas["Data_LibrarySummaryResponse"]);
   }
   if (route === `GET ${P}/tags`) {
     const names = [...new Set(items.flatMap((i) => i.tags))].sort();
@@ -288,6 +328,7 @@ export async function mediaRoutes(
       }
       if (body.visibility === "public" || body.visibility === "private")
         item.visibility = body.visibility;
+      if (typeof body.decorative === "boolean") item.decorative = body.decorative;
       if ("folder_id" in body) item.folder_id = (body.folder_id as string | null) ?? null;
       if (Array.isArray(body.tags)) item.tags = (body.tags as string[]).slice().sort();
       item.version += 1;
@@ -336,6 +377,10 @@ export async function mediaRoutes(
 async function folderRoutes(request: IncomingMessage, response: ServerResponse, url: URL) {
   const match = url.pathname.match(/^\/api\/v1\/media\/folders(?:\/([^/]+))?$/);
   const id = match?.[1];
+  // Số tệp nằm thẳng trong thư mục, không tính thùng rác (D-267 mục 3).
+  for (const f of folders) {
+    f.item_count = items.filter((i) => i.folder_id === f.id && !i.trashed_at).length;
+  }
   if (!id && request.method === "GET") {
     return send(response, 200, {
       data: [...folders].sort((a, b) => a.name.localeCompare(b.name)),

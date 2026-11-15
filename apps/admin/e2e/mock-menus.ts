@@ -4,9 +4,10 @@
 // riêng (`menus.ref_unknown_kind`, `menus.ref_not_found`, `menus.children_unsupported`). Loại đối
 // tượng core giả biết: `content.entry`, `content.term` (đọc từ `mock-content.ts`).
 //
-// `PUT` bắt buộc `If-Match` (428 / 412); `POST` trả 201 + `Location`, không có `ETag` (như core);
-// cấp id mới cho mọi mục mỗi lần lưu (như core). `POST /__menus/bump` (`{"id"}`) lưu menu như có
-// người khác vừa lưu, để thử 412.
+// `PUT` bắt buộc `If-Match` (428 / 412); `POST` trả 201 + `Location` + `ETag` (như core, D-264).
+// Mục gửi kèm `id` của chính menu đó giữ id; mục không có `id` nhận id mới; `id` lạ, trùng, hay gửi
+// khi tạo menu là lỗi đúng ô (như core). Danh sách kèm `item_count` và `updated_by`.
+// `POST /__menus/bump` (`{"id"}`) lưu menu như có người khác vừa lưu, để thử 412.
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ModuleInfo } from "@autoxide/sdk";
@@ -16,7 +17,7 @@ import { empty, json, problem, type Schemas, send } from "./mock-http.ts";
 type Item = Schemas["SiteMenuItem"];
 type Input = Schemas["SiteMenuItemInput"];
 type FieldError = Schemas["ProblemField"];
-type Menu = Schemas["SiteMenu"] & { version: number };
+type Menu = Schemas["SiteMenu"] & { version: number; updated_by: string | null };
 
 export const MENUS_MODULE: ModuleInfo = {
   name: "menus",
@@ -115,6 +116,7 @@ export function resetMenus() {
       created_at: at,
       updated_at: at,
       version: 1,
+      updated_by: null,
       items: [
         item({ label: "", ref: { kind: "content.term", id: TERM }, icon: "grid" }),
         item({
@@ -140,21 +142,35 @@ export function resetMenus() {
       created_at: at,
       updated_at: at,
       version: 1,
+      updated_by: null,
       items: [item({ label: "Về chúng tôi", url: "/ve-chung-toi" })],
     },
   ];
 }
 resetMenus();
 
-function view({ version: _version, ...menu }: Menu): Schemas["SiteMenu"] {
+function view({ version: _version, updated_by: _by, ...menu }: Menu): Schemas["SiteMenu"] {
   return menu;
 }
 
 function summary(menu: Menu): Schemas["SiteMenuSummary"] {
-  const { id, key, locale, created_at, updated_at } = menu;
+  const { id, key, locale, created_at, updated_at, updated_by } = menu;
   const count = (items: readonly { children: readonly unknown[] }[]): number =>
     items.reduce((n, item) => n + 1 + count(item.children as { children: unknown[] }[]), 0);
-  return { id, key, locale, created_at, updated_at, item_count: count(menu.items) };
+  return { id, key, locale, created_at, updated_at, updated_by, item_count: count(menu.items) };
+}
+
+/** Id mọi mục của cây (cả mục con). */
+function itemIds(items: readonly Item[]): Set<string> {
+  const out = new Set<string>();
+  const walk = (list: readonly Item[]) => {
+    for (const entry of list) {
+      out.add(entry.id);
+      walk(entry.children);
+    }
+  };
+  walk(items);
+  return out;
 }
 
 function etag(menu: Menu): string {
@@ -164,7 +180,8 @@ function etag(menu: Menu): string {
 function sendMenu(response: ServerResponse, status: number, menu: Menu) {
   response.writeHead(status, {
     "Content-Type": "application/json",
-    ...(status === 201 ? { Location: `/api/v1/menus/${menu.id}` } : { ETag: etag(menu) }),
+    ETag: etag(menu),
+    ...(status === 201 ? { Location: `/api/v1/menus/${menu.id}` } : {}),
   });
   response.end(JSON.stringify({ data: view(menu) } satisfies Schemas["Data_SiteMenu"]));
 }
@@ -182,9 +199,42 @@ function isLink(url: string): boolean {
 
 const goodKind = (kind: string) => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(kind) && kind.length <= 64;
 
-/** Kiểm cả cây như core, gom mọi lỗi; trả cây đã lưu (id mới cho mọi mục). */
-function check(items: Input[], locale: string, problems: FieldError[]): Item[] {
+/**
+ * Kiểm cả cây như core, gom mọi lỗi; trả cây đã lưu. `current`: id các mục đang thuộc menu (khi
+ * lưu), `null` khi tạo menu mới (không nhận `id`).
+ */
+function check(
+  items: Input[],
+  locale: string,
+  problems: FieldError[],
+  current: ReadonlySet<string> | null = null,
+): Item[] {
   let count = 0;
+  const kept = new Set<string>();
+  const idOf = (input: Input, here: string): string => {
+    if (!input.id) return randomUUID();
+    if (current === null) {
+      problems.push({
+        field: `${here}.id`,
+        code: "invalid",
+        detail: "must be left out when creating a menu",
+      });
+    } else if (!current.has(input.id)) {
+      problems.push({
+        field: `${here}.id`,
+        code: "not_found",
+        detail: "is not an item of this menu; leave `id` out for a new item",
+      });
+    } else if (kept.has(input.id)) {
+      problems.push({
+        field: `${here}.id`,
+        code: "duplicate",
+        detail: "is given to another item too",
+      });
+    }
+    kept.add(input.id);
+    return input.id;
+  };
   const targets: { path: string; kind: string; id: string; auto: boolean }[] = [];
   const walk = (list: Input[], depth: number, path: string): Item[] =>
     list.flatMap((input, index) => {
@@ -296,7 +346,7 @@ function check(items: Input[], locale: string, problems: FieldError[]): Item[] {
       }
       return [
         {
-          id: randomUUID(),
+          id: idOf(input, here),
           label,
           url,
           ref: ref ? { kind: ref.kind, id: ref.id.trim() } : null,
@@ -484,6 +534,7 @@ export async function bumpMenu(request: IncomingMessage, response: ServerRespons
   menu.items = [...menu.items, item({ label: "Người khác thêm", url: "/nguoi-khac" })];
   menu.version += 1;
   menu.updated_at = now();
+  menu.updated_by = null;
   return empty(response, 204);
 }
 
@@ -493,6 +544,8 @@ export async function menusRoutes(
   response: ServerResponse,
   url: URL,
   route: string,
+  /** Người gọi (ghi vào `updated_by` khi tạo hay lưu). */
+  callerId: string | null = null,
 ): Promise<void> {
   if (route === "GET /api/v1/menus") {
     const order = url.searchParams.get("order") === "asc" ? 1 : -1;
@@ -534,7 +587,16 @@ export async function menusRoutes(
     const at = now();
     // UUIDv7 sắp theo thời gian: menu mới đứng cuối khi sắp tăng dần theo id.
     const id = `01a1e200-${(clock / 1000).toString(16).slice(-4)}-7000-8000-${randomUUID().slice(-12)}`;
-    const menu: Menu = { id, key, locale, created_at: at, updated_at: at, version: 1, items };
+    const menu: Menu = {
+      id,
+      key,
+      locale,
+      created_at: at,
+      updated_at: at,
+      updated_by: callerId,
+      version: 1,
+      items,
+    };
     menus.push(menu);
     return sendMenu(response, 201, menu);
   }
@@ -556,7 +618,7 @@ export async function menusRoutes(
     }
     const body = (await json(request)) as Schemas["ReplaceSiteMenuItemsRequest"];
     const problems: FieldError[] = [];
-    const items = check(body.items ?? [], menu.locale, problems);
+    const items = check(body.items ?? [], menu.locale, problems, itemIds(menu.items));
     if (problems.length > 0) return invalid(response, problems);
     if (ifMatch !== "*" && ifMatch !== etag(menu)) {
       return problem(
@@ -569,6 +631,7 @@ export async function menusRoutes(
     menu.items = items;
     menu.version += 1;
     menu.updated_at = now();
+    menu.updated_by = callerId;
     return sendMenu(response, 200, menu);
   }
   if (menu && request.method === "DELETE") {

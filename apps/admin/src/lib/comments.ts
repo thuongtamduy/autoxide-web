@@ -88,6 +88,14 @@ export function targetHref(type: string, id: string): string {
   return `/marketing/comments/targets/${encodeURIComponent(type)}/${encodeURIComponent(id)}`;
 }
 
+/**
+ * Màn quản trị của đích, khi giao diện có màn cho loại đó (bài viết và trang của `content`);
+ * `null` với loại khác. Chỉ ghép đường dẫn, không gọi API của module đích.
+ */
+export function adminHref(type: string, id: string): string | null {
+  return type === "content.entry" && /^[0-9a-f-]{36}$/.test(id) ? `/content/${id}` : null;
+}
+
 /** Một phần của đường dẫn đã mã hoá (`content.entry`, id); chuỗi hỏng thì giữ nguyên. */
 export function decoded(segment: string): string {
   try {
@@ -95,21 +103,6 @@ export function decoded(segment: string): string {
   } catch {
     return segment;
   }
-}
-
-/** Các đích khác nhau của một nhóm bình luận, giữ thứ tự xuất hiện. */
-export function uniqueTargets(
-  comments: readonly Pick<CommentDetail, "target_type" | "target_id">[],
-): { type: string; id: string }[] {
-  const seen = new Set<string>();
-  const out: { type: string; id: string }[] = [];
-  for (const comment of comments) {
-    const key = `${comment.target_type}\u0000${comment.target_id}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({ type: comment.target_type, id: comment.target_id });
-  }
-  return out;
 }
 
 /** Giá trị để cấm tác giả theo từng cách, lấy từ chi tiết bình luận (không có thì bỏ). */

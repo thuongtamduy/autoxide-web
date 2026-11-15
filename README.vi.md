@@ -23,11 +23,14 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 - **Tổng quan** và **Việc và hoạt động**: lời chào, số liệu, việc đang chờ bạn gom từ mọi phân hệ
   (hoãn hay giao cho người khác), các bước thiết lập và hoạt động gần đây từ nhật ký audit.
 - **Nội dung**: bài viết và trang với trình soạn theo khối, duyệt và lên lịch, lịch sử phiên bản;
-  trang, danh mục, thẻ, tác giả và chuyển hướng; **menu của website** (thanh danh mục, bảng xổ lớn,
-  chân trang; mục trỏ tới bài, danh mục hay địa chỉ; xem trước mặt tiền); **thư viện media** (tải
-  lên, thư mục, thẻ, alt theo từng ngôn ngữ kèm gợi ý của AI, thùng rác).
-- **Tiếp thị**: biểu mẫu và bài nộp (xuất CSV, xuất nền cho form nhiều bài nộp), danh sách, chiến dịch
-  và người nhận bản tin, duyệt bình luận (chữ thường hay Markdown).
+  lọc bài chờ duyệt, bài của tôi, bài có nhãn AI, bài thiếu bản dịch, và lịch sắp đăng của mọi bài;
+  trang, danh mục, thẻ, tác giả (kèm số bài) và chuyển hướng; **menu của website** (thanh danh mục,
+  bảng xổ lớn, chân trang; mục trỏ tới bài, danh mục hay địa chỉ; xem trước mặt tiền); **thư viện
+  media** (tải lên, thư mục, thẻ, alt theo từng ngôn ngữ kèm gợi ý của AI, ảnh trang trí, tóm tắt cả
+  thư viện, thùng rác).
+- **Tiếp thị**: biểu mẫu và bài nộp (số bài theo trạng thái, xuất CSV, xuất nền cho form nhiều bài
+  nộp), danh sách, chiến dịch (thư đúng như khi gửi, số bị trả về và huỷ đăng ký) và người nhận bản
+  tin, duyệt bình luận (chữ thường hay Markdown) và các bài có bình luận.
 - **Tổ chức › Người dùng và role**: tài khoản, role với bộ chọn permission (permission rủi ro có
   nhãn), đăng xuất mọi nơi, tắt xác thực hai bước, gỡ passkey của người mất thiết bị.
 - **Cài đặt**: module, webhook, nhật ký audit, API key và AI agent (MCP), công cụ cho lập trình viên.
@@ -44,7 +47,7 @@ liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định b�
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).
 
-Chạy với core Autoxide từ commit `e2c3596` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
+Chạy với core Autoxide từ commit `27380c9` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
 sẽ có).
 
 ## Cần có

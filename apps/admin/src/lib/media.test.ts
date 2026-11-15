@@ -10,7 +10,9 @@ import {
   mediaSrc,
   missingAlt,
   parseMediaFilters,
+  publicMediaSrc,
   safeFileName,
+  uploadBlock,
   uploadErrorKey,
 } from "./media";
 
@@ -87,11 +89,14 @@ describe("bộ lọc của thư viện media", () => {
       limit: 48,
       sort: "created_at",
       order: "desc",
+      include: "uploader",
       folder_id: "root",
       type: "application/pdf",
       tag: "brand",
       trashed: true,
     });
+    // "Thiếu alt" là bộ lọc của core (cả thư viện), không lọc trên trang đang xem.
+    expect(mediaQuery({ noAlt: true })).toMatchObject({ alt_missing: true });
   });
 });
 
@@ -109,6 +114,28 @@ describe("hiện một tệp", () => {
     expect(missingAlt(item({ alt: "Chảo gang" }))).toBe(false);
     expect(missingAlt(item({ content_type: "application/pdf" }))).toBe(false);
     expect(missingAlt(item({ content_type: "image/svg+xml", alt: "  " }))).toBe(true);
+    // Ảnh trang trí: alt trống có chủ ý, không tính là thiếu (như `alt_missing` của core).
+    expect(missingAlt(item({ decorative: true }))).toBe(false);
+  });
+
+  it("địa chỉ ảnh công khai của core thành route của giao diện", () => {
+    expect(publicMediaSrc(`/api/v1/media/${ID}/content?v=abc&w=640`)).toBe(
+      `/media/${ID}/content?v=abc&w=640`,
+    );
+    expect(publicMediaSrc("https://cdn.example.com/a.jpg")).toBe("https://cdn.example.com/a.jpg");
+    expect(publicMediaSrc("javascript:alert(1)")).toBe("");
+    expect(publicMediaSrc("/api/v1/media/x/content")).toBe("");
+  });
+
+  it("tệp chắc chắn bị từ chối thì báo trước khi gửi", () => {
+    const limits = { maxBytes: 1000, allowedTypes: ["image/png", "audio/*"] };
+    expect(uploadBlock({ size: 2000, type: "image/png" }, limits)).toBe("tooLarge");
+    expect(uploadBlock({ size: 10, type: "image/png" }, limits)).toBeNull();
+    expect(uploadBlock({ size: 10, type: "audio/mpeg" }, limits)).toBeNull();
+    expect(uploadBlock({ size: 10, type: "video/mp4" }, limits)).toBe("typeNotAllowed");
+    // Trình duyệt không biết loại: để core nhận diện từ nội dung.
+    expect(uploadBlock({ size: 10, type: "" }, limits)).toBeNull();
+    expect(uploadBlock({ size: 10 ** 9, type: "video/mp4" }, null)).toBeNull();
   });
 
   it("loại, đuôi tệp, kích thước", () => {

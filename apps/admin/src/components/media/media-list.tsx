@@ -144,12 +144,19 @@ export function MediaTable({
             <Td label={t("table.alt")}>
               {missingAlt(item) ? (
                 <span className="badge b-warn">{t("badges.noAlt")}</span>
+              ) : item.decorative ? (
+                <span className="badge b-draft">{t("badges.decorative")}</span>
               ) : (
                 <span className="ell">{item.alt || "—"}</span>
               )}
             </Td>
             <Td label={t("table.uploaded")} className="whitespace-nowrap">
-              <Time value={item.created_at} />
+              <span className="cell2">
+                <Time value={item.created_at} />
+                {item.uploaded_by_name ? (
+                  <span className="sub ell">{item.uploaded_by_name}</span>
+                ) : null}
+              </span>
             </Td>
           </tr>
         ))}

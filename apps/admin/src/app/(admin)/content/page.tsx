@@ -1,18 +1,29 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { EntryFilters, EntryTable } from "@/components/content/entry-list";
+import { EntryFilters, EntryTable, UpcomingTable } from "@/components/content/entry-list";
 import { RequiredPages, SiteChips } from "@/components/content/sample-sites";
 import { MessagePanel } from "@/components/message-panel";
 import { Icon } from "@/components/shell/icon";
-import { abilities, filtersHref, listQuery, parseFilters, STATUS_TABS } from "@/lib/content";
+import {
+  abilities,
+  filtersHref,
+  hasFilters,
+  type ListFilters,
+  listQuery,
+  PAGE_SIZE,
+  parseFilters,
+  STATUS_TABS,
+} from "@/lib/content";
 import { loadAuthors } from "@/lib/content-server";
 import { isForbidden, load } from "@/lib/core";
 import { getMe } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 import { listWebsites, websiteChecklist } from "@/sample/content";
 
-// Màn "Bài viết": mọi bài và trang (cả bản nháp), lọc theo trạng thái, loại, ngôn ngữ và chữ.
-// Bộ lọc nằm trên địa chỉ (`?status=draft&q=…`) nên mở thẳng được và nút quay lại chạy đúng.
+// Màn "Bài viết": mọi bài và trang (cả bản nháp), lọc theo trạng thái, chờ duyệt, loại, ngôn ngữ,
+// chữ, bài của tôi, nhãn AI, bản dịch còn thiếu — mọi bộ lọc do core lọc trên cả danh sách. Tab
+// "Sắp đăng" là lịch đăng / gỡ đang chờ của mọi bài. Bộ lọc nằm trên địa chỉ (`?status=draft&q=…`)
+// nên mở thẳng được và nút quay lại chạy đúng.
 export default async function ContentPage(props: PageProps<"/content">) {
   const t = await getTranslations("content");
   const filters = parseFilters(await props.searchParams);
@@ -34,9 +45,8 @@ export default async function ContentPage(props: PageProps<"/content">) {
     }
     throw error;
   }
-  const authors = await loadAuthors();
+  const authors = page.kind === "entries" ? (await loadAuthors()).items : [];
   const names = Object.fromEntries(authors.map((a) => [a.id, a.display_name]));
-  const filtered = Boolean(filters.kind || filters.locale || filters.q);
   const sample = sampleDataEnabled() ? await loadSample(filters.site) : null;
 
   return (
@@ -89,14 +99,19 @@ export default async function ContentPage(props: PageProps<"/content">) {
             })}
           </nav>
 
-          <EntryFilters filters={filters} />
+          {page.kind === "entries" ? <EntryFilters filters={filters} /> : null}
+          {page.kind === "upcoming" ? <p className="fhint">{t("list.upcomingAbout")}</p> : null}
 
           <div className="card tcard">
-            <EntryTable
-              entries={page.data}
-              authors={names}
-              filtered={filtered || filters.status !== "all"}
-            />
+            {page.kind === "entries" ? (
+              <EntryTable
+                entries={page.data}
+                authors={names}
+                filtered={hasFilters(filters) || filters.status !== "all"}
+              />
+            ) : (
+              <UpcomingTable schedules={page.data} entries={page.entries} />
+            )}
           </div>
 
           {filters.cursor || page.pagination.next_cursor ? (
@@ -128,10 +143,34 @@ export default async function ContentPage(props: PageProps<"/content">) {
   );
 }
 
-function loadPage(filters: ReturnType<typeof parseFilters>) {
-  return load((client) =>
-    client.GET("/api/v1/content/entries", { params: { query: listQuery(filters) } }),
-  );
+/** Trang đang xem: bảng bài, hay (tab "Sắp đăng") lịch đang chờ kèm bài có lịch. */
+async function loadPage(filters: ListFilters) {
+  if (filters.status !== "scheduled") {
+    const page = await load((client) =>
+      client.GET("/api/v1/content/entries", { params: { query: listQuery(filters) } }),
+    );
+    return { kind: "entries" as const, ...page };
+  }
+  const [schedules, entries] = await Promise.all([
+    load((client) =>
+      client.GET("/api/v1/content/schedules", {
+        params: {
+          query: {
+            status: "scheduled",
+            limit: PAGE_SIZE,
+            ...(filters.cursor ? { cursor: filters.cursor } : {}),
+          },
+        },
+      }),
+    ),
+    // Tên bài cho từng lịch: mọi bài đang có lịch chờ, một lần đọc (không đọc từng bài).
+    load((client) =>
+      client.GET("/api/v1/content/entries", {
+        params: { query: { scheduled: true, limit: 200 } },
+      }),
+    ),
+  ]);
+  return { kind: "upcoming" as const, ...schedules, entries: entries.data };
 }
 
 /** Phần dữ liệu mẫu (W-006): website đang chọn và trang bắt buộc của nó. */

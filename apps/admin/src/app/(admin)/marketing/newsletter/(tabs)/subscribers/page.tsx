@@ -25,7 +25,8 @@ import { can } from "@/lib/viewer";
 const BASE = "/marketing/newsletter/subscribers";
 
 // Tab "Người đăng ký": tìm theo một phần email, lọc theo danh sách và trạng thái đăng ký (trong
-// danh sách đã chọn, hoặc ở bất kỳ danh sách nào); nhập từ CSV kèm nguồn đồng ý.
+// danh sách đã chọn, hoặc ở bất kỳ danh sách nào), hay chỉ người bị chặn (`blocked=true`: không
+// nhận thư nào); nhập từ CSV kèm nguồn đồng ý.
 export default async function SubscribersPage(
   props: PageProps<"/marketing/newsletter/subscribers">,
 ) {
@@ -35,6 +36,7 @@ export default async function SubscribersPage(
   const status = oneOf(params, "status", SUBSCRIPTION_STATUSES);
   const list = one(params, "list");
   const email = one(params, "email");
+  const blocked = one(params, "blocked") === "1" ? "1" : undefined;
   const cursor = one(params, "cursor", 500);
   let page: { data: Subscriber[]; pagination: { next_cursor?: string | null } };
   let lists: NewsletterList[];
@@ -48,6 +50,7 @@ export default async function SubscribersPage(
               ...(status ? { status } : {}),
               ...(list ? { list_id: list } : {}),
               ...(email ? { email } : {}),
+              ...(blocked ? { blocked: true } : {}),
               ...(cursor ? { cursor } : {}),
             },
           },
@@ -79,16 +82,22 @@ export default async function SubscribersPage(
         <Chips
           label={t("filterStatus")}
           chips={[
-            { href: hrefWith(BASE, keep), label: t("all"), on: !status },
+            { href: hrefWith(BASE, keep), label: t("all"), on: !status && !blocked },
             ...SUBSCRIPTION_STATUSES.map((s) => ({
               href: hrefWith(BASE, { ...keep, status: s }),
               label: t(`sub.${s}`),
-              on: status === s,
+              on: status === s && !blocked,
             })),
+            {
+              href: hrefWith(BASE, { ...keep, blocked: "1" }),
+              label: t("blockedFilter"),
+              on: Boolean(blocked),
+            },
           ]}
         />
         <form method="get" action={BASE} className="filters">
           {status ? <input type="hidden" name="status" value={status} /> : null}
+          {blocked ? <input type="hidden" name="blocked" value="1" /> : null}
           <label className="fld grow">
             <span className="lab">{t("searchEmail")}</span>
             <input
@@ -124,7 +133,9 @@ export default async function SubscribersPage(
         </form>
         <div className="card tcard">
           {page.data.length === 0 ? (
-            <p className="empty">{status || list || email ? t("noMatch") : t("noSubscribers")}</p>
+            <p className="empty">
+              {status || list || email || blocked ? t("noMatch") : t("noSubscribers")}
+            </p>
           ) : (
             <Table cards>
               <thead>
@@ -188,8 +199,8 @@ export default async function SubscribersPage(
           )}
         </div>
         <Pager
-          first={cursor ? hrefWith(BASE, { ...keep, status }) : null}
-          next={next ? hrefWith(BASE, { ...keep, status, cursor: next }) : null}
+          first={cursor ? hrefWith(BASE, { ...keep, status, blocked }) : null}
+          next={next ? hrefWith(BASE, { ...keep, status, blocked, cursor: next }) : null}
         />
       </section>
     </div>

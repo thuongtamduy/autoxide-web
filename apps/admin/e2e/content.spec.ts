@@ -65,6 +65,58 @@ test("thanh bên có Nội dung; danh sách lọc theo trạng thái và chữ, 
   await expect(page.getByText("No post or page matches these filters.")).toBeVisible();
 });
 
+test("tab chờ duyệt, chip và bản dịch còn thiếu là bộ lọc của core; Sắp đăng liệt kê lịch của mọi bài", async ({
+  page,
+}) => {
+  await signIn(page, "/content");
+  await page.getByRole("link", { name: "Awaiting review" }).click();
+  await expect(page).toHaveURL(/\/content\?status=review$/);
+  await expect(rows(page)).toHaveCount(1);
+  await expect(rows(page).first()).toContainText("Bảo quản dao bếp");
+
+  // Bài đã đăng hiện đường dẫn công khai và ngày đăng của core.
+  await page.getByRole("link", { name: "All", exact: true }).click();
+  const published = page.locator("tr", { hasText: "Vệ sinh thớt gỗ đúng cách" });
+  await expect(published).toContainText("/blog/ve-sinh-thot-go-dung-cach");
+
+  // Chưa có bài nào mang nhãn AI hay do người này tạo.
+  await page.getByRole("link", { name: "AI label" }).click();
+  await expect(page).toHaveURL(/\/content\?ai=1$/);
+  await expect(page.getByText("No post or page matches these filters.")).toBeVisible();
+  await page.getByRole("link", { name: "AI label" }).click();
+  await expect(page).toHaveURL(/\/content$/);
+  await page.getByRole("link", { name: "My posts" }).click();
+  await expect(page).toHaveURL(/\/content\?mine=1$/);
+  await expect(page.getByText("No post or page matches these filters.")).toBeVisible();
+  await page.getByRole("link", { name: "My posts" }).click();
+  await expect(page).toHaveURL(/\/content$/);
+
+  // Cả hai bài là tiếng Việt, chưa có bản tiếng Anh.
+  await page
+    .getByLabel("Missing translation")
+    .selectOption({ label: "No English translation yet" });
+  await page.getByRole("button", { name: "Apply" }).click();
+  await expect(page).toHaveURL(/missing=en/);
+  await expect(rows(page)).toHaveCount(2);
+
+  // Hẹn giờ đăng một bài, rồi thấy lịch ở "Sắp đăng".
+  await page.getByRole("link", { name: "Bảo quản dao bếp" }).click();
+  await expect(page.locator(".ce-prose[contenteditable=true]")).toBeVisible();
+  await page.getByRole("button", { name: "Publish", exact: true }).click();
+  await dialog(page).locator("fieldset label", { hasText: "Schedule" }).click();
+  await dialog(page).locator("input[name=run_at]").fill("2030-01-02T08:00");
+  await dialog(page).getByRole("button", { name: "Schedule", exact: true }).click();
+  await expect(toast(page)).toContainText("Scheduled");
+  await page.goto("/content?status=scheduled");
+  await expect(page.getByRole("link", { name: "Upcoming" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(rows(page)).toHaveCount(1);
+  await expect(rows(page).first()).toContainText("Bảo quản dao bếp");
+  await expect(rows(page).first()).toContainText("Publish");
+});
+
 test("trên điện thoại bảng thành thẻ có nhãn cột, nút chính đứng đầu", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signIn(page, "/content");
@@ -196,7 +248,10 @@ test("gửi duyệt, danh mục, gỡ đăng có xác nhận, khôi phục phiê
   await expect(toast(page)).toContainText("Revision restored into the draft");
 
   await page.getByRole("tab", { name: /SEO/ }).click();
-  await expect(page.getByRole("tabpanel")).toContainText("No search title: the title is used.");
+  // Câu của kết quả kiểm SEO là câu của core, theo ngôn ngữ giao diện.
+  await expect(page.getByRole("tabpanel")).toContainText(
+    "No title for search engines: the title is used.",
+  );
   await expect(page.getByRole("button", { name: "Suggest title and description" })).toBeDisabled();
   await expect(page.getByRole("tabpanel")).toContainText("AI is off on this server");
 

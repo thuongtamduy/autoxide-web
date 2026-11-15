@@ -2,17 +2,20 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Chips, Forbidden, Pager } from "@/components/engage/common";
+import { SendSetup } from "@/components/engage/send-setup";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { isForbidden, load } from "@/lib/core";
 import { count, hrefWith, NEWSLETTER_READ, one, oneOf, PAGE_SIZE, pickText } from "@/lib/engage";
 import {
+  adRules,
   CAMPAIGN_BADGE,
   CAMPAIGN_STATUSES,
   type Campaign,
   type NewsletterList,
 } from "@/lib/newsletter";
+import { loadNewsletterSettings } from "@/lib/newsletter-server";
 import { can } from "@/lib/viewer";
 
 const BASE = "/marketing/newsletter";
@@ -52,10 +55,13 @@ export default async function CampaignsPage(props: PageProps<"/marketing/newslet
     throw error;
   }
   const names = new Map(lists.map((l) => [l.id, pickText(l.name, locale) || l.key]));
+  const settings = await loadNewsletterSettings();
+  const ads = adRules(settings);
   const next = page.pagination.next_cursor;
   return (
     <div className="blocks">
       {params.deleted ? <Flash text={t("campaignDeleted")} /> : null}
+      <SendSetup settings={settings} />
       <p className="note">
         <b>{t("noTracking")}</b> {t("noTrackingAbout")}
       </p>
@@ -167,7 +173,7 @@ export default async function CampaignsPage(props: PageProps<"/marketing/newslet
           next={next ? hrefWith(BASE, { status, list, cursor: next }) : null}
         />
       </section>
-      <p className="note warn">{t("adsLaw")}</p>
+      <p className="note warn">{t("adsLaw", { label: ads.label, max: ads.maxPerDay })}</p>
     </div>
   );
 }

@@ -9,6 +9,8 @@ export type MediaFolder = Schemas["FolderResponse"];
 export type MediaTag = Schemas["TagResponse"];
 export type MediaVariant = Schemas["VariantResponse"];
 export type AltSuggestion = Schemas["AltSuggestionResponse"];
+export type PublicMedia = Schemas["PublicMedia"];
+export type LibrarySummary = Schemas["LibrarySummaryResponse"];
 
 /** Số tệp mỗi trang của lưới. */
 export const MEDIA_PAGE_SIZE = 48;
@@ -28,7 +30,7 @@ export interface MediaFilters {
   kind?: MediaKind | undefined;
   q?: string | undefined;
   tag?: string | undefined;
-  /** Chỉ ảnh chưa có alt (lọc trên trang đang xem; core chưa có tham số này). */
+  /** Chỉ ảnh thiếu alt (`alt_missing=true`: core lọc cả thư viện, không tính ảnh trang trí). */
   noAlt?: boolean | undefined;
   visibility?: "public" | "private" | undefined;
   /** Thùng rác. */
@@ -101,12 +103,17 @@ export function mediaHref(filters: MediaFilters, change: Partial<MediaFilters> =
   return text ? `/content/media?${text}` : "/content/media";
 }
 
-/** Tham số gửi `GET /api/v1/media`: mới tải lên trước. */
+/**
+ * Tham số gửi `GET /api/v1/media`: mới tải lên trước, kèm tên người tải lên (`include=uploader`,
+ * core tra tên cho cả trang một lần).
+ */
 export function mediaQuery(filters: MediaFilters) {
   return {
     limit: MEDIA_PAGE_SIZE,
     sort: "created_at" as const,
     order: "desc" as const,
+    include: "uploader" as const,
+    ...(filters.noAlt ? { alt_missing: true } : {}),
     ...(filters.folder ? { folder_id: filters.folder } : {}),
     ...(filters.kind ? { type: MEDIA_KINDS[filters.kind] } : {}),
     ...(filters.q ? { q: filters.q } : {}),
@@ -145,9 +152,12 @@ export function extOf(item: Pick<MediaItem, "name" | "content_type">): string {
   return (item.content_type.split("/")[1] ?? "").toUpperCase();
 }
 
-/** Ảnh cần alt mà chưa có (ảnh trang trí cũng để trống; core chưa đánh dấu được ảnh trang trí). */
-export function missingAlt(item: Pick<MediaItem, "content_type" | "alt">): boolean {
-  return isImage(item.content_type) && item.alt.trim() === "";
+/**
+ * Ảnh cần alt mà chưa có: ảnh, `alt` mặc định trống, không đánh dấu trang trí — đúng điều kiện của
+ * bộ lọc `alt_missing` và số `images_missing_alt` của core (D-267 của core).
+ */
+export function missingAlt(item: Pick<MediaItem, "content_type" | "alt" | "decorative">): boolean {
+  return isImage(item.content_type) && item.alt.trim() === "" && !item.decorative;
 }
 
 /** Kích thước tệp dễ đọc: `312 KB`, `1,8 MB` (theo ngôn ngữ giao diện). */
@@ -183,12 +193,50 @@ export function mediaSrc(
   return `/media/${item.id}/content?${query.toString()}`;
 }
 
+/**
+ * Địa chỉ core trả cho người đọc (`/api/v1/media/{id}/content?v=…&w=…`) thành route của giao diện
+ * (`/media/{id}/content?…`), vì trình duyệt không gọi thẳng core. Địa chỉ tuyệt đối (core đặt CDN
+ * hay tên miền công khai) giữ nguyên; địa chỉ lạ thì rỗng (không tải gì).
+ */
+export function publicMediaSrc(url: string): string {
+  const match = url.match(/^\/api\/v1\/media\/([0-9a-f-]{36})\/content(\?[^#]*)?$/);
+  if (match?.[1] && isUuid(match[1])) return `/media/${match[1]}/content${match[2] ?? ""}`;
+  return /^https:\/\//.test(url) ? url : "";
+}
+
 /** Địa chỉ khi chỉ có id (thân bài, ảnh đại diện): không có phiên bản, core cache ngắn. */
 export function mediaIdSrc(id: string): string {
   return `/media/${id}/content`;
 }
 
 // ---------------------------------------------------------------- Lỗi tải lên
+
+/** Giới hạn tải lên người vận hành đặt (`media` của `GET /kernel/client-config`). */
+export interface UploadLimits {
+  maxBytes: number;
+  /** Loại cho phép: `image/png` hay cả nhóm `audio/*`. */
+  allowedTypes: readonly string[];
+}
+
+/**
+ * Tệp chắc chắn bị core từ chối thì báo ngay, khỏi gửi cả tệp lên rồi mới biết: quá cỡ, hay loại
+ * trình duyệt báo không nằm trong danh sách. Loại trống (trình duyệt không biết) thì để core tự
+ * nhận diện từ nội dung. Trả khoá câu của `media.upload.codes`, hay `null` khi gửi được.
+ */
+export function uploadBlock(
+  file: { size: number; type: string },
+  limits: UploadLimits | null | undefined,
+): "tooLarge" | "typeNotAllowed" | null {
+  if (!limits) return null;
+  if (limits.maxBytes > 0 && file.size > limits.maxBytes) return "tooLarge";
+  const type = file.type.toLowerCase();
+  if (!type || limits.allowedTypes.length === 0) return null;
+  const allowed = limits.allowedTypes.some((pattern) => {
+    const p = pattern.toLowerCase();
+    return p.endsWith("/*") ? type.startsWith(p.slice(0, -1)) : type === p;
+  });
+  return allowed ? null : "typeNotAllowed";
+}
 
 /** Mã lỗi tải lên của core → khoá câu trong `media.upload.codes` (câu của core vẫn hiện kèm). */
 export const UPLOAD_CODES: Readonly<Record<string, string>> = {

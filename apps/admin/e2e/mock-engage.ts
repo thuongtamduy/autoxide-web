@@ -12,6 +12,7 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ModuleInfo } from "@autoxide/sdk";
+import { contentResource, publishedEntryId } from "./mock-content.ts";
 import { empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
 
 type Form = Schemas["FormResponse"];
@@ -125,7 +126,13 @@ export function resetEngage() {
       answers: [
         answer("name", "text", "Họ tên", name),
         answer("email", "email", "Email", email),
-        answer("topic", "select", "Chủ đề", "hop-tac"),
+        {
+          ...answer("topic", "select", "Chủ đề", "hop-tac"),
+          // Nhãn của phiên bản form lúc gửi (D-268): khác nhãn hiện tại của form.
+          choices: [
+            { value: "hop-tac", label: { vi: "Hợp tác kinh doanh", en: "Business partnership" } },
+          ],
+        },
         answer("message", "textarea", "Nội dung", message),
       ],
       locale: "vi",
@@ -235,7 +242,16 @@ export function resetEngage() {
       updated_at: t,
     };
   };
+  const onPost: Comment = {
+    ...comment("Lan Anh", "Cảm ơn, mình làm theo được rồi.", ""),
+    target_type: "content.entry",
+    target_id: publishedEntryId(),
+    status: "published",
+    hold_reason: null,
+  };
+  onPost.published_at = onPost.created_at;
   comments = [
+    onPost,
     comment("Minh Trí", "Mua dầu lau thớt ở đâu?", "too_many_links"),
     comment("Thu Hà", "Thớt bị nứt sau khi ngâm nước qua đêm.", "first_comment"),
   ];
@@ -334,14 +350,14 @@ export async function engageRoutes(
   // ------------------------------------------------------------ forms
   if (route === "GET /api/v1/forms") {
     const status = url.searchParams.get("status");
-    send(
-      response,
-      200,
-      page(
-        forms.filter((f) => !status || f.status === status),
-        url,
-      ) satisfies Schemas["Page_FormResponse"],
+    const found = page(
+      forms.filter((f) => !status || f.status === status),
+      url,
     );
+    send(response, 200, {
+      ...found,
+      data: found.data.map(withCounts),
+    } satisfies Schemas["Page_FormResponse"]);
     return true;
   }
   if (route === "POST /api/v1/forms") {
@@ -496,7 +512,7 @@ export async function engageRoutes(
       send(response, 200, page(found, url) satisfies Schemas["Page_SubmissionResponse"]);
       return true;
     }
-    if (method === "GET") tagged(response, 200, { data: form }, form.updated_at);
+    if (method === "GET") tagged(response, 200, { data: withCounts(form) }, form.updated_at);
     else if (method === "PATCH") {
       if (stale(request, response, form.updated_at)) return true;
       const body = await json(request);
@@ -571,6 +587,21 @@ export async function engageRoutes(
     }
     return true;
   }
+  if (route === "GET /api/v1/newsletter/settings") {
+    send(response, 200, {
+      data: {
+        advertising_label: "[QC]",
+        advertising_max_per_day: 3,
+        postal_address: "12 Hàng Bạc, Hà Nội",
+        send_rate_per_minute: 600,
+        public_url_set: true,
+        preferences_url_set: true,
+        confirm_url_set: true,
+        missing: [],
+      },
+    } satisfies Schemas["Data_NewsletterSettingsResponse"]);
+    return true;
+  }
   if (route === "GET /api/v1/newsletter/campaigns") {
     const status = url.searchParams.get("status");
     const found = campaigns.filter((c) => !status || c.status === status);
@@ -630,6 +661,27 @@ export async function engageRoutes(
       }
       return true;
     }
+    if (verb === "preview" && method === "GET") {
+      // Thư như khi gửi (D-269): cùng lỗi 503 như khi gửi khi thiếu cấu hình.
+      if (c.subject.includes("no-config")) {
+        problem(
+          response,
+          503,
+          "newsletter.preferences_url_missing",
+          "Set AUTOXIDE_NEWSLETTER_PREFERENCES_URL before sending.",
+        );
+        return true;
+      }
+      const foot = "Huỷ đăng ký: https://shop.example.com/u/preview · 12 Hàng Bạc, Hà Nội";
+      send(response, 200, {
+        data: {
+          subject: c.advertising ? `[QC] ${c.subject}` : c.subject,
+          body_text: `${c.body_text}\n\n--\n${foot}`,
+          body_html: c.body_html ? `${c.body_html}<hr><p>${foot}</p>` : null,
+        },
+      } satisfies Schemas["Data_CampaignPreviewResponse"]);
+      return true;
+    }
     if (verb === "test") {
       if (c.subject.includes("no-config")) {
         problem(
@@ -680,9 +732,11 @@ export async function engageRoutes(
   if (route === "GET /api/v1/newsletter/subscribers") {
     const email = (url.searchParams.get("email") ?? "").toLowerCase();
     const status = url.searchParams.get("status");
+    const blocked = url.searchParams.get("blocked");
     const found = subscribers
       .filter((s) => !email || s.email.includes(email))
-      .filter((s) => !status || s.subscriptions.some((x) => x.status === status));
+      .filter((s) => !status || s.subscriptions.some((x) => x.status === status))
+      .filter((s) => blocked === null || (s.status === "blocked") === (blocked === "true"));
     send(response, 200, page(found, url) satisfies Schemas["Page_SubscriberResponse"]);
     return true;
   }
@@ -817,11 +871,50 @@ export async function engageRoutes(
   if (route === "GET /api/v1/comments") {
     const status = url.searchParams.get("status") ?? "pending";
     const q = (url.searchParams.get("q") ?? "").toLowerCase();
+    const type = url.searchParams.get("target_type");
+    const id = url.searchParams.get("target_id");
     const found = comments
       .filter((c) => c.status === status)
       .filter((c) => !q || c.body.toLowerCase().includes(q))
+      .filter((c) => !type || c.target_type === type)
+      .filter((c) => !id || c.target_id === id)
       .reverse();
-    send(response, 200, page(found, url) satisfies Schemas["Page_CommentDetail"]);
+    const listed = page(found, url);
+    send(response, 200, {
+      ...listed,
+      data: listed.data.map(titled),
+    } satisfies Schemas["Page_CommentDetail"]);
+    return true;
+  }
+  if (route === "GET /api/v1/comments/targets") {
+    const q = url.searchParams;
+    const keys = new Map<string, { type: string; id: string; first: string }>();
+    for (const c of [...comments].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
+      const key = `${c.target_type}\u0000${c.target_id}`;
+      if (!keys.has(key))
+        keys.set(key, { type: c.target_type, id: c.target_id, first: c.created_at });
+    }
+    for (const t of targets) {
+      const key = `${t.target_type}\u0000${t.target_id}`;
+      if (!keys.has(key)) keys.set(key, { type: t.target_type, id: t.target_id, first: "" });
+    }
+    const found = [...keys.values()]
+      .sort((a, b) => b.first.localeCompare(a.first))
+      .map((k) => targetView(k.type, k.id))
+      .filter((t) => !q.get("target_type") || t.target_type === q.get("target_type"))
+      .filter((t) => !q.get("state") || t.state === q.get("state"))
+      .filter(
+        (t) =>
+          q.get("pending") === null || (t.pending_count ?? 0) > 0 === (q.get("pending") === "true"),
+      )
+      .map((t) => {
+        const found = resourceOf(t.target_type, t.target_id);
+        return found ? { ...t, title: found.title, url: found.url } : t;
+      });
+    send(response, 200, {
+      data: found,
+      pagination: { limit: Number(q.get("limit") ?? 50), next_cursor: null },
+    } satisfies Schemas["Page_CommentTarget"]);
     return true;
   }
   if (route === "GET /api/v1/comments/bans") {
@@ -868,17 +961,7 @@ export async function engageRoutes(
     const id = decodeURIComponent(seg[3]);
     let target = targets.find((t) => t.target_type === type && t.target_id === id);
     if (!target) {
-      const mine = comments.filter((c) => c.target_type === type && c.target_id === id);
-      target = {
-        target_type: type,
-        target_id: id,
-        state: "open",
-        hidden: false,
-        closes_at: null,
-        comment_count: mine.filter((c) => c.status === "published").length,
-        pending_count: mine.filter((c) => c.status === "pending").length,
-        thread_count: mine.filter((c) => c.status === "published" && c.root_id === c.id).length,
-      };
+      target = targetView(type, id);
       targets.push(target);
     }
     if (method === "PUT") {
@@ -891,7 +974,7 @@ export async function engageRoutes(
       }
       if ("closes_at" in body) target.closes_at = (body.closes_at as string | null) ?? null;
     }
-    send(response, 200, { data: target } satisfies Schemas["Data_CommentTarget"]);
+    send(response, 200, { data: targetView(type, id) } satisfies Schemas["Data_CommentTarget"]);
     return true;
   }
   if (route === "GET /api/v1/comments/data" || route === "DELETE /api/v1/comments/data") {
@@ -920,7 +1003,7 @@ export async function engageRoutes(
         data: [],
         pagination: { limit: 50, next_cursor: null },
       } satisfies Schemas["Page_CommentReport"]);
-    } else if (method === "GET") tagged(response, 200, { data: c }, c.updated_at);
+    } else if (method === "GET") tagged(response, 200, { data: titled(c) }, c.updated_at);
     else if (method === "PATCH") {
       if (stale(request, response, c.updated_at)) return true;
       c.status = (await json(request)).status as Schemas["CommentStatus"];
@@ -935,6 +1018,54 @@ export async function engageRoutes(
   }
   problem(response, 404, "not_found", "No such endpoint (mock).");
   return true;
+}
+
+/** Form kèm số bài nộp theo trạng thái, như danh sách và `GET` một form của core (D-268). */
+function withCounts(form: Form): Form {
+  const mine = submissions.filter((s) => s.form_id === form.id);
+  const count = (status: Schemas["SubmissionStatus"]) =>
+    mine.filter((s) => s.status === status).length;
+  return {
+    ...form,
+    submissions: {
+      new: count("new"),
+      read: count("read"),
+      archived: count("archived"),
+      spam: count("spam"),
+    },
+  };
+}
+
+/**
+ * Tiêu đề và link của đích qua sổ đối tượng (D-270): chỉ khi đích đang công khai. `content.entry`
+ * tra ở `mock-content.ts`; `demo.page` không module nào mô tả, nên vắng (giao diện hiện id).
+ */
+function resourceOf(type: string, id: string): { title: string; url: string } | null {
+  const found = contentResource(type, id, "vi");
+  return found?.public ? { title: found.title, url: found.path } : null;
+}
+
+function titled(c: Comment): Comment {
+  const found = resourceOf(c.target_type, c.target_id);
+  return found ? { ...c, target_title: found.title, target_url: found.url } : c;
+}
+
+/** Trạng thái và số đếm hiện tại của một đích (trạng thái đã đặt, số đếm từ bình luận). */
+function targetView(type: string, id: string): Target {
+  const stored = targets.find((t) => t.target_type === type && t.target_id === id);
+  const mine = comments.filter((c) => c.target_type === type && c.target_id === id);
+  const past = stored?.closes_at ? Date.parse(stored.closes_at) <= Date.now() : false;
+  const hidden = stored?.hidden ?? false;
+  return {
+    target_type: type,
+    target_id: id,
+    state: hidden || past ? "closed" : (stored?.state ?? "open"),
+    hidden,
+    closes_at: stored?.closes_at ?? null,
+    comment_count: mine.filter((c) => c.status === "published").length,
+    pending_count: mine.filter((c) => c.status === "pending").length,
+    thread_count: mine.filter((c) => c.status === "published" && c.root_id === c.id).length,
+  };
 }
 
 function csvOf(form: Form): string {

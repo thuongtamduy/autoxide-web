@@ -96,15 +96,37 @@ test("danh mục: tạo, sửa theo ngôn ngữ, gắn vào bài; thẻ; tác gi
   await page.reload();
   await expect(page.getByLabel("Mẹo dùng")).toBeChecked();
 
+  // Số bài của danh mục (`entry_count` của core); bấm số để xem các bài đó.
+  await page.goto("/content/structure/terms");
+  const tips = page.locator("tr", { hasText: "Kitchen tips" });
+  await expect(tips.locator('td[data-label="Posts"]')).toHaveText("1");
+  await tips.locator('td[data-label="Posts"]').getByRole("link").click();
+  await expect(page).toHaveURL(/\/content\?term=[0-9a-f-]{36}$/);
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator("tbody tr").first()).toContainText("Vệ sinh thớt gỗ đúng cách");
+
+  // Tìm theo tên ở mọi ngôn ngữ, không dấu (`q` của core).
+  await page.goto("/content/structure/terms");
+  await page.getByLabel("Find a category or tag").fill("meo dung");
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page).toHaveURL(/q=meo\+dung/);
+  await expect(page.locator("tr", { hasText: "Kitchen tips" })).toBeVisible();
+  await expect(page.locator("tr", { hasText: "Chọn mua" })).toHaveCount(0);
+
   // Tác giả.
   await page.goto("/content/structure/authors");
   await expect(page.getByText("Minh Anh", { exact: true })).toBeVisible();
+  await expect(page.locator(".st-tile", { hasText: "Minh Anh" })).toContainText("1 post");
   await page.getByRole("button", { name: "Add author" }).click();
   await dialog(page).getByLabel("Display name").fill("Thu Hà");
   await dialog(page).getByLabel("Short bio").fill("Biên tập Góc bếp");
   await dialog(page).getByRole("button", { name: "Add" }).click();
   await expect(toast(page)).toContainText("Author added");
   await expect(page.getByText("Biên tập Góc bếp")).toBeVisible();
+  await page.getByLabel("Find an author").fill("thu ha");
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page.locator(".st-tile")).toHaveCount(1);
+  await expect(page.locator(".st-tile")).toContainText("Thu Hà");
 });
 
 test("chuyển hướng: thêm, lỗi của core dưới ô, lọc theo nguồn, xoá; menu cũ chỉ đọc", async ({

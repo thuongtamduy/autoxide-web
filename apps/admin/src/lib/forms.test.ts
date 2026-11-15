@@ -153,6 +153,30 @@ describe("bài nộp", () => {
     );
   });
 
+  it("nhãn lựa chọn theo phiên bản lúc gửi (`choices` của core), không theo form hiện tại", () => {
+    const yesNo = { yes: "Có", no: "Không" };
+    const topic: FormField = {
+      key: "topic",
+      type: "radio",
+      label: { vi: "Chủ đề" },
+      options: [{ value: "hop-tac", label: { vi: "Nhãn mới" } }],
+    };
+    const sent = {
+      ...answer("topic", "radio", "Chủ đề", "hop-tac"),
+      choices: [{ value: "hop-tac", label: { vi: "Hợp tác" } }],
+    };
+    expect(answerText(sent, yesNo, topic)).toBe("Hợp tác");
+    // Lựa chọn không còn trong phiên bản đó: core trả nhãn rỗng, hiện giá trị thô.
+    const gone = {
+      ...answer("topic", "checkbox", "Chủ đề", ["hop-tac", "cu"]),
+      choices: [
+        { value: "hop-tac", label: { vi: "Hợp tác" } },
+        { value: "cu", label: {} },
+      ],
+    };
+    expect(answerText(gone, yesNo, topic)).toBe("Hợp tác, cu");
+  });
+
   it("trạng thái chuyển được và hạn lưu", () => {
     expect(submissionMoves("new")).toEqual(["read", "archived", "spam"]);
     expect(submissionMoves("spam")).toEqual(["new"]);

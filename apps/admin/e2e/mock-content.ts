@@ -4,7 +4,17 @@ import { randomBytes, randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ModuleInfo } from "@autoxide/sdk";
 import { json, problem, type Schemas, send, text } from "./mock-http.ts";
+import { publicMediaOf } from "./mock-media.ts";
 import { resetStructure, structureRoutes } from "./mock-structure.ts";
+
+/** Id của người đăng nhập trong core giả (`created_by=me`). */
+const MOCK_USER_ID = "01a1dd85-0000-7000-8000-00000000a001";
+
+/** Bộ lọc `true` / `false` của core; vắng thì không lọc. */
+function flag(query: URLSearchParams, name: string, value: boolean): boolean {
+  const wanted = query.get(name);
+  return wanted === null || (wanted === "true") === value;
+}
 
 // Khối của màn Nội dung: bài viết và trang, phiên bản (ETag / If-Match), đăng, gỡ, lưu trữ,
 // gửi duyệt, lịch, phiên bản cũ, danh mục, tác giả, bản dịch, kiểm SEO, link xem trước. AI tắt
@@ -173,6 +183,7 @@ export function resetContent() {
     newEntry({
       title: "Vệ sinh thớt gỗ đúng cách",
       status: "published",
+      published_at: "2026-11-10T03:00:00Z",
       excerpt: "Ba bước sau mỗi lần dùng.",
       author_ids: [CONTENT_AUTHORS[0]?.id ?? ""],
     }),
@@ -182,10 +193,16 @@ export function resetContent() {
 }
 resetContent();
 
+/** Đường dẫn công khai như core lưu ở bản đã đăng (`/blog/slug` cho bài, `/slug` cho trang). */
+function publicPath(entry: MockEntry): string | null {
+  if (entry.status !== "published") return null;
+  return entry.kind === "post" ? `/blog/${entry.slug}` : `/${entry.slug}`;
+}
+
 function view(entry: MockEntry): Schemas["EntryResponse"] {
   const { version, ...rest } = entry;
   // `version` của bản ghi là ETag (chuỗi có ngoặc kép), như core trả trong danh sách.
-  return { ...rest, version: `"${version}"` };
+  return { ...rest, version: `"${version}"`, path: publicPath(entry) };
 }
 
 function sendEntry(response: ServerResponse, status: number, entry: MockEntry) {
@@ -326,6 +343,11 @@ export function contentResource(
   return null;
 }
 
+/** Id của bài đã đăng đầu tiên (đích của bình luận mẫu trong `mock-engage.ts`). */
+export function publishedEntryId(): string {
+  return contentEntries.find((e) => e.status === "published")?.id ?? "";
+}
+
 /** Danh mục con trực tiếp của `content.term` `id` (cho `auto_children`). */
 export function contentTermChildren(id: string): string[] {
   return CONTENT_TERMS.filter((t) => t.parent_id === id).map((t) => t.id);
@@ -340,7 +362,17 @@ export function contentPreview(response: ServerResponse, url: URL) {
   const { created_by, created_via, review_requested_at, review_requested_by, ...rest } =
     view(entry);
   void [created_by, created_via, review_requested_at, review_requested_by];
-  const preview: Schemas["PreviewEntryResponse"] = { ...rest, body_media: [] };
+  // Ảnh công khai của thân bài và ảnh đại diện, như core (D-266 mục 6); tệp riêng tư thì vắng.
+  const ids = JSON.stringify(entry.body).match(/"mediaId":"([^"]+)"/g) ?? [];
+  const bodyMedia = ids
+    .map((m) => publicMediaOf(m.slice(11, -1)))
+    .filter((m): m is Schemas["PublicMedia"] => m !== null);
+  const featured = entry.featured_media_id ? publicMediaOf(entry.featured_media_id) : null;
+  const preview: Schemas["PreviewEntryResponse"] = {
+    ...rest,
+    body_media: bodyMedia,
+    featured_media: featured,
+  };
   return send(response, 200, { data: preview });
 }
 
@@ -367,17 +399,37 @@ export async function contentRoutes(
       } satisfies Schemas["AiStatus"],
     });
   }
+  // Tìm theo chữ (`q`, không dấu) và số bài (`entry_count`), như core (D-266).
+  const fold = (value: string) => slugify(value).replace(/-/g, " ");
+  const wanted = fold(url.searchParams.get("q") ?? "");
   if (route === `GET ${P}/authors`) {
     return send(response, 200, {
-      data: CONTENT_AUTHORS,
+      data: CONTENT_AUTHORS.filter((a) => !wanted || fold(a.display_name).includes(wanted)).map(
+        (a) => ({
+          ...a,
+          entry_count: contentEntries.filter((e) => e.author_ids.includes(a.id)).length,
+        }),
+      ),
       pagination: { limit: 50, next_cursor: null },
     } satisfies Schemas["Page_AuthorResponse"]);
   }
   if (route === `GET ${P}/terms`) {
     return send(response, 200, {
-      data: CONTENT_TERMS,
+      data: CONTENT_TERMS.filter(
+        (term) => !wanted || term.names.some((n) => fold(n.name).includes(wanted)),
+      ).map((term) => ({
+        ...term,
+        entry_count: contentEntries.filter((e) => e.term_ids.includes(term.id)).length,
+      })),
       pagination: { limit: 50, next_cursor: null },
     } satisfies Schemas["Page_TermResponse"]);
+  }
+  if (route === `GET ${P}/schedules`) {
+    const status = url.searchParams.get("status");
+    return send(response, 200, {
+      data: contentSchedules.filter((s) => !status || s.status === status),
+      pagination: { limit: 50, next_cursor: null },
+    } satisfies Schemas["Page_ScheduleResponse"]);
   }
   if (route === `GET ${P}/entries`) {
     const q = url.searchParams;
@@ -394,7 +446,37 @@ export async function contentRoutes(
       .filter(
         (e) => !q.get("q") || fold(`${e.title} ${e.excerpt}`).includes(fold(q.get("q") ?? "")),
       )
-      .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+      // Bộ lọc của core (D-266): chờ duyệt, có lịch chờ, người tạo, nhãn AI, thiếu bản dịch,
+      // danh mục, tác giả.
+      .filter((e) => flag(q, "review_requested", Boolean(e.review_requested_at)))
+      .filter((e) =>
+        flag(
+          q,
+          "scheduled",
+          contentSchedules.some((s) => s.entry_id === e.id && s.status === "scheduled"),
+        ),
+      )
+      .filter((e) => flag(q, "ai_generated", e.ai_generated))
+      .filter((e) => {
+        const by = q.get("created_by");
+        return !by || e.created_by === (by === "me" ? MOCK_USER_ID : by);
+      })
+      .filter((e) => {
+        const missing = q.get("missing_locale");
+        return (
+          !missing ||
+          !contentEntries.some(
+            (o) => o.translation_group_id === e.translation_group_id && o.locale === missing,
+          )
+        );
+      })
+      .filter((e) => !q.get("term_id") || e.term_ids.includes(q.get("term_id") ?? ""))
+      .filter((e) => !q.get("author_id") || e.author_ids.includes(q.get("author_id") ?? ""))
+      .sort((a, b) =>
+        q.get("sort") === "created_at" && q.get("order") === "asc"
+          ? a.created_at.localeCompare(b.created_at)
+          : b.updated_at.localeCompare(a.updated_at),
+      );
     const limit = Number(q.get("limit") ?? 50);
     const start = Number(q.get("cursor") ?? 0);
     const page = matches.slice(start, start + limit);
@@ -406,7 +488,12 @@ export async function contentRoutes(
   }
   if (route === `POST ${P}/entries`) {
     const kind = body.kind === "page" ? "page" : "post";
-    const entry = newEntry({ title: "", kind, locale: text(body, "locale") || "en" });
+    const entry = newEntry({
+      title: "",
+      kind,
+      locale: text(body, "locale") || "en",
+      created_by: MOCK_USER_ID,
+    });
     if (!applyFields(response, entry, body, true)) return;
     entry.has_unpublished_changes = false;
     contentEntries.push(entry);
@@ -450,6 +537,7 @@ export async function contentRoutes(
     }
     case "POST /publish": {
       if (!versionOk(request, response, entry)) return;
+      entry.published_at ??= contentNow();
       entry.status = "published";
       entry.has_unpublished_changes = false;
       entry.review_requested_at = null;
@@ -503,8 +591,8 @@ export async function contentRoutes(
         run_at: runAt,
         status: "scheduled",
         error_code: null,
-        ai_reviewed: false,
-        created_by: null,
+        ai_reviewed: body.ai_reviewed === true,
+        created_by: MOCK_USER_ID,
         created_at: contentNow(),
         updated_at: contentNow(),
       } satisfies Schemas["ScheduleResponse"];
@@ -512,13 +600,17 @@ export async function contentRoutes(
       return send(response, 201, { data: created });
     }
     case "GET /seo-check": {
+      // Câu của kết quả theo `Accept-Language`, như core (D-266 mục 5).
+      const vi = request.headers["accept-language"] === "vi";
       const findings: Schemas["SeoFinding"][] = [];
       if (!entry.meta_title) {
         findings.push({
           code: "seo.meta_title_missing",
           level: "warning",
           field: "meta_title",
-          message: "no title for search engines: the title is used",
+          message: vi
+            ? "Chưa có tiêu đề cho máy tìm kiếm: dùng tiêu đề bài."
+            : "No title for search engines: the title is used.",
         });
       }
       if (!entry.excerpt) {
@@ -526,7 +618,7 @@ export async function contentRoutes(
           code: "seo.excerpt_missing",
           level: "warning",
           field: "excerpt",
-          message: "no summary",
+          message: vi ? "Chưa có tóm tắt." : "No summary.",
         });
       }
       return send(response, 200, { data: { findings } satisfies Schemas["SeoReport"] });
@@ -629,11 +721,17 @@ export function seedPages(response: ServerResponse) {
  * `content.spec.ts` giữ nguyên.
  */
 export function seedLegal(response: ServerResponse) {
-  const rules = newEntry({ title: "Quy chế Chợ Bếp Mộc", kind: "page", status: "published" });
+  const rules = newEntry({
+    title: "Quy chế Chợ Bếp Mộc",
+    kind: "page",
+    status: "published",
+    published_at: "2026-11-01T00:00:00Z",
+  });
   rules.slug = "quy-che";
   const post = newEntry({
     title: "Cách chăm chảo gang mới mua",
     status: "published",
+    published_at: "2026-11-02T00:00:00Z",
     ai_generated: true,
   });
   for (const entry of [rules, post]) {

@@ -8,6 +8,7 @@ import { Back, Facts, Forbidden, PageHead } from "@/components/engage/common";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import {
+  adminHref,
   banChoices,
   COMMENT_BADGE,
   type CommentDetail,
@@ -16,7 +17,6 @@ import {
   moderationMoves,
   targetHref,
 } from "@/lib/comments";
-import { targetKey, targetLabels } from "@/lib/comments-server";
 import { isForbidden, isNotFound, load } from "@/lib/core";
 import { COMMENTS_MANAGE, COMMENTS_MODERATE, COMMENTS_READ, hrefWith } from "@/lib/engage";
 import { can } from "@/lib/viewer";
@@ -46,9 +46,8 @@ export default async function CommentPage(props: PageProps<"/marketing/comments/
     throw error;
   }
   const [moderate, manage] = await Promise.all([can(COMMENTS_MODERATE), can(COMMENTS_MANAGE)]);
-  const labels = await targetLabels([{ type: comment.target_type, id: comment.target_id }]);
-  const label = labels.get(targetKey(comment.target_type, comment.target_id));
   const reasons = holdReasons(comment.hold_reason);
+  const openHref = adminHref(comment.target_type, comment.target_id);
   const moves = moderationMoves(comment.status).map((to) => {
     const move: Move = { value: to, label: t(`move.${to}`), done: t(`moved.${to}`) };
     if (to === "published") move.tone = "pri";
@@ -180,7 +179,7 @@ export default async function CommentPage(props: PageProps<"/marketing/comments/
                 [
                   t("col.target"),
                   <Link key="t" href={targetHref(comment.target_type, comment.target_id)}>
-                    {label?.title ?? comment.target_id}
+                    {comment.target_title ?? comment.target_id}
                   </Link>,
                 ],
                 [
@@ -188,6 +187,16 @@ export default async function CommentPage(props: PageProps<"/marketing/comments/
                   <span key="ty" className="mono">
                     {comment.target_type}
                   </span>,
+                ],
+                [
+                  t("targetUrl"),
+                  comment.target_url ? (
+                    <span key="u" className="mono">
+                      {comment.target_url}
+                    </span>
+                  ) : (
+                    t("targetNotPublic")
+                  ),
                 ],
                 [
                   t("threadLabel"),
@@ -211,20 +220,22 @@ export default async function CommentPage(props: PageProps<"/marketing/comments/
               ]}
             />
           </div>
-          {label?.href ? (
-            <p className="fhint">
-              <Link href={label.href}>{t("openTarget")}</Link> ·{" "}
-              <Link
-                href={hrefWith(base, {
-                  type: comment.target_type,
-                  target: comment.target_id,
-                  status: "published",
-                })}
-              >
-                {t("targetComments")}
-              </Link>
-            </p>
-          ) : null}
+          <p className="fhint">
+            {openHref ? (
+              <>
+                <Link href={openHref}>{t("openTarget")}</Link> ·{" "}
+              </>
+            ) : null}
+            <Link
+              href={hrefWith(base, {
+                type: comment.target_type,
+                target: comment.target_id,
+                status: "published",
+              })}
+            >
+              {t("targetComments")}
+            </Link>
+          </p>
         </section>
 
         <section className="block" aria-labelledby="rep-h">

@@ -93,6 +93,17 @@ test("menu thật: lỗi trước khi gửi, lỗi 422 của core, 412, lưu, xe
   await expect(page.locator(".mn-row.on")).toContainText("Liên hệ");
   await page.reload();
   await expect(row(page, "Liên hệ")).toBeVisible();
+  // Danh sách: số mục và người sửa cuối của core.
+  const mainRow = page.locator("tbody tr", { hasText: "main" });
+  await expect(mainRow).toContainText("by admin");
+  await expect(mainRow.locator('td[data-label="Items"]')).toHaveText(/^\d+$/);
+
+  // Mục đã lưu giữ id qua lần lưu (core nhận `id` của mục): mục đang chọn vẫn là nó.
+  await row(page, "Khuyến mại").click();
+  await page.getByLabel("Label", { exact: true }).fill("Khuyến mại tháng 11");
+  await page.getByRole("button", { name: "Save menu" }).click();
+  await expect(toast(page)).toContainText("Menu saved");
+  await expect(page.locator(".mn-row.on")).toContainText("Khuyến mại tháng 11");
 
   // Xem trước: bản nháp mở bảng xổ của nhóm; menu công khai của core có mục vừa lưu.
   await page.locator(".mn-baritem", { hasText: "Hỗ trợ" }).click();

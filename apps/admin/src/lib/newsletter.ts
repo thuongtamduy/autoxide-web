@@ -10,6 +10,8 @@ export type Subscriber = Schemas["SubscriberResponse"];
 export type SubscriptionStatus = Schemas["SubscriptionStatus"];
 export type Suppression = Schemas["SuppressionResponse"];
 export type NewPosts = Schemas["NewPosts"];
+export type NewsletterSettings = Schemas["NewsletterSettingsResponse"];
+export type CampaignPreview = Schemas["CampaignPreviewResponse"];
 
 export const CAMPAIGN_STATUSES: readonly CampaignStatus[] = [
   "draft",
@@ -42,11 +44,20 @@ export const SUBSCRIPTION_BADGE: Record<SubscriptionStatus, string> = {
 };
 
 /**
- * Nhãn core thêm vào đầu tiêu đề thư quảng cáo khi chưa đổi cấu hình
- * (`AUTOXIDE_NEWSLETTER_ADVERTISING_LABEL`, theo một cách đọc NĐ 91/2020). Core chưa có API đọc
- * cấu hình này, nên giao diện hiện giá trị mặc định và nói rõ là "hoặc nhãn đặt ở máy chủ".
+ * Nhãn core thêm vào đầu tiêu đề thư quảng cáo và số thư quảng cáo tối đa mỗi người mỗi ngày khi
+ * người vận hành chưa đổi cấu hình (theo một cách đọc NĐ 91/2020). Chỉ dùng khi core không trả
+ * `GET /newsletter/settings` (core cũ).
  */
 export const DEFAULT_AD_LABEL = "[QC]";
+const DEFAULT_AD_MAX_PER_DAY = 3;
+
+/** Nhãn và giới hạn thư quảng cáo đang áp dụng ở máy chủ. */
+export function adRules(settings: NewsletterSettings | null): { label: string; maxPerDay: number } {
+  return {
+    label: settings?.advertising_label ?? DEFAULT_AD_LABEL,
+    maxPerDay: settings?.advertising_max_per_day ?? DEFAULT_AD_MAX_PER_DAY,
+  };
+}
 
 export const NEW_POSTS: readonly NewPosts[] = ["off", "draft", "send"];
 

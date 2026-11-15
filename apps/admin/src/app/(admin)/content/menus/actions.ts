@@ -121,8 +121,8 @@ export async function newMenu(state: NewMenuState, formData: FormData): Promise<
       client.GET("/api/v1/menus/{id}", { params: { path: { id: values.copy_from } } }),
     );
     if (!source.ok) return { ...problemState(source.problem, []), values };
-    // Chép đích và cách trình bày; core cấp id mới cho mọi mục.
-    items = toInput(fromSaved(source.data.data.items));
+    // Chép đích và cách trình bày, không chép id (`POST` không nhận): core cấp id mới.
+    items = toInput(fromSaved(source.data.data.items), { keepIds: false });
   }
   const result = await send((client) =>
     client.POST("/api/v1/menus", {

@@ -4,7 +4,8 @@ import { CampaignEditor } from "@/components/engage/campaign-editor";
 import { Back, Forbidden, PageHead } from "@/components/engage/common";
 import { isForbidden, load } from "@/lib/core";
 import { NEWSLETTER_MANAGE, one, pickText } from "@/lib/engage";
-import type { NewsletterList } from "@/lib/newsletter";
+import { adRules, type NewsletterList } from "@/lib/newsletter";
+import { loadNewsletterSettings } from "@/lib/newsletter-server";
 import { can } from "@/lib/viewer";
 
 // Soạn chiến dịch mới: lưu thành bản nháp, chưa gửi gì. Gửi thử, hẹn giờ, gửi ở trang của nó.
@@ -25,6 +26,7 @@ export default async function NewCampaignPage(
     throw error;
   }
   const wanted = one(params, "list");
+  const settings = await loadNewsletterSettings();
   return (
     <div className="page">
       <Back href="/marketing/newsletter" label={t("back")} />
@@ -35,6 +37,7 @@ export default async function NewCampaignPage(
         <CampaignEditor
           action={createCampaign}
           submit={t("editor.create")}
+          ads={adRules(settings)}
           lists={lists.map((l) => ({
             id: l.id,
             name: pickText(l.name, locale) || l.key,

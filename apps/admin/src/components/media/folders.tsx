@@ -67,6 +67,9 @@ export function FolderBar({
           >
             <Icon name="folder" small />
             {folder.name}
+            <span className="cnt" title={t("itemCount", { count: folder.item_count })}>
+              {folder.item_count}
+            </span>
           </Link>
         ))}
       </nav>
