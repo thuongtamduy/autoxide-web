@@ -16,6 +16,7 @@ import { ART, Art, Icon } from "./icon";
 import { NavAnchor } from "./nav-link";
 import { Price } from "./price";
 import { SampleMark } from "./sample-mark";
+import { SearchBox } from "./search-box";
 import { StorePicker } from "./store-picker";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -145,21 +146,12 @@ export async function SiteHeader({ locale, site }: { locale: Locale; site: SiteI
             <span className="sec-a">{t("secure")}</span>
             <span className="sec-b">{t("secureShort")}</span>
           </span>
-          <search className="hdr-search">
-            <form action={searchAction} method="get">
-              <label className="hs-field">
-                <Icon name="search" className="hs-ic" />
-                <input
-                  className="inp"
-                  type="search"
-                  name="q"
-                  maxLength={200}
-                  placeholder={t("searchPlaceholder")}
-                  aria-label={t("searchLabel")}
-                />
-              </label>
-            </form>
-          </search>
+          <SearchBox
+            action={searchAction}
+            locale={locale}
+            placeholder={t("searchPlaceholder")}
+            label={t("searchLabel")}
+          />
           <div className="hdr-gap" />
           {sample ? (
             <StorePicker

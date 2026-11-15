@@ -16,6 +16,10 @@ import { sampleDataEnabled } from "@/sample";
 import "@/styles/tokens.css";
 import "@/styles/site.css";
 import "@/styles/shop.css";
+// Kiểu giao diện (W-029): mỗi kiểu một file, chỉ áp khi `<html data-variant>` khớp.
+import "@/styles/variant-market.css";
+import "@/styles/variant-minimal.css";
+import "@/styles/variant-luxe.css";
 
 // Layout gốc của website (mọi trang nằm dưới `[locale]`). Server Component: đầu trang, chân trang và
 // mọi trang đọc core từ máy chủ; chỉ phần cần tương tác (ô bản tin, nút giỏ, sáng / tối, bình luận)

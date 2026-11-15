@@ -57,6 +57,12 @@ export const ICONS = {
     "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
   rss: "M5 11a8 8 0 0 1 8 8M5 5a14 14 0 0 1 14 14M6 19a1 1 0 1 0 0-2 1 1 0 0 0 0 2z",
   card: "M3 6h18v12H3zM3 10h18M7 15h4",
+  filter: "M4 6h16M7 12h10M10 18h4",
+  minus: "M5 12h14",
+  flag: "M5 21V4h11l-2 4 2 4H5",
+  thumb: "M7 11v9H4v-9zM7 11l4-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 17.3 20H7",
+  play: "M7 5l12 7-12 7z",
+  box: "M12 3l8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9",
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -111,6 +117,8 @@ export const ART = {
   clay: "M6 8h12l1 8a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4zM4 8h16M10 5h4",
   bottle: "M10 3h4v4l2 3v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10l2-3zM8 13h8",
   jar: "M7 7h10v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2zM8 3h8v4H8zM7 12h10",
+  wok: "M3 10h18a9 6 0 0 1-18 0zM21 10l2-2M1 10l2 0",
+  plate: "M12 19a8 3 0 1 0 0-6 8 3 0 0 0 0 6zM8 16a4 1.5 0 1 0 8 0 4 1.5 0 0 0-8 0",
 } as const;
 
 export type ArtName = keyof typeof ART;

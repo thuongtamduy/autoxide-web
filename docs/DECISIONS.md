@@ -1342,3 +1342,111 @@ tên người sửa của phiên bản, cây trang quá 200 trang. Ngôn ngữ c
 
 Đã cân nhắc: giữ kho mẫu `decorative` làm phương án dự phòng cho core cũ — bỏ, vì README đã yêu cầu core `27380c9`;
 đọc tên người tải lên bằng `GET /auth/users/{id}` cho khung chi tiết — bỏ, dòng của danh sách đã có tên.
+
+## W-029 · Website bán hàng: danh mục, sản phẩm, khuyến mại, livestream, kiểu giao diện, gợi ý tìm (dữ liệu mẫu) — 2026-11-15 — agent quyết
+
+Làm tiếp W-026 theo các bảng `Category`, `Product`, `Deals`, `Live`, `StyleMarket`, `StyleMinimal`,
+`StyleLuxe` của bản thiết kế mặt tiền, mục 7–8 của `docs/research/ui-design.md` và đặc tả bước 41–46, 49
+của core. Core chưa có các module đó nên mọi trang ở đây dùng dữ liệu mẫu (W-006, W-026); chỉ bài viết
+(gợi ý tìm) đọc core thật.
+
+Quyết định:
+
+- **Trang mới** (chỉ có khi bật dữ liệu mẫu, tắt thì 404 như địa chỉ lạ):
+  - `/danh-muc` (tất cả sản phẩm) và `/danh-muc/<slug>` (slug theo ngôn ngữ, `hreflang` trỏ slug của
+    ngôn ngữ kia). Danh mục sản phẩm (`catalog`) khác danh mục bài viết (`content`, `/blog/category/…`):
+    hai module, hai cây, hai địa chỉ; slug của danh mục bài viết ở `/danh-muc/…` là 404.
+  - `/san-pham/<slug>` (`?sku=` chọn sẵn biến thể, ghi lại khi người mua đổi), `/khuyen-mai`,
+    `/livestream` (`?session=` mở một phiên trong lịch).
+- **Bộ lọc nằm trên địa chỉ**, tên tham số theo `GET /api/v1/catalog/public/products` của bước 41
+  (`material`, `stove`, `price`, `rating`, `seller`, `in_store`, `sort`, `cursor`): form GET của
+  `next/form` (điều hướng phía trình duyệt, chạy cả khi không có JavaScript), máy chủ lọc, đếm theo từng
+  giá trị (facet), chia trang 12 sản phẩm bằng con trỏ (`lib/listing.ts`, hàm thuần). Khi core có API thì
+  bỏ phần lọc trong website, giữ `parseListing` / `listingHref`. Trang đã lọc, đã sắp, trang sau:
+  `noindex`.
+- **Trang sản phẩm**: máy chủ dựng mọi phần (SEO, JSON-LD `Product` với `Offer` từng biến thể — giá không
+  cần mã); phần tương tác là Client Component nhận dữ liệu đã định dạng: bộ ảnh, khối mua (biến thể là
+  radio thật; nhận tại cửa hàng theo tồn của cửa hàng đang chọn, hết hàng thì mở danh sách cửa hàng
+  khác; ngày giao là ngày cụ thể kèm giờ chốt 16:00 tính theo giờ Việt Nam; mức miễn phí giao), tab trên
+  máy tính / mục gập trên điện thoại, đánh giá (lọc sao, có ảnh, biến thể, chủ đề AI đã duyệt; sắp xếp;
+  "Hữu ích"; báo vi phạm có lý do), hỏi đáp (tìm bỏ dấu, hỏi tại chỗ, câu vừa hỏi "chờ duyệt · chỉ bạn
+  thấy"). Lưu sản phẩm không cần đăng nhập: `localStorage` (tiện ích riêng của người xem).
+- **Luật Việt Nam trên trang** (D-186 của core; dữ liệu thật để trống dạng `[…]`, repo công khai):
+  - mã giảm giá không trình bày như giá đã giảm: giá niêm yết lớn, dòng "Còn X với mã …" và điều kiện
+    (Luật 19/2023, đặc tả 43 mục D-200);
+  - giảm tự động (flash sale) hiện giá gạch là giá ngay trước chương trình, phần trăm làm tròn xuống,
+    suất là số thật;
+  - trang "Khuyến mại" ghi số thông báo Sở Công Thương của từng chương trình, căn cứ thông báo
+    (NĐ 81/2018 sửa bởi NĐ 128/2024) và trần giảm 50% (TT 39/2025/TT-BCT) là dữ liệu có ngày hiệu lực,
+    kèm "cần đối chiếu văn bản gốc";
+  - trang sản phẩm có khối "Người bán và thông tin hàng hoá": người bán (cửa hàng hay người bán trên sàn:
+    loại hình, mã số thuế / ĐKKD, địa chỉ, điện thoại, đã xác thực, ai giao), nhãn hàng hoá (xuất xứ, tổ
+    chức chịu trách nhiệm, hướng dẫn, thuế), đổi trả, bảo hành, thanh toán qua đối tác có giấy phép, báo
+    vi phạm;
+  - livestream ghi rõ người dẫn là người tiếp thị liên kết (không phải người bán), ai bán, ai giao, ai
+    nhận hoa hồng, lưu vết giờ ghim và giá công bố;
+  - tên người mua rút gọn ("Hoài Thương N.") khi hiện công khai.
+- **Giờ luôn tương đối với bây giờ** (lỗi cũ: "20:00 tối nay" hỏng sau 22:00): flash sale 20:00–22:00
+  tối mai, phiên livestream đang phát bắt đầu 42 phút trước, như trang quản trị; đếm ngược tính lại mỗi
+  giây ở trình duyệt so với giờ tuyệt đối do máy chủ trả (`lib/countdown.ts`).
+- **Dữ liệu mẫu** (mỗi hàm ghi endpoint và bước thay thế):
+  - `catalog.ts` mở rộng (không lập catalog song song): khối lượng, kích thước kiện, mã vạch, số người ăn
+    của biến thể và thuộc tính `origin`, `material`, `stove_types` lấy từ trang quản trị; tháng bảo hành,
+    ngày lên kệ, chất liệu của vài sản phẩm là website thêm (comment ghi rõ); `MARKET_PRODUCTS` có một hàng
+    của người bán trên sàn (tin đăng đã duyệt của Khăn Bông Hạ Long trong `market-data.ts`), `PRODUCTS`
+    vẫn đúng 12 sản phẩm của cửa hàng;
+  - `product-detail.ts` (mô tả, dùng và chăm sóc, trong hộp, đánh giá, hỏi đáp, hàng dùng kèm, phí giao
+    theo vùng), `deals.ts` (cùng ID, điều kiện, lượt của `promotions.ts` trang quản trị), `live.ts` (ba
+    phiên của `affiliate.ts`), `seller-profiles.ts` (thông tin người bán bắt buộc). Đánh giá và hỏi đáp là
+    lời người mua, giữ tiếng Việt ở cả trang tiếng Anh (`lang="vi"`).
+  - Một chỗ khác trang quản trị có chủ đích: flash sale cuối tuần bên đó là bản nháp bị chặn vì chảo gang
+    26 cm giảm 55%; website hiện chương trình như sau khi sửa về mức thấp nhất luật cho (345.000 ₫) — core
+    không bao giờ trả cho website chương trình vượt trần.
+- **Gợi ý tìm ở đầu trang**: combobox theo mẫu ARIA APG (↓ ↑, Enter, Esc; không JavaScript thì vẫn là
+  form GET), gọi route `/api/suggest` của website (máy chủ website gọi core cho bài viết; sản phẩm, danh
+  mục, cửa hàng là mẫu tới `GET /api/v1/catalog/public/search/suggest` của bước 41).
+- **Bốn kiểu giao diện**: `tokens.css` đổi màu, phông; `variant-market.css`, `variant-minimal.css`,
+  `variant-luxe.css` (một file một kiểu, chỉ áp khi `<html data-variant>` khớp) đổi hình khối theo bảng
+  `Style*`: market — thẻ sản phẩm đóng khung, giá đỏ đậm, nhãn giảm ruy-băng vàng, nút bo 8px; minimal —
+  không viền, ô ảnh bo lớn, nút chính màu chữ, nhiều khoảng trống; luxe — góc vuông, tiêu đề chữ có chân
+  nét mảnh, nút và nhãn chữ hoa giãn cách, ảnh 4:5. Bố cục và số cột không đổi. Phần thân riêng của trang
+  chiến dịch (12.12, giới thiệu chảo gang, bộ sưu tập Bát Tràng) chưa làm: cần trang chiến dịch của core
+  (bước 67).
+- **Test**: Vitest cho `listing`, `countdown`, `delivery`, `promo`, `reviews`, `suggest`, khuyến mại và
+  livestream mẫu (giờ tương đối, trần luật, số khớp trang quản trị) và component `Reviews`, `Questions`,
+  `Countdown`; Playwright `e2e/commerce.spec.ts` (lọc + sắp, chọn cỡ + nhận tại cửa hàng + thêm vào giỏ,
+  lọc đánh giá + hỏi đáp, khuyến mại, livestream, gợi ý tìm bằng bàn phím, trang tiếng Anh),
+  `e2e/themes.spec.ts` (bốn kiểu × 390 / 1440: không cuộn ngang, tiền không bẻ dòng, không thẻ lẻ, nét
+  riêng của kiểu); `playwright.config.ts` chạy thêm ba bản website ở cổng 3201–3203 cho ba kiểu. Trang
+  mới vào vòng lặp bố cục của `storefront.spec.ts`.
+
+Chỗ core còn thiếu cho các trang này (ngoài những gì đặc tả 41–49 đã có), ghi thêm vào bảng chỗ thiếu
+API của core:
+
+- danh sách phiên livestream công khai (lịch phát) — bước 49 chỉ có `GET /public/live-sessions/{id}`;
+- số đánh giá có ảnh và đếm theo biến thể (facet của danh sách đánh giá) — bước 45 có lọc `has_media`
+  nhưng không có số đếm để hiện "Có ảnh (24)";
+- "chủ đề người mua hay nhắc" (nhãn + số lần + từ khoá lọc) đi kèm bản tóm tắt AI đã duyệt — bước 45 chỉ
+  có `body` của tóm tắt;
+- báo vi phạm một đánh giá (lý do theo danh sách) cho người đọc — bước 45 có ẩn đánh giá của nhân viên;
+  báo vi phạm sản phẩm và phiên livestream (bước 37, 46 có `ViolationReports` nhưng chưa có endpoint
+  công khai cho website);
+- thông tin hiển thị theo biến thể cho trang sản phẩm: số người ăn, trong hộp có gì, không kèm, máy rửa
+  bát, hướng dẫn dùng / chăm sóc (`kitchen` của trang quản trị) — đặc tả 41 chưa có trong
+  `products/by-slug`;
+- phí và ngày giao dự kiến theo tỉnh không cần giỏ (ui-design mục 4 đã ghi bước 44) kèm giờ chốt đơn;
+- thông tin nhãn của chương trình khuyến mại cho người mua: số thông báo Sở Công Thương và trần luật
+  đang áp (đặc tả 43 có ở API quản trị `legal-limits`, `notices`, chưa có trong `GET /public/promotions`);
+- hồ sơ công khai của cửa hàng: tên pháp lý, mã số thuế, địa chỉ, điện thoại (bước 34) — trang sản phẩm
+  của hàng cửa hàng tự bán cần như khối người bán của sàn.
+
+Lý do: chủ dự án giao các trang thương mại của bản thiết kế; dựng trên dữ liệu mẫu có cùng hình dạng API
+của đặc tả để khi core có bước 41–49 chỉ đổi hàm lấy dữ liệu, không đổi trang. Lọc trên địa chỉ và render
+phía máy chủ giữ SEO và chạy được khi không có JavaScript.
+
+Đã cân nhắc: lọc hoàn toàn phía trình duyệt — địa chỉ không chia sẻ được, máy tìm kiếm không thấy; nút
+"Xem thêm" nối thêm sản phẩm như bản thiết kế — cần JavaScript và giữ trạng thái, chọn link "Trang sau"
+theo con trỏ như mục bài viết; hiện flash sale đúng bản nháp của trang quản trị (giảm 55%) — vi phạm trần
+luật, core không trả; một file CSS cho cả ba kiểu — Biome báo thứ tự độ ưu tiên giữa các kiểu không liên
+quan; ép kiểu giao diện bằng tham số trên địa chỉ để test — thêm một đường đổi giao diện không có trong
+sản phẩm, chọn chạy thêm ba bản website trong test.
