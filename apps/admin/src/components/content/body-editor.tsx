@@ -1,6 +1,6 @@
 "use client";
 
-// Trình soạn thân bài bằng Tiptap (W-007). Thân bài của core là JSON của ProseMirror / Tiptap
+// Trình soạn thân bài bằng Tiptap (W-008). Thân bài của core là JSON của ProseMirror / Tiptap
 // với danh sách node cho phép (docs/CONTENT.md của core), nên trình soạn chỉ bật đúng các node
 // đó: đoạn văn, tiêu đề 2–4, danh sách, trích dẫn, mã, đường kẻ, bảng, ảnh (giữ id media), nhúng.
 // JSON lấy ra luôn qua `toCoreBody` để bỏ thuộc tính Tiptap tự thêm mà core không nhận.
