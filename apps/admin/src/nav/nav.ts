@@ -8,6 +8,15 @@
 // `Module::navigation`) thì lấy danh sách này từ core thay cho file này.
 import type { IconName } from "@/components/shell/icon";
 import {
+  COMMENTS_EXPORT,
+  COMMENTS_MANAGE,
+  COMMENTS_READ,
+  FORMS_EXPORT,
+  FORMS_READ,
+  NEWSLETTER_EXPORT,
+  NEWSLETTER_READ,
+} from "@/lib/engage";
+import {
   AUDIT_READ,
   CONTENT_READ,
   DEVTOOLS_READ,
@@ -49,6 +58,32 @@ export interface NavGroup {
 /** Thứ tự cố định, theo 12 phân hệ của bản thiết kế. Chỉ ghi màn đã có trong ứng dụng này. */
 export const NAV: NavGroup[] = [
   { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
+  {
+    // Tiếp thị: biểu mẫu, bản tin, bình luận (module `forms`, `newsletter`, `comments`). Khuyến
+    // mại và tiếp thị liên kết (bước 43, 49) vào nhóm này khi dựng.
+    id: "mkt",
+    icon: "mega",
+    pages: [
+      {
+        id: "forms",
+        href: "/marketing/forms",
+        module: "forms",
+        permission: [FORMS_READ, FORMS_EXPORT],
+      },
+      {
+        id: "newsletter",
+        href: "/marketing/newsletter",
+        module: "newsletter",
+        permission: [NEWSLETTER_READ, NEWSLETTER_EXPORT],
+      },
+      {
+        id: "comments",
+        href: "/marketing/comments",
+        module: "comments",
+        permission: [COMMENTS_READ, COMMENTS_MANAGE, COMMENTS_EXPORT],
+      },
+    ],
+  },
   {
     id: "content",
     icon: "posts",

@@ -192,3 +192,21 @@ describe("phân hệ Nội dung trong sổ thật", () => {
     );
   });
 });
+
+describe("nhóm Tiếp thị", () => {
+  it("đứng sau Tổng quan; mỗi màn theo module và permission của nó", async () => {
+    const { NAV: real } = await import("./nav");
+    expect(real.map((g) => g.id).slice(0, 2)).toEqual(["home", "mkt"]);
+    const nav = visibleNav(
+      {
+        allPermissions: false,
+        permissions: ["forms.read", "comments.export"],
+        modules: ["forms", "newsletter", "comments"],
+      },
+      real,
+    );
+    expect(nav.find((g) => g.id === "mkt")?.pages.map((p) => p.id)).toEqual(["forms", "comments"]);
+    const missing = visibleNav({ allPermissions: true, permissions: [], modules: ["forms"] }, real);
+    expect(missing.find((g) => g.id === "mkt")?.pages.map((p) => p.id)).toEqual(["forms"]);
+  });
+});

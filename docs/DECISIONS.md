@@ -327,3 +327,59 @@ xuống trình duyệt, nên mọi byte của tệp đi qua máy chủ của gia
 `proxyClientMaxBodySize` lên 100 MB — proxy giữ cả tệp trong bộ nhớ cho mỗi lần tải; trỏ `<img>`
 thẳng vào core — lộ địa chỉ nội bộ của core và không tải được ảnh riêng tư; tự dựng trình sửa menu
 trên API cũ của `content` — sắp ngừng, sai chỗ theo quyết định của chủ dự án.
+
+## W-011 · Phân hệ Tiếp thị: Biểu mẫu, Bản tin, Bình luận — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Phân hệ Tiếp thị (`mkt`, biểu tượng `mega`) vào sổ điều hướng, đứng sau Tổng quan theo thứ tự 12
+  phân hệ của bản thiết kế. Ba màn, mỗi màn một module của core: Biểu mẫu `/marketing/forms`
+  (`forms`), Bản tin `/marketing/newsletter` (`newsletter`), Bình luận `/marketing/comments`
+  (`comments`). Bản thiết kế gộp cả ba vào một màn bốn tab; tách thành ba màn vì mỗi màn có nhiều
+  tab và trang con (mỗi tab một đường dẫn, W-004). Khuyến mại và tiếp thị liên kết (bước 43, 49)
+  vào nhóm này khi dựng. Màn hiện khi module đã cài và người xem có permission đọc hoặc xuất của nó.
+- Mỗi màn có tab "Dữ liệu theo email" (yêu cầu của chủ dữ liệu): tra bằng Server Action (POST),
+  không đặt email lên địa chỉ trang; tải JSON dựng ở trình duyệt từ đúng dữ liệu core trả; xoá phải
+  xác nhận, nêu hệ quả của từng module.
+- Lệnh sửa của ba module bắt buộc `If-Match`. Bảng danh sách không có `ETag` từng dòng, nên mọi lệnh
+  sửa đi qua `versioned` (`src/lib/engage-server.ts`): đọc bản ghi lấy `ETag`, so `updated_at` với
+  bản người dùng đang thấy (khác thì báo 412, không ghi), rồi ghi kèm `If-Match` — core vẫn từ chối
+  nếu có người sửa xen giữa. `ETag` vẫn là chuỗi mờ, giao diện không đọc nội dung của nó.
+- Thao tác đảo được (đổi trạng thái bài nộp, duyệt / từ chối / spam / giữ lại bình luận, đóng / mở
+  form, đóng / mở / ẩn bình luận của bài, tạm dừng / tiếp tục chiến dịch, bỏ chặn) báo kèm nút
+  Hoàn tác (`ChangeButtons`, `components/engage/actions.tsx`): Server Action trả trạng thái cũ và
+  `updated_at` mới, Hoàn tác gửi lại trạng thái cũ cũng có kiểm phiên bản. `ToastProvider` nhận
+  thêm `undo` (không đổi cách gọi cũ). Thao tác không đảo được (xoá, huỷ chiến dịch, gửi ngay, xoá
+  dữ liệu theo email) hỏi lại và nêu hệ quả (`ConfirmButton`).
+- Trình sửa form là trang riêng (`/marketing/forms/new`, `…/{id}/edit`): trường giữ trong state, gửi
+  một lần dạng JSON; lỗi của core theo đường dẫn (`fields[2].options`) hiện dưới đúng thẻ. Lựa chọn
+  của trường viết mỗi dòng `giá trị | nhãn tiếng Việt | nhãn tiếng Anh`. Form mới có sẵn ba trường
+  hay dùng (`STARTER_FIELDS`).
+- Thân chiến dịch theo đúng định dạng core quy định: bản chữ (bắt buộc) và bản HTML (tuỳ chọn, gửi
+  nguyên văn) — không phải JSON của trình soạn bài, nên **không dùng Tiptap** cho bản tin. Core không
+  lọc HTML: bản xem trước nằm trong `<iframe sandbox="">` (không script, không cookie). Thư quảng cáo
+  hiện rõ quy định của core (nhãn ở đầu tiêu đề, địa chỉ người gửi ở chân thư, giới hạn mỗi ngày,
+  NĐ 91/2020 chưa đối chiếu văn bản gốc); nhãn hiện là giá trị mặc định `[QC]` vì core chưa có API
+  đọc cấu hình bản tin. Hẹn giờ dùng ô `datetime-local` theo giờ máy người xem, đổi sang ISO UTC ở
+  trình duyệt.
+- Xuất CSV đi qua route `GET /marketing/forms/{id}/export` của ứng dụng (máy chủ gọi core bằng token
+  trong cookie, trả nguyên tệp core sinh — core đã chặn ô bắt đầu bằng `=`, `+`, `-`, `@`).
+- Nhập người đăng ký: tệp CSV hoặc chữ dán, đọc ở máy chủ (`parseSubscriberCsv`), bỏ dòng sai /
+  trùng kèm số dòng; nguồn đồng ý bắt buộc (core lưu làm bằng chứng). Tối đa 1000 người một lần như
+  core.
+- Đích của bình luận chỉ có `target_type` + `target_id`: với `content.entry` giao diện đọc tiêu đề
+  qua API của module `content` khi người xem có `content.read` (`src/lib/comments-server.ts`); loại
+  khác hiện id. Tab "Theo bài" lấy các đích có bình luận gần đây (core chưa có danh sách đích) và có
+  ô mở thẳng một đích. Chữ bình luận hiện như chữ thường (`white-space: pre-wrap`), không chèn
+  `body_html`.
+- Cài đặt bình luận của máy chủ đọc thật (`GET /comments/public/settings`); cài đặt theo từng khách
+  và mức xác thực tài khoản (NĐ 147/2024) là dữ liệu mẫu (W-006, `src/sample/engage.ts`, bước 33 và
+  37 của core).
+
+Lý do: làm đúng hợp đồng `openapi.json` và nghiệp vụ của ba module (`docs/prompts/forms-newsletter-comments.md`
+của core); giữ một cách làm cho mỗi việc với các màn đã có.
+
+Đã cân nhắc: một màn bốn tab như bản thiết kế — mỗi phần có trang con riêng (bài nộp, chiến dịch,
+người đăng ký, bình luận), một màn sẽ quá sâu. Tiptap cho bản tin rồi đổi sang HTML — mất HTML
+email có sẵn (bảng, style nội dòng) khi mở lại, và core không nhận JSON. Gửi `If-Match` bằng `ETag`
+đọc lúc render từng dòng — phải gọi chi tiết cho mọi dòng của bảng mỗi lần mở trang.
