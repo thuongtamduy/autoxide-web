@@ -10,6 +10,7 @@
 // Webhook, API key, audit, trạng thái AI, OpenAPI: `mock-settings.ts`.
 // Màn Nội dung (bài viết, trình soạn, xem trước): `mock-content.ts`.
 // Phân hệ Tiếp thị (biểu mẫu, bản tin, bình luận): `mock-engage.ts`.
+// Menu của website (module `menus`): `mock-menus.ts`.
 //
 // Mã của app xác thực luôn là 123456. Access token chỉ sống 31 giây (cookie của trang quản trị
 // hết sau 1 giây), để test đi qua đường làm mới token. `GET /__stats` trả số lần làm mới;
@@ -45,6 +46,7 @@ import {
   wrongPassword,
 } from "./mock-http.ts";
 import { mediaContent, mediaRoutes, resetMedia } from "./mock-media.ts";
+import { bumpMenu, MENUS_MODULE, menusRoutes, publicMenu, resetMenus } from "./mock-menus.ts";
 import { fireEvent, resetSettings, settingsRoutes } from "./mock-settings.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
@@ -205,6 +207,7 @@ const server = createServer(async (request, response) => {
     resetContent();
     resetMedia();
     resetEngage();
+    resetMenus();
     return send(response, 204);
   }
   if (route === "POST /__webhooks/fire") {
@@ -224,6 +227,9 @@ const server = createServer(async (request, response) => {
   if (route === "POST /__content/bump") return contentBump(request, response);
   if (route === "POST /__content/pages") return seedPages(response);
   if (route === "POST /__content/legal") return seedLegal(response);
+  if (route === "POST /__menus/bump") return bumpMenu(request, response);
+  // Menu công khai của website: không cần đăng nhập, như core.
+  if (request.method === "GET" && publicMenu(response, url)) return;
   // Nội dung tệp media: khách tải được tệp công khai (trang xem trước), như core.
   if (request.method === "GET" && mediaContent(response, url, caller(request) !== undefined))
     return;
@@ -343,18 +349,25 @@ const server = createServer(async (request, response) => {
       );
     }
     if (url.pathname === "/api/v1/kernel/modules") {
-      const listed = [KERNEL, NOTES, CONTENT_MODULE, ...ENGAGE_MODULES].map((module) => ({
-        ...module,
-        migrations: module.migrations.map((m) => ({ ...m, applied: null })),
-      }));
+      const listed = [KERNEL, NOTES, CONTENT_MODULE, MENUS_MODULE, ...ENGAGE_MODULES].map(
+        (module) => ({
+          ...module,
+          migrations: module.migrations.map((m) => ({ ...m, applied: null })),
+        }),
+      );
       return send(response, 200, { data: listed });
     }
     const name = decodeURIComponent(url.pathname.slice("/api/v1/kernel/modules/".length));
-    const module = [KERNEL, NOTES, CONTENT_MODULE, ...ENGAGE_MODULES].find((m) => m.name === name);
+    const module = [KERNEL, NOTES, CONTENT_MODULE, MENUS_MODULE, ...ENGAGE_MODULES].find(
+      (m) => m.name === name,
+    );
     if (!module) {
       return problem(response, 404, "kernel.module_not_found", `No module named \`${name}\`.`);
     }
     return send(response, 200, { data: module });
+  }
+  if (url.pathname === "/api/v1/menus" || url.pathname.startsWith("/api/v1/menus/")) {
+    return menusRoutes(request, response, url, route);
   }
   if (url.pathname === "/api/v1/media" || url.pathname.startsWith("/api/v1/media/")) {
     return mediaRoutes(request, response, url, route);

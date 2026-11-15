@@ -290,6 +290,46 @@ function applyFields(
 }
 
 /** `GET /api/v1/content/public/preview?token=`: không cần đăng nhập. */
+/**
+ * Một đối tượng của `content` như sổ đối tượng của core trả cho module `menus` (D-123, D-238):
+ * `content.entry` (bài có bản công khai thì `public`), `content.term` (luôn công khai, có danh mục
+ * con). `null` khi không có.
+ */
+export function contentResource(
+  kind: string,
+  id: string,
+  locale: string,
+): { title: string; summary: string; path: string; public: boolean } | null {
+  if (kind === "content.entry") {
+    const entry = contentEntries.find((e) => e.id === id);
+    if (!entry) return null;
+    const live = entry.status === "published";
+    return {
+      title: live ? entry.title : "",
+      summary: live ? entry.excerpt : "",
+      path: `/blog/${entry.slug}`,
+      public: live,
+    };
+  }
+  if (kind === "content.term") {
+    const term = CONTENT_TERMS.find((t) => t.id === id);
+    const name = term?.names.find((n) => n.locale === locale) ?? term?.names[0];
+    if (!term || !name) return null;
+    return {
+      title: name.name,
+      summary: name.description,
+      path: `/blog/${term.taxonomy}/${name.slug}`,
+      public: true,
+    };
+  }
+  return null;
+}
+
+/** Danh mục con trực tiếp của `content.term` `id` (cho `auto_children`). */
+export function contentTermChildren(id: string): string[] {
+  return CONTENT_TERMS.filter((t) => t.parent_id === id).map((t) => t.id);
+}
+
 export function contentPreview(response: ServerResponse, url: URL) {
   const id = previewTokens.get(url.searchParams.get("token") ?? "");
   const entry = contentEntries.find((e) => e.id === id);

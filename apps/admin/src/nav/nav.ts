@@ -249,8 +249,8 @@ export const NAV: NavGroup[] = [
         counter: ["content.review"],
       },
       { id: "structure", href: "/content/structure", module: "content", permission: CONTENT_READ },
-      // Menu của website là module `menus` riêng (chưa có trong core): dữ liệu mẫu (W-006).
-      { id: "menus", href: "/content/menus", permission: MENUS_READ, sample: { step: "menus" } },
+      // Menu của website là module `menus` riêng của core (D-238, W-022).
+      { id: "menus", href: "/content/menus", module: "menus", permission: MENUS_READ },
       { id: "media", href: "/content/media", module: "media", permission: MEDIA_READ },
     ],
   },

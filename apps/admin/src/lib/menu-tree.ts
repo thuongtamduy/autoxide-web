@@ -1,63 +1,100 @@
 // Cây menu của website ở dạng phẳng cho trình sửa: mỗi dòng có cấp (`depth`, 0 là cấp 1); khối của
 // một mục là mục đó và mọi mục con liền sau. Thao tác lên, xuống, thụt vào, kéo ra di chuyển cả khối,
-// giữ giới hạn 4 cấp. Hàm thuần, có test; hình dạng mục theo đề bài module `menus` của core.
+// giữ giới hạn 4 cấp. Hàm thuần, có test. Hình dạng mục theo `SiteMenuItemInput` của module `menus`
+// (core v0.14.0, D-238); đổi giữa dạng của core và dạng nháp ở `menus.ts`.
 
-/** Giới hạn của menu, như menu cũ của `content`. */
+/** Giới hạn của menu, như service của `menus` (`items.rs`). */
 export const MAX_DEPTH = 4;
 export const MAX_ITEMS = 200;
+/** Số mục con tự lấy: 1 tới 50, mặc định 12. */
+export const MAX_AUTO_CHILDREN = 50;
+export const DEFAULT_AUTO_CHILDREN = 12;
+/** Độ dài tối đa của chữ trên nhãn nổi bật và của nhãn mục. */
+export const MAX_BADGE = 20;
+export const MAX_LABEL = 200;
 
+/** Bộ biểu tượng cố định của core (`ICONS` trong `items.rs`). */
 export const MENU_ICONS = [
-  "grid",
-  "pan",
-  "pot",
-  "knife",
-  "glass",
-  "bowl",
-  "towel",
-  "tag",
-  "store",
+  "bag",
+  "bolt",
   "book",
+  "calendar",
+  "cart",
+  "category",
+  "chat",
+  "fire",
   "gift",
-  "pin",
+  "grid",
+  "heart",
+  "help",
+  "home",
+  "info",
+  "mail",
+  "map_pin",
+  "news",
+  "percent",
+  "phone",
+  "search",
+  "shop",
+  "sparkles",
+  "star",
+  "store",
+  "tag",
+  "truck",
+  "user",
 ] as const;
 export type MenuIcon = (typeof MENU_ICONS)[number];
 export const BADGE_TONES = ["sale", "brand", "new", "neutral"] as const;
 export type BadgeTone = (typeof BADGE_TONES)[number];
-export const HIGHLIGHTS = ["none", "sale", "brand"] as const;
+/** Cách làm nổi một mục; `null` là bình thường. */
+export const HIGHLIGHTS = ["accent", "brand", "sale", "muted"] as const;
 export type Highlight = (typeof HIGHLIGHTS)[number];
 
-/** Một mục menu gửi lên (`PUT /api/v1/menus/{id}`): đích là `url`, `ref_*`, hay không có (nhóm). */
-export interface MenuItemInput {
+/** Một đối tượng của sổ đối tượng (`<module>.<loại>` và id), như `MenuTarget` của core. */
+export interface MenuRef {
+  kind: string;
+  id: string;
+}
+
+/** Nhãn nổi bật; `from` / `until` là thời điểm RFC 3339 (UTC), hiện trong [`from`, `until`). */
+export interface MenuBadge {
+  text: string;
+  tone: BadgeTone;
+  from: string | null;
+  until: string | null;
+}
+
+/**
+ * Một mục của bản nháp: đích là `url`, `ref`, hay không có (nhóm tiêu đề). `id` chỉ để giao diện
+ * nhận ra mục (id của core khi đọc, id mới khi thêm): core không nhận id khi lưu và cấp id mới cho
+ * mọi mục sau mỗi lần lưu.
+ */
+export interface MenuItemDraft {
   id: string;
   label: string;
   url: string | null;
-  ref_kind: string | null;
-  ref_id: string | null;
+  ref: MenuRef | null;
   auto_children: boolean;
+  /** Giữ cả khi tắt "tự lấy" để bật lại không mất số; chỉ gửi khi bật. */
   auto_children_limit: number;
   icon: MenuIcon | null;
-  badge_text: string;
-  badge_tone: BadgeTone;
-  /** Ngày `YYYY-MM-DD` (UTC) nhãn bắt đầu hiện / thôi hiện; `null` là không giới hạn. */
-  badge_from: string | null;
-  badge_until: string | null;
-  highlight: Highlight;
-  feature_kind: string | null;
-  feature_id: string | null;
-  children: MenuItemInput[];
+  highlight: Highlight | null;
+  badge: MenuBadge | null;
+  feature: MenuRef | null;
+  children: MenuItemDraft[];
 }
 
-export type FlatItem = Omit<MenuItemInput, "children"> & { depth: number };
+export type FlatItem = Omit<MenuItemDraft, "children"> & { depth: number };
 
 export type TargetType = "url" | "ref" | "group";
 
-export function targetType(item: Pick<MenuItemInput, "url" | "ref_kind">): TargetType {
-  if (item.ref_kind) return "ref";
+export function targetType(item: Pick<MenuItemDraft, "url" | "ref">): TargetType {
+  if (item.ref) return "ref";
   if (item.url !== null) return "url";
   return "group";
 }
 
-export function flatten(items: readonly MenuItemInput[], depth = 0): FlatItem[] {
+export function flatten(items: readonly MenuItemDraft[], depth = 0): FlatItem[] {
   return items.flatMap(({ children, ...item }) => [
     { ...item, depth },
     ...flatten(children, depth + 1),
@@ -65,12 +102,12 @@ export function flatten(items: readonly MenuItemInput[], depth = 0): FlatItem[] 
 }
 
 /** Dạng phẳng về lại cây. Mục có cấp nhảy quá một bậc được kéo về ngay dưới mục trước. */
-export function toTree(rows: readonly FlatItem[]): MenuItemInput[] {
-  const root: MenuItemInput[] = [];
-  const stack: { depth: number; children: MenuItemInput[] }[] = [{ depth: -1, children: root }];
+export function toTree(rows: readonly FlatItem[]): MenuItemDraft[] {
+  const root: MenuItemDraft[] = [];
+  const stack: { depth: number; children: MenuItemDraft[] }[] = [{ depth: -1, children: root }];
   for (const { depth, ...item } of rows) {
     while (stack.length > 1 && (stack.at(-1)?.depth ?? -1) >= depth) stack.pop();
-    const node: MenuItemInput = { ...item, children: [] };
+    const node: MenuItemDraft = { ...item, children: [] };
     stack.at(-1)?.children.push(node);
     stack.push({ depth: (stack.at(-1)?.depth ?? -1) + 1, children: node.children });
   }
@@ -182,46 +219,49 @@ export function blankItem(id: string, label: string): FlatItem {
     depth: 0,
     label,
     url: "/",
-    ref_kind: null,
-    ref_id: null,
+    ref: null,
     auto_children: false,
-    auto_children_limit: 6,
+    auto_children_limit: DEFAULT_AUTO_CHILDREN,
     icon: null,
-    badge_text: "",
-    badge_tone: "neutral",
-    badge_from: null,
-    badge_until: null,
-    highlight: "none",
-    feature_kind: null,
-    feature_id: null,
+    highlight: null,
+    badge: null,
+    feature: null,
   };
 }
 
 /**
- * Kiểm đường dẫn của mục như service của `menus` sẽ kiểm: `https://`, `mailto:`, hay đường dẫn
- * trong site `/…`; từ chối `//host` (trình duyệt tự đoán giao thức, D-149 của core) và `http://`.
+ * Kiểm đường dẫn của mục đúng như service của `menus` (`is_link` trong `items.rs`): `https://`,
+ * `http://`, `mailto:` hay đường dẫn trong site bắt đầu bằng đúng một `/`; từ chối `//host`
+ * (trình duyệt coi là site khác, D-149), khoảng trắng, ký tự điều khiển và dấu `\`; tối đa 2048
+ * ký tự.
  */
 export function urlProblem(
   value: string,
-): null | "empty" | "protocolRelative" | "insecure" | "unsupported" {
+): null | "empty" | "protocolRelative" | "invalidChar" | "tooLong" | "unsupported" {
   const url = value.trim();
   if (!url) return "empty";
   if (url.startsWith("//")) return "protocolRelative";
-  if (/^https:\/\/[^\s/]+\.[^\s/]+/i.test(url)) return null;
-  if (/^http:\/\//i.test(url)) return "insecure";
-  if (/^mailto:[^\s@]+@[^\s@]+$/i.test(url)) return null;
-  if (/^\/(?!\/)\S*$/.test(url)) return null;
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: chặn ký tự điều khiển như core.
+  if (/[\s\\\u0000-\u001f\u007f]/.test(url)) return "invalidChar";
+  if (url.length > 2048) return "tooLong";
+  const lower = url.toLowerCase();
+  if (
+    lower.startsWith("https://") ||
+    lower.startsWith("http://") ||
+    lower.startsWith("mailto:") ||
+    url.startsWith("/")
+  ) {
+    return null;
+  }
   return "unsupported";
 }
 
-/** Nhãn có hạn đang hiện vào ngày `today` (`YYYY-MM-DD`, UTC). */
-export function badgeShown(
-  item: Pick<MenuItemInput, "badge_text" | "badge_from" | "badge_until">,
-  today: string,
-): boolean {
-  if (!item.badge_text.trim()) return false;
-  if (item.badge_from && item.badge_from > today) return false;
-  if (item.badge_until && item.badge_until < today) return false;
+/** Nhãn nổi bật đang hiện lúc `now` (RFC 3339): có chữ, trong [`from`, `until`). */
+export function badgeShown(badge: MenuBadge | null, now: string): boolean {
+  if (!badge?.text.trim()) return false;
+  const at = Date.parse(now);
+  if (badge.from && Date.parse(badge.from) > at) return false;
+  if (badge.until && Date.parse(badge.until) <= at) return false;
   return true;
 }
 

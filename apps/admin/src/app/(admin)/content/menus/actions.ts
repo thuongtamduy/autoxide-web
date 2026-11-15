@@ -1,118 +1,110 @@
 "use server";
 
-// Server Action của màn Menu (dữ liệu mẫu, W-006: module `menus` chưa có trong core). Gọi hàm mẫu
-// của `src/sample/menus.ts` thay cho API của module `menus`; trả lỗi cùng hình dạng Problem như
-// phần gọi core thật. Riêng "nhập menu cũ" đọc menu cũ THẬT của `content` (chỉ đọc).
+// Server Action của màn Menu, gọi module `menus` THẬT của core (D-238). Mọi lời gọi chạy ở máy chủ
+// với token lấy từ cookie `httpOnly`; trình duyệt chỉ nhận menu và `ETag` của nó. SDK tự gắn
+// `Idempotency-Key` cho mỗi lệnh ghi.
+//
+// Lưu là thay cả cây (`PUT`, `If-Match` bắt buộc): người khác vừa lưu thì core trả 412 và không ghi
+// gì; lỗi dữ liệu core gom một lần (422, `errors[]` theo vị trí `items[0].children[1]…`).
 import type { Problem } from "@autoxide/sdk";
 import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
+import { send } from "@/lib/action";
 import { type FormState, nextDone, problemState } from "@/lib/form";
-import { loadLegacyMenus } from "@/lib/legacy-menus";
-import type { MenuItemInput } from "@/lib/menu-tree";
-import { sampleGuard, translateSample } from "@/lib/sample-action";
-import { getMe } from "@/lib/viewer";
 import {
-  createMenu,
-  deleteMenu,
-  type ImportRow,
-  importLegacy,
-  type Menu,
-  putMenu,
-  simulateOtherSave,
-} from "@/sample/menus";
+  BADGE_TONES,
+  HIGHLIGHTS,
+  MAX_AUTO_CHILDREN,
+  MAX_BADGE,
+  MAX_ITEMS,
+  MAX_LABEL,
+  MENU_ICONS,
+  type MenuItemDraft,
+} from "@/lib/menu-tree";
+import { fromSaved, type SiteMenu, toInput } from "@/lib/menus";
 
 type Result<T> = { ok: true; data: T } | { ok: false; problem: Problem };
 
-async function off(): Promise<{ ok: false; problem: Problem } | null> {
-  const guard = await sampleGuard();
-  if (!guard) return null;
+/** Trạng thái form "Menu mới": kèm id của menu vừa tạo để mở nó ngay. */
+export interface NewMenuState extends FormState {
+  menuId?: string;
+}
+
+const id = z.uuid();
+const etag = z.string().min(1).max(200);
+const Ref = z.object({ kind: z.string().min(1).max(64), id: z.string().min(1).max(64) });
+
+// Chỉ kiểm hình dạng (người gọi Server Action bằng tay); kiểm nội dung là việc của core.
+const Item: z.ZodType<MenuItemDraft> = z.lazy(() =>
+  z.object({
+    id: z.string().min(1).max(64),
+    label: z.string().max(MAX_LABEL * 4),
+    url: z.string().max(4096).nullable(),
+    ref: Ref.nullable(),
+    auto_children: z.boolean(),
+    auto_children_limit: z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_AUTO_CHILDREN * 10),
+    icon: z.enum(MENU_ICONS).nullable(),
+    highlight: z.enum(HIGHLIGHTS).nullable(),
+    badge: z
+      .object({
+        text: z.string().max(MAX_BADGE * 4),
+        tone: z.enum(BADGE_TONES),
+        from: z.iso.datetime({ offset: true }).nullable(),
+        until: z.iso.datetime({ offset: true }).nullable(),
+      })
+      .nullable(),
+    feature: Ref.nullable(),
+    children: z.array(Item).max(MAX_ITEMS),
+  }),
+);
+
+function invalid(): { ok: false; problem: Problem } {
   return {
     ok: false,
     problem: {
       type: "about:blank",
-      title: "Not Found",
-      status: 404,
-      code: "sample_data_off",
-      detail: guard.error ?? "",
+      title: "Bad Request",
+      status: 400,
+      code: "invalid_request",
+      detail: "The request is not valid.",
     },
   };
 }
 
-async function who(): Promise<string> {
-  const me = await getMe();
-  return me.email.split("@")[0] ?? me.email;
-}
-
-const id = z.string().min(1).max(64);
-
-const Item: z.ZodType<MenuItemInput> = z.lazy(() =>
-  z.object({
-    id: z.string().min(1).max(64),
-    label: z.string().max(200),
-    url: z.string().max(2000).nullable(),
-    ref_kind: z.string().max(64).nullable(),
-    ref_id: z.string().max(64).nullable(),
-    auto_children: z.boolean(),
-    auto_children_limit: z.number().int(),
-    icon: z
-      .enum([
-        "grid",
-        "pan",
-        "pot",
-        "knife",
-        "glass",
-        "bowl",
-        "towel",
-        "tag",
-        "store",
-        "book",
-        "gift",
-        "pin",
-      ])
-      .nullable(),
-    badge_text: z.string().max(40),
-    badge_tone: z.enum(["sale", "brand", "new", "neutral"]),
-    badge_from: z.iso.date().nullable(),
-    badge_until: z.iso.date().nullable(),
-    highlight: z.enum(["none", "sale", "brand"]),
-    feature_kind: z.string().max(64).nullable(),
-    feature_id: z.string().max(64).nullable(),
-    children: z.array(Item).max(200),
-  }),
-);
-
-/** Lưu cả cây (`If-Match`): người khác vừa lưu thì 412; lỗi dữ liệu gom một lần (422). */
+/**
+ * Lưu cả cây của menu `menuId` với `If-Match: ifMatch` (`PUT /api/v1/menus/{id}`). Trả menu như
+ * core đã lưu và `ETag` mới.
+ */
 export async function saveMenu(
   menuId: string,
   ifMatch: string,
-  items: MenuItemInput[],
-): Promise<Result<{ menu: Menu; etag: string }>> {
-  const stop = await off();
-  if (stop) return stop;
-  const parsed = z.array(Item).max(200).safeParse(items);
-  if (!id.safeParse(menuId).success || !parsed.success) {
-    return {
-      ok: false,
-      problem: {
-        type: "about:blank",
-        title: "Bad Request",
-        status: 400,
-        code: "invalid_request",
-        detail: "The request is not valid.",
-      },
-    };
+  items: MenuItemDraft[],
+): Promise<Result<{ menu: SiteMenu; etag: string }>> {
+  const parsed = z.array(Item).max(MAX_ITEMS).safeParse(items);
+  if (!id.safeParse(menuId).success || !etag.safeParse(ifMatch).success || !parsed.success) {
+    return invalid();
   }
-  const result = await putMenu(menuId, ifMatch.slice(0, 40), parsed.data, await who());
-  if (!result.ok) return { ok: false, problem: await translateSample(result.problem) };
+  let version = "";
+  const result = await send(async (client) => {
+    const answer = await client.PUT("/api/v1/menus/{id}", {
+      params: { path: { id: menuId }, header: { "If-Match": ifMatch } },
+      body: { items: toInput(parsed.data) },
+    });
+    version = answer.response.headers.get("etag") ?? "";
+    return answer;
+  });
+  if (!result.ok) return result;
   refresh();
-  return result;
+  return { ok: true, data: { menu: result.data.data, etag: version } };
 }
 
-/** "Menu mới": khoá, ngôn ngữ, chép từ một menu có sẵn (tuỳ chọn). */
-export async function newMenu(state: FormState, formData: FormData): Promise<FormState> {
-  const stop = await sampleGuard();
-  if (stop) return stop;
+/** "Menu mới": khoá, ngôn ngữ, chép cây từ một menu có sẵn (tuỳ chọn). */
+export async function newMenu(state: NewMenuState, formData: FormData): Promise<NewMenuState> {
   const values = {
     key: String(formData.get("key") ?? "").trim(),
     locale: String(formData.get("locale") ?? ""),
@@ -120,62 +112,46 @@ export async function newMenu(state: FormState, formData: FormData): Promise<For
   };
   const t = await getTranslations("menus.create");
   if (!values.key) return { fields: { key: t("keyRequired") }, values };
-  const result = await createMenu({
-    website_id: String(formData.get("website_id") ?? ""),
-    key: values.key,
-    locale: values.locale,
-    copy_from: values.copy_from || undefined,
-    by: await who(),
-  });
-  if (!result.ok) {
-    return { ...problemState(await translateSample(result.problem), ["key", "locale"]), values };
+  // Ngôn ngữ nào được phép là việc của core (`AUTOXIDE_MENUS_LOCALES`, lỗi `locale_not_supported`).
+  if (values.locale.length > 35) return badRequest(values);
+  let items: ReturnType<typeof toInput> = [];
+  if (values.copy_from) {
+    if (!id.safeParse(values.copy_from).success) return badRequest(values);
+    const source = await send((client) =>
+      client.GET("/api/v1/menus/{id}", { params: { path: { id: values.copy_from } } }),
+    );
+    if (!source.ok) return { ...problemState(source.problem, []), values };
+    // Chép đích và cách trình bày; core cấp id mới cho mọi mục.
+    items = toInput(fromSaved(source.data.data.items));
   }
-  refresh();
-  return { done: nextDone(state) };
-}
-
-/** Xoá một menu (hộp thoại xác nhận). */
-export async function removeMenu(state: FormState, formData: FormData): Promise<FormState> {
-  const stop = await sampleGuard();
-  if (stop) return stop;
-  const result = await deleteMenu(String(formData.get("id") ?? ""));
-  if (!result.ok) return problemState(await translateSample(result.problem), []);
-  refresh();
-  return { done: nextDone(state) };
-}
-
-/** Chỉ có ở dữ liệu mẫu: giả một người khác vừa lưu menu, để thử 412. */
-export async function otherPersonSaves(menuId: string): Promise<Result<{ version: number }>> {
-  const stop = await off();
-  if (stop) return stop;
-  return simulateOtherSave(menuId);
-}
-
-/**
- * Nhập menu cũ của `content` (đọc THẬT qua `GET /api/v1/content/menus…`) vào website đang chọn.
- * `dryRun`: chỉ báo sẽ tạo, giữ hay bỏ qua menu nào.
- */
-export async function importOldMenus(
-  websiteId: string,
-  dryRun: boolean,
-): Promise<Result<ImportRow[]>> {
-  const stop = await off();
-  if (stop) return stop;
-  const legacy = await loadLegacyMenus();
-  if (legacy === null) {
-    const t = await getTranslations("structure.menus");
+  const result = await send((client) =>
+    client.POST("/api/v1/menus", {
+      body: { key: values.key, locale: values.locale, items },
+    }),
+  );
+  if (!result.ok) {
+    // Trùng khoá và ngôn ngữ: 409 `menus.menu_exists`, báo dưới ô khoá.
     return {
-      ok: false,
-      problem: {
-        type: "about:blank",
-        title: "Forbidden",
-        status: 403,
-        code: "permission_denied",
-        detail: t("unavailable"),
-      },
+      ...problemState(result.problem, ["key", "locale"], { "menus.menu_exists": "key" }),
+      values,
     };
   }
-  const result = await importLegacy(legacy, websiteId, dryRun, await who());
-  if (!dryRun) refresh();
-  return { ok: true, data: result.data };
+  refresh();
+  return { done: nextDone(state), menuId: result.data.data.id };
+}
+
+function badRequest(values: Record<string, string>): NewMenuState {
+  return { error: invalid().problem.detail, code: "invalid_request", values };
+}
+
+/** Xoá một menu (hộp thoại xác nhận): `DELETE /api/v1/menus/{id}`. */
+export async function removeMenu(state: FormState, formData: FormData): Promise<FormState> {
+  const menuId = String(formData.get("id") ?? "");
+  if (!id.safeParse(menuId).success) return { error: invalid().problem.detail };
+  const result = await send((client) =>
+    client.DELETE("/api/v1/menus/{id}", { params: { path: { id: menuId } } }),
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  refresh();
+  return { done: nextDone(state) };
 }

@@ -1,34 +1,40 @@
+import { ApiError } from "@autoxide/sdk";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { SiteChips } from "@/components/content/sample-sites";
 import { MenuEditor } from "@/components/menus/menu-editor";
-import { ImportPanel, NewMenuDialog } from "@/components/menus/menu-forms";
+import { NewMenuDialog } from "@/components/menus/menu-forms";
 import { MessagePanel } from "@/components/message-panel";
 import { SampleBadge } from "@/components/sample-badge";
-import { Icon } from "@/components/shell/icon";
 import { LegacyMenuCard } from "@/components/structure/legacy-menu";
 import { ConfirmAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
-import { loadLegacyMenus } from "@/lib/legacy-menus";
+import { CORE_REF_KINDS, importPlan } from "@/lib/menus";
+import {
+  loadContentTargets,
+  loadLegacy,
+  loadMenu,
+  loadMenus,
+  loadPublicMenu,
+} from "@/lib/menus-server";
 import { MENUS_MANAGE, MENUS_READ } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
-import { listWebsites } from "@/sample/content";
-import { getMenu, listMenus, listRefKinds, listRefObjects, today } from "@/sample/menus";
+import { listSampleRefKinds, listSampleRefObjects } from "@/sample/menus";
 import { removeMenu } from "./actions";
 import "@/components/menus/menus.css";
 
-const ENDPOINTS =
-  "GET/POST /api/v1/menus, GET/PUT/DELETE /api/v1/menus/{id}, GET /api/v1/menus/public/{key}";
+/** Phần core chưa có (W-006): sổ đối tượng của các loại thương mại. */
+const SAMPLE_ENDPOINTS =
+  "GET /api/v1/kernel/resources/kinds, GET /api/v1/kernel/resources?kind&q (catalog.category, promotions.promotion, marketplace.seller, organizations.store)";
 
-// Màn "Menu" của website: chờ module `menus` của core (đề bài `docs/prompts/menus-module.md`), nên
-// cả màn dựng bằng dữ liệu mẫu (W-006) theo đúng hình dạng API trong đề bài. Menu cũ của `content`
-// (`/api/v1/content/menus`, sắp ngừng) đọc THẬT, chỉ để làm nguồn "Nhập menu cũ".
+// Màn "Menu" của website: module `menus` THẬT của core (D-238) — danh sách, đọc, tạo, lưu cả cây
+// (`If-Match`), xoá, menu công khai. Đích là bài, trang, danh mục thật (đọc qua API của `content`);
+// loại thương mại chưa có trong core là dữ liệu mẫu (W-006), core từ chối khi lưu. Menu cũ của
+// `content` (deprecated) chỉ đọc, để xem trước lệnh nhập chạy trên máy chủ.
 export default async function MenusPage(props: PageProps<"/content/menus">) {
   const t = await getTranslations("menus");
-  if (!sampleDataEnabled()) notFound();
   if (!(await can(MENUS_READ))) {
     const errors = await getTranslations("errors");
     return (
@@ -39,30 +45,39 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
     );
   }
   const params = await props.searchParams;
-  const { data: websites } = await listWebsites();
-  const website = websites.find((w) => w.id === params.site) ?? websites[0];
-  if (!website) notFound();
-  const [{ data: summaries }, { data: kinds }, { data: objects }, legacy, manage] =
-    await Promise.all([
-      listMenus(website.id),
-      listRefKinds(),
-      listRefObjects(),
-      loadLegacyMenus(),
-      can(MENUS_MANAGE),
-    ]);
-  // Chưa chọn thì mở menu `main` (thanh danh mục), như bản thiết kế.
+  const sample = sampleDataEnabled();
+  let summaries: Awaited<ReturnType<typeof loadMenus>>;
+  try {
+    summaries = await loadMenus();
+  } catch (error) {
+    // Core chưa cài module `menus`: không có endpoint.
+    if (error instanceof ApiError && error.status === 404) notFound();
+    throw error;
+  }
+  // Chưa chọn (hay menu đã chọn vừa bị xoá) thì mở menu `main` (thanh danh mục), như bản thiết kế.
   const chosen =
-    typeof params.menu === "string"
-      ? summaries.find((m) => m.id === params.menu)
-      : (summaries.find((m) => m.key === "main") ?? summaries[0]);
-  const opened = chosen ? await getMenu(chosen.id) : null;
+    summaries.find((m) => m.id === params.menu) ??
+    summaries.find((m) => m.key === "main") ??
+    summaries[0];
+  const [opened, manage, legacy, sampleKinds, sampleObjects] = await Promise.all([
+    chosen ? loadMenu(chosen.id) : null,
+    can(MENUS_MANAGE),
+    loadLegacy(),
+    sample ? listSampleRefKinds() : { data: [] },
+    sample ? listSampleRefObjects() : { data: [] },
+  ]);
+  const [targets, live] = opened
+    ? await Promise.all([
+        loadContentTargets(opened.menu.locale),
+        loadPublicMenu(opened.menu.key, opened.menu.locale),
+      ])
+    : [[], null];
   const keys = [...new Set(summaries.map((m) => m.key))];
-  const href = (change: { site?: string; menu?: string }) => {
-    const query = new URLSearchParams();
-    query.set("site", change.site ?? website.id);
-    if (change.menu) query.set("menu", change.menu);
-    return `/content/menus?${query}`;
-  };
+  const href = (menu: string) => `/content/menus?menu=${menu}`;
+  const plan = legacy ? importPlan(legacy.menus, summaries) : [];
+  // Header `Sunset` là ngày HTTP (RFC 8594); không đọc được thì không hiện.
+  const sunsetAt = legacy?.sunset ? Date.parse(legacy.sunset) : Number.NaN;
+  const sunset = Number.isNaN(sunsetAt) ? null : new Date(sunsetAt).toISOString();
 
   return (
     <div className="page mn-page">
@@ -71,18 +86,19 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
           <span className="crumb">{t("crumb")}</span>
           <h1 className="h1">{t("title")}</h1>
           <p className="pdesc">{t("description")}</p>
-          <span className="mn-sample">
-            <SampleBadge step="mới" module="menus" endpoint={ENDPOINTS} />
-          </span>
+          {sample ? (
+            <span className="mn-sample">
+              <SampleBadge step="mới" endpoint={SAMPLE_ENDPOINTS} />
+              <span className="fhint">{t("sampleNote")}</span>
+            </span>
+          ) : null}
         </div>
         {manage ? (
           <div className="headacts">
             <a className="btn" href="#import">
-              <Icon name="down" />
               {t("importButton")}
             </a>
             <NewMenuDialog
-              websiteId={website.id}
               copyFrom={summaries.map((m) => ({
                 id: m.id,
                 label: `${m.key} · ${m.locale.toUpperCase()}`,
@@ -92,16 +108,10 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
         ) : null}
       </section>
 
-      <SiteChips
-        websites={websites}
-        current={website.id}
-        hrefFor={Object.fromEntries(websites.map((w) => [w.id, href({ site: w.id })]))}
-      />
-
       <section className="block" aria-labelledby="mn-list-h">
         <div className="block-head">
           <h2 id="mn-list-h" className="h2">
-            {t("listTitle", { domain: website.domain })}
+            {t("listTitle")}
           </h2>
         </div>
         <p className="fhint">{t("fallback")}</p>
@@ -114,7 +124,6 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
                 <tr>
                   <Th>{t("menu")}</Th>
                   <Th>{t("locales")}</Th>
-                  <Th className="text-right">{t("items")}</Th>
                   <Th>{t("updated")}</Th>
                   <Th className="text-right">{t("actions")}</Th>
                 </tr>
@@ -122,12 +131,10 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
               <tbody>
                 {keys.map((key) => {
                   const versions = summaries.filter((m) => m.key === key);
-                  const first = versions[0];
+                  const shown = versions.find((m) => m.id === chosen?.id) ?? versions[0];
+                  const latest = versions.reduce((a, b) => (a.updated_at > b.updated_at ? a : b));
                   return (
-                    <tr
-                      key={key}
-                      data-current={versions.some((m) => m.id === chosen?.id) ? "" : undefined}
-                    >
+                    <tr key={key} data-current={shown?.id === chosen?.id ? "" : undefined}>
                       <Td className="rt-title">
                         <span className="cell2">
                           <b className="mono">{key}</b>
@@ -142,37 +149,30 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
                             <Link
                               key={m.id}
                               className={m.id === chosen?.id ? "chip on" : "chip"}
-                              href={href({ menu: m.id })}
+                              href={href(m.id)}
                               aria-current={m.id === chosen?.id ? "true" : undefined}
                             >
-                              {m.locale.toUpperCase()} · v{m.version}
+                              {m.locale.toUpperCase()}
                             </Link>
                           ))}
                         </span>
                       </Td>
-                      <Td label={t("items")} className="num text-right">
-                        {first?.item_count ?? 0}
-                      </Td>
                       <Td label={t("updated")} className="whitespace-nowrap">
-                        {first ? (
-                          <>
-                            {first.updated_by} · <Time value={first.updated_at} />
-                          </>
-                        ) : null}
+                        <Time value={latest.updated_at} />
                       </Td>
                       <Td className="text-right">
                         <span className="row-acts">
-                          {first ? (
-                            <Link className="btn sm" href={href({ menu: first.id })}>
+                          {shown ? (
+                            <Link className="btn sm" href={href(shown.id)}>
                               {t("edit")}
                             </Link>
                           ) : null}
-                          {manage && first ? (
+                          {manage && shown ? (
                             <ConfirmAction
                               action={removeMenu}
-                              id={first.id}
+                              id={shown.id}
                               label={t("delete")}
-                              title={t("deleteTitle", { key, locale: first.locale.toUpperCase() })}
+                              title={t("deleteTitle", { key, locale: shown.locale.toUpperCase() })}
                               points={[t("deleteStore"), t("deleteOther")]}
                               submit={t("delete")}
                               done={t("deleted")}
@@ -189,19 +189,20 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
         </div>
       </section>
 
-      {opened?.ok ? (
+      {opened ? (
         <section className="block" aria-label={t("editorLabel")}>
           <MenuEditor
-            key={opened.data.menu.id}
-            menu={opened.data.menu}
-            etag={opened.data.etag}
-            kinds={kinds}
-            objects={objects}
-            today={today()}
+            key={opened.menu.id}
+            menu={opened.menu}
+            etag={opened.etag}
+            kinds={[...CORE_REF_KINDS, ...sampleKinds.data]}
+            objects={[...targets, ...sampleObjects.data]}
+            live={live}
+            now={new Date().toISOString()}
           />
         </section>
       ) : (
-        <p className="note">{t("pick")}</p>
+        <p className="note">{summaries.length === 0 ? t("startHint") : t("pick")}</p>
       )}
 
       <section className="block" id="import" aria-labelledby="mn-import-h">
@@ -209,7 +210,11 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
           <h2 id="mn-import-h" className="h2">
             {t("import.title")}
           </h2>
-          <span className="badge b-warn">{t("import.sunset")}</span>
+          {sunset ? (
+            <span className="badge b-warn">
+              {t("import.sunset")} <Time value={sunset} date />
+            </span>
+          ) : null}
         </div>
         <p className="fhint">{t("import.about")}</p>
         <ul className="mn-apis">
@@ -221,24 +226,39 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
           <li>
             <del className="mono">GET /api/v1/content/public/menus/{"{key}"}</del>
             <span aria-hidden="true">→</span>
-            <span className="mono">GET /api/v1/menus/public/{"{key}"}?locale&amp;site</span>
+            <span className="mono">GET /api/v1/menus/public/{"{key}"}?locale</span>
           </li>
         </ul>
         <p className="fhint">{t("import.rules")}</p>
         {legacy === null ? (
           <p className="note warn">{t("import.unavailable")}</p>
-        ) : legacy.length === 0 ? (
+        ) : legacy.menus.length === 0 ? (
           <p className="fhint">{t("import.none")}</p>
         ) : (
-          <ul className="st-tiles">
-            {legacy.map((menu) => (
-              <LegacyMenuCard key={menu.id} menu={menu} />
-            ))}
-          </ul>
+          <>
+            <h3 className="cap">{t("import.preview")}</h3>
+            <ul className="mn-improws" aria-label={t("import.result")}>
+              {plan.map((row) => (
+                <li key={`${row.key}-${row.locale}`} className="mn-improw">
+                  <span className="mono">
+                    {row.key} · {row.locale.toUpperCase()}
+                  </span>
+                  <span className={row.status === "create" ? "badge b-ok" : "badge b-draft"}>
+                    {t(`import.status.${row.status}`)}
+                  </span>
+                  <span className="fhint">{t("import.items", { count: row.items })}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="fhint">{t("import.command")}</p>
+            <pre className="mn-cmd mono">autoxide task menus.import_content_menus</pre>
+            <ul className="st-tiles">
+              {legacy.menus.map((menu) => (
+                <LegacyMenuCard key={menu.id} menu={menu} />
+              ))}
+            </ul>
+          </>
         )}
-        {manage ? (
-          <ImportPanel websiteId={website.id} hasLegacy={(legacy?.length ?? 0) > 0} />
-        ) : null}
       </section>
     </div>
   );

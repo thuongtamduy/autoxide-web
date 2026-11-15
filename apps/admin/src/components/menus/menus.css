@@ -255,6 +255,13 @@
 .ax .mn-baritem.hl-brand {
   color: var(--ok);
 }
+.ax .mn-baritem.hl-accent {
+  color: var(--accent);
+  font-weight: 600;
+}
+.ax .mn-baritem.hl-muted {
+  color: var(--ink-3);
+}
 .ax .mn-mega {
   display: flex;
   flex-wrap: wrap;
@@ -303,10 +310,13 @@
 .ax .mn-apis del {
   color: var(--ink-3);
 }
-.ax .mn-import {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.ax .mn-cmd {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 12.5px;
+  overflow-x: auto;
 }
 .ax .mn-improws {
   margin: 0;
@@ -335,5 +345,8 @@
 }
 .ax .mn-sample {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
   margin-top: 4px;
 }

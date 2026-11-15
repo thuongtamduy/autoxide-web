@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { LegacyMenuCard } from "@/components/structure/legacy-menu";
-import { loadLegacyMenus } from "@/lib/legacy-menus";
-import { sampleDataEnabled } from "@/sample";
+import { loadLegacy } from "@/lib/menus-server";
+import { MENUS_READ } from "@/lib/permissions";
+import { can } from "@/lib/viewer";
 
 // Tab "Menu": menu của website đã chuyển sang module riêng `menus` (menu trỏ tới bản ghi của mọi
 // module). Menu cũ của `content` (`/api/v1/content/menus`, sắp ngừng) chỉ hiện để đọc, làm nguồn
-// cho "Nhập menu cũ" ở màn Menu; không dựng trình sửa trên API cũ.
+// cho lệnh nhập menu cũ (xem trước ở màn Menu); không dựng trình sửa trên API cũ.
 export default async function LegacyMenusTab() {
   const t = await getTranslations("structure.menus");
-  const menus = await loadLegacyMenus();
-  const screen = sampleDataEnabled();
+  const legacy = await loadLegacy();
+  const menus = legacy?.menus ?? null;
+  const screen = await can(MENUS_READ);
   return (
     <div className="blocks">
       <section className="block" aria-labelledby="st-menus-h">

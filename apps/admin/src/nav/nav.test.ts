@@ -165,11 +165,11 @@ describe("tiện ích nhỏ", () => {
 });
 
 describe("phân hệ Nội dung trong sổ thật", () => {
-  it("Bài viết, Trang và cấu trúc, Menu (dữ liệu mẫu), Thư viện media theo thứ tự", () => {
+  it("Bài viết, Trang và cấu trúc, Menu, Thư viện media theo thứ tự", () => {
     const admin: Viewer = {
       allPermissions: true,
       permissions: [],
-      modules: ["content", "media"],
+      modules: ["content", "menus", "media"],
       sample: true,
     };
     const content = visibleNav(admin, REAL_NAV).find((g) => g.id === "content");
@@ -179,7 +179,13 @@ describe("phân hệ Nội dung trong sổ thật", () => {
       "/content/menus",
       "/content/media",
     ]);
-    // Tắt dữ liệu mẫu thì không có Menu; thiếu module `media` thì không có Thư viện media.
+    // Thiếu module `menus` thì không có Menu (tắt dữ liệu mẫu không ảnh hưởng); thiếu `media` thì
+    // không có Thư viện media.
+    expect(
+      visibleNav({ ...admin, sample: false }, REAL_NAV)
+        .find((g) => g.id === "content")
+        ?.pages.map((p) => p.id),
+    ).toContain("menus");
     const plain = visibleNav({ ...admin, sample: false, modules: ["content"] }, REAL_NAV);
     expect(plain.find((g) => g.id === "content")?.pages.map((p) => p.id)).toEqual([
       "entries",
