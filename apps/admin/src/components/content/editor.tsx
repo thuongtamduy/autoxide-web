@@ -67,6 +67,8 @@ export interface EditorData {
   ai: AiState;
   authors: Author[];
   terms: Term[];
+  /** Core còn tác giả / danh mục ngoài trang đã đọc: bộ chọn hiện ô tìm theo tên. */
+  more?: { authors: boolean; terms: boolean };
   schedules: Schedule[];
   revisions: Revision[];
   findings: SeoFinding[] | null;

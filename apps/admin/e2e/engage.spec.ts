@@ -41,14 +41,18 @@ test("thanh bên có Tiếp thị; bài nộp đổi trạng thái có Hoàn tá
 
   await page.getByRole("link", { name: "Liên hệ" }).click();
   await expect(rows(page)).toHaveCount(3);
+  // Số bài theo trạng thái của cả form (`submissions` của core) trên chip lọc.
+  const chips = page.getByRole("navigation", { name: "Filter submissions" });
+  await expect(chips.getByRole("link", { name: /New/ })).toContainText("3");
   await page.getByLabel("Search the answers").fill("chảo");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page).toHaveURL(/q=ch/);
   await expect(rows(page)).toHaveCount(1);
   await page.getByRole("link", { name: "Hồ Gia Bảo" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /Hồ Gia Bảo/ })).toBeVisible();
-  // Nhãn của lựa chọn lấy từ form, không hiện giá trị thô.
-  await expect(page.getByText("Partnership")).toBeVisible();
+  // Nhãn của lựa chọn theo đúng phiên bản form lúc gửi (`choices` của core), không theo form hiện
+  // tại ("Partnership"), không hiện giá trị thô.
+  await expect(page.getByText("Business partnership", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Mark as read" }).click();
   await expect(toast(page)).toContainText("Marked as read.");
@@ -134,6 +138,8 @@ test("bản tin: soạn, gửi thử (lỗi cấu hình hiện rõ), hẹn giờ
 }) => {
   await signIn(page, "/marketing/newsletter");
   await expect(page.getByText("No open or click rates.")).toBeVisible();
+  // Cấu hình gửi của máy chủ (`GET /newsletter/settings`).
+  await expect(page.getByTestId("newsletter-setup")).toContainText("600 mails a minute");
   await page.getByRole("link", { name: "Compose campaign" }).click();
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByText("Enter a subject.")).toBeVisible();
@@ -156,11 +162,20 @@ test("bản tin: soạn, gửi thử (lỗi cấu hình hiện rõ), hẹn giờ
     "AUTOXIDE_NEWSLETTER_PREFERENCES_URL",
   );
   await dialog(page).getByRole("button", { name: "Cancel" }).click();
+  // Thư như khi gửi: cùng lỗi cấu hình của core như khi gửi.
+  await expect(page.locator(".note[data-code='newsletter.preferences_url_missing']")).toBeVisible();
 
   // Đổi tiêu đề (bản nháp sửa được ngay trên trang) rồi gửi thử được.
   await page.getByLabel("Subject", { exact: true }).fill("Ưu đãi chảo gang");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(toast(page)).toContainText("Campaign saved.");
+  // Bản xem trước của core: tiêu đề có nhãn quảng cáo, thư kèm chân thư.
+  const asSent = page.getByTestId("campaign-preview");
+  await expect(asSent).toContainText("[QC] Ưu đãi chảo gang");
+  await asSent.getByText("Text version").click();
+  await expect(asSent).toContainText("Huỷ đăng ký");
+  await expect(page.locator(".kpi-label", { hasText: /^Bounced$/ })).toBeVisible();
+  await expect(page.locator(".kpi-label", { hasText: /^Unsubscribed$/ })).toBeVisible();
   await page.getByRole("button", { name: "Send test" }).click();
   await dialog(page).getByLabel("Send to").fill("marketing@example.com");
   await dialog(page).getByRole("button", { name: "Send test" }).click();
@@ -224,6 +239,12 @@ test("bản tin: tạo danh sách, nhập CSV kèm nguồn đồng ý, chặn v�
   await dialog(page).getByRole("button", { name: "Block" }).click();
   await expect(toast(page)).toContainText("Blocked.");
   await expect(page.getByRole("heading", { level: 2, name: "hanh@example.com" })).toBeVisible();
+  // Lọc người bị chặn (`blocked=true` của core).
+  await page.goto("/marketing/newsletter/subscribers");
+  await page.getByRole("link", { name: "Blocked", exact: true }).click();
+  await expect(page).toHaveURL(/blocked=1/);
+  await expect(rows(page)).toHaveCount(1);
+  await page.getByRole("link", { name: "hanh@example.com" }).click();
   await page.getByRole("button", { name: "Unblock" }).click();
   await expect(toast(page)).toContainText("Unblocked");
 });
@@ -265,6 +286,29 @@ test("bình luận: duyệt ngay trên dòng có Hoàn tác; cấm người vi�
   await expect(page.locator(".eg-detailhead")).toContainText("Closed");
   await toast(page).getByRole("button", { name: "Undo" }).click();
   await expect(page.locator(".eg-detailhead")).toContainText("Open");
+});
+
+test("bình luận theo bài: danh sách đích của core kèm số đếm; tiêu đề của bài đang công khai", async ({
+  page,
+}) => {
+  await signIn(page, "/marketing/comments/targets");
+  await expect(rows(page)).toHaveCount(2);
+  const post = rows(page).filter({ hasText: "Vệ sinh thớt gỗ đúng cách" });
+  await expect(post.locator('td[data-label="Shown"]')).toHaveText("1");
+  // Đích không module nào mô tả (`demo.page`) hiện id.
+  await expect(page.getByRole("link", { name: "ve-sinh-thot-go", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Waiting for approval" }).click();
+  await expect(page).toHaveURL(/pending=1/);
+  await expect(rows(page)).toHaveCount(1);
+  await expect(rows(page).first()).toContainText("demo.page");
+
+  // Chi tiết bình luận: tiêu đề và địa chỉ của bài qua sổ đối tượng của core.
+  await page.goto("/marketing/comments?status=published");
+  await page.getByRole("link", { name: /Cảm ơn/ }).click();
+  await expect(page.getByText("/blog/ve-sinh-thot-go-dung-cach")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Vệ sinh thớt gỗ đúng cách" })).toBeVisible();
+  await page.getByRole("link", { name: "Open the post" }).click();
+  await expect(page).toHaveURL(/\/content\/[0-9a-f-]{36}$/);
 });
 
 test("cài đặt bình luận: của máy chủ đọc từ core; theo khách là dữ liệu mẫu có nhãn", async ({

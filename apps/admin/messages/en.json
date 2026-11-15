@@ -1474,7 +1474,9 @@
         "all": "All",
         "draft": "Drafts",
         "published": "Published",
-        "archived": "Archived"
+        "archived": "Archived",
+        "review": "Awaiting review",
+        "scheduled": "Upcoming"
       },
       "pages": "Pages of results",
       "first": "First page",
@@ -1498,7 +1500,26 @@
       "colAuthors": "Authors",
       "colUpdated": "Last edited",
       "untitled": "(untitled)",
-      "ai": "AI-assisted"
+      "ai": "AI-assisted",
+      "chipsLabel": "Quick filters",
+      "chips": {
+        "mine": "My posts",
+        "ai": "AI label"
+      },
+      "missing": "Missing translation",
+      "anyTranslation": "Any translation",
+      "missingIn": "No {language} translation yet",
+      "publishedAt": "Published",
+      "upcomingAbout": "Scheduled publishing and unpublishing of every post, the earliest first. Open a post to change or cancel its schedule.",
+      "noUpcoming": "Nothing is scheduled. Schedule a post from its editor with \"Publish\" › \"Later\".",
+      "colRunAt": "When",
+      "colAction": "Action",
+      "action": {
+        "publish": "Publish",
+        "unpublish": "Unpublish"
+      },
+      "aiReviewed": "AI content reviewed",
+      "entryGone": "(post not found)"
     },
     "status": {
       "draft": "Draft",
@@ -1640,7 +1661,11 @@
       "termsHint": "The first category ticked is the main one. Takes effect at once, also on the published version.",
       "termsSaved": "Categories and tags saved",
       "featured": "Featured image",
-      "featuredHint": "Shown on lists and at the top of the post. Published posts need public images."
+      "featuredHint": "Shown on lists and at the top of the post. Published posts need public images.",
+      "findLabel": "Find in {what}",
+      "findHint": "Find by name",
+      "find": "Find",
+      "found": "{count, plural, =0 {Nothing matches “{q}”.} one {# match for “{q}”, added to the list.} other {# matches for “{q}”, added to the list.}}"
     },
     "seo": {
       "check": "SEO check (no AI)",
@@ -1667,19 +1692,6 @@
       "suggestedTerms": "Fitting categories and tags",
       "apply": "Apply to draft",
       "dismiss": "Dismiss",
-      "codes": {
-        "excerptMissing": "No summary: lists, feeds and link previews have nothing to show.",
-        "headingSkipped": "A heading level is skipped (for example heading 2 then heading 4).",
-        "imageAltMissing": "An image has no text alternative.",
-        "metaDescriptionMissing": "No search description: search engines pick a sentence themselves.",
-        "metaDescriptionTooLong": "The search description is too long; search engines cut it.",
-        "metaTitleMissing": "No search title: the title is used.",
-        "metaTitleTooLong": "The search title is too long; search engines cut it.",
-        "noindexPublished": "It is published but asks search engines not to index it.",
-        "shareImageMissing": "No image for social sharing (and no main image to fall back on).",
-        "titleDuplicate": "Another entry in this language has the same title.",
-        "translationMissing": "A translation is missing."
-      },
       "shareImage": "Share image",
       "shareImageHint": "Shown when the link is shared on social networks; empty: the featured image."
     },
@@ -1757,7 +1769,8 @@
       "make": "Create preview link",
       "banner": "Draft preview — readers do not see this version.",
       "aiNotice": "Made with the help of AI.",
-      "invalid": "This preview link is invalid or has expired. Ask for a new one."
+      "invalid": "This preview link is invalid or has expired. Ask for a new one.",
+      "imageHidden": "Image not shown: it is private or was deleted. Readers will not see it either until it is public."
     },
     "new": {
       "titlePage": "New page",
@@ -1812,12 +1825,10 @@
   "media": {
     "crumb": "Content · shared by posts, pages and products",
     "title": "Media library",
-    "summary": "{count, plural, one {# file} other {# files}}{more, select, more { on this page} other {}} · {size} · {noAlt, plural, =0 {every image has alt text} one {# image without alt text} other {# images without alt text}}",
     "search": "Search by file name",
     "listLabel": "Files",
     "empty": "No files match",
     "emptyHint": "Try another folder or remove some filters.",
-    "noAltPageNote": "“Missing alt” filters the files of this page only; open the next page to see more.",
     "trashNote": "Files in the trash stop loading on the website. Restore them, or delete them for good; the server deletes them by itself after the number of days it keeps them.",
     "pages": "Pages",
     "first": "First page",
@@ -1847,7 +1858,8 @@
     "badges": {
       "noAlt": "No alt",
       "private": "Private",
-      "trashed": "In trash"
+      "trashed": "In trash",
+      "decorative": "Decorative"
     },
     "table": {
       "file": "File",
@@ -1881,7 +1893,9 @@
         "conflict": "Someone changed this file meanwhile. Reload it and try again.",
         "forbidden": "You may not upload files.",
         "other": "The file could not be uploaded."
-      }
+      },
+      "tooLargeMax": "The file is larger than the server accepts ({max} at most).",
+      "limits": "Up to {max} per file."
     },
     "folders": {
       "label": "Folders",
@@ -1901,7 +1915,8 @@
       "deleteTitle": "Delete the folder “{name}”?",
       "deleteEmpty": "Only an empty folder can be deleted: files in the trash count too.",
       "deleteKeep": "Its files are not affected; move or delete them first.",
-      "deleted": "Folder deleted"
+      "deleted": "Folder deleted",
+      "itemCount": "{count, plural, one {# file directly in this folder} other {# files directly in this folder}}"
     },
     "detail": {
       "title": "File details",
@@ -1972,7 +1987,8 @@
       "purgeTitle": "Delete “{name}” for good?",
       "purgeForever": "The content is deleted and cannot be brought back.",
       "purgeUsage": "Places still pointing to it will show nothing.",
-      "purged": "File deleted for good"
+      "purged": "File deleted for good",
+      "uploadedBy": "Uploaded by"
     },
     "picker": {
       "close": "Close",
@@ -2006,7 +2022,8 @@
       "change": "Change image",
       "remove": "Remove",
       "unavailable": "The media library is not available to you."
-    }
+    },
+    "librarySummary": "{count, plural, one {# file} other {# files}} · {size} · {noAlt, plural, =0 {every image has alt text} one {# image without alt text} other {# images without alt text}}{trashed, plural, =0 {} other { · # in the trash}}"
   },
   "structure": {
     "crumb": "Content",
@@ -2091,7 +2108,12 @@
       "deletePosts": "Posts lose this category or tag; the posts stay.",
       "deleteChildren": "A category with subcategories cannot be deleted; move them first.",
       "deleted": "Deleted",
-      "countMissing": "The number of posts per category or tag is not shown yet: the server does not count them."
+      "posts": "Posts",
+      "search": "Find a category or tag",
+      "searchHint": "Name in any language",
+      "find": "Find",
+      "clear": "Show all",
+      "more": "Showing the first 200. Search by name to find the others."
     },
     "authors": {
       "title": "Author profiles",
@@ -2117,7 +2139,13 @@
       "deletePosts": "Posts no longer show this author; the posts stay.",
       "deletePage": "The public author page stops working.",
       "deleted": "Author deleted",
-      "countMissing": "The number of posts per author is not shown yet: the server does not count them."
+      "posts": "{count, plural, =0 {No posts} one {# post} other {# posts}}",
+      "search": "Find an author",
+      "searchHint": "Display name",
+      "find": "Find",
+      "clear": "Show all",
+      "noMatch": "No author matches this name.",
+      "more": "Showing the first 200. Search by name to find the others."
     },
     "menus": {
       "title": "Menus of the content module",
@@ -2458,7 +2486,9 @@
       "liveMissing": "The core did not return the public menu."
     },
     "startHint": "Create the first menu: main for the category bar, footer for the footer.",
-    "sampleNote": "Product categories, promotions, sellers and stores in the record picker are sample data: the core refuses to save items pointing to them until it registers those kinds."
+    "sampleNote": "Product categories, promotions, sellers and stores in the record picker are sample data: the core refuses to save items pointing to them until it registers those kinds.",
+    "items": "Items",
+    "updatedBy": "by {name}"
   },
   "engage": {
     "changed": "Someone changed this record after you opened the page. Reload the page and try again.",
@@ -2745,7 +2775,7 @@
       "scheduledFor": "sends",
       "finished": "finished",
       "updated": "changed",
-      "adsLaw": "Advertising mail (Decree 91/2020, a reading not yet checked against the original text): the subject starts with the label set on the server ([QC] by default), the foot carries the sender's name and postal address, and each person gets at most a set number of advertising mails a day (3 by default). Check with someone qualified in law for your case.",
+      "adsLaw": "Advertising mail (Decree 91/2020, a reading not yet checked against the original text): the subject starts with the label set on the server ({label}), the foot carries the sender's name and postal address, and each person gets at most {max} advertising mails a day. Check with someone qualified in law for your case.",
       "campaignDeleted": "Campaign deleted.",
       "campaignCreated": "Draft saved. Nothing is sent until you send it.",
       "back": "All campaigns",
@@ -2786,14 +2816,18 @@
         "sent": "Sent",
         "failed": "Failed",
         "skipped": "Skipped",
-        "pending": "Waiting"
+        "pending": "Waiting",
+        "bounced": "Bounced",
+        "unsubscribed": "Unsubscribed"
       },
       "kpiAbout": {
         "total": "Confirmed when sending started",
         "sent": "Handed to the mail server",
         "failed": "Refused for good, or unknown",
         "skipped": "Blocked, unsubscribed, over the ad limit",
-        "pending": "Not handled yet"
+        "pending": "Not handled yet",
+        "bounced": "The address does not exist (hard bounce)",
+        "unsubscribed": "Left the list from a link in this mail"
       },
       "handled": "Handled",
       "listLabel": "List",
@@ -2911,7 +2945,7 @@
         "preheader": "Preview line",
         "preheaderHint": "Shown after the subject in most inboxes; up to 200 characters.",
         "advertising": "Advertising mail",
-        "advertisingHint": "The server puts {label} (or the label set on it) at the start of the subject, needs the sender's postal address in the foot, and limits advertising mails per person per day.",
+        "advertisingHint": "The server puts {label} at the start of the subject, needs the sender's postal address in the foot, and sends each person at most {max} advertising mails a day.",
         "advertisingLaw": "Decree 91/2020 sets rules for advertising mail: consent first, a label in the subject, a way to refuse, the sender's identity. This reading was not checked against the original text; ask someone qualified in law.",
         "bodyText": "Text version",
         "bodyTextHint": "Plain text for every inbox. Line breaks are kept.",
@@ -3012,7 +3046,18 @@
         "note": "Note (optional)",
         "submit": "Add",
         "done": "Address added to the do-not-mail list."
-      }
+      },
+      "setup": {
+        "missingTitle": "Sending is not set up yet.",
+        "missing": "Ask whoever runs the server to set: {vars}. Until then, sending fails.",
+        "ready": "The server sends up to {rate} mails a minute. Sender's postal address in the foot: {address}.",
+        "noAddress": "not set"
+      },
+      "asSent": "As it will be sent",
+      "asSentAbout": "Built by the server exactly as it sends it, foot included. Links carry a placeholder instead of each reader's own.",
+      "previewUnavailable": "The server cannot build the mail yet:",
+      "textVersion": "Text version",
+      "blockedFilter": "Blocked"
     },
     "comments": {
       "crumb": "Marketing · module comments",
@@ -3145,7 +3190,7 @@
       "findTarget": "Open a target",
       "targetId": "Id of the target",
       "open": "Open",
-      "targets": "Posts with recent comments",
+      "targets": "Posts with comments",
       "targetsAbout": "Each post has its own state: open, closed (old comments stay, no new ones) or hidden (hidden from everyone, and closed). It can close by itself at a set time.",
       "noTargets": "No post has comments yet.",
       "target": {
@@ -3273,7 +3318,12 @@
           "unknown": "Choose one of the listed values."
         }
       },
-      "markdownHint": "Shown as written; the site renders a small part of Markdown (bold, italics, links, quotes, code)."
+      "markdownHint": "Shown as written; the site renders a small part of Markdown (bold, italics, links, quotes, code).",
+      "all": "All",
+      "filterTargets": "Filter posts by state",
+      "withPending": "Waiting for approval",
+      "targetUrl": "Address",
+      "targetNotPublic": "Not public now (title and address hidden)"
     },
     "data": {
       "title": "Data by email",
@@ -3783,7 +3833,7 @@
       "ai": "Content labelled as AI",
       "openAi": "Check labels",
       "aiPosts": "Posts and pages",
-      "aiPostsSub": "Marked ai_generated among the {limit} most recently edited",
+      "aiPostsSub": "Marked ai_generated (up to {limit} shown)",
       "aiPostsNone": "The content module is not available to you",
       "aiOther": "Products and image alt text",
       "aiOtherSub": "With an AI label",
@@ -4107,7 +4157,7 @@
       },
       "ai": {
         "posts": "Posts and pages marked as AI-generated",
-        "postsAbout": "Read from Content: entries marked ai_generated among the {limit} most recently edited. The core has no filter for this yet.",
+        "postsAbout": "Read from Content: every post and page marked ai_generated, most recently edited first (up to {limit}).",
         "noContent": "The content module is not available to you.",
         "noPosts": "No recent post or page is marked as AI-generated.",
         "content": "Content",

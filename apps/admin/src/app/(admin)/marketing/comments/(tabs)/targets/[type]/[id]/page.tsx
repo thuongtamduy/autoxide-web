@@ -6,8 +6,7 @@ import { ChangeButtons, type Move } from "@/components/engage/actions";
 import { ClosesForm } from "@/components/engage/comment-forms";
 import { Back, DetailHead, Facts, Forbidden } from "@/components/engage/common";
 import { Time } from "@/components/ui/time";
-import { type CommentTarget, decoded, TARGET_BADGE, targetState } from "@/lib/comments";
-import { targetKey, targetLabels } from "@/lib/comments-server";
+import { adminHref, type CommentTarget, decoded, TARGET_BADGE, targetState } from "@/lib/comments";
 import { isForbidden, isNotFound, load } from "@/lib/core";
 import { COMMENTS_MANAGE, COMMENTS_READ, hrefWith } from "@/lib/engage";
 import { can } from "@/lib/viewer";
@@ -22,19 +21,31 @@ export default async function TargetPage(
   const id = decoded(raw.id);
   const t = await getTranslations("engage.comments");
   let target: CommentTarget;
+  let title: string | null = null;
   try {
-    ({ data: target } = await load((client) =>
-      client.GET("/api/v1/comments/targets/{target_type}/{target_id}", {
-        params: { path: { target_type: type, target_id: id } },
-      }),
-    ));
+    // Tiêu đề của đích: `target_title` của một bình luận bất kỳ của nó (core tra qua sổ đối tượng,
+    // chỉ khi đích đang công khai). Trạng thái đích và một bình luận đọc song song.
+    const [found, sample] = await Promise.all([
+      load((client) =>
+        client.GET("/api/v1/comments/targets/{target_type}/{target_id}", {
+          params: { path: { target_type: type, target_id: id } },
+        }),
+      ),
+      load((client) =>
+        client.GET("/api/v1/comments", {
+          params: { query: { target_type: type, target_id: id, limit: 1 } },
+        }),
+      ),
+    ]);
+    target = found.data;
+    title = sample.data[0]?.target_title ?? null;
   } catch (error) {
     if (isForbidden(error)) return <Forbidden permission={COMMENTS_READ} />;
     if (isNotFound(error)) notFound();
     throw error;
   }
   const manage = await can(COMMENTS_MANAGE);
-  const label = (await targetLabels([{ type, id }])).get(targetKey(type, id));
+  const openHref = adminHref(type, id);
   const shown = targetState(target);
   const moves: Move[] = [];
   if (shown !== "open")
@@ -52,7 +63,7 @@ export default async function TargetPage(
     <div className="blocks">
       <Back href="/marketing/comments/targets" label={t("backToTargets")} />
       <DetailHead
-        title={label?.title ?? id}
+        title={title ?? id}
         badge={
           <span className={TARGET_BADGE[shown]}>
             <span className="dot" />
@@ -62,8 +73,8 @@ export default async function TargetPage(
         description={t(`targetAbout.${shown}`)}
         actions={
           <>
-            {label?.href ? (
-              <Link className="btn sm" href={label.href}>
+            {openHref ? (
+              <Link className="btn sm" href={openHref}>
                 {t("openTarget")}
               </Link>
             ) : null}

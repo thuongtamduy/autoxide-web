@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { BodyView } from "@/components/content/body-view";
+import { BodyView, PublicImage } from "@/components/content/body-view";
 import { anonymousClient } from "@/lib/core";
-import { isUuid, mediaIdSrc } from "@/lib/media";
 import "@/components/content/content.css";
 
 // Trang xem trước bản nháp cho người không có tài khoản: ai có link (token do trình soạn tạo)
@@ -37,13 +36,13 @@ export default async function PreviewPage(props: PageProps<"/preview">) {
           <article lang={draft.locale}>
             <h1 className="h1">{draft.title}</h1>
             {draft.excerpt ? <p className="ce-preview-excerpt">{draft.excerpt}</p> : null}
-            {draft.featured_media_id && isUuid(draft.featured_media_id) ? (
+            {/* Ảnh đại diện: core chỉ trả khi tệp công khai (`featured_media`). */}
+            {draft.featured_media ? (
               <figure className="ce-media ce-media-read ce-featured">
-                {/* biome-ignore lint/performance/noImgElement: ảnh đi qua route `/media/…` của giao diện */}
-                <img src={mediaIdSrc(draft.featured_media_id)} alt={draft.featured_media_alt} />
+                <PublicImage media={draft.featured_media} alt={draft.featured_media_alt} />
               </figure>
             ) : null}
-            <BodyView body={draft.body} />
+            <BodyView body={draft.body} media={draft.body_media} missingImage={t("imageHidden")} />
             {draft.ai_generated ? <p className="fhint">{t("aiNotice")}</p> : null}
           </article>
         ) : (

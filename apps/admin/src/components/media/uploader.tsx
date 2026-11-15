@@ -2,10 +2,17 @@
 
 import type { Problem } from "@autoxide/sdk";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useId, useRef, useState } from "react";
 import { Icon } from "@/components/shell/icon";
-import { type MediaItem, safeFileName, uploadErrorKey } from "@/lib/media";
+import {
+  formatBytes,
+  type MediaItem,
+  safeFileName,
+  type UploadLimits,
+  uploadBlock,
+  uploadErrorKey,
+} from "@/lib/media";
 
 // Tải tệp lên qua route của giao diện (`/media/upload`, `/media/{id}/replace`): trình duyệt gửi
 // nguyên tệp, máy chủ của giao diện chuyển sang core kèm token trong cookie. Dùng XMLHttpRequest
@@ -87,8 +94,11 @@ export function sendFile(
 export function useUploader(options: {
   folderId?: string | undefined;
   onUploaded?: ((items: MediaItem[]) => void) | undefined;
+  /** Giới hạn của máy chủ: tệp chắc chắn bị từ chối thì báo ngay, không gửi. */
+  limits?: UploadLimits | null | undefined;
 }) {
   const t = useTranslations("media.upload");
+  const locale = useLocale();
   const router = useRouter();
   const [uploads, setUploads] = useState<Upload[]>([]);
   const counter = useRef(0);
@@ -125,6 +135,18 @@ export function useUploader(options: {
       ]);
       const uploaded: MediaItem[] = [];
       for (const { key, file } of queued) {
+        const blocked = uploadBlock(file, options.limits);
+        if (blocked && options.limits) {
+          patch(key, {
+            state: "failed",
+            code: blocked === "tooLarge" ? "media.too_large" : "media.type_not_allowed",
+            error:
+              blocked === "tooLarge"
+                ? t("tooLargeMax", { max: formatBytes(options.limits.maxBytes, locale) })
+                : t(`codes.${blocked}`),
+          });
+          continue;
+        }
         const query = new URLSearchParams({ name: safeFileName(file.name) });
         if (options.folderId && options.folderId !== "root") {
           query.set("folder_id", options.folderId);
@@ -153,7 +175,7 @@ export function useUploader(options: {
         done.current?.(uploaded);
       }
     },
-    [options.folderId, patch, explain, router],
+    [options.folderId, options.limits, patch, explain, router, t, locale],
   );
 
   const dismiss = useCallback((key: string) => {
@@ -222,17 +244,19 @@ export function DropZone({
   hint,
   accept,
   onUploaded,
+  limits,
   children,
 }: {
   inputId: string;
   folderId?: string | undefined;
   hint: ReactNode;
-  accept?: string;
+  accept?: string | undefined;
   onUploaded?: ((items: MediaItem[]) => void) | undefined;
+  limits?: UploadLimits | null | undefined;
   children?: ReactNode;
 }) {
   const t = useTranslations("media.upload");
-  const { uploads, upload, dismiss } = useUploader({ folderId, onUploaded });
+  const { uploads, upload, dismiss } = useUploader({ folderId, onUploaded, limits });
   const [over, setOver] = useState(false);
   const hintId = useId();
   return (

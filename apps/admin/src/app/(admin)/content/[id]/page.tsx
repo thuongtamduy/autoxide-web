@@ -3,7 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { EntryEditor } from "@/components/content/editor";
 import { MessagePanel } from "@/components/message-panel";
-import { abilities } from "@/lib/content";
+import { getClientConfig } from "@/lib/client-config";
+import { abilities, postPathPrefix } from "@/lib/content";
 import { loadAi, loadAuthors, loadEntry, loadTerms, optional } from "@/lib/content-server";
 import { isForbidden, load } from "@/lib/core";
 import { MEDIA_READ, MEDIA_WRITE } from "@/lib/permissions";
@@ -80,7 +81,10 @@ export default async function EntryPage(props: PageProps<"/content/[id]">) {
     can(MEDIA_READ),
     can(MEDIA_WRITE),
   ]);
-  const aiStatus = canMedia ? await optional(load((c) => c.GET("/api/v1/ai/status"))) : null;
+  const [aiStatus, config] = await Promise.all([
+    canMedia ? optional(load((c) => c.GET("/api/v1/ai/status"))) : null,
+    getClientConfig(),
+  ]);
 
   // Bài thuộc website nào: dữ liệu mẫu (W-006), core chưa có API.
   const sample = sampleDataEnabled()
@@ -98,16 +102,17 @@ export default async function EntryPage(props: PageProps<"/content/[id]">) {
       version={version}
       can={abilities(me)}
       ai={ai}
-      authors={authors}
-      terms={terms}
+      authors={authors.items}
+      terms={terms.items}
+      more={{ authors: authors.more, terms: terms.more }}
       schedules={schedules?.data ?? []}
       revisions={revisions?.data ?? []}
       findings={findings?.data.findings ?? null}
       translations={(translations?.data ?? []).filter((other) => other.id !== entry.id)}
       requests={requests?.data ?? []}
-      // Core đặt đầu đường dẫn bằng AUTOXIDE_CONTENT_POST_PATH_PREFIX (mặc định `blog`) nhưng
-      // chưa có API đọc nó: dùng giá trị mặc định.
-      pathPrefix="/blog/"
+      // Đầu đường dẫn của bài viết do người vận hành đặt (`GET /kernel/client-config`);
+      // core cũ chưa có endpoint thì dùng giá trị mặc định của core.
+      pathPrefix={postPathPrefix(config?.content?.post_path_prefix)}
       sample={sample}
       media={{
         available: canMedia,

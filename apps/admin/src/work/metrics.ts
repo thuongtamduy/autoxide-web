@@ -69,7 +69,7 @@ export const METRICS: readonly SummaryMetric[] = [
     group: "content",
     permission: [CONTENT_READ],
     module: "content",
-    href: "/content?status=draft",
+    href: "/content?status=review",
     value: async () => {
       const waiting = await readReviewEntries();
       return {
@@ -102,12 +102,12 @@ export const METRICS: readonly SummaryMetric[] = [
     href: "/marketing/forms",
     value: async () => {
       const perForm = await readNewSubmissions();
-      const total = perForm.reduce((sum, { page }) => sum + page.data.length, 0);
+      const total = perForm.reduce((sum, { count }) => sum + count, 0);
       return {
         value: { kind: "count", value: total },
         note: {
           key: "metrics.formsNote",
-          params: { forms: perForm.filter((x) => x.page.data.length > 0).length },
+          params: { forms: perForm.filter((x) => x.count > 0).length },
         },
       };
     },

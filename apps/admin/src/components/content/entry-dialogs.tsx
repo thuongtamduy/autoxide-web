@@ -152,6 +152,7 @@ function PublishForm({ close, aiUsed }: { close: () => void; aiUsed: boolean }) 
             const result = await scheduleEntry(api.entry.id, api.version, fields, {
               action: "publish",
               run_at: runAt,
+              ...(reviewed ? { ai_reviewed: true } : {}),
             });
             if (result.ok) {
               if (result.entry) api.accept(result.entry, result.version);

@@ -6,6 +6,7 @@ import { MediaDropArea, UploadButton } from "@/components/media/media-drop-area"
 import { MediaGrid, MediaTable } from "@/components/media/media-list";
 import { MessagePanel } from "@/components/message-panel";
 import { Icon } from "@/components/shell/icon";
+import { getClientConfig } from "@/lib/client-config";
 import { CONTENT_LOCALES } from "@/lib/content";
 import { optional } from "@/lib/content-server";
 import { isForbidden, isNotFound, load, loadTagged } from "@/lib/core";
@@ -15,17 +16,17 @@ import {
   type MediaKind,
   mediaHref,
   mediaQuery,
-  missingAlt,
   parseMediaFilters,
+  type UploadLimits,
 } from "@/lib/media";
 import { MEDIA_PURGE, MEDIA_READ, MEDIA_WRITE } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
-import { sampleDataEnabled } from "@/sample";
-import { getMediaDecorative } from "@/sample/media";
 
-// Màn "Thư viện media" (module `media`): lưới hay bảng tệp, lọc theo loại, thư mục, thẻ, thiếu alt,
-// riêng tư, thùng rác; khung chi tiết của tệp đang mở (`?item=`). Bộ lọc nằm trên địa chỉ nên mở
-// thẳng được và nút quay lại chạy đúng. Ảnh hiện qua route `/media/{id}/content` của giao diện.
+// Màn "Thư viện media" (module `media`): lưới hay bảng tệp, lọc theo loại, thư mục, thẻ, thiếu alt
+// (`alt_missing`, core lọc cả thư viện), riêng tư, thùng rác; khung chi tiết của tệp đang mở
+// (`?item=`). Số ở đầu trang là tóm tắt cả thư viện (`GET /media/summary`). Ngôn ngữ alt và giới
+// hạn tải lên theo cấu hình của máy chủ (`GET /kernel/client-config`). Bộ lọc nằm trên địa chỉ nên
+// mở thẳng được và nút quay lại chạy đúng. Ảnh hiện qua route `/media/{id}/content` của giao diện.
 export default async function MediaPage(props: PageProps<"/content/media">) {
   const t = await getTranslations("media");
   const locale = await getLocale();
@@ -47,7 +48,7 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
     throw error;
   }
 
-  const [folders, tags, selected, ai, canWrite, canPurge] = await Promise.all([
+  const [folders, tags, selected, ai, canWrite, canPurge, summary, config] = await Promise.all([
     optional(
       load((c) =>
         c.GET("/api/v1/media/folders", {
@@ -66,14 +67,21 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
     optional(load((c) => c.GET("/api/v1/ai/status"))),
     can(MEDIA_WRITE),
     can(MEDIA_PURGE),
+    optional(load((c) => c.GET("/api/v1/media/summary"))),
+    getClientConfig(),
   ]);
-  const sample = sampleDataEnabled();
-  const decorative = selected && sample ? (await getMediaDecorative(selected.item.id)).data : null;
 
-  // "Thiếu alt": core chưa có tham số lọc này, nên lọc trên trang đang xem.
-  const items = filters.noAlt ? page.data.filter(missingAlt) : page.data;
-  const noAltCount = page.data.filter(missingAlt).length;
-  const totalBytes = page.data.reduce((sum, item) => sum + item.size, 0);
+  const items = page.data;
+  const library = summary?.data ?? null;
+  const media = config?.media;
+  const limits: UploadLimits | null = media
+    ? { maxBytes: media.max_bytes, allowedTypes: media.allowed_types }
+    : null;
+  // Ngôn ngữ alt máy chủ nhận (`AUTOXIDE_MEDIA_ALT_LOCALES`); core cũ thì ngôn ngữ của nội dung.
+  const altLocales = media?.alt_locales.length ? media.alt_locales : [...CONTENT_LOCALES];
+  // Tên người tải lên chỉ có ở danh sách (`include=uploader`): lấy từ dòng của tệp đang mở.
+  const uploaderName =
+    page.data.find((item) => item.id === selected?.item.id)?.uploaded_by_name ?? null;
   const folderList = folders?.data ?? [];
   const current = filters.folder && filters.folder !== "root" ? filters.folder : undefined;
   const aiImages = Boolean(ai?.data.enabled && ai.data.images);
@@ -84,14 +92,16 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
         <div className="phead-main">
           <span className="crumb">{t("crumb")}</span>
           <h1 className="h1">{t("title")}</h1>
-          <p className="pdesc num">
-            {t("summary", {
-              count: page.data.length,
-              more: page.pagination.next_cursor ? "more" : "all",
-              size: formatBytes(totalBytes, locale),
-              noAlt: noAltCount,
-            })}
-          </p>
+          {library ? (
+            <p className="pdesc num">
+              {t("librarySummary", {
+                count: library.items,
+                size: formatBytes(library.bytes, locale),
+                noAlt: library.images_missing_alt,
+                trashed: library.trashed_items,
+              })}
+            </p>
+          ) : null}
         </div>
         {canWrite && !filters.trash ? (
           <div className="headacts">
@@ -106,6 +116,7 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
           inputId="md-file"
           folderId={filters.folder}
           folderName={current ? (folderList.find((f) => f.id === current)?.name ?? "") : ""}
+          limits={limits}
         />
       ) : null}
 
@@ -172,7 +183,7 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
           >
             <Icon name="warn" small />
             {t("filter.noAlt")}
-            <span className="cnt hot">{noAltCount}</span>
+            {library ? <span className="cnt hot">{library.images_missing_alt}</span> : null}
           </Link>
           <Link
             className={filters.visibility === "private" ? "chip on" : "chip"}
@@ -279,7 +290,6 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
               ) : null}
             </nav>
           ) : null}
-          {filters.noAlt ? <p className="fhint">{t("noAltPageNote")}</p> : null}
         </section>
         {filters.item && !selected ? (
           <aside className="card md-pane" aria-label={t("detail.title")}>
@@ -298,8 +308,8 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
               enabled: aiImages,
               reason: ai ? (ai.data.enabled ? "images" : "off") : "forbidden",
             }}
-            locales={[...CONTENT_LOCALES]}
-            decorative={decorative}
+            locales={altLocales}
+            uploaderName={uploaderName}
           />
         ) : null}
       </div>

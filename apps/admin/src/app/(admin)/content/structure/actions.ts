@@ -3,9 +3,11 @@
 // Server Action của màn "Trang và cấu trúc": chuyển trang cha, danh mục và thẻ, tác giả, chuyển
 // hướng, so hai phiên bản. Mọi lời gọi core chạy ở máy chủ với token trong cookie `httpOnly`.
 //
-// Phiên bản: danh sách của core không kèm `ETag` của từng dòng. Trước khi sửa, đọc lại bản ghi để
-// lấy `ETag`, rồi so `updated_at` với giá trị trang đã hiện: khác nhau là có người vừa sửa, báo
-// "đã đổi" (như 412) thay vì ghi đè. Core vẫn kiểm `If-Match` ở lệnh ghi.
+// Phiên bản: danh sách bài của core kèm `version` (chính là `ETag`) của từng dòng, nên chuyển trang
+// cha gửi thẳng nó trong `If-Match`. Danh mục, thẻ, tác giả, chuyển hướng chưa có `version` trong
+// danh sách: trước khi sửa, đọc lại bản ghi để lấy `ETag`, rồi so `updated_at` với giá trị trang đã
+// hiện; khác nhau là có người vừa sửa, báo "đã đổi" (như 412) thay vì ghi đè. Core vẫn kiểm
+// `If-Match` ở lệnh ghi.
 import type { AutoxideClient, Problem } from "@autoxide/sdk";
 import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
@@ -67,22 +69,29 @@ async function freshTag(
 export async function movePage(state: FormState, formData: FormData): Promise<FormState> {
   const id = text(formData, "id");
   const parent = text(formData, "parent_id");
-  if (!uuid.safeParse(id).success || (parent && !uuid.safeParse(parent).success)) {
+  const version = text(formData, "version");
+  if (
+    !uuid.safeParse(id).success ||
+    (parent && !uuid.safeParse(parent).success) ||
+    version.length < 1 ||
+    version.length > 200
+  ) {
     return invalidState();
   }
-  const tag = await freshTag(
-    (c) => c.GET("/api/v1/content/entries/{id}", { params: { path: { id } } }),
-    text(formData, "updated_at"),
-  );
-  if (!tag.ok) return problemState(tag.problem, []);
   const result = await send((client) =>
     client.POST("/api/v1/content/entries/{id}/move", {
-      params: { path: { id }, header: { "If-Match": tag.etag } },
+      params: { path: { id }, header: { "If-Match": version } },
       body: { parent_id: parent || null },
     }),
   );
-  if (!result.ok)
+  if (!result.ok) {
+    // 412: người khác vừa sửa trang — câu riêng của màn, như các lệnh sửa khác ở đây.
+    if (result.problem.code === "precondition_failed") {
+      const t = await getTranslations("structure");
+      return { error: t("conflict"), code: result.problem.code };
+    }
     return problemState(result.problem, ["parent_id"], { "content.tree_cycle": "parent_id" });
+  }
   refresh();
   return { done: nextDone(state) };
 }

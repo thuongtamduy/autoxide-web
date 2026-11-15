@@ -34,20 +34,26 @@ export async function optional<T>(promise: Promise<T>): Promise<T | null> {
   }
 }
 
-/** Mọi hồ sơ tác giả (một trang 200; nhiều hơn thì cần ô tìm, chưa có API tìm tác giả). */
-export async function loadAuthors(): Promise<Author[]> {
+/** Một trang danh sách cho bộ chọn: mục đầu và có còn mục nữa không (thì hiện ô tìm). */
+export interface PickList<T> {
+  items: T[];
+  more: boolean;
+}
+
+/** Hồ sơ tác giả, một trang 200; còn nữa thì trình soạn tìm theo tên (`q` của core). */
+export async function loadAuthors(): Promise<PickList<Author>> {
   const page = await optional(
     load((client) => client.GET("/api/v1/content/authors", { params: { query: { limit: 200 } } })),
   );
-  return page?.data ?? [];
+  return { items: page?.data ?? [], more: Boolean(page?.pagination.next_cursor) };
 }
 
-/** Mọi danh mục và thẻ (một trang 200). */
-export async function loadTerms(): Promise<Term[]> {
+/** Danh mục và thẻ, một trang 200; còn nữa thì trình soạn tìm theo tên. */
+export async function loadTerms(): Promise<PickList<Term>> {
   const page = await optional(
     load((client) => client.GET("/api/v1/content/terms", { params: { query: { limit: 200 } } })),
   );
-  return page?.data ?? [];
+  return { items: page?.data ?? [], more: Boolean(page?.pagination.next_cursor) };
 }
 
 /** AI có bật không (`GET /api/v1/ai/status`). Nút AI chỉ chạy khi bật. */

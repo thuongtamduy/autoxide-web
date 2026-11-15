@@ -124,6 +124,44 @@ test("tải lên, lỗi theo code, alt, thẻ, công khai, thùng rác, xoá h�
   await expect(page.locator(".md-tile")).toHaveCount(0);
 });
 
+test("ảnh trang trí, lọc thiếu alt và tóm tắt thư viện là của core; tên người tải lên", async ({
+  page,
+}) => {
+  await signIn(page, "/content/media");
+  await upload(page, "hoa-van.png", PNG);
+  await expect(page).toHaveURL(/item=[0-9a-f-]{36}/);
+  // Tóm tắt cả thư viện (`GET /media/summary`), không chỉ trang đang xem.
+  const head = page.locator(".phead");
+  await expect(head).toContainText("1 file");
+  await expect(head).toContainText("1 image without alt text");
+  await expect(pane(page)).toContainText("Uploaded by");
+  await expect(pane(page)).toContainText("admin");
+
+  // "Thiếu alt" là bộ lọc của core (`alt_missing=true`).
+  await page.getByRole("link", { name: /Missing alt/ }).click();
+  await expect(page).toHaveURL(/alt=missing/);
+  await expect(page.locator(".md-tile")).toHaveCount(1);
+
+  // Đánh dấu ảnh trang trí: lưu bằng PATCH của core, không còn tính là thiếu alt.
+  await page.locator(".md-tile").first().click();
+  await pane(page).getByLabel("Decorative image").check();
+  await pane(page).getByRole("button", { name: "Save alt text" }).click();
+  await expect(toast(page)).toContainText("Alt text saved");
+  await page.reload();
+  await expect(page.getByText("No files match")).toBeVisible();
+  await expect(head).toContainText("every image has alt text");
+  await page.getByRole("link", { name: /Missing alt/ }).click();
+  await expect(page.locator(".md-tile")).toHaveCount(1);
+  await page.locator(".md-tile").first().click();
+  await expect(pane(page).getByLabel("Decorative image")).toBeChecked();
+
+  // Bảng: người tải lên (`include=uploader`) và nhãn "Trang trí".
+  await page.getByRole("link", { name: "Table" }).click();
+  const row = page.locator("tbody tr", { hasText: "hoa-van.png" });
+  await expect(row).toContainText("admin");
+  await expect(row).toContainText("Decorative");
+});
+
 test("thư mục mới, tải vào thư mục, lọc theo loại", async ({ page }) => {
   await signIn(page, "/content/media");
   await page.getByRole("button", { name: "New folder" }).click();

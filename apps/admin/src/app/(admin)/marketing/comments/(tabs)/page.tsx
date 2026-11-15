@@ -16,9 +16,7 @@ import {
   isKnownReason,
   moderationMoves,
   targetHref,
-  uniqueTargets,
 } from "@/lib/comments";
-import { targetKey, targetLabels } from "@/lib/comments-server";
 import { isForbidden, load } from "@/lib/core";
 import {
   COMMENTS_MODERATE,
@@ -72,9 +70,10 @@ export default async function QueuePage(props: PageProps<"/marketing/comments">)
     throw error;
   }
   const moderate = await can(COMMENTS_MODERATE);
-  const labels = await targetLabels(
-    uniqueTargets(page.data).map((x) => ({ type: x.type, id: x.id })),
-  );
+  // Tiêu đề của đích có sẵn trong từng bình luận (`target_title` của core, chỉ khi đích công khai).
+  const onlyTitle = page.data.find(
+    (c) => c.target_type === type && c.target_id === target,
+  )?.target_title;
   const keep = { type, target, q };
   const next = page.pagination.next_cursor;
   const undo = { label: t("undo"), done: t("undone") };
@@ -147,7 +146,7 @@ export default async function QueuePage(props: PageProps<"/marketing/comments">)
         {type && target ? (
           <p className="fhint">
             {t("onlyTarget", {
-              title: labels.get(targetKey(type, target))?.title ?? target,
+              title: onlyTitle ?? target,
             })}
           </p>
         ) : null}
@@ -169,7 +168,6 @@ export default async function QueuePage(props: PageProps<"/marketing/comments">)
               </thead>
               <tbody>
                 {page.data.map((c) => {
-                  const label = labels.get(targetKey(c.target_type, c.target_id));
                   const reasons = holdReasons(c.hold_reason);
                   return (
                     <tr key={c.id}>
@@ -187,7 +185,7 @@ export default async function QueuePage(props: PageProps<"/marketing/comments">)
                       <Td label={t("col.target")}>
                         <span className="cell2">
                           <Link className="ell" href={targetHref(c.target_type, c.target_id)}>
-                            {label?.title ?? c.target_id}
+                            {c.target_title ?? c.target_id}
                           </Link>
                           <span className="sub mono">{c.target_type}</span>
                         </span>

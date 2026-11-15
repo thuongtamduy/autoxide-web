@@ -13,23 +13,28 @@ import {
 import { ChangeButtons, ConfirmButton } from "@/components/engage/actions";
 import { CampaignEditor, ScheduleDialog, TestDialog } from "@/components/engage/campaign-editor";
 import { Back, Facts, Forbidden, PageHead } from "@/components/engage/common";
+import { SendSetup } from "@/components/engage/send-setup";
 import { Flash } from "@/components/ui/flash";
 import { Time } from "@/components/ui/time";
+import { send } from "@/lib/action";
 import { isForbidden, isNotFound, load } from "@/lib/core";
 import { count, NEWSLETTER_MANAGE, NEWSLETTER_READ, NEWSLETTER_SEND, pickText } from "@/lib/engage";
 import {
+  adRules,
   CAMPAIGN_BADGE,
   type Campaign,
   campaignActions,
-  DEFAULT_AD_LABEL,
   type NewsletterList,
   progressPercent,
 } from "@/lib/newsletter";
+import { loadNewsletterSettings } from "@/lib/newsletter-server";
 import { can } from "@/lib/viewer";
 
-// Một chiến dịch: tiến độ gửi (số thật của core), thao tác theo trạng thái (gửi thử, hẹn giờ, gửi
-// ngay, tạm dừng / tiếp tục có Hoàn tác, huỷ, xoá) và nội dung. Nháp và đã hẹn giờ thì sửa được
-// ngay ở đây; sửa bản đã hẹn giờ đưa nó về nháp (core quy định), nên phải hẹn lại.
+// Một chiến dịch: tiến độ gửi (số thật của core, kèm số bị trả về và số huỷ đăng ký từ thư này),
+// thao tác theo trạng thái (gửi thử, hẹn giờ, gửi ngay, tạm dừng / tiếp tục có Hoàn tác, huỷ, xoá),
+// nội dung, và thư đúng như khi gửi (`GET /campaigns/{id}/preview`: core dựng bằng chính hàm gửi,
+// kèm chân thư). Nháp và đã hẹn giờ thì sửa được ngay ở đây; sửa bản đã hẹn giờ đưa nó về nháp
+// (core quy định), nên phải hẹn lại.
 export default async function CampaignPage(
   props: PageProps<"/marketing/newsletter/campaigns/[id]">,
 ) {
@@ -53,7 +58,16 @@ export default async function CampaignPage(
     if (isNotFound(error)) notFound();
     throw error;
   }
-  const [manage, sender] = await Promise.all([can(NEWSLETTER_MANAGE), can(NEWSLETTER_SEND)]);
+  const [manage, sender, settings, preview] = await Promise.all([
+    can(NEWSLETTER_MANAGE),
+    can(NEWSLETTER_SEND),
+    loadNewsletterSettings(),
+    // Thiếu cấu hình gửi thì core báo cùng lỗi 503 như khi gửi: hiện câu đó thay cho bản xem trước.
+    send((client) =>
+      client.GET("/api/v1/newsletter/campaigns/{id}/preview", { params: { path: { id } } }),
+    ),
+  ]);
+  const ads = adRules(settings);
   const allowed = campaignActions(campaign);
   const list = lists.find((l) => l.id === campaign.list_id);
   const listName = list ? pickText(list.name, locale) || list.key : "—";
@@ -62,9 +76,6 @@ export default async function CampaignPage(
   const version = { id: campaign.id, expect: campaign.updated_at };
   const undo = { label: t("undo"), done: t("undone") };
   const editable = manage && allowed.includes("edit");
-  const subject = campaign.advertising
-    ? `${DEFAULT_AD_LABEL} ${campaign.subject}`
-    : campaign.subject;
 
   return (
     <div className="page">
@@ -81,6 +92,8 @@ export default async function CampaignPage(
         }
         description={t(`statusAbout.${campaign.status}`)}
       />
+
+      {sender && allowed.includes("send") ? <SendSetup settings={settings} /> : null}
 
       <div className="eg-acts">
         {sender && allowed.includes("test") ? <TestDialog action={testCampaign} id={id} /> : null}
@@ -104,7 +117,7 @@ export default async function CampaignPage(
                 list: listName,
               }),
               t("sendRate"),
-              campaign.advertising ? t("sendAds", { label: DEFAULT_AD_LABEL }) : t("sendFooter"),
+              campaign.advertising ? t("sendAds", { label: ads.label }) : t("sendFooter"),
               t("sendNoUndo"),
             ]}
             submit={t("sendSubmit")}
@@ -177,6 +190,8 @@ export default async function CampaignPage(
                 ["sent", p.sent],
                 ["failed", p.failed],
                 ["skipped", p.skipped],
+                ["bounced", p.bounced],
+                ["unsubscribed", p.unsubscribed],
                 ["pending", p.pending],
               ] as const
             ).map(([key, value]) => (
@@ -260,25 +275,41 @@ export default async function CampaignPage(
                 bodyText: campaign.body_text,
                 bodyHtml: campaign.body_html ?? "",
               }}
+              ads={ads}
             />
           ) : (
             <div className="card padded eg-stack">
-              <Facts
-                items={[
-                  [t("subjectAsSent"), subject],
-                  [t("preheaderLabel"), campaign.preheader || "—"],
-                ]}
-              />
+              <Facts items={[[t("preheaderLabel"), campaign.preheader || "—"]]} />
               <pre className="eg-text">{campaign.body_text}</pre>
-              {campaign.body_html ? (
+            </div>
+          )}
+        </section>
+
+        <section className="block" aria-labelledby="sent-h">
+          <h2 id="sent-h" className="h2">
+            {t("asSent")}
+          </h2>
+          <p className="fhint">{t("asSentAbout")}</p>
+          {preview.ok ? (
+            <div className="card padded eg-stack" data-testid="campaign-preview">
+              <Facts items={[[t("subjectAsSent"), preview.data.data.subject]]} />
+              {preview.data.data.body_html ? (
                 <iframe
                   className="eg-frame"
                   sandbox=""
-                  srcDoc={campaign.body_html}
+                  srcDoc={preview.data.data.body_html}
                   title={t("htmlPreview")}
                 />
               ) : null}
+              <details>
+                <summary>{t("textVersion")}</summary>
+                <pre className="eg-text">{preview.data.data.body_text}</pre>
+              </details>
             </div>
+          ) : (
+            <p className="note warn" data-code={preview.problem.code}>
+              {t("previewUnavailable")} {preview.problem.detail}
+            </p>
           )}
         </section>
       </div>

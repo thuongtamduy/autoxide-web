@@ -4,14 +4,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 const core = vi.hoisted(() => ({
   comments: [] as { author_name: string | null; created_at: string }[],
-  forms: [] as { id: string; key: string; name: string }[],
+  forms: [] as {
+    id: string;
+    key: string;
+    name: string;
+    submissions?: { new: number; read: number; archived: number; spam: number };
+  }[],
+  asked: [] as string[],
   submissions: {} as Record<string, { created_at: string }[]>,
   entries: [] as { id: string; title: string; review_requested_at: string | null }[],
   fail: false,
 }));
 vi.mock("@/lib/core", () => ({
   coreClient: async () => ({
-    GET: async (path: string, init: { params: { path?: { id: string } } }) => {
+    GET: async (
+      path: string,
+      init: { params: { path?: { id: string }; query?: Record<string, unknown> } },
+    ) => {
       const ok = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
       if (core.fail) {
         return {
@@ -22,9 +31,19 @@ vi.mock("@/lib/core", () => ({
       const page = (data: unknown[]) => ok({ data, pagination: { limit: 200, next_cursor: null } });
       if (path === "/api/v1/comments") return page(core.comments);
       if (path === "/api/v1/forms") return page(core.forms);
-      if (path === "/api/v1/forms/{id}/submissions")
+      if (path === "/api/v1/forms/{id}/submissions") {
+        core.asked.push(init.params.path?.id ?? "");
         return page(core.submissions[init.params.path?.id ?? ""] ?? []);
-      if (path === "/api/v1/content/entries") return page(core.entries);
+      }
+      // Như core: `review_requested=true` chỉ trả bài đang chờ duyệt.
+      if (path === "/api/v1/content/entries") {
+        const wanted = init.params.query?.review_requested;
+        return page(
+          core.entries.filter(
+            (e) => wanted === undefined || Boolean(e.review_requested_at) === wanted,
+          ),
+        );
+      }
       throw new Error(`unexpected ${path}`);
     },
   }),
@@ -49,6 +68,7 @@ beforeEach(() => {
   core.comments = [];
   core.forms = [];
   core.submissions = {};
+  core.asked = [];
   core.entries = [];
   core.fail = false;
   resetSampleOrders();
@@ -105,12 +125,35 @@ describe("nguồn việc của các phân hệ", () => {
       "content.review": 1,
     });
     const box = await collectWork(WORK_SOURCES, all({ sample: false }));
+    // Core cũ chưa đếm bài theo form: đọc bài mới của từng form.
+    expect(core.asked).toContain("f2");
     const review = box.data.find((i) => i.source === "content.review");
     // Một bài thì mở thẳng bài đó.
     expect(review?.target.href).toBe("/content/e2");
     expect(box.data.find((i) => i.source === "forms.new_submissions")?.target.href).toBe(
       "/marketing/forms/f1?status=new",
     );
+  });
+
+  it("form có số đếm của core: chỉ đọc bài cũ nhất của form có bài mới", async () => {
+    core.forms = [
+      {
+        id: "f1",
+        key: "contact",
+        name: "Liên hệ",
+        submissions: { new: 7, read: 0, archived: 0, spam: 0 },
+      },
+      {
+        id: "f2",
+        key: "empty",
+        name: "Trống",
+        submissions: { new: 0, read: 3, archived: 0, spam: 0 },
+      },
+    ];
+    core.submissions = { f1: [{ created_at: "2026-11-13T00:00:00Z" }] };
+    const counts = await collectCounts(WORK_SOURCES, all({ sample: false }));
+    expect(counts.data["forms.new_submissions"]).toBe(7);
+    expect(core.asked).toEqual(["f1"]);
   });
 
   it("core lỗi thì nguồn thật bị bỏ qua, nguồn mẫu vẫn có", async () => {

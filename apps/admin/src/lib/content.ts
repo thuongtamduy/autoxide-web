@@ -23,10 +23,31 @@ export type TranslationRequest = Schemas["TranslationRequestResponse"];
  */
 export const CONTENT_LOCALES = ["en", "vi"] as const;
 
+/**
+ * Đầu đường dẫn của bài viết, dạng `/blog/`, từ cấu hình của core (`content.post_path_prefix` của
+ * `GET /kernel/client-config`). Không có (core cũ) thì giá trị mặc định của core.
+ */
+export function postPathPrefix(value: string | null | undefined): string {
+  const trimmed = (value ?? "blog").trim().replace(/^\/+|\/+$/g, "");
+  return trimmed ? `/${trimmed}/` : "/";
+}
+
 /** Số bài mỗi trang của danh sách. */
 export const PAGE_SIZE = 25;
 
-export const STATUS_TABS = ["all", "draft", "published", "archived"] as const;
+/**
+ * Tab của danh sách. Bốn tab đầu là `status` của bài; `review` là bài đang chờ duyệt
+ * (`review_requested=true`, mọi trạng thái); `scheduled` là "Sắp đăng": lịch đăng / gỡ đang chờ
+ * của mọi bài (`GET /content/schedules?status=scheduled`), không phải bảng bài.
+ */
+export const STATUS_TABS = [
+  "all",
+  "draft",
+  "published",
+  "review",
+  "scheduled",
+  "archived",
+] as const;
 export type StatusTab = (typeof STATUS_TABS)[number];
 
 const KINDS: readonly EntryKind[] = ["post", "page"];
@@ -36,6 +57,16 @@ export interface ListFilters {
   kind?: EntryKind;
   locale?: string;
   q?: string;
+  /** Chỉ bài người xem tạo (`created_by=me`). */
+  mine?: boolean;
+  /** Chỉ bài mang nhãn AI (`ai_generated=true`). */
+  ai?: boolean;
+  /** Chỉ bài chưa có bản dịch sang ngôn ngữ này (`missing_locale`). */
+  missing?: string;
+  /** Chỉ bài có danh mục / thẻ này (`term_id`), mở từ số bài của màn "Trang và cấu trúc". */
+  term?: string;
+  /** Chỉ bài của hồ sơ tác giả này (`author_id`). */
+  author?: string;
   cursor?: string;
   /** Website đang chọn (phần dữ liệu mẫu, W-006); không gửi cho core. */
   site?: string;
@@ -49,11 +80,18 @@ function one(params: SearchParams, key: string): string | undefined {
   return text ? text : undefined;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+function isLocale(value: string | undefined): value is string {
+  return value !== undefined && (CONTENT_LOCALES as readonly string[]).includes(value);
+}
+
 /** Đọc bộ lọc từ địa chỉ (`?status=draft&kind=page&q=…`); giá trị lạ thì bỏ qua. */
 export function parseFilters(params: SearchParams): ListFilters {
   const status = one(params, "status");
   const kind = one(params, "kind");
   const locale = one(params, "locale");
+  const missing = one(params, "missing");
   const q = one(params, "q")?.slice(0, 200);
   const cursor = one(params, "cursor");
   const site = one(params, "site");
@@ -61,11 +99,32 @@ export function parseFilters(params: SearchParams): ListFilters {
     status: STATUS_TABS.includes(status as StatusTab) ? (status as StatusTab) : "all",
   };
   if (KINDS.includes(kind as EntryKind)) filters.kind = kind as EntryKind;
-  if (locale && (CONTENT_LOCALES as readonly string[]).includes(locale)) filters.locale = locale;
+  if (isLocale(locale)) filters.locale = locale;
   if (q) filters.q = q;
+  if (one(params, "mine") === "1") filters.mine = true;
+  if (one(params, "ai") === "1") filters.ai = true;
+  if (isLocale(missing)) filters.missing = missing;
+  const term = one(params, "term");
+  if (term && UUID.test(term)) filters.term = term;
+  const author = one(params, "author");
+  if (author && UUID.test(author)) filters.author = author;
   if (cursor) filters.cursor = cursor;
-  if (site && /^[0-9a-f-]{36}$/.test(site)) filters.site = site;
+  if (site && UUID.test(site)) filters.site = site;
   return filters;
+}
+
+/** Có bộ lọc nào ngoài tab (để hiện nút "Bỏ lọc" và câu "không có bài khớp"). */
+export function hasFilters(filters: ListFilters): boolean {
+  return Boolean(
+    filters.kind ||
+      filters.locale ||
+      filters.q ||
+      filters.mine ||
+      filters.ai ||
+      filters.missing ||
+      filters.term ||
+      filters.author,
+  );
 }
 
 /**
@@ -80,6 +139,11 @@ export function filtersHref(filters: ListFilters, change: Partial<ListFilters> =
   if (next.kind) query.set("kind", next.kind);
   if (next.locale) query.set("locale", next.locale);
   if (next.q) query.set("q", next.q);
+  if (next.mine) query.set("mine", "1");
+  if (next.ai) query.set("ai", "1");
+  if (next.missing) query.set("missing", next.missing);
+  if (next.term) query.set("term", next.term);
+  if (next.author) query.set("author", next.author);
   if (next.cursor) query.set("cursor", next.cursor);
   if (next.site) query.set("site", next.site);
   const text = query.toString();
@@ -88,16 +152,43 @@ export function filtersHref(filters: ListFilters, change: Partial<ListFilters> =
 
 /** Tham số gửi `GET /api/v1/content/entries`: mới sửa gần nhất lên đầu. */
 export function listQuery(filters: ListFilters) {
+  const status = filters.status;
   return {
     limit: PAGE_SIZE,
     sort: "updated_at" as const,
     order: "desc" as const,
-    ...(filters.status !== "all" ? { status: filters.status } : {}),
+    ...(status === "draft" || status === "published" || status === "archived" ? { status } : {}),
+    ...(status === "review" ? { review_requested: true } : {}),
     ...(filters.kind ? { kind: filters.kind } : {}),
     ...(filters.locale ? { locale: filters.locale } : {}),
     ...(filters.q ? { q: filters.q } : {}),
+    ...(filters.mine ? { created_by: "me" } : {}),
+    ...(filters.ai ? { ai_generated: true } : {}),
+    ...(filters.missing ? { missing_locale: filters.missing } : {}),
+    ...(filters.term ? { term_id: filters.term } : {}),
+    ...(filters.author ? { author_id: filters.author } : {}),
     ...(filters.cursor ? { cursor: filters.cursor } : {}),
   };
+}
+
+/**
+ * Lịch đăng đang chờ của trang "Sắp đăng", giờ chạy sớm nhất trước. Core trả theo thứ tự tạo
+ * lịch, nên xếp lại trong trang đang xem; mỗi lịch kèm bài của nó (`null` khi không đọc được bài).
+ */
+export function upcomingRows(
+  schedules: readonly Schedule[],
+  entries: readonly Entry[],
+): { schedule: Schedule; entry: Entry | null }[] {
+  const byId = new Map(entries.map((entry) => [entry.id, entry]));
+  return [...schedules]
+    .filter((schedule) => schedule.status === "scheduled")
+    .sort((a, b) => a.run_at.localeCompare(b.run_at))
+    .map((schedule) => ({ schedule, entry: byId.get(schedule.entry_id) ?? null }));
+}
+
+/** Đường dẫn để hiện cho một bài: đường dẫn công khai đã lưu (`path`), chưa đăng thì `/slug`. */
+export function entryPath(entry: Pick<Entry, "path" | "slug">): string {
+  return entry.path || `/${entry.slug}`;
 }
 
 // ---------------------------------------------------------------- Quyền

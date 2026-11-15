@@ -422,6 +422,15 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+.ax .ce-pickfind {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ax .ce-pickfind .inp {
+  flex: 1;
+  min-width: 0;
+}
 .ax .ce-picks {
   display: flex;
   flex-wrap: wrap;
@@ -779,6 +788,22 @@
   border: 0;
   background: none;
   gap: 6px;
+}
+/* Ảnh bản xem trước không đưa ra được (riêng tư, đã xoá): ô giữ chỗ có chữ. */
+.ax .ce-media-ph {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--hover);
+  color: var(--ink-3);
+  font-size: 13px;
+  text-align: center;
+}
+.ax .ce-media img {
+  height: auto;
 }
 .ax .ce-media-read figcaption {
   font-size: 13px;

@@ -7,6 +7,8 @@ import {
   cancelSchedule,
   changeState,
   createTranslation,
+  findAuthors,
+  findTerms,
   restoreRevision,
   setAuthors,
   setTerms,
@@ -312,34 +314,88 @@ function termName(term: Term, locale: string): string {
   return (term.names.find((n) => n.locale === locale) ?? term.names[0])?.name ?? term.id;
 }
 
-/** Chọn nhiều trong một danh sách rồi bấm lưu (có hiệu lực ngay, cả với bản đã đăng). */
+type PickOption = { id: string; label: string; group?: string };
+
+/**
+ * Chọn nhiều trong một danh sách rồi bấm lưu (có hiệu lực ngay, cả với bản đã đăng). Khi core còn
+ * mục ngoài trang đã đọc (`search`), ô tìm hỏi core theo tên (`q`) và thêm kết quả vào danh sách.
+ */
 function PickSection({
   id,
   title,
-  options,
+  options: loaded,
   selected,
   empty,
   hint,
   save,
+  search,
 }: {
   id: string;
   title: string;
-  options: { id: string; label: string; group?: string }[];
+  options: PickOption[];
   selected: string[];
   empty: string;
   hint: string;
   save: (ids: string[]) => Promise<boolean>;
+  search?: (q: string) => Promise<PickOption[] | null>;
 }) {
   const t = useTranslations("content.panel");
   const api = useEditorApi();
   const [chosen, setChosen] = useState(selected);
+  const [found, setFound] = useState<PickOption[]>([]);
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState<{ q: string; count: number } | null>(null);
   const changed = chosen.join() !== selected.join();
+  const known = new Set(loaded.map((o) => o.id));
+  const options = [...loaded, ...found.filter((o) => !known.has(o.id))];
   const groups = [...new Set(options.map((o) => o.group ?? ""))];
+  const find = async () => {
+    const q = query.trim();
+    if (!search || !q) return;
+    setSearching(true);
+    const result = await search(q);
+    setSearching(false);
+    setSearched({ q, count: result?.length ?? 0 });
+    if (result) {
+      setFound((now) => [...now.filter((o) => !result.some((r) => r.id === o.id)), ...result]);
+    }
+  };
   return (
     <section className="ce-sec" aria-labelledby={`${id}-h`}>
       <h3 id={`${id}-h`} className="cap">
         {title}
       </h3>
+      {search ? (
+        <search className="ce-pickfind">
+          <label className="vh" htmlFor={`${id}-q`}>
+            {t("findLabel", { what: title })}
+          </label>
+          <input
+            id={`${id}-q`}
+            className="inp"
+            type="search"
+            value={query}
+            maxLength={200}
+            placeholder={t("findHint")}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void find();
+              }
+            }}
+          />
+          <button type="button" className="btn sm" disabled={searching} onClick={() => void find()}>
+            {t("find")}
+          </button>
+        </search>
+      ) : null}
+      {searched !== null && !searching ? (
+        <p className="fhint" role="status">
+          {t("found", searched)}
+        </p>
+      ) : null}
       {options.length === 0 ? <p className="ce-muted">{empty}</p> : null}
       {groups.map((group) => (
         <fieldset key={group} className="ce-picks">
@@ -402,6 +458,16 @@ function AuthorsSection({ data }: { data: EditorData }) {
       selected={api.entry.author_ids}
       empty={t("noAuthors")}
       hint={t("authorsHint")}
+      {...(data.more?.authors
+        ? {
+            search: async (q: string) => {
+              const result = await findAuthors(q);
+              return result.ok
+                ? result.data.map((a) => ({ id: a.id, label: a.display_name }))
+                : null;
+            },
+          }
+        : {})}
       save={async (ids) => {
         const result = await setAuthors(api.entry.id, ids);
         if (!result.ok) {
@@ -441,6 +507,20 @@ function TermsSection({ data }: { data: EditorData }) {
       selected={api.entry.term_ids}
       empty={t("noTerms")}
       hint={t("termsHint")}
+      {...(data.more?.terms
+        ? {
+            search: async (q: string) => {
+              const result = await findTerms(q);
+              return result.ok
+                ? result.data.map((term) => ({
+                    id: term.id,
+                    label: termName(term, locale),
+                    group: t(term.taxonomy === "category" ? "categories" : "tags"),
+                  }))
+                : null;
+            },
+          }
+        : {})}
       save={async (ids) => {
         const result = await setTerms(api.entry.id, ids);
         if (!result.ok) {
@@ -469,12 +549,10 @@ function SeoPane({
   errors: EntryErrors | null;
 }) {
   const t = useTranslations("content.seo");
-  const codes = useTranslations("content.seo.codes");
   const api = useEditorApi();
   const [suggestion, setSuggestion] = useState<SeoSuggestion | null>(null);
   const [aiError, setAiError] = useState("");
   const shownTitle = draft.meta_title || draft.title;
-  const known = new Set(Object.keys(SEO_CODES));
   const suggestedTerms = suggestion
     ? data.terms
         .filter((term) => suggestion.term_ids.includes(term.id))
@@ -496,9 +574,8 @@ function SeoPane({
               className={finding.level === "error" ? "bad" : "warn"}
             >
               <span className="ce-flevel">{t(finding.level)}</span>
-              <span>
-                {known.has(finding.code) ? codes(SEO_CODES[finding.code] ?? "") : finding.message}
-              </span>
+              {/* Câu của core đã theo ngôn ngữ giao diện (`Accept-Language`); `code` chỉ để máy đọc. */}
+              <span>{finding.message}</span>
             </li>
           ))}
         </ul>
@@ -633,21 +710,6 @@ function SeoPane({
     </div>
   );
 }
-
-/** Mã phát hiện SEO của core → khoá câu trong `content.seo.codes`. */
-const SEO_CODES: Record<string, string> = {
-  "seo.excerpt_missing": "excerptMissing",
-  "seo.heading_skipped": "headingSkipped",
-  "seo.image_alt_missing": "imageAltMissing",
-  "seo.meta_description_missing": "metaDescriptionMissing",
-  "seo.meta_description_too_long": "metaDescriptionTooLong",
-  "seo.meta_title_missing": "metaTitleMissing",
-  "seo.meta_title_too_long": "metaTitleTooLong",
-  "seo.noindex_published": "noindexPublished",
-  "seo.share_image_missing": "shareImageMissing",
-  "seo.title_duplicate": "titleDuplicate",
-  "seo.translation_missing": "translationMissing",
-};
 
 // ---------------------------------------------------------------- Ngôn ngữ
 

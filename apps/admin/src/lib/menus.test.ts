@@ -7,6 +7,7 @@ import {
   idAt,
   importPlan,
   type LegacyMenu,
+  newItemId,
   parseItemPath,
   previewFromDraft,
   previewFromPublic,
@@ -76,6 +77,7 @@ describe("đổi giữa menu của core và bản nháp", () => {
     const draft = fromSaved(saved);
     expect(toInput(draft)).toEqual([
       {
+        id: "a",
         label: "Danh mục",
         ref: { kind: "content.term", id: "t1" },
         auto_children: true,
@@ -84,6 +86,7 @@ describe("đổi giữa menu của core và bản nháp", () => {
         feature: { kind: "content.entry", id: "e1" },
         children: [
           {
+            id: "a1",
             label: "Khuyến mại",
             url: "/khuyen-mai",
             icon: "percent",
@@ -92,8 +95,13 @@ describe("đổi giữa menu của core và bản nháp", () => {
           },
         ],
       },
-      { label: "Hỗ trợ" },
+      { id: "b", label: "Hỗ trợ" },
     ]);
+    // Chép sang menu khác: không gửi id (core cấp id mới).
+    expect(toInput(draft, { keepIds: false })[1]).toEqual({ label: "Hỗ trợ" });
+    // Mục mới thêm (chưa lưu) không gửi id.
+    const fresh = { ...(draft[1] as MenuItemDraft), id: newItemId() };
+    expect(toInput([fresh])).toEqual([{ label: "Hỗ trợ" }]);
     // Đổi sang đường dẫn: "tự lấy" của đích cũ không gửi; nhãn nổi bật không chữ thì bỏ.
     const changed: MenuItemDraft = {
       ...(draft[0] as MenuItemDraft),
@@ -104,7 +112,7 @@ describe("đổi giữa menu của core và bản nháp", () => {
       children: [],
     };
     expect(toInput([changed])).toEqual([
-      { url: "/a", icon: "grid", feature: { kind: "content.entry", id: "e1" } },
+      { id: "a", url: "/a", icon: "grid", feature: { kind: "content.entry", id: "e1" } },
     ]);
   });
 });

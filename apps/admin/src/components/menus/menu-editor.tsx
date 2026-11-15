@@ -43,6 +43,8 @@ import {
   dayOfUntil,
   fromSaved,
   kindKey,
+  NEW_ITEM_PREFIX,
+  newItemId,
   type PreviewItem,
   type PublicSiteMenu,
   previewFromDraft,
@@ -141,17 +143,18 @@ export function MenuEditor({
   const [pending, start] = useTransition();
   // Bản mới từ máy chủ (trang làm mới sau khi lưu, hay vì lý do khác): nhận cây mới nhưng giữ mục đang
   // chọn và bảng xem trước đang mở, thay vì dựng lại cả trình sửa (React khuyên chỉnh state ngay trong
-  // lúc render khi prop đổi, không dùng useEffect). Core cấp id mới cho mọi mục mỗi lần lưu, nên mục
-  // đang chọn được giữ theo vị trí trong cây. Bản mới là của người khác mà bản nháp đang có thay đổi
-  // chưa lưu thì không bao giờ ghi đè: giữ bản nháp, báo xung đột, người dùng tự bấm "Tải bản mới".
+  // lúc render khi prop đổi, không dùng useEffect). Core giữ id của mục đã lưu (`id` gửi kèm khi
+  // lưu), nên mục đang chọn vẫn là nó sau khi lưu. Chỉ mục vừa thêm (`new-…`) nhận id của core khi
+  // lưu: mục đó được giữ theo vị trí trong cây. Mục đã bị người khác xoá thì chọn mục đầu. Bản mới là
+  // của người khác mà bản nháp đang có thay đổi chưa lưu thì không bao giờ ghi đè: giữ bản nháp, báo
+  // xung đột, người dùng tự bấm "Tải bản mới".
   const [seen, setSeen] = useState({ etag: initialEtag, base });
   const accept = () => {
     setRows(base);
     setEtag(initialEtag);
-    if (!base.some((row) => row.id === selected)) {
-      const at = rows.findIndex((row) => row.id === selected);
-      setSelected(base[Math.min(Math.max(at, 0), base.length - 1)]?.id ?? null);
-    }
+    if (base.some((row) => row.id === selected)) return;
+    const at = selected?.startsWith(NEW_ITEM_PREFIX) ? rows.findIndex((r) => r.id === selected) : 0;
+    setSelected(base[Math.min(Math.max(at, 0), base.length - 1)]?.id ?? null);
   };
   if (seen.etag !== initialEtag) {
     const own = initialEtag === etag;
@@ -211,7 +214,7 @@ export function MenuEditor({
       toast(t("tooMany", { max: MAX_ITEMS }));
       return;
     }
-    const item = blankItem(crypto.randomUUID(), t("newItem"));
+    const item = blankItem(newItemId(), t("newItem"));
     const result = addChild(rows, parent, item);
     apply(result);
     if (result.ok) {

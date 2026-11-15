@@ -98,14 +98,28 @@ export function fromSaved(items: readonly SiteMenuItem[]): MenuItemDraft[] {
   }));
 }
 
+/** Đầu id của mục mới thêm trong trình sửa (chưa lưu): core chưa biết id này, không gửi. */
+export const NEW_ITEM_PREFIX = "new-";
+
+/** Id cho một mục mới thêm. */
+export function newItemId(): string {
+  return `${NEW_ITEM_PREFIX}${crypto.randomUUID()}`;
+}
+
 /**
  * Bản nháp thành thân `PUT /api/v1/menus/{id}` (`SiteMenuItemInput`): một trong `url` / `ref` /
  * không có; `auto_children_limit` chỉ gửi khi bật (core từ chối số lẻ loi); nhãn nổi bật không chữ
- * thì không gửi. Trường trống không gửi.
+ * thì không gửi. Trường trống không gửi. Mục đã lưu gửi kèm `id` để core giữ id đó (mục đang chọn,
+ * nhật ký đối chiếu được từng mục); mục mới (`new-…`) không gửi, core cấp id. `keepIds: false` khi
+ * chép sang menu khác (`POST` không nhận `id`).
  */
-export function toInput(items: readonly MenuItemDraft[]): SiteMenuItemInput[] {
+export function toInput(
+  items: readonly MenuItemDraft[],
+  options: { keepIds: boolean } = { keepIds: true },
+): SiteMenuItemInput[] {
   return items.map((item) => {
     const input: SiteMenuItemInput = {};
+    if (options.keepIds && !item.id.startsWith(NEW_ITEM_PREFIX)) input.id = item.id;
     const label = item.label.trim();
     if (label) input.label = label;
     const type = targetType(item);
@@ -128,7 +142,7 @@ export function toInput(items: readonly MenuItemDraft[]): SiteMenuItemInput[] {
       };
     }
     if (item.feature) input.feature = { kind: item.feature.kind, id: item.feature.id };
-    if (item.children.length > 0) input.children = toInput(item.children);
+    if (item.children.length > 0) input.children = toInput(item.children, options);
     return input;
   });
 }

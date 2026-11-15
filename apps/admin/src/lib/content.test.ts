@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   abilities,
+  type Entry,
   entryErrors,
+  entryPath,
   filtersHref,
+  hasFilters,
   isEmptyBody,
   isSafeHref,
   listQuery,
   parseFilters,
+  postPathPrefix,
   toCoreBody,
+  upcomingRows,
 } from "./content";
 
 describe("parseFilters / filtersHref / listQuery", () => {
@@ -15,7 +20,9 @@ describe("parseFilters / filtersHref / listQuery", () => {
     expect(
       parseFilters({ status: "draft", kind: "page", locale: "vi", q: "  bếp ", cursor: "abc" }),
     ).toEqual({ status: "draft", kind: "page", locale: "vi", q: "bếp", cursor: "abc" });
-    expect(parseFilters({ status: "review", kind: "video", locale: "fr", q: "" })).toEqual({
+    expect(
+      parseFilters({ status: "trash", kind: "video", locale: "fr", q: "", missing: "fr" }),
+    ).toEqual({
       status: "all",
     });
     expect(parseFilters({ status: ["published", "draft"] }).status).toBe("published");
@@ -36,6 +43,70 @@ describe("parseFilters / filtersHref / listQuery", () => {
       `/content?status=draft&site=${site}`,
     );
     expect(listQuery(parseFilters({ site }))).not.toHaveProperty("site");
+  });
+
+  it("tab chờ duyệt và các chip là tham số lọc của core, không lọc trên trang", () => {
+    const term = "01a1dd85-f5c7-77d6-b517-807884ba3e01";
+    const filters = parseFilters({
+      status: "review",
+      mine: "1",
+      ai: "1",
+      missing: "en",
+      term,
+      author: "not-a-uuid",
+    });
+    expect(filters).toEqual({ status: "review", mine: true, ai: true, missing: "en", term });
+    expect(listQuery(filters)).toEqual({
+      limit: 25,
+      sort: "updated_at",
+      order: "desc",
+      review_requested: true,
+      created_by: "me",
+      ai_generated: true,
+      missing_locale: "en",
+      term_id: term,
+    });
+    expect(filtersHref(filters, { ai: false })).toBe(
+      `/content?status=review&mine=1&missing=en&term=${term}`,
+    );
+    expect(hasFilters({ status: "draft" })).toBe(false);
+    expect(hasFilters({ status: "all", mine: true })).toBe(true);
+    // "Sắp đăng" không phải trạng thái của bài: không gửi `status`.
+    expect(listQuery({ status: "scheduled" })).not.toHaveProperty("status");
+  });
+
+  it("Sắp đăng: lịch đang chờ, giờ chạy sớm nhất trước, kèm bài", () => {
+    const schedule = (id: string, run_at: string, status = "scheduled") => ({
+      id,
+      entry_id: `e-${id}`,
+      action: "publish" as const,
+      run_at,
+      status,
+      ai_reviewed: false,
+      created_at: "2026-11-01T00:00:00Z",
+      updated_at: "2026-11-01T00:00:00Z",
+    });
+    const rows = upcomingRows(
+      [
+        schedule("a", "2026-12-02T00:00:00Z"),
+        schedule("b", "2026-12-01T00:00:00Z"),
+        schedule("c", "2026-11-30T00:00:00Z", "canceled"),
+      ],
+      [{ id: "e-a", title: "A" } as Entry],
+    );
+    expect(rows.map((r) => [r.schedule.id, r.entry?.title ?? null])).toEqual([
+      ["b", null],
+      ["a", "A"],
+    ]);
+  });
+
+  it("đường dẫn của bài và đầu đường dẫn theo cấu hình của core", () => {
+    expect(entryPath({ path: "/blog/chao-gang", slug: "chao-gang" })).toBe("/blog/chao-gang");
+    expect(entryPath({ path: null, slug: "chao-gang" })).toBe("/chao-gang");
+    expect(postPathPrefix("blog")).toBe("/blog/");
+    expect(postPathPrefix("/tin-tuc/")).toBe("/tin-tuc/");
+    expect(postPathPrefix(undefined)).toBe("/blog/");
+    expect(postPathPrefix("")).toBe("/");
   });
 
   it("tham số cho core: mới sửa lên đầu, chỉ gửi bộ lọc có giá trị", () => {

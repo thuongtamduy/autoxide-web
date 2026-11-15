@@ -99,31 +99,45 @@ export const readPendingComments = cache(() =>
   ),
 );
 
-/** Bài nộp mới (chưa đọc) của từng biểu mẫu, cũ nhất trước. */
+/**
+ * Bài nộp mới (chưa đọc) của từng biểu mẫu. Số đếm lấy từ `submissions.new` của form (core đếm
+ * cho cả trang form); chỉ form có bài mới mới đọc thêm bài cũ nhất (một dòng) để tính hạn. Core cũ
+ * chưa có số đếm thì đọc một trang bài mới của từng form như trước.
+ */
 export const readNewSubmissions = cache(async () => {
   const forms = await call((client) =>
     client.GET("/api/v1/forms", { params: { query: { limit: PAGE } } }),
   );
   return Promise.all(
     forms.data.map(async (form) => {
+      const known = form.submissions?.new;
+      if (known === 0) return { form, count: 0, more: false, oldest: null };
       const page = await call((client) =>
         client.GET("/api/v1/forms/{id}/submissions", {
-          params: { path: { id: form.id }, query: { status: "new", limit: PAGE, order: "asc" } },
+          params: {
+            path: { id: form.id },
+            query: { status: "new", limit: known === undefined ? PAGE : 1, order: "asc" },
+          },
         }),
       );
-      return { form, page };
+      return {
+        form,
+        count: known ?? page.data.length,
+        more: known === undefined && Boolean(page.pagination.next_cursor),
+        oldest: page.data[0]?.created_at ?? null,
+      };
     }),
   );
 });
 
 /**
- * Bài chờ duyệt (`review_requested_at`), gửi sớm nhất trước. Core chưa lọc được theo đó: đọc bản nháp
- * sửa gần nhất (một trang) rồi lọc.
+ * Bài chờ duyệt (`review_requested=true`, core lọc), gửi duyệt sớm nhất trước. Core xếp theo lúc
+ * tạo bài, nên xếp lại theo `review_requested_at` trong trang đã đọc.
  */
 export const readReviewEntries = cache(async () => {
   const page = await call((client) =>
     client.GET("/api/v1/content/entries", {
-      params: { query: { status: "draft", sort: "updated_at", limit: PAGE } },
+      params: { query: { review_requested: true, limit: PAGE, order: "asc" } },
     }),
   );
   return page.data
@@ -168,21 +182,15 @@ const formsNew = defineSource({
     const perForm = await readNewSubmissions();
     const drafts: Draft[] = [];
     let total = 0;
-    for (const { form, page } of perForm) {
-      const oldest = page.data[0];
-      if (!oldest) continue;
-      const count = page.data.length;
+    for (const { form, count, more, oldest } of perForm) {
+      if (count === 0 || !oldest) continue;
       total += count;
       drafts.push({
         key: `forms.new_submissions:${form.id}`,
         severity: "info",
-        title: msg("formsNew.title", {
-          count,
-          more: page.pagination.next_cursor ? "yes" : "no",
-          form: form.name,
-        }),
+        title: msg("formsNew.title", { count, more: more ? "yes" : "no", form: form.name }),
         detail: msg("formsNew.detail", { key: form.key }),
-        due_at: after(oldest.created_at, DUE.submission),
+        due_at: after(oldest, DUE.submission),
         target: { item: "forms", href: `/marketing/forms/${form.id}?status=new` },
         count,
       });
@@ -212,7 +220,7 @@ const contentReview = defineSource({
           due_at: after(oldest.review_requested_at, DUE.review),
           target: {
             item: "entries",
-            href: count === 1 ? `/content/${oldest.id}` : "/content?status=draft",
+            href: count === 1 ? `/content/${oldest.id}` : "/content?status=review",
           },
           count,
         },

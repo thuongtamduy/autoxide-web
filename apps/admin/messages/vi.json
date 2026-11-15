@@ -1474,7 +1474,9 @@
         "all": "Tất cả",
         "draft": "Bản nháp",
         "published": "Đã đăng",
-        "archived": "Đã lưu trữ"
+        "archived": "Đã lưu trữ",
+        "review": "Chờ duyệt",
+        "scheduled": "Sắp đăng"
       },
       "pages": "Các trang kết quả",
       "first": "Trang đầu",
@@ -1498,7 +1500,26 @@
       "colAuthors": "Tác giả",
       "colUpdated": "Sửa lần cuối",
       "untitled": "(chưa có tiêu đề)",
-      "ai": "Có AI hỗ trợ"
+      "ai": "Có AI hỗ trợ",
+      "chipsLabel": "Lọc nhanh",
+      "chips": {
+        "mine": "Bài của tôi",
+        "ai": "Có nhãn AI"
+      },
+      "missing": "Thiếu bản dịch",
+      "anyTranslation": "Mọi bản dịch",
+      "missingIn": "Chưa dịch sang {language}",
+      "publishedAt": "Đăng",
+      "upcomingAbout": "Lịch đăng và gỡ đang chờ của mọi bài, sớm nhất trước. Mở bài để đổi hay huỷ lịch.",
+      "noUpcoming": "Chưa có lịch nào. Hẹn giờ trong trình soạn của bài: \"Đăng\" › \"Hẹn giờ\".",
+      "colRunAt": "Lúc",
+      "colAction": "Việc",
+      "action": {
+        "publish": "Đăng",
+        "unpublish": "Gỡ đăng"
+      },
+      "aiReviewed": "Đã duyệt nội dung AI",
+      "entryGone": "(không tìm thấy bài)"
     },
     "status": {
       "draft": "Bản nháp",
@@ -1640,7 +1661,11 @@
       "termsHint": "Danh mục đánh dấu đầu tiên là danh mục chính. Có hiệu lực ngay, cả với bản đã đăng.",
       "termsSaved": "Đã lưu danh mục và thẻ",
       "featured": "Ảnh đại diện",
-      "featuredHint": "Hiện ở danh sách bài và đầu bài. Bài đã đăng chỉ dùng được ảnh công khai."
+      "featuredHint": "Hiện ở danh sách bài và đầu bài. Bài đã đăng chỉ dùng được ảnh công khai.",
+      "findLabel": "Tìm trong {what}",
+      "findHint": "Tìm theo tên",
+      "find": "Tìm",
+      "found": "{count, plural, =0 {Không có mục nào khớp “{q}”.} other {# mục khớp “{q}”, đã thêm vào danh sách.}}"
     },
     "seo": {
       "check": "Kiểm SEO (không dùng AI)",
@@ -1667,19 +1692,6 @@
       "suggestedTerms": "Danh mục và thẻ hợp",
       "apply": "Áp dụng vào bản nháp",
       "dismiss": "Bỏ qua",
-      "codes": {
-        "excerptMissing": "Chưa có tóm tắt: danh sách bài, nguồn tin và ô xem trước link không có gì để hiện.",
-        "headingSkipped": "Nhảy cấp tiêu đề (vd tiêu đề 2 rồi tiêu đề 4).",
-        "imageAltMissing": "Có ảnh chưa có mô tả thay thế (alt).",
-        "metaDescriptionMissing": "Chưa có mô tả SEO: máy tìm kiếm tự chọn một câu.",
-        "metaDescriptionTooLong": "Mô tả SEO quá dài; máy tìm kiếm sẽ cắt bớt.",
-        "metaTitleMissing": "Chưa có tiêu đề SEO: dùng tiêu đề bài.",
-        "metaTitleTooLong": "Tiêu đề SEO quá dài; máy tìm kiếm sẽ cắt bớt.",
-        "noindexPublished": "Bài đã đăng nhưng đang chặn máy tìm kiếm lập chỉ mục.",
-        "shareImageMissing": "Chưa có ảnh khi chia sẻ lên mạng xã hội (và không có ảnh đại diện để thay).",
-        "titleDuplicate": "Có bài khác cùng ngôn ngữ trùng tiêu đề.",
-        "translationMissing": "Còn thiếu bản dịch."
-      },
       "shareImage": "Ảnh chia sẻ",
       "shareImageHint": "Hiện khi link được chia sẻ lên mạng xã hội; bỏ trống thì dùng ảnh đại diện."
     },
@@ -1757,7 +1769,8 @@
       "make": "Tạo link xem trước",
       "banner": "Bản nháp xem trước — người đọc chưa thấy bản này.",
       "aiNotice": "Có sự hỗ trợ của AI.",
-      "invalid": "Link xem trước không hợp lệ hoặc đã hết hạn. Hãy xin link mới."
+      "invalid": "Link xem trước không hợp lệ hoặc đã hết hạn. Hãy xin link mới.",
+      "imageHidden": "Ảnh không hiện: ảnh riêng tư hay đã xoá. Người đọc cũng không thấy cho tới khi ảnh công khai."
     },
     "new": {
       "titlePage": "Trang mới",
@@ -1812,12 +1825,10 @@
   "media": {
     "crumb": "Nội dung · dùng chung cho bài viết, trang và sản phẩm",
     "title": "Thư viện media",
-    "summary": "{count} tệp{more, select, more { trên trang này} other {}} · {size} · {noAlt, plural, =0 {mọi ảnh đã có alt} other {# ảnh thiếu alt}}",
     "search": "Tìm theo tên tệp",
     "listLabel": "Danh sách tệp",
     "empty": "Không có tệp nào khớp",
     "emptyHint": "Thử thư mục khác hoặc bỏ bớt bộ lọc.",
-    "noAltPageNote": "Lọc «Thiếu alt» chỉ lọc trên trang đang xem; mở trang sau để xem tiếp.",
     "trashNote": "Tệp trong thùng rác không còn tải được trên website. Khôi phục, hoặc xoá hẳn; hết số ngày máy chủ giữ thì máy chủ tự xoá.",
     "pages": "Trang",
     "first": "Trang đầu",
@@ -1847,7 +1858,8 @@
     "badges": {
       "noAlt": "Thiếu alt",
       "private": "Riêng tư",
-      "trashed": "Trong thùng rác"
+      "trashed": "Trong thùng rác",
+      "decorative": "Trang trí"
     },
     "table": {
       "file": "Tệp",
@@ -1881,7 +1893,9 @@
         "conflict": "Người khác vừa sửa tệp này. Tải lại rồi thử lại.",
         "forbidden": "Bạn không được tải tệp lên.",
         "other": "Chưa tải tệp lên được."
-      }
+      },
+      "tooLargeMax": "Tệp lớn hơn mức máy chủ nhận (tối đa {max}).",
+      "limits": "Tối đa {max} mỗi tệp."
     },
     "folders": {
       "label": "Thư mục",
@@ -1901,7 +1915,8 @@
       "deleteTitle": "Xoá thư mục «{name}»?",
       "deleteEmpty": "Chỉ xoá được thư mục trống: tệp trong thùng rác cũng tính.",
       "deleteKeep": "Tệp bên trong không bị ảnh hưởng; chuyển hay xoá chúng trước.",
-      "deleted": "Đã xoá thư mục"
+      "deleted": "Đã xoá thư mục",
+      "itemCount": "{count, plural, other {# tệp nằm thẳng trong thư mục}}"
     },
     "detail": {
       "title": "Chi tiết tệp",
@@ -1972,7 +1987,8 @@
       "purgeTitle": "Xoá hẳn «{name}»?",
       "purgeForever": "Nội dung bị xoá, không lấy lại được.",
       "purgeUsage": "Chỗ nào còn trỏ tới tệp sẽ không hiện gì.",
-      "purged": "Đã xoá hẳn tệp"
+      "purged": "Đã xoá hẳn tệp",
+      "uploadedBy": "Người tải lên"
     },
     "picker": {
       "close": "Đóng",
@@ -2006,7 +2022,8 @@
       "change": "Đổi ảnh",
       "remove": "Bỏ ảnh",
       "unavailable": "Bạn chưa dùng được thư viện media."
-    }
+    },
+    "librarySummary": "{count, plural, other {# tệp}} · {size} · {noAlt, plural, =0 {mọi ảnh đã có alt} other {# ảnh thiếu alt}}{trashed, plural, =0 {} other { · # trong thùng rác}}"
   },
   "structure": {
     "crumb": "Nội dung",
@@ -2091,7 +2108,12 @@
       "deletePosts": "Bài viết mất danh mục hay thẻ này; bài vẫn còn.",
       "deleteChildren": "Không xoá được danh mục còn danh mục con; chuyển chúng đi trước.",
       "deleted": "Đã xoá",
-      "countMissing": "Chưa hiện số bài của từng danh mục, thẻ: máy chủ chưa đếm."
+      "posts": "Số bài",
+      "search": "Tìm danh mục hay thẻ",
+      "searchHint": "Tên ở ngôn ngữ bất kỳ",
+      "find": "Tìm",
+      "clear": "Hiện tất cả",
+      "more": "Đang hiện 200 mục đầu. Tìm theo tên để thấy các mục khác."
     },
     "authors": {
       "title": "Hồ sơ tác giả",
@@ -2117,7 +2139,13 @@
       "deletePosts": "Bài viết không còn hiện tác giả này; bài vẫn còn.",
       "deletePage": "Trang tác giả công khai ngừng chạy.",
       "deleted": "Đã xoá tác giả",
-      "countMissing": "Chưa hiện số bài của từng tác giả: máy chủ chưa đếm."
+      "posts": "{count, plural, =0 {Chưa có bài} other {# bài}}",
+      "search": "Tìm tác giả",
+      "searchHint": "Tên hiển thị",
+      "find": "Tìm",
+      "clear": "Hiện tất cả",
+      "noMatch": "Không có tác giả nào khớp tên này.",
+      "more": "Đang hiện 200 hồ sơ đầu. Tìm theo tên để thấy các hồ sơ khác."
     },
     "menus": {
       "title": "Menu của module Nội dung",
@@ -2458,7 +2486,9 @@
       "liveMissing": "Core không trả menu công khai."
     },
     "startHint": "Tạo menu đầu tiên: main cho thanh danh mục, footer cho chân trang.",
-    "sampleNote": "Danh mục sản phẩm, khuyến mại, gian hàng, cửa hàng trong ô chọn đối tượng là dữ liệu mẫu: core từ chối lưu mục trỏ tới chúng cho tới khi core đăng ký các loại đó."
+    "sampleNote": "Danh mục sản phẩm, khuyến mại, gian hàng, cửa hàng trong ô chọn đối tượng là dữ liệu mẫu: core từ chối lưu mục trỏ tới chúng cho tới khi core đăng ký các loại đó.",
+    "items": "Số mục",
+    "updatedBy": "bởi {name}"
   },
   "engage": {
     "changed": "Có người vừa đổi bản ghi này sau khi bạn mở trang. Tải lại trang rồi thử lại.",
@@ -2745,7 +2775,7 @@
       "scheduledFor": "gửi lúc",
       "finished": "xong lúc",
       "updated": "sửa lúc",
-      "adsLaw": "Thư quảng cáo (Nghị định 91/2020, cách đọc chưa đối chiếu văn bản gốc): tiêu đề có nhãn đặt ở máy chủ (mặc định [QC]), chân thư có tên và địa chỉ người gửi, mỗi người nhận tối đa một số thư quảng cáo mỗi ngày (mặc định 3). Cần đối chiếu với người có chuyên môn pháp lý cho trường hợp của bạn.",
+      "adsLaw": "Thư quảng cáo (Nghị định 91/2020, cách đọc chưa đối chiếu văn bản gốc): tiêu đề có nhãn đặt ở máy chủ ({label}), chân thư có tên và địa chỉ người gửi, mỗi người nhận tối đa {max} thư quảng cáo mỗi ngày. Cần đối chiếu với người có chuyên môn pháp lý cho trường hợp của bạn.",
       "campaignDeleted": "Đã xoá chiến dịch.",
       "campaignCreated": "Đã lưu nháp. Chưa gửi gì tới khi bạn gửi.",
       "back": "Mọi chiến dịch",
@@ -2786,14 +2816,18 @@
         "sent": "Đã gửi",
         "failed": "Lỗi",
         "skipped": "Bỏ qua",
-        "pending": "Đang chờ"
+        "pending": "Đang chờ",
+        "bounced": "Bị trả về",
+        "unsubscribed": "Huỷ đăng ký"
       },
       "kpiAbout": {
         "total": "Đã xác nhận lúc bắt đầu gửi",
         "sent": "Đã chuyển cho máy chủ thư",
         "failed": "Bị từ chối hẳn, hoặc không rõ",
         "skipped": "Bị chặn, đã huỷ, quá giới hạn quảng cáo",
-        "pending": "Chưa xử lý"
+        "pending": "Chưa xử lý",
+        "bounced": "Địa chỉ không tồn tại (trả về hẳn)",
+        "unsubscribed": "Rời danh sách bằng link trong thư này"
       },
       "handled": "Đã xử lý",
       "listLabel": "Danh sách",
@@ -2911,7 +2945,7 @@
         "preheader": "Dòng xem trước",
         "preheaderHint": "Hiện sau tiêu đề ở hầu hết hộp thư; tối đa 200 ký tự.",
         "advertising": "Thư quảng cáo",
-        "advertisingHint": "Máy chủ thêm {label} (hoặc nhãn đặt ở máy chủ) vào đầu tiêu đề, cần địa chỉ người gửi ở chân thư, và giới hạn số thư quảng cáo mỗi người mỗi ngày.",
+        "advertisingHint": "Máy chủ thêm {label} vào đầu tiêu đề, cần địa chỉ người gửi ở chân thư, và gửi mỗi người tối đa {max} thư quảng cáo mỗi ngày.",
         "advertisingLaw": "Nghị định 91/2020 có quy định cho thư quảng cáo: phải có đồng ý trước, nhãn ở tiêu đề, cách từ chối, danh tính người gửi. Cách đọc này chưa đối chiếu văn bản gốc; cần hỏi người có chuyên môn pháp lý.",
         "bodyText": "Bản chữ",
         "bodyTextHint": "Chữ thường cho mọi hộp thư. Xuống dòng được giữ.",
@@ -3012,7 +3046,18 @@
         "note": "Ghi chú (không bắt buộc)",
         "submit": "Thêm",
         "done": "Đã thêm vào danh sách không gửi."
-      }
+      },
+      "setup": {
+        "missingTitle": "Máy chủ chưa sẵn sàng gửi.",
+        "missing": "Nhờ người vận hành máy chủ đặt: {vars}. Trước đó, gửi thư sẽ bị từ chối.",
+        "ready": "Máy chủ gửi tối đa {rate} thư mỗi phút. Địa chỉ người gửi ở chân thư: {address}.",
+        "noAddress": "chưa đặt"
+      },
+      "asSent": "Thư như khi gửi",
+      "asSentAbout": "Máy chủ dựng đúng như khi gửi, kèm chân thư. Link mang mã giữ chỗ thay cho mã riêng của từng người nhận.",
+      "previewUnavailable": "Máy chủ chưa dựng được thư:",
+      "textVersion": "Bản chữ",
+      "blockedFilter": "Bị chặn"
     },
     "comments": {
       "crumb": "Tiếp thị · module comments",
@@ -3145,7 +3190,7 @@
       "findTarget": "Mở một đích",
       "targetId": "Id của đích",
       "open": "Mở",
-      "targets": "Bài có bình luận gần đây",
+      "targets": "Bài có bình luận",
       "targetsAbout": "Mỗi bài có trạng thái bình luận riêng: mở, đóng (giữ bình luận cũ, không nhận mới) hoặc ẩn (ẩn hết với mọi người và đóng). Có thể đặt giờ tự đóng.",
       "noTargets": "Chưa có bài nào có bình luận.",
       "target": {
@@ -3273,7 +3318,12 @@
           "unknown": "Hãy chọn một giá trị trong danh sách."
         }
       },
-      "markdownHint": "Hiện nguyên văn người viết gõ; website dựng một phần nhỏ của Markdown (đậm, nghiêng, link, trích dẫn, mã)."
+      "markdownHint": "Hiện nguyên văn người viết gõ; website dựng một phần nhỏ của Markdown (đậm, nghiêng, link, trích dẫn, mã).",
+      "all": "Tất cả",
+      "filterTargets": "Lọc theo trạng thái",
+      "withPending": "Có bình luận chờ duyệt",
+      "targetUrl": "Địa chỉ",
+      "targetNotPublic": "Đang không công khai (ẩn tiêu đề và địa chỉ)"
     },
     "data": {
       "title": "Dữ liệu theo email",
@@ -3783,7 +3833,7 @@
       "ai": "Nội dung gắn nhãn AI",
       "openAi": "Kiểm nhãn",
       "aiPosts": "Bài viết và trang",
-      "aiPostsSub": "Mang ai_generated trong {limit} bài sửa gần nhất",
+      "aiPostsSub": "Mang ai_generated (hiện tối đa {limit})",
       "aiPostsNone": "Bạn không dùng được module nội dung",
       "aiOther": "Sản phẩm và alt ảnh",
       "aiOtherSub": "Có nhãn AI",
@@ -4107,7 +4157,7 @@
       },
       "ai": {
         "posts": "Bài viết và trang mang nhãn AI tạo",
-        "postsAbout": "Đọc từ Nội dung: bài mang ai_generated trong {limit} bài sửa gần nhất. Core chưa có bộ lọc cho việc này.",
+        "postsAbout": "Đọc từ Nội dung: mọi bài và trang mang ai_generated, sửa gần nhất trước (tối đa {limit}).",
         "noContent": "Bạn không dùng được module nội dung.",
         "noPosts": "Không có bài hay trang gần đây nào mang nhãn AI tạo.",
         "content": "Nội dung",

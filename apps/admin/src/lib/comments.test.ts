@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  adminHref,
   banChoices,
   decoded,
   holdReasons,
@@ -7,7 +8,6 @@ import {
   moderationMoves,
   targetHref,
   targetState,
-  uniqueTargets,
 } from "./comments";
 
 describe("kiểm duyệt bình luận", () => {
@@ -38,19 +38,11 @@ describe("kiểm duyệt bình luận", () => {
 });
 
 describe("đích của bình luận", () => {
-  it("đích khác nhau, giữ thứ tự", () => {
-    expect(
-      uniqueTargets([
-        { target_type: "content.entry", target_id: "1" },
-        { target_type: "content.entry", target_id: "2" },
-        { target_type: "content.entry", target_id: "1" },
-        { target_type: "demo.page", target_id: "1" },
-      ]),
-    ).toEqual([
-      { type: "content.entry", id: "1" },
-      { type: "content.entry", id: "2" },
-      { type: "demo.page", id: "1" },
-    ]);
+  it("màn quản trị của đích: chỉ loại có màn trong giao diện", () => {
+    const id = "01a1dd85-f609-701b-9e7f-d6e1e13e56d9";
+    expect(adminHref("content.entry", id)).toBe(`/content/${id}`);
+    expect(adminHref("demo.page", id)).toBeNull();
+    expect(adminHref("content.entry", "../x")).toBeNull();
   });
 
   it("đường dẫn mã hoá được và đọc lại được", () => {

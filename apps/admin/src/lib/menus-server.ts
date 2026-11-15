@@ -5,7 +5,9 @@ import type { Entry, Term } from "./content";
 import { optional } from "./content-server";
 import { anonymousClient, load, loadTagged } from "./core";
 import type { LegacyMenu, PublicSiteMenu, RefObject, SiteMenu, SiteMenuSummary } from "./menus";
+import { USERS_READ } from "./permissions";
 import { termName, termSlug } from "./structure";
+import { can } from "./viewer";
 
 // Đọc dữ liệu của màn Menu (module `menus`) cho Server Component.
 
@@ -135,4 +137,34 @@ export async function loadLegacy(): Promise<LegacyMenus | null> {
     ),
   );
   return { menus: menus.flatMap((menu) => (menu ? [menu.data] : [])), sunset };
+}
+
+/**
+ * Tên của người sửa menu lần cuối (`updated_by` của danh sách). Menu ít và người sửa ít, nên đọc
+ * tên bằng `GET /auth/users/{id}` mỗi người một lần, khi người xem có `auth.users.read`; người đang
+ * xem thì khỏi đọc. Không đọc được thì không có tên (bảng chỉ hiện giờ sửa).
+ */
+export async function editorNames(
+  ids: readonly (string | null | undefined)[],
+  me: { id: string; name: string; email: string },
+): Promise<Map<string, string>> {
+  const unique = [...new Set(ids.filter((id): id is string => Boolean(id)))];
+  const names = new Map<string, string>();
+  if (unique.includes(me.id)) names.set(me.id, me.name || me.email);
+  const others = unique.filter((id) => id !== me.id).slice(0, 20);
+  if (others.length === 0 || !(await can(USERS_READ))) return names;
+  await Promise.all(
+    others.map(async (id) => {
+      try {
+        const { data } = await load((client) =>
+          client.GET("/api/v1/auth/users/{id}", { params: { path: { id } } }),
+        );
+        names.set(id, data.name || data.email);
+      } catch (error) {
+        if (error instanceof ApiError) return;
+        throw error;
+      }
+    }),
+  );
+  return names;
 }

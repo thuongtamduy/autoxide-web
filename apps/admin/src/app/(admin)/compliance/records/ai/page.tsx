@@ -20,7 +20,7 @@ const LABEL_BADGE = {
 } as const;
 
 // Tab "Nhãn AI": nội dung do AI tạo hay sửa phải mang nhãn khi hiện cho người xem. Bài viết và trang
-// có `ai_generated` đọc THẬT từ core (lọc trên các bài sửa gần nhất vì core chưa có tham số lọc);
+// có `ai_generated` đọc THẬT từ core (bộ lọc `ai_generated=true` của core);
 // sản phẩm và alt ảnh là dữ liệu mẫu (chưa có API).
 export default async function AiTab() {
   const gate = await sampleGate(CASES_READ);

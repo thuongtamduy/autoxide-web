@@ -252,8 +252,10 @@ export function fieldErrors(
 }
 
 /**
- * Giá trị của một câu trả lời thành chữ để hiện. Câu trả lời lựa chọn lưu `value`; nhãn của lựa
- * chọn lấy từ trường cùng khoá của form hiện tại (`field`) nếu còn, không thì hiện `value`.
+ * Giá trị của một câu trả lời thành chữ để hiện. Câu trả lời lựa chọn lưu `value`; nhãn lấy từ
+ * `choices` của core — nhãn của đúng phiên bản form lúc gửi, nên đổi nhãn sau này không làm sai
+ * bài cũ. Lựa chọn core trả nhãn rỗng (không còn trong phiên bản đó) thì hiện `value`. Core cũ chưa
+ * có `choices` thì lấy nhãn từ trường cùng khoá của form hiện tại (`field`).
  */
 export function answerText(
   answer: Schemas["AnswerResponse"],
@@ -264,7 +266,8 @@ export function answerText(
   const value = answer.value as unknown;
   if (value === null || value === undefined || value === "") return "—";
   const named = (v: unknown) => {
-    const option = field?.options?.find((o) => o.value === String(v));
+    const options = answer.choices ?? field?.options;
+    const option = options?.find((o) => o.value === String(v));
     return (option?.label && pickText(option.label, locale)) || String(v);
   };
   if (Array.isArray(value)) return value.map(named).join(", ");

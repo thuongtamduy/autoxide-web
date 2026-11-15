@@ -12,11 +12,9 @@ import { can } from "@/lib/viewer";
 
 const BASE = "/marketing/forms";
 const STATES = ["open", "closed"] as const;
-/** Đếm bài mới tới mức này; nhiều hơn thì hiện "100+" (core chưa trả số đếm). */
-const COUNT_CAP = 100;
 
-// Tab "Biểu mẫu": mọi form, lọc theo mở / đóng. Số bài mới của từng form đọc bằng một lời gọi
-// danh sách bài nộp `status=new` (song song, tối đa 100) vì `FormResponse` chưa kèm số đếm.
+// Tab "Biểu mẫu": mọi form, lọc theo mở / đóng. Số bài mới của từng form là `submissions.new` của
+// core (đếm cho cả trang form trong một câu truy vấn), không gọi thêm gì.
 export default async function FormsPage(props: PageProps<"/marketing/forms">) {
   if (!(await can(FORMS_READ))) redirect(`${BASE}/data`);
   const t = await getTranslations("engage.forms");
@@ -36,20 +34,6 @@ export default async function FormsPage(props: PageProps<"/marketing/forms">) {
     if (isForbidden(error)) return <Forbidden permission={FORMS_READ} />;
     throw error;
   }
-  const fresh = await Promise.all(
-    page.data.map(async (form) => {
-      try {
-        const subs = await load((client) =>
-          client.GET("/api/v1/forms/{id}/submissions", {
-            params: { path: { id: form.id }, query: { status: "new", limit: COUNT_CAP } },
-          }),
-        );
-        return subs.pagination.next_cursor ? `${COUNT_CAP}+` : String(subs.data.length);
-      } catch {
-        return "—";
-      }
-    }),
-  );
   const next = page.pagination.next_cursor;
   return (
     <div className="blocks">
@@ -88,7 +72,7 @@ export default async function FormsPage(props: PageProps<"/marketing/forms">) {
                 </tr>
               </thead>
               <tbody>
-                {page.data.map((form, index) => (
+                {page.data.map((form) => (
                   <tr key={form.id}>
                     <Td className="rt-title">
                       <span className="cell2">
@@ -102,14 +86,16 @@ export default async function FormsPage(props: PageProps<"/marketing/forms">) {
                       {t("fieldsVersion", { count: form.fields.length, version: form.version })}
                     </Td>
                     <Td className="tabular-nums" label={t("col.new")}>
-                      {fresh[index] === "0" ? (
+                      {!form.submissions ? (
+                        "—"
+                      ) : form.submissions.new === 0 ? (
                         "0"
                       ) : (
                         <Link
                           className="eg-count"
                           href={hrefWith(`${BASE}/${form.id}`, { status: "new" })}
                         >
-                          {fresh[index]}
+                          {form.submissions.new}
                         </Link>
                       )}
                     </Td>

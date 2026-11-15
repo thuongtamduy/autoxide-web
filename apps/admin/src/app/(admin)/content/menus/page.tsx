@@ -12,6 +12,7 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { CORE_REF_KINDS, importPlan } from "@/lib/menus";
 import {
+  editorNames,
   loadContentTargets,
   loadLegacy,
   loadMenu,
@@ -19,7 +20,7 @@ import {
   loadPublicMenu,
 } from "@/lib/menus-server";
 import { MENUS_MANAGE, MENUS_READ } from "@/lib/permissions";
-import { can } from "@/lib/viewer";
+import { can, getMe } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 import { listSampleRefKinds, listSampleRefObjects } from "@/sample/menus";
 import { removeMenu } from "./actions";
@@ -73,6 +74,10 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
       ])
     : [[], null];
   const keys = [...new Set(summaries.map((m) => m.key))];
+  const editors = await editorNames(
+    summaries.map((m) => m.updated_by),
+    await getMe(),
+  );
   const href = (menu: string) => `/content/menus?menu=${menu}`;
   const plan = legacy ? importPlan(legacy.menus, summaries) : [];
   // Header `Sunset` là ngày HTTP (RFC 8594); không đọc được thì không hiện.
@@ -124,6 +129,7 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
                 <tr>
                   <Th>{t("menu")}</Th>
                   <Th>{t("locales")}</Th>
+                  <Th>{t("items")}</Th>
                   <Th>{t("updated")}</Th>
                   <Th className="text-right">{t("actions")}</Th>
                 </tr>
@@ -157,8 +163,18 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
                           ))}
                         </span>
                       </Td>
+                      <Td label={t("items")} className="tabular-nums">
+                        {shown?.item_count ?? "—"}
+                      </Td>
                       <Td label={t("updated")} className="whitespace-nowrap">
-                        <Time value={latest.updated_at} />
+                        <span className="cell2">
+                          <Time value={latest.updated_at} />
+                          {latest.updated_by && editors.get(latest.updated_by) ? (
+                            <span className="sub ell">
+                              {t("updatedBy", { name: editors.get(latest.updated_by) ?? "" })}
+                            </span>
+                          ) : null}
+                        </span>
                       </Td>
                       <Td className="text-right">
                         <span className="row-acts">

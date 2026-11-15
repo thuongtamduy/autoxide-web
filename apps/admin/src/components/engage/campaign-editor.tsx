@@ -16,7 +16,6 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { isoToLocal, localToIso } from "@/lib/engage";
 import type { FormState } from "@/lib/form";
-import { DEFAULT_AD_LABEL } from "@/lib/newsletter";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
@@ -42,11 +41,14 @@ export function CampaignEditor({
   lists,
   initial,
   submit,
+  ads,
 }: {
   action: Action;
   lists: readonly { id: string; name: string; confirmed: number }[];
   initial: CampaignInitial;
   submit: string;
+  /** Nhãn và giới hạn thư quảng cáo của máy chủ (`GET /newsletter/settings`). */
+  ads: { label: string; maxPerDay: number };
 }) {
   const t = useTranslations("engage.newsletter.editor");
   const toast = useToast();
@@ -99,7 +101,7 @@ export function CampaignEditor({
           error={errors.subject}
           hint={
             advertising
-              ? t("subjectAsSent", { subject: `${DEFAULT_AD_LABEL} ${subject}`.trim() })
+              ? t("subjectAsSent", { subject: `${ads.label} ${subject}`.trim() })
               : undefined
           }
         />
@@ -116,7 +118,7 @@ export function CampaignEditor({
           name="advertising"
           checked={advertising}
           onChange={(event) => setAdvertising(event.target.checked)}
-          hint={t("advertisingHint", { label: DEFAULT_AD_LABEL })}
+          hint={t("advertisingHint", { label: ads.label, max: ads.maxPerDay })}
         />
         {advertising ? <p className="note warn">{t("advertisingLaw")}</p> : null}
         <TextareaField

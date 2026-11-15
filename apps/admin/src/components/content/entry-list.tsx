@@ -3,11 +3,45 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
-import { CONTENT_LOCALES, type Entry, filtersHref, type ListFilters } from "@/lib/content";
+import {
+  CONTENT_LOCALES,
+  type Entry,
+  entryPath,
+  filtersHref,
+  hasFilters,
+  type ListFilters,
+  type Schedule,
+  upcomingRows,
+} from "@/lib/content";
 import { EntryStatusBadges } from "./status";
 
-/** Ô tìm và lọc theo loại, ngôn ngữ. Form GET: kết quả nằm trên địa chỉ, chạy cả khi chưa có JS. */
+/**
+ * Ô tìm và lọc theo loại, ngôn ngữ, bản dịch còn thiếu; chip "Bài của tôi", "Có nhãn AI". Mọi bộ
+ * lọc là tham số của `GET /content/entries` (core lọc cả danh sách, không chỉ trang đang xem).
+ * Form GET: kết quả nằm trên địa chỉ, chạy cả khi chưa có JS.
+ */
 export function EntryFilters({ filters }: { filters: ListFilters }) {
+  const t = useTranslations("content.list");
+  return (
+    <>
+      <nav className="chips ce-chips" aria-label={t("chipsLabel")}>
+        {(["mine", "ai"] as const).map((key) => (
+          <Link
+            key={key}
+            className={filters[key] ? "chip on" : "chip"}
+            href={filtersHref(filters, { [key]: !filters[key] })}
+            aria-current={filters[key] ? "true" : undefined}
+          >
+            {t(`chips.${key}`)}
+          </Link>
+        ))}
+      </nav>
+      <FilterForm filters={filters} />
+    </>
+  );
+}
+
+function FilterForm({ filters }: { filters: ListFilters }) {
   const t = useTranslations("content.list");
   const locales = useTranslations("content.locales");
   return (
@@ -16,6 +50,10 @@ export function EntryFilters({ filters }: { filters: ListFilters }) {
       {filters.status !== "all" ? (
         <input type="hidden" name="status" value={filters.status} />
       ) : null}
+      {filters.mine ? <input type="hidden" name="mine" value="1" /> : null}
+      {filters.ai ? <input type="hidden" name="ai" value="1" /> : null}
+      {filters.term ? <input type="hidden" name="term" value={filters.term} /> : null}
+      {filters.author ? <input type="hidden" name="author" value={filters.author} /> : null}
       <label className="ce-search">
         <span className="vh">{t("search")}</span>
         <input
@@ -46,10 +84,21 @@ export function EntryFilters({ filters }: { filters: ListFilters }) {
           ))}
         </select>
       </label>
+      <label className="ce-select">
+        <span className="vh">{t("missing")}</span>
+        <select className="inp" name="missing" defaultValue={filters.missing ?? ""}>
+          <option value="">{t("anyTranslation")}</option>
+          {CONTENT_LOCALES.map((code) => (
+            <option key={code} value={code}>
+              {t("missingIn", { language: locales(code) })}
+            </option>
+          ))}
+        </select>
+      </label>
       <button type="submit" className="btn">
         {t("apply")}
       </button>
-      {filters.q || filters.kind || filters.locale ? (
+      {hasFilters(filters) ? (
         <Link
           className="btn ghost"
           href={filtersHref({
@@ -102,13 +151,20 @@ export function EntryTable({
                     {entry.title || t("untitled")}
                   </Link>
                   <span className="sub ell">
-                    {kinds(entry.kind)} · <span className="mono">/{entry.slug}</span>
+                    {kinds(entry.kind)} · <span className="mono">{entryPath(entry)}</span>
                     {entry.ai_generated ? ` · ${t("ai")}` : ""}
                   </span>
                 </span>
               </Td>
               <Td label={t("colStatus")}>
-                <EntryStatusBadges entry={entry} />
+                <span className="cell2">
+                  <EntryStatusBadges entry={entry} />
+                  {entry.published_at ? (
+                    <span className="sub">
+                      {t("publishedAt")} <Time value={entry.published_at} />
+                    </span>
+                  ) : null}
+                </span>
               </Td>
               <Td label={t("colLocale")}>
                 <span className="loc">{entry.locale.toUpperCase()}</span>
@@ -120,6 +176,58 @@ export function EntryTable({
             </tr>
           );
         })}
+      </tbody>
+    </Table>
+  );
+}
+
+/**
+ * "Sắp đăng": lịch đăng và gỡ đang chờ của mọi bài, giờ chạy sớm nhất trước. Tên bài lấy từ danh
+ * sách bài có lịch (`scheduled=true`), cùng một lần đọc cho cả trang.
+ */
+export function UpcomingTable({ schedules, entries }: { schedules: Schedule[]; entries: Entry[] }) {
+  const t = useTranslations("content.list");
+  const kinds = useTranslations("content.kinds");
+  const rows = upcomingRows(schedules, entries);
+  if (rows.length === 0) return <p className="empty">{t("noUpcoming")}</p>;
+  return (
+    <Table cards>
+      <thead>
+        <tr>
+          <Th>{t("colRunAt")}</Th>
+          <Th>{t("colAction")}</Th>
+          <Th>{t("colTitle")}</Th>
+          <Th>{t("colStatus")}</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ schedule, entry }) => (
+          <tr key={schedule.id}>
+            <Td label={t("colRunAt")} className="ce-nowrap">
+              <Time value={schedule.run_at} />
+            </Td>
+            <Td label={t("colAction")}>
+              <span className={schedule.action === "publish" ? "badge b-sched" : "badge b-arch"}>
+                {t(`action.${schedule.action}`)}
+              </span>
+              {schedule.ai_reviewed ? <span className="sub"> · {t("aiReviewed")}</span> : null}
+            </Td>
+            <Td className="rt-title">
+              <span className="cell2">
+                <Link href={`/content/${schedule.entry_id}`} className="ce-title-link">
+                  {entry ? entry.title || t("untitled") : t("entryGone")}
+                </Link>
+                {entry ? (
+                  <span className="sub ell">
+                    {kinds(entry.kind)} · {entry.locale.toUpperCase()} ·{" "}
+                    <span className="mono">{entryPath(entry)}</span>
+                  </span>
+                ) : null}
+              </span>
+            </Td>
+            <Td label={t("colStatus")}>{entry ? <EntryStatusBadges entry={entry} /> : "—"}</Td>
+          </tr>
+        ))}
       </tbody>
     </Table>
   );
