@@ -48,6 +48,7 @@ function toLogin(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Mọi trang trừ trang đăng nhập, tài nguyên tĩnh và file của Next.js.
-  matcher: ["/((?!login|_next/static|_next/image|favicon.ico|robots.txt).*)"],
+  // Mọi trang trừ trang đăng nhập, trang xem trước bản nháp (công khai, theo token), tài nguyên
+  // tĩnh và file của Next.js.
+  matcher: ["/((?!login|preview|_next/static|_next/image|favicon.ico|robots.txt).*)"],
 };
