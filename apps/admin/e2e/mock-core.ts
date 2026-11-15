@@ -9,6 +9,7 @@
 // Quản trị người dùng, role và trang công khai của link trong thư: `mock-access.ts`.
 // Webhook, API key, audit, trạng thái AI, OpenAPI: `mock-settings.ts`.
 // Màn Nội dung (bài viết, trình soạn, xem trước): `mock-content.ts`.
+// Phân hệ Tiếp thị (biểu mẫu, bản tin, bình luận): `mock-engage.ts`.
 //
 // Mã của app xác thực luôn là 123456. Access token chỉ sống 31 giây (cookie của trang quản trị
 // hết sau 1 giây), để test đi qua đường làm mới token. `GET /__stats` trả số lần làm mới;
@@ -27,6 +28,7 @@ import {
   contentRoutes,
   resetContent,
 } from "./mock-content.ts";
+import { ENGAGE_MODULES, engageRoutes, resetEngage } from "./mock-engage.ts";
 import {
   type Account,
   empty,
@@ -196,6 +198,7 @@ const server = createServer(async (request, response) => {
     resetAccess();
     resetSettings();
     resetContent();
+    resetEngage();
     return send(response, 204);
   }
   if (route === "POST /__webhooks/fire") {
@@ -314,6 +317,7 @@ const server = createServer(async (request, response) => {
   );
   if (handled) return;
   if (await settingsRoutes(request, response, url, account)) return;
+  if (await engageRoutes(request, response, url, route)) return;
   if (url.pathname.startsWith("/api/v1/kernel/modules")) {
     if (!account.canReadModules) {
       return problem(
@@ -324,14 +328,14 @@ const server = createServer(async (request, response) => {
       );
     }
     if (url.pathname === "/api/v1/kernel/modules") {
-      const listed = [KERNEL, NOTES, CONTENT_MODULE].map((module) => ({
+      const listed = [KERNEL, NOTES, CONTENT_MODULE, ...ENGAGE_MODULES].map((module) => ({
         ...module,
         migrations: module.migrations.map((m) => ({ ...m, applied: null })),
       }));
       return send(response, 200, { data: listed });
     }
     const name = decodeURIComponent(url.pathname.slice("/api/v1/kernel/modules/".length));
-    const module = [KERNEL, NOTES, CONTENT_MODULE].find((m) => m.name === name);
+    const module = [KERNEL, NOTES, CONTENT_MODULE, ...ENGAGE_MODULES].find((m) => m.name === name);
     if (!module) {
       return problem(response, 404, "kernel.module_not_found", `No module named \`${name}\`.`);
     }
