@@ -337,7 +337,7 @@ describe("đối soát COD và hãng", () => {
 
   it("nhập bảng kê: khớp, lệch tiền, mã lạ; nhập lại cùng nội dung không nhân đôi", async () => {
     const csv =
-      "tracking_number,cod_amount,fee\nGN-8813 0102,1059000,40000\nGN-0000 0000,10000,1000";
+      "tracking_number,cod_amount,fee\nGN-8813 0102,1504000,40000\nGN-0000 0000,10000,1000";
     const first = await importStatement({
       carrier_account_id: CARRIER_ID.gnsg,
       reference: "gnsg-2026-w46",

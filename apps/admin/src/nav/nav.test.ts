@@ -248,7 +248,12 @@ describe("Khuyến mại và Vận chuyển (dữ liệu mẫu, bước 43–44)
     ]);
     const sales = real.find((g) => g.id === "sales");
     expect(sales?.icon).toBe("cart");
-    expect(sales?.pages.map((p) => p.href)).toEqual(["/sales/shipping"]);
+    // Đơn hàng đứng đầu nhóm, rồi Vận chuyển, rồi Cửa hàng (W-017).
+    expect(sales?.pages.map((p) => p.href)).toEqual([
+      "/sales/orders",
+      "/sales/shipping",
+      "/sales/stores",
+    ]);
     // Tắt dữ liệu mẫu: không còn Khuyến mại, cả nhóm Bán hàng biến mất.
     const off = visibleNav({ ...admin, sample: false }, real);
     expect(off.some((g) => g.id === "sales")).toBe(false);
@@ -262,5 +267,13 @@ describe("Khuyến mại và Vận chuyển (dữ liệu mẫu, bước 43–44)
     expect(clerk.map((g) => g.id)).toEqual(["home", "sales", "settings"]);
     expect(activePage(real, "/sales/shipping/cod")?.page.id).toBe("shipping");
     expect(activePage(real, "/marketing/promotions/flash")?.page.id).toBe("promotions");
+    expect(activePage(real, "/sales/orders/returns")?.page.id).toBe("orders");
+    expect(activePage(real, "/sales/stores/shifts")?.page.id).toBe("stores");
+    // Thu ngân chỉ có quyền ca thu ngân thấy Cửa hàng mà không thấy Đơn hàng.
+    const cashier = visibleNav(
+      { allPermissions: false, permissions: ["orders.pos.shift"], modules: [], sample: true },
+      real,
+    );
+    expect(cashier.find((g) => g.id === "sales")?.pages.map((p) => p.id)).toEqual(["stores"]);
   });
 });

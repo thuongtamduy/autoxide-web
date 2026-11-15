@@ -7,8 +7,10 @@
 //
 // `POST /__webhooks/fire {event}` giả một event: mỗi endpoint đang bật có đăng ký event đó nhận một
 // lần giao (`failed`, HTTP 502 khi địa chỉ có chữ "fail"; còn lại `succeeded`, HTTP 200).
+
 import { randomBytes, randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { aiOn } from "./mock-content.ts";
 import { type Account, empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
 
 type Endpoint = Schemas["EndpointResponse"];
@@ -127,11 +129,13 @@ export async function settingsRoutes(
       forbidden(response, "ai.view");
       return true;
     }
+    // Cùng cờ với `mock-content.ts` (`POST /__ai` bật để thử "Hỏi bằng lời").
+    const on = aiOn();
     send(response, 200, {
       data: {
-        enabled: false,
-        provider: "",
-        model: "",
+        enabled: on,
+        provider: on ? "mock" : "",
+        model: on ? "mock-model" : "",
         images: false,
         embeddings_enabled: false,
         embedding_model: "",

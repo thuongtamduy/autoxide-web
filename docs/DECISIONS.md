@@ -485,3 +485,78 @@ Lý do: chủ dự án muốn thấy và thử đủ phân hệ thương mại t
 trang; giữ vậy, nút đầu trang nhảy tới khối đó. Dựng nhóm Bán hàng chờ có Đơn hàng — Vận chuyển dùng
 được độc lập (đặc tả 44: `shipping` không phụ thuộc `orders`). Thêm nút "Chợ Bếp Mộc" vào cây tổ chức
 mẫu cho phương thức "Sàn giao" — sàn là bước 46; bỏ phương thức đó, giữ ghi chú COD trên sàn.
+
+## W-017 · Đơn hàng và Cửa hàng (dữ liệu mẫu, chờ API bước 45); bộ đơn mẫu khớp mọi phân hệ — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Nhóm "Bán hàng" (`sales`) theo thứ tự: "Đơn hàng" `/sales/orders`, "Vận chuyển" (có sẵn), "Cửa hàng"
+  `/sales/stores`; cả hai màn mới `sample: { step: "45" }`, hiện khi có một trong các permission dự kiến
+  của đặc tả 45 (`src/lib/orders.ts`): Đơn hàng — `orders.read`, `orders.returns.manage`,
+  `orders.pos.sell`; Cửa hàng — `orders.manage`, `orders.pos.shift`, `orders.returns.manage`,
+  `orders.reviews.moderate`. Tắt dữ liệu mẫu thì 404 (`commerceGate` của W-013). Kênh bán (bước 48)
+  dựng sau.
+- Tab là đường dẫn con. Đơn hàng: `/sales/orders` (danh sách), `returns`, `pos`, `carts` trong route
+  group `(tabs)`; chi tiết đơn là **trang riêng** `/sales/orders/{id}` (mở thẳng được, dùng được trên
+  điện thoại), cùng `/{id}/receipt` (xem trước hoá đơn từ máy tính tiền), `/print` (phiếu giao),
+  `/export.csv`. Cửa hàng: `/sales/stores` (nhận tại cửa hàng), `shifts`, `returns`, `reviews`; chi tiết
+  một dòng mở bằng `?open=` như W-013. Bảng đổi trả dùng chung một component cho hai màn
+  (`components/orders/returns-view.tsx`), Cửa hàng lọc `return_method = in_store`.
+- Dữ liệu mẫu: `src/sample/orders.ts` (đơn, dòng, thuế, khuyến mại, thanh toán, hoàn tiền, lịch sử
+  trạng thái, ghi chú, đổi trả, giỏ bỏ dở, view đã lưu, nhận tại cửa hàng, hàm tính bút toán `ledgerOf`)
+  và `src/sample/stores.ts` (ca thu ngân, bán tại quầy, đánh giá, bản nháp tóm tắt AI). Một bộ dữ liệu
+  cho cả ứng dụng:
+  - mỗi mã của `sample/order-refs.ts` có một đơn viết tay; thêm các mã màn Tài chính và Cửa hàng trỏ
+    tới (0317, 0350, 0379, 0380, 0386, 0390, 0395, 0398, 0401, 0405, 0406, 0408, 0409, 0411, 0413,
+    0416, 0419) theo thứ tự tăng dần. ID sinh theo vị trí nên đổi; mọi chỗ trỏ tới đơn đều dùng mã
+    (`orderId`), không chép ID;
+  - giá từ `pricesAt` của `sample/catalog.ts`, khuyến mại tính bằng `evaluateCart` của
+    `sample/promotions.ts` lúc dựng đơn (BEPMOC10, miễn phí giao từ 1.000.000 ₫, quà khăn bếp), thuế GTGT
+    theo `sample/tax.ts` (thuế suất có ngày hiệu lực) tính trên từng dòng; giá, giảm và thuế chụp vào dòng
+    đơn lúc đặt;
+  - món và tiền COD của vận đơn ở `sample/shipping.ts` khớp đơn (test kiểm). Vì vậy **sửa số COD** của
+    6 vận đơn và dòng bảng kê tương ứng (0331, 0352, 0362, 0388, 0396, 0415) cho bằng tổng đơn (tiền
+    hàng − giảm + phí giao người mua trả); test bảng kê của Vận chuyển đổi số theo;
+  - "412 đơn trong 30 ngày, 37 chờ xử lý" là số đếm thật: các số BM-2611-0008…0419 không viết tay được
+    sinh bằng bộ sinh số cố định (cùng kết quả mỗi lần khởi động), giờ đặt tăng theo số; số chờ xử lý bù
+    bằng các đơn sinh gần nhất. Tạo đơn tại quầy thì số tăng lên 413 — vẫn khớp nhau.
+- Trạng thái đơn theo bảng chuyển của đặc tả 45, thêm `awaiting_acceptance` (dự kiến, "chờ cửa hàng /
+  người bán nhận đơn", mục H2 của `ui-trace-roadmap.md`). Mọi chuyển đi qua một hàm kiểm bảng
+  (`TRANSITIONS`, `orders.invalid_transition`), có kiểm phiên bản (`expect` = `updated_at`, 412). **Hoàn
+  tác** chuyển trạng thái của nhân viên (nhận đơn, bắt đầu chuẩn bị, tự giao, báo sẵn sàng, xác nhận
+  hàng loạt) trong 15 phút là dự kiến (đặc tả chưa có chiều ngược), không áp cho giao xong, huỷ, hoàn
+  tất. Huỷ đơn đã thu tiền tự tạo hoàn tiền toàn phần.
+- Tiền (D-187 của core): mỗi đơn nêu dòng tiền (tự thu qua cổng / VietQR, thu hộ qua đối tác có giấy
+  phép cho đơn sàn, thu khi giao, tiền mặt tại quầy) và nơi tiền về khi hoàn. Hoàn tiền (một phần hay
+  toàn bộ, duyệt đề xuất của agent, hoàn theo đổi trả) luôn qua hộp xác nhận nêu số tiền, đơn, người
+  mua, nơi tiền về, permission và "không hoàn tác được"; nút Huỷ nhận con trỏ khi hộp mở; mỗi lần mở
+  hộp một mã tham chiếu (gửi lại không hoàn hai lần). Bút toán tính từ trạng thái đơn theo bảng "Chỗ dễ
+  sai" của đặc tả 45 (thu → người mua trả trước; giao → doanh thu, GTGT đầu ra, phí giao; hoàn → bút
+  toán đảo; đơn sàn không ghi doanh thu của người bán); test kiểm nợ = có cho mọi đơn.
+- "Hỏi bằng lời": chỉ bật khi `GET /ai/status` thật báo AI bật; phần hiểu câu là mẫu của
+  `POST /ai/filters/parse` (bước 52, luật từ khoá tiếng Việt có / không dấu và tiếng Anh). Kết quả là chip
+  sửa được / bỏ được, bấm Áp dụng mới đổi địa chỉ trang; phần không hiểu hiện riêng. Core giả của e2e có
+  `POST /__ai` để bật AI khi thử.
+- View đã lưu (của hệ thống, của nút, của tôi) là dữ liệu mẫu (bước 52), so bằng chuỗi truy vấn chuẩn
+  (`filterQuery`); số trên chip là số đếm thật của bộ lọc. Thao tác hàng loạt: ô chọn trong bảng do máy
+  chủ dựng, `BulkForm` (client) chỉ đếm ô đã chọn, hiện thanh cố định ở đáy (xác nhận có Hoàn tác, in phiếu
+  giao, chọn cả mọi đơn khớp bộ lọc). Trên điện thoại mỗi đơn là một thẻ: mã và tổng ở dòng đầu; cột
+  Tổng dính phải khi bảng cuộn ngang.
+- Bán tại quầy cần ca đang mở (`orders.shift_not_open`), không vượt tồn bán được của cửa hàng (đọc từ
+  `sample/inventory.ts`, phần đã bán trong phiên trừ ở `sample/stores.ts`); tạo đơn rồi mở bản xem trước
+  hoá đơn để in bằng trình duyệt (`@media print` ẩn khung). Giỏ bỏ dở chỉ nhắc người mua đã đồng ý nhận
+  tin, tối đa 2 lần, hoàn tác được tới lúc gửi. Nhận tại cửa hàng: nhân viên không bao giờ thấy mã nhận
+  (hàm mẫu không trả mã); bàn giao so mã, người nhận hộ phải khớp tên đã khai. Đánh giá: chỉ ẩn với lý do
+  trong danh sách (`orders.moderation_reason_invalid`), mở lại được; tóm tắt AI là bản nháp chờ duyệt.
+- Chữ dưới `orders.*` và `stores.*`; mã lỗi dịch ở `orders.codes.*`, lỗi theo ô ở `orders.fields.*`
+  (`Namespace` của `lib/commerce-action.ts` thêm `orders`).
+
+Lý do: chủ dự án muốn thấy và thử đủ phân hệ Bán hàng theo bản thiết kế trong lúc team API làm bước 45
+(W-006); các phân hệ đã dựng (Vận chuyển, Khuyến mại, Tài chính) và màn Đơn hàng phải kể cùng một câu
+chuyện về cùng một đơn.
+
+Đã cân nhắc: khung chi tiết bên phải như bản thiết kế — trang riêng mở thẳng được và dùng tốt trên điện
+thoại; giữ số COD cũ của Vận chuyển và cho đơn lệch — sai luật "dữ liệu mẫu nhất quán"; chỉ hiện "412" là
+số viết cứng — số trên view và danh sách sẽ không khớp nhau; tạo vận đơn từ màn Đơn hàng bằng cách gọi
+thẳng kho mẫu của Vận chuyển — đặc tả 45 đi qua event `orders.fulfillment_requested`, nên màn Đơn hàng
+chỉ dẫn sang Vận chuyển.

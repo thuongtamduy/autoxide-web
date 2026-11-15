@@ -637,6 +637,8 @@ interface SeedShipment {
   cod_status?: CodStatus;
 }
 
+// Món và tiền COD của vận đơn khớp đơn mẫu của `sample/orders.ts` (giá theo bảng giá mẫu, khuyến mại
+// tính bằng `evaluateCart`, cộng phí giao người mua trả); test của đơn hàng kiểm điều này.
 async function seedShipments(t0: number, calendar: DeliveryCalendar): Promise<Shipment[]> {
   const seeds: SeedShipment[] = [
     {
@@ -648,7 +650,7 @@ async function seedShipments(t0: number, calendar: DeliveryCalendar): Promise<Sh
       origin: ORG.CG,
       province: "01",
       commune: "Phường Ba Đình",
-      cod: 862_000,
+      cod: 685_000,
       fee: 35_000,
       parcels: [{ grams: 1900, dims: [300, 200, 150] }],
       items: [
@@ -765,7 +767,7 @@ async function seedShipments(t0: number, calendar: DeliveryCalendar): Promise<Sh
       origin: ORG.Q3,
       province: "79",
       commune: "Phường Bến Thành",
-      cod: 1_059_000,
+      cod: 1_504_000,
       fee: 0,
       parcels: [{ grams: 3100, dims: [500, 300, 120], tracking: "GN-8813 0102" }],
       items: [
@@ -805,7 +807,7 @@ async function seedShipments(t0: number, calendar: DeliveryCalendar): Promise<Sh
       origin: ORG.Q3,
       province: "79",
       commune: "Phường Gia Định",
-      cod: 129_000,
+      cod: 155_000,
       fee: 30_000,
       parcels: [{ grams: 900, tracking: "GN-8812 4471" }],
       items: [["NMC500", 1]],
@@ -843,7 +845,7 @@ async function seedShipments(t0: number, calendar: DeliveryCalendar): Promise<Sh
       origin: ORG.Q3,
       province: "79",
       commune: "Phường Tân Định",
-      cod: 260_000,
+      cod: 290_000,
       fee: 30_000,
       parcels: [{ grams: 1800, tracking: "GN-8809 1120" }],
       items: [["TG35", 1]],
@@ -859,7 +861,7 @@ async function seedShipments(t0: number, calendar: DeliveryCalendar): Promise<Sh
       origin: ORG.CG,
       province: "01",
       commune: "Phường Cầu Giấy",
-      cod: 590_000,
+      cod: 625_000,
       fee: 35_000,
       parcels: [{ grams: 2600, tracking: "HH-55 0150" }],
       items: [["CG24", 1]],
@@ -875,7 +877,7 @@ async function seedShipments(t0: number, calendar: DeliveryCalendar): Promise<Sh
       origin: ORG.TD,
       province: "79",
       commune: "Phường Thủ Đức",
-      cod: 450_000,
+      cod: 480_000,
       fee: 30_000,
       parcels: [{ grams: 1300, tracking: "GN-8808 6610" }],
       items: [["CCD28", 1]],
@@ -1007,9 +1009,9 @@ function seedCod(t0: number, shipments: readonly Shipment[]) {
     };
   };
   const w45 = [
-    line("GN-8812 4471", 129_000, 34_000, "not_delivered"),
+    line("GN-8812 4471", 155_000, 34_000, "not_delivered"),
     line("GN-8812 4502", 119_000, 34_000, "not_delivered"),
-    line("GN-8809 1120", 240_000, 20_000, "matched"),
+    line("GN-8809 1120", 270_000, 20_000, "matched"),
   ];
   const statements = [
     statement(1, "gnsg", "GNSG-2026-W45", -13, w45, "has_mismatch", -6),
@@ -1018,7 +1020,7 @@ function seedCod(t0: number, shipments: readonly Shipment[]) {
       "hh",
       "HH-2026-W45",
       -13,
-      [line("HH-55 0150", 590_000, 35_000, "matched")],
+      [line("HH-55 0150", 625_000, 35_000, "matched")],
       "reconciled",
       -6,
     ),
@@ -1027,7 +1029,7 @@ function seedCod(t0: number, shipments: readonly Shipment[]) {
       "gnsg",
       "GNSG-2026-W44",
       -20,
-      [line("GN-8808 6610", 450_000, 30_000, "matched")],
+      [line("GN-8808 6610", 480_000, 30_000, "matched")],
       "reconciled",
       -13,
     ),
@@ -1058,7 +1060,7 @@ function seedCod(t0: number, shipments: readonly Shipment[]) {
   const discrepancies = [
     disc(1, l1, "not_delivered", 0, null),
     disc(2, l2, "not_delivered", 0, null),
-    disc(3, l3, "amount_mismatch", 260_000, {
+    disc(3, l3, "amount_mismatch", 290_000, {
       note: "Hãng bù 20.000 ₫ ở bảng kê tuần sau.",
       by: KHAI,
       at: at(t0, -10, 15, 0),
