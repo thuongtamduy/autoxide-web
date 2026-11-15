@@ -2287,6 +2287,7 @@
       "saved": "Menu saved. Visitors see it within a minute at most (the public menu may be cached for 60 seconds).",
       "conflictTitle": "Someone else saved this menu meanwhile.",
       "conflictText": "Your version was based on an older one, so nothing was saved (412, If-Match does not match). Your changes are still on this screen; loading the new version replaces them.",
+      "conflictRemote": "A newer version is on the server. Your changes are still on this screen but saving them would be refused; loading the new version replaces them, so copy anything you want to keep first.",
       "reload": "Load the new version",
       "localIssues": "{count, plural, one {# item needs fixing before saving:} other {# items need fixing before saving:}}",
       "goTo": "Go to item",

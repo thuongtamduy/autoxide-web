@@ -501,8 +501,10 @@ function seedPromotions(t0: number): Promotion[] {
       scope: "items",
       trigger: "automatic",
       status: "draft",
-      starts_at: vnAt(t0, 0, 20),
-      ends_at: vnAt(t0, 0, 22),
+      // Tối mai (giờ Việt Nam), không phải tối nay: giờ cố định trong hôm nay sẽ qua mất khi mở màn sau
+      // 22:00, và core từ chối bật chương trình đã kết thúc.
+      starts_at: vnAt(t0, 1, 20),
+      ends_at: vnAt(t0, 1, 22),
       priority: 30,
       exclusive: true,
       translations: L(

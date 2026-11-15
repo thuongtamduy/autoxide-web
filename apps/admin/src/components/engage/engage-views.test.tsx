@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@/components/ui/toast";
 import type { ChangeState } from "@/lib/engage";
@@ -111,8 +111,14 @@ describe("FormEditor (trình sửa biểu mẫu)", () => {
         <FormEditor action={action} initial={initial} submit="Save form" />
       </ToastProvider>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Save form" }));
-    const card = await screen.findByRole("listitem", { name: /Field 1/ });
-    expect(card.textContent).toContain("is already used by another field");
+    // Đợi Server Action (giả) trả về và React vẽ xong lỗi, thay vì đoán thời gian chờ.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save form" }));
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("listitem", { name: /Field 1/ }).textContent).toContain(
+        "is already used by another field",
+      ),
+    );
   });
 });

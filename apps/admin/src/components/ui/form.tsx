@@ -232,11 +232,15 @@ export function useSubmit<S extends FormState>(
 ): [S, (formData: FormData) => void, boolean] {
   const [state, setState] = useState<S>({} as S);
   const [pending, startTransition] = useTransition();
+  // Báo lỗi: lệnh cập nhật sau `await` phải nằm lại trong transition (React 19 không tự giữ transition
+  // qua `await`). Nếu không, thông báo lỗi hiện ngay ở một lần vẽ, còn việc React tự đặt lại form sau
+  // lần gửi đến ở lần vẽ sau: chữ người dùng gõ sửa trong khoảng giữa bị đè về giá trị cũ.
+  // Thành công: báo ngay (`onDone` ngoài transition), không chờ trang làm mới xong.
   const submit = (formData: FormData) =>
     startTransition(async () => {
       const next = await run(state, formData);
       if (next.done) onDone(next);
-      setState(next);
+      startTransition(() => setState(next));
     });
   return [state, submit, pending];
 }

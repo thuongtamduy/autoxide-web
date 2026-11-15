@@ -139,19 +139,29 @@ export function MenuEditor({
   const [selected, setSelected] = useState<string | null>(base[0]?.id ?? null);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
-  // Bản mới từ máy chủ (sau khi lưu, hoặc "Tải bản mới" khi người khác vừa lưu): nhận cây mới nhưng
-  // giữ mục đang chọn và bảng xem trước đang mở, thay vì dựng lại cả trình sửa (React khuyên chỉnh
-  // state ngay trong lúc render khi prop đổi, không dùng useEffect). Core cấp id mới cho mọi mục mỗi
-  // lần lưu, nên mục đang chọn được giữ theo vị trí trong cây.
-  const [seenEtag, setSeenEtag] = useState(initialEtag);
-  if (seenEtag !== initialEtag) {
-    setSeenEtag(initialEtag);
+  // Bản mới từ máy chủ (trang làm mới sau khi lưu, hay vì lý do khác): nhận cây mới nhưng giữ mục đang
+  // chọn và bảng xem trước đang mở, thay vì dựng lại cả trình sửa (React khuyên chỉnh state ngay trong
+  // lúc render khi prop đổi, không dùng useEffect). Core cấp id mới cho mọi mục mỗi lần lưu, nên mục
+  // đang chọn được giữ theo vị trí trong cây. Bản mới là của người khác mà bản nháp đang có thay đổi
+  // chưa lưu thì không bao giờ ghi đè: giữ bản nháp, báo xung đột, người dùng tự bấm "Tải bản mới".
+  const [seen, setSeen] = useState({ etag: initialEtag, base });
+  const accept = () => {
     setRows(base);
     setEtag(initialEtag);
-    if (initialEtag !== etag) setOutcome(null);
     if (!base.some((row) => row.id === selected)) {
       const at = rows.findIndex((row) => row.id === selected);
       setSelected(base[Math.min(Math.max(at, 0), base.length - 1)]?.id ?? null);
+    }
+  };
+  if (seen.etag !== initialEtag) {
+    const own = initialEtag === etag;
+    const untouched = JSON.stringify(rows) === JSON.stringify(seen.base);
+    setSeen({ etag: initialEtag, base });
+    if (own || untouched) {
+      accept();
+      if (!own) setOutcome(null);
+    } else {
+      setOutcome({ type: "conflict", detail: "remote" });
     }
   }
   const dirty = JSON.stringify(rows) !== JSON.stringify(base);
@@ -326,9 +336,19 @@ export function MenuEditor({
       {outcome?.type === "conflict" ? (
         <div role="alert" className="falert mn-alert" data-code="precondition_failed">
           <span>
-            <b>{t("conflictTitle")}</b> {t("conflictText")}
+            <b>{t("conflictTitle")}</b>{" "}
+            {outcome.detail === "remote" ? t("conflictRemote") : t("conflictText")}
           </span>
-          <button type="button" className="btn sm" onClick={() => router.refresh()}>
+          <button
+            type="button"
+            className="btn sm"
+            onClick={() => {
+              // Bỏ bản nháp, nhận bản máy chủ đang có rồi đọc lại bản mới nhất.
+              accept();
+              setOutcome(null);
+              router.refresh();
+            }}
+          >
             {t("reload")}
           </button>
         </div>

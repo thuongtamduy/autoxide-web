@@ -2287,6 +2287,7 @@
       "saved": "Đã lưu menu. Người xem thấy bản mới trong tối đa một phút (menu công khai được giữ đệm 60 giây).",
       "conflictTitle": "Người khác vừa lưu menu này.",
       "conflictText": "Bản của bạn dựa trên phiên bản cũ nên máy chủ chưa lưu gì (412, If-Match không khớp). Thay đổi của bạn vẫn còn trên màn này; tải bản mới thì thay đổi đó bị thay.",
+      "conflictRemote": "Máy chủ đã có bản mới hơn. Thay đổi của bạn vẫn còn trên màn nhưng lưu sẽ bị từ chối; tải bản mới sẽ thay chúng, nên chép lại phần muốn giữ trước.",
       "reload": "Tải lại bản mới",
       "localIssues": "{count} mục cần sửa trước khi lưu:",
       "goTo": "Tới mục",
