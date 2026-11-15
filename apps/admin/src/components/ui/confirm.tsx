@@ -1,9 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
 import type { FormState } from "@/lib/form";
 import { Dialog } from "./dialog";
-import { DialogButtons, FormAlert, useOnDone, useSubmit } from "./form";
+import { DialogButtons, FormAlert, useSubmit } from "./form";
 import { useToast } from "./toast";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
@@ -103,8 +102,9 @@ export function InlineAction({
   ariaLabel?: string;
 }) {
   const toast = useToast();
-  const [state, run, pending] = useActionState(action, {});
-  useOnDone(state.done, () => toast(done));
+  // Như `ConfirmAction`: dòng chứa nút có thể biến mất sau thao tác (vd từ chối một yêu cầu đang
+  // chờ), nên báo ngay khi Server Action trả về thay vì đợi effect.
+  const [state, run, pending] = useSubmit(action, () => toast(done));
   return (
     <form action={run} className="inline-form">
       <input type="hidden" name="id" value={id} />

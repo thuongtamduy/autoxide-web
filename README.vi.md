@@ -15,9 +15,20 @@ máy. Một phân hệ chỉ hiện khi module của nó đã cài trên core v�
 Các màn đã có:
 
 - **Tổng quan**: các phân hệ bạn dùng được.
-- **Cài đặt › Module**: các module đã cài trên máy chủ core và những gì mỗi module khai:
-  permission, event, job, lịch chạy, tool MCP, endpoint deprecated và trạng thái migration. Màn
-  hình chỉ xem: module được biên dịch cùng core, nên cài hay gỡ một module nghĩa là build lại core.
+- **Cài đặt › Cài đặt chung**, mỗi việc một tab:
+  - **Module**: các module đã cài trên máy chủ core và những gì mỗi module khai: permission, event,
+    job, lịch chạy, tool MCP, endpoint deprecated và trạng thái migration. Chỉ xem: module được
+    biên dịch cùng core, nên cài hay gỡ một module nghĩa là build lại core.
+  - **Webhook**: thêm endpoint nhận event (secret ký chỉ hiện một lần), chọn event, tắt và bật,
+    đổi secret, xoá và xem từng lần giao. Cần `webhooks.manage`.
+  - **Nhật ký audit**: ai đổi gì, lúc nào, lọc theo module, việc, bản ghi hay người làm, kèm trạng
+    thái trước và sau. Cần `audit.read`.
+  - **Nhân sự** là link sang Tổ chức › Người dùng và role.
+- **Cài đặt › API key và AI agent**: tạo key cho chương trình và AI agent với đúng permission cần
+  và ngày hết hạn (khoá chỉ hiện một lần, kèm lệnh `curl` để thử), thu hồi key, và kết nối AI agent
+  với endpoint MCP của core. Mọi tài khoản đã đăng nhập tự quản lý key của mình.
+- **Cài đặt › Nhà phát triển**: các lần giao webhook gần đây của mọi endpoint, tài liệu OpenAPI
+  của core và trang tài liệu API (khi core bật).
 - **Tài khoản của tôi** (menu tài khoản, hoặc Ctrl K): hồ sơ và xác minh email, đổi email hay
   mật khẩu, xác thực hai bước bằng ứng dụng xác thực và mã khôi phục, passkey, các thiết bị đang
   đăng nhập, tải dữ liệu của bạn và xoá tài khoản. Mọi tài khoản đã đăng nhập đều mở được, không
@@ -33,7 +44,8 @@ Các màn đã có:
   về đây (xem [Link trong thư](#link-trong-thư)).
 
 Phần của bản thiết kế mà core chưa có API (lời mời, uỷ quyền, hồ sơ công khai của cửa hàng,
-quyền vào hỗ trợ) hiện bằng **dữ liệu mẫu**, có nhãn "Dữ liệu mẫu · chờ API bước N". Chúng chỉ
+quyền vào hỗ trợ; gói và thuê bao, tên miền, kết nối đối tác, job; lệnh agent chờ duyệt; nhật ký
+request và event theo bản ghi) hiện bằng **dữ liệu mẫu**, có nhãn "Dữ liệu mẫu · chờ API bước N". Chúng chỉ
 hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật khi không chạy production); thay đổi ở đó chỉ
 giữ trong bộ nhớ của ứng dụng, mất khi khởi động lại.
 

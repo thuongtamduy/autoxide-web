@@ -200,3 +200,42 @@ Lý do: làm đúng hợp đồng `openapi.json`, một cách làm cho mỗi vi�
 Đã cân nhắc: tự xác minh email ngay khi mở trang — tiện hơn một bấm nhưng GET đổi dữ liệu và trình
 quét link dùng mất token; ẩn cột role trong danh sách tới khi core có API — bản thiết kế và giao
 việc cần role ở danh sách.
+
+## W-009 · Nhóm màn Cài đặt: Cài đặt chung, API key và AI agent, Nhà phát triển — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Nhóm `settings` của sổ điều hướng có ba màn theo thứ tự: Cài đặt chung (`/settings`), API key
+  và AI agent (`/settings/api-keys`), Nhà phát triển (`/settings/developers`). Mục "Module" của
+  W-004 thành một tab của Cài đặt chung, đường dẫn `/settings/modules` giữ nguyên (route group
+  `settings/(general)`). `/settings` mở tab đầu tiên người xem được dùng.
+- Cài đặt chung: tab theo bản thiết kế. Module, Webhook, Nhật ký audit gọi core thật; Gói và thuê
+  bao (bước 35), Tên miền (bước 33), Kết nối đối tác (bước 33/36/39), Job (bước 52) là dữ liệu mẫu
+  (W-006, `src/sample/settings.ts`); riêng mục AI của Kết nối đọc thật `GET /api/v1/ai/status`.
+  "Nhân sự" là link sang `/org/access/users`, không dựng lại.
+- API key là của chính người đăng nhập, nên màn này hiện với mọi người đã đăng nhập (không đòi
+  permission). Tạo key là trang riêng (`/settings/api-keys/new`) dùng lại bộ chọn permission của
+  màn Role — tách thành `components/access/permission-picker.tsx`, `RoleEditor` dùng lại nó — và
+  chỉ bày permission người tạo đang có. Lệnh chờ duyệt và nhật ký gọi tool MCP là dữ liệu mẫu
+  (bước 51, `src/sample/agent.ts`); tab "Kết nối MCP" chỉ là hướng dẫn: địa chỉ `<core>/mcp` lấy
+  từ `AUTOXIDE_API_URL`.
+- Nhà phát triển: lần giao webhook của mọi endpoint gộp từ `/webhooks/{id}/deliveries` (song song,
+  25 lần giao mỗi endpoint) vì core chưa có danh sách xuyên endpoint; nhật ký request và event theo
+  bản ghi là dữ liệu mẫu (bước 52, `src/sample/devtools.ts`). "Tải OpenAPI" đi qua route
+  `/settings/developers/openapi.json` của ứng dụng; nút "Tài liệu API" chỉ hiện khi core bật
+  `/api/docs`.
+- Secret ký webhook và khoá API trả về trình duyệt đúng một lần, trong trạng thái của Server
+  Action, để người dùng chép (`SecretOnce`, `CopyButton` ở `components/ui/secret-once.tsx`); ứng
+  dụng không lưu chúng ở đâu. Token đăng nhập vẫn không xuống trình duyệt.
+- `InlineAction` báo xong ngay khi Server Action trả về (`useSubmit`), như `ConfirmAction`: dòng
+  chứa nút có thể biến mất sau thao tác (từ chối một yêu cầu đang chờ).
+- Hàm dùng chung cho Server Action gọi dữ liệu mẫu (`sampleGuard`, `translateSample`,
+  `finishSample`) dời vào `src/lib/sample-action.ts`; Tổ chức và Cài đặt cùng dùng.
+- Câu trong `messages/` là cú pháp ICU: không viết `<…>` trần (là thẻ). Vitest kiểm mọi câu của
+  hai ngôn ngữ.
+
+Lý do: làm đúng bản thiết kế và hợp đồng `openapi.json`; phần thiếu API theo đúng cơ chế W-006.
+
+Đã cân nhắc: tạo API key trong hộp thoại — bộ chọn permission dài, nên dùng trang riêng như tạo
+role. Tự gọi `/mcp` để kiểm kết nối — tab chỉ cần hướng dẫn, không cần API. Lọc endpoint theo
+trạng thái ở core — chưa có tham số, nên lọc trên trang đang xem (tối đa 200 endpoint).

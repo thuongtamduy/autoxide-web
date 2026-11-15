@@ -7,7 +7,14 @@
 // không bày ra màn mà người dùng mở vào chỉ thấy lỗi. Khi core có sổ điều hướng (bước 51,
 // `Module::navigation`) thì lấy danh sách này từ core thay cho file này.
 import type { IconName } from "@/components/shell/icon";
-import { ROLES_READ, USERS_READ } from "@/lib/permissions";
+import {
+  AUDIT_READ,
+  DEVTOOLS_READ,
+  MODULES_READ,
+  ROLES_READ,
+  USERS_READ,
+  WEBHOOKS_MANAGE,
+} from "@/lib/permissions";
 
 export interface NavPage {
   /** Khoá của nhãn trong `messages/*.json` → `nav.pages.<id>`. */
@@ -51,11 +58,19 @@ export const NAV: NavGroup[] = [
     id: "settings",
     icon: "gear",
     pages: [
+      // Cài đặt chung: nhiều tab của nhiều module (module, webhook, audit…); hiện khi xem được một
+      // trong các tab thật. Tab dữ liệu mẫu (gói, tên miền…) theo permission riêng của nó.
       {
-        id: "modules",
-        href: "/settings/modules",
-        module: "kernel",
-        permission: "kernel.modules.read",
+        id: "general",
+        href: "/settings",
+        permission: [MODULES_READ, WEBHOOKS_MANAGE, AUDIT_READ],
+      },
+      // API key là của riêng người đăng nhập: ai cũng tạo được cho mình (core giới hạn theo quyền).
+      { id: "apiKeys", href: "/settings/api-keys" },
+      {
+        id: "developers",
+        href: "/settings/developers",
+        permission: [WEBHOOKS_MANAGE, DEVTOOLS_READ],
       },
     ],
   },

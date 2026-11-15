@@ -16,10 +16,22 @@ permission.
 Screens so far:
 
 - **Overview**: the areas you can use.
-- **Settings › Modules**: the modules installed in the core server and what each declares:
-  permissions, events, jobs, schedules, MCP tools, deprecated endpoints and migration status.
-  The screen is read-only: modules are compiled into the core, so installing or removing one
-  means rebuilding the core.
+- **Settings › General settings**, one tab each:
+  - **Modules**: the modules installed in the core server and what each declares: permissions,
+    events, jobs, schedules, MCP tools, deprecated endpoints and migration status. Read-only:
+    modules are compiled into the core, so installing or removing one means rebuilding the core.
+  - **Webhooks**: add endpoints that receive events (the signing secret is shown once), choose
+    their events, turn them off and on, replace the secret, delete them and see each delivery.
+    Needs `webhooks.manage`.
+  - **Audit log**: who changed what and when, filtered by module, change, record or person, with
+    the state before and after. Needs `audit.read`.
+  - **Staff** links to Organization › Users and roles.
+- **Settings › API keys and AI agents**: create keys for programs and AI agents with only the
+  permissions they need and an expiry date (the key is shown once, with a `curl` command to try
+  it), revoke them, and connect an AI agent to the core's MCP endpoint. Every signed-in account
+  manages its own keys.
+- **Settings › Developers**: recent webhook deliveries of every endpoint, the OpenAPI document of
+  the core and its API docs page (when the core turns it on).
 - **My account** (account menu, or Ctrl K): your profile and email verification, changing your
   email or password, two-step sign-in with an authenticator app and recovery codes, passkeys,
   the devices signed in to your account, downloading your data and deleting your account. Every
@@ -36,7 +48,8 @@ Screens so far:
   password. Point the core's mail links here (see [Mail links](#mail-links)).
 
 Parts of the design the core has no API for yet (invitations, delegation, public store profiles,
-support access) are shown with **sample data**, marked "Sample data · waiting for API step N".
+support access; plan and subscription, domains, partner connections, jobs; commands waiting for an
+agent's approval; request log and events by record) are shown with **sample data**, marked "Sample data · waiting for API step N".
 They show only when `AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes
 there are kept in the app's memory and lost on restart.
 

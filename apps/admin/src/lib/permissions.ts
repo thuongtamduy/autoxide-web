@@ -28,3 +28,22 @@ export const UNITS_WRITE = "organizations.units.write";
 export const SETTINGS_WRITE = "organizations.settings.write";
 /** Xem các lần cấp quyền vào hỗ trợ và lần vào. */
 export const SUPPORT_ACCESS_READ = "auth.support_access.read";
+
+/** Quản lý webhook: endpoint, secret ký, lần giao (`/api/v1/webhooks…`). */
+export const WEBHOOKS_MANAGE = "webhooks.manage";
+/** Đọc nhật ký audit (`GET /api/v1/audit`). */
+export const AUDIT_READ = "audit.read";
+/** Xem trạng thái tính năng AI (`GET /api/v1/ai/status`). */
+export const AI_VIEW = "ai.view";
+
+// Permission của bước 33, 35, 52 của core (chưa có): màn Cài đặt dùng dữ liệu mẫu tới khi có.
+/** Xem gói, thuê bao, mức dùng và kỳ thanh toán (bước 35). */
+export const BILLING_READ = "plans.billing.read";
+/** Đổi, huỷ gói và sửa hồ sơ xuất hoá đơn (bước 35). */
+export const BILLING_MANAGE = "plans.billing.manage";
+/** Thêm, xác minh, gỡ tên miền của khách (bước 33). */
+export const DOMAINS_MANAGE = "kernel.domains.manage";
+/** Đặt cấu hình và secret theo khách: kết nối đối tác (bước 33). */
+export const TENANT_SETTINGS_MANAGE = "kernel.settings.manage";
+/** Bàn kỹ thuật: nhật ký request, event theo bản ghi, job (bước 52). */
+export const DEVTOOLS_READ = "kernel.devtools.read";

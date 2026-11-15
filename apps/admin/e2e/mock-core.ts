@@ -7,6 +7,7 @@
 // - mfa@example.com / mfa password — cần mã 123456 ở bước hai.
 //
 // Quản trị người dùng, role và trang công khai của link trong thư: `mock-access.ts`.
+// Webhook, API key, audit, trạng thái AI, OpenAPI: `mock-settings.ts`.
 //
 // Mã của app xác thực luôn là 123456. Access token chỉ sống 31 giây (cookie của trang quản trị
 // hết sau 1 giây), để test đi qua đường làm mới token. `GET /__stats` trả số lần làm mới;
@@ -29,6 +30,7 @@ import {
   wrongCode,
   wrongPassword,
 } from "./mock-http.ts";
+import { fireEvent, resetSettings, settingsRoutes } from "./mock-settings.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
 const CODE = "123456";
@@ -184,7 +186,11 @@ const server = createServer(async (request, response) => {
     ceremonies.clear();
     refreshes = 0;
     resetAccess();
+    resetSettings();
     return send(response, 204);
+  }
+  if (route === "POST /__webhooks/fire") {
+    return fireEvent(request, response);
   }
   if (route === "POST /__sessions") {
     const body = await json(request);
@@ -254,6 +260,13 @@ const server = createServer(async (request, response) => {
   }
 
   if (await publicRoutes(request, response, route, () => accounts)) return;
+  // Tài liệu OpenAPI là công khai, như core.
+  if (route === "GET /api/v1/openapi.json") {
+    return send(response, 200, {
+      openapi: "3.1.0",
+      info: { title: "Autoxide (mock)", version: "0" },
+    });
+  }
 
   const session = caller(request);
   if (!session) {
@@ -289,6 +302,7 @@ const server = createServer(async (request, response) => {
     },
   );
   if (handled) return;
+  if (await settingsRoutes(request, response, url, account)) return;
   if (url.pathname.startsWith("/api/v1/kernel/modules")) {
     if (!account.canReadModules) {
       return problem(

@@ -42,6 +42,9 @@ test("danh sách module, chi tiết, module không có, đăng xuất", async ({
     .getByRole("navigation", { name: "Areas" })
     .getByRole("link", { name: "Settings" })
     .click();
+  // Cài đặt chung mở tab đầu tiên (Gói và thuê bao, dữ liệu mẫu); Module là một tab của nó.
+  await expect(page).toHaveURL(/\/settings\/plan$/);
+  await page.getByRole("link", { name: "Modules", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/modules$/);
 
   const rows = page.locator("tbody tr");
@@ -116,10 +119,14 @@ test("thiếu permission thì báo rõ permission cần có", async ({ page }) =
   await signIn(page, "viewer@example.com", "viewer password");
   await expect(page).toHaveURL(/:\d+\/$/);
 
-  // Không có quyền xem sổ module: menu không bày ra màn Module, mở thẳng thì báo rõ.
-  await expect(
-    page.getByRole("navigation", { name: "Areas" }).getByRole("link", { name: "Settings" }),
-  ).toHaveCount(0);
+  // Không có quyền xem sổ module: Cài đặt chỉ còn API key của chính mình (ai cũng có); mở thẳng
+  // màn Module thì báo rõ permission cần có.
+  await page
+    .getByRole("navigation", { name: "Areas" })
+    .getByRole("link", { name: "Settings" })
+    .click();
+  await expect(page).toHaveURL(/\/settings\/api-keys$/);
+  await expect(page.getByRole("link", { name: "General settings" })).toHaveCount(0);
   await page.goto("/settings/modules");
   await expect(page.getByText("Not allowed")).toBeVisible();
   await expect(page.getByText(/kernel\.modules\.read/)).toBeVisible();
@@ -147,9 +154,9 @@ test("khung: Ctrl K tìm không dấu rồi mở màn; điện thoại có thanh
   await page.keyboard.press("Control+k");
   const search = page.getByRole("searchbox", { name: "Find a page or an area…" });
   await expect(search).toBeFocused();
-  await search.fill("modu");
+  await search.fill("general set");
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/settings\/modules$/);
+  await expect(page).toHaveURL(/\/settings\/plan$/);
   await expect(page.getByRole("link", { name: "Settings" }).first()).toHaveAttribute(
     "aria-current",
     "page",

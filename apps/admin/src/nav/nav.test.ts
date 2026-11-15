@@ -56,6 +56,23 @@ describe("visibleNav", () => {
     expect(see(["c.read"])).toBe(0);
   });
 
+  it("nhóm Cài đặt thật: Cài đặt chung theo một trong các permission; API key ai cũng thấy", async () => {
+    const { NAV: real } = await import("./nav");
+    const pages = (viewer: Partial<Viewer>) =>
+      visibleNav({ allPermissions: false, permissions: [], modules: null, ...viewer }, real)
+        .find((g) => g.id === "settings")
+        ?.pages.map((p) => p.id);
+    expect(pages({})).toEqual(["apiKeys"]);
+    expect(pages({ permissions: ["audit.read"] })).toEqual(["general", "apiKeys"]);
+    expect(pages({ permissions: ["webhooks.manage"] })).toEqual([
+      "general",
+      "apiKeys",
+      "developers",
+    ]);
+    expect(activePage(real, "/settings/modules/notes")?.page.id).toBe("general");
+    expect(activePage(real, "/settings/api-keys/new")?.page.id).toBe("apiKeys");
+  });
+
   it("màn dữ liệu mẫu: chỉ hiện khi bật mẫu, không đòi module, vẫn theo permission", () => {
     const nav: NavGroup[] = [
       {

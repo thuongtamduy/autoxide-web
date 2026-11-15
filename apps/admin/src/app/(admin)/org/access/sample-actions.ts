@@ -3,12 +3,10 @@
 // Server Action cho các tab dùng dữ liệu mẫu (W-006): lời mời, uỷ quyền, hồ sơ công khai, quyền
 // vào hỗ trợ. Gọi hàm mẫu của `src/sample/org.ts` thay cho API của bước 34 của core; cùng cách
 // trả lỗi (Problem → lỗi theo ô) như phần gọi core thật, để khi có API chỉ thay lời gọi.
-import type { Problem } from "@autoxide/sdk";
-import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
-import { sampleDataEnabled } from "@/sample";
+import { type FormState, parseForm } from "@/lib/form";
+import { finishSample, sampleGuard } from "@/lib/sample-action";
 import {
   createDelegation,
   createInvitation,
@@ -17,7 +15,6 @@ import {
   revokeDelegation,
   revokeInvitation,
   revokeSupportGrant,
-  type SampleOutcome,
   setSupportAccess,
   updateProfile,
 } from "@/sample/org";
@@ -39,13 +36,6 @@ function typed(formData: FormData, names: readonly string[]): Record<string, str
   return Object.fromEntries(names.map((name) => [name, String(formData.get(name) ?? "")]));
 }
 
-/** Tắt dữ liệu mẫu thì không ghi gì (trang cũng không hiện các tab này). */
-async function guard(): Promise<FormState | null> {
-  if (sampleDataEnabled()) return null;
-  const t = await getTranslations("sample");
-  return { error: t("off"), code: "sample_data_off" };
-}
-
 /** `role` gửi lên dạng `id|name` (role thật của core, tên để hiện trong bản ghi mẫu). */
 function refs(values: readonly FormDataEntryValue[]): Ref[] {
   return values.map(String).map((value) => {
@@ -56,40 +46,8 @@ function refs(values: readonly FormDataEntryValue[]): Ref[] {
   });
 }
 
-/**
- * Câu báo của hàm mẫu theo ngôn ngữ giao diện. Core thật tự dịch `detail` theo `Accept-Language`;
- * hàm mẫu chỉ có `code`, nên dịch ở đây (`sample.codes.*`, `sample.fields.*`).
- */
-async function translated(problem: Problem): Promise<Problem> {
-  const t = await getTranslations("sample");
-  const key = problem.code.replaceAll(".", "_");
-  return {
-    ...problem,
-    detail: t.has(`codes.${key}`) ? t(`codes.${key}`) : problem.detail,
-    ...(problem.errors
-      ? {
-          errors: problem.errors.map((entry) => ({
-            ...entry,
-            detail: t.has(`fields.${entry.code}`) ? t(`fields.${entry.code}`) : entry.detail,
-          })),
-        }
-      : {}),
-  };
-}
-
-async function finish<T>(
-  state: FormState,
-  outcome: SampleOutcome<T>,
-  fields: readonly string[],
-  values?: Record<string, string>,
-): Promise<FormState> {
-  if (!outcome.ok) {
-    const problem = await translated(outcome.problem);
-    return { ...problemState(problem, fields), ...(values ? { values } : {}) };
-  }
-  refresh();
-  return { done: nextDone(state) };
-}
+const guard = sampleGuard;
+const finish = finishSample;
 
 // ---------------------------------------------------------------- Lời mời
 

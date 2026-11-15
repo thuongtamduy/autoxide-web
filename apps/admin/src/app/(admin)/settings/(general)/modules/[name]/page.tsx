@@ -37,7 +37,7 @@ export default async function ModulePage(props: PageProps<"/settings/modules/[na
           ← {t("modules.back")}
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-mono text-2xl font-semibold">{module.name}</h1>
+          <h2 className="font-mono text-2xl font-semibold">{module.name}</h2>
           {module.internal && <Badge>{t("modules.internal")}</Badge>}
           <Badge>
             {t("modules.position")} {module.position}
