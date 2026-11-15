@@ -17,6 +17,7 @@ import {
   NEWSLETTER_EXPORT,
   NEWSLETTER_READ,
 } from "@/lib/engage";
+import { FINANCE_PERMISSIONS } from "@/lib/finance";
 import {
   AUDIT_READ,
   CASES_READ,
@@ -128,6 +129,20 @@ export const NAV: NavGroup[] = [
       // Menu của website là module `menus` riêng (chưa có trong core): dữ liệu mẫu (W-006).
       { id: "menus", href: "/content/menus", permission: MENUS_READ, sample: { step: "menus" } },
       { id: "media", href: "/content/media", module: "media", permission: MEDIA_READ },
+    ],
+  },
+  {
+    // Tài chính: module `tax`, `ledger`, `invoices` của core chưa có (bước 36), nên màn "Kế toán"
+    // dựng bằng dữ liệu mẫu (W-006, W-016); vẫn lọc theo permission dự kiến của đặc tả.
+    id: "finance",
+    icon: "wallet",
+    pages: [
+      {
+        id: "finance",
+        href: "/finance",
+        permission: FINANCE_PERMISSIONS,
+        sample: { step: "36" },
+      },
     ],
   },
   {

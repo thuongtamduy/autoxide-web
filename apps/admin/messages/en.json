@@ -20,7 +20,8 @@
       "platformFleet": "Database fleet",
       "platformHealth": "Health",
       "platformSupport": "Customer data access",
-      "catalog": "Products"
+      "catalog": "Products",
+      "finance": "Finance"
     },
     "pages": {
       "dashboard": "Dashboard",
@@ -48,7 +49,8 @@
       "platformHealth": "Health",
       "platformSupport": "Customer data access",
       "catalog": "Products and prices",
-      "inventory": "Inventory"
+      "inventory": "Inventory",
+      "finance": "Accounting"
     },
     "about": {
       "dashboard": "Greeting and a way into every area you can use.",
@@ -75,7 +77,8 @@
       "platformHealth": "Backlog per module, alerts, backups.",
       "platformSupport": "Time-limited access with a reason; the customer sees every visit.",
       "catalog": "Products, variants, categories, price lists by store, CSV import, AI drafts.",
-      "inventory": "Stock by warehouse, ledger, transfers, counts, lots and serials, receiving, suppliers."
+      "inventory": "Stock by warehouse, ledger, transfers, counts, lots and serials, receiving, suppliers.",
+      "finance": "Double-entry ledger, exceptions queue, bank accounts, e-invoices, series and mandates, tax, periods, accounting export."
     }
   },
   "login": {
@@ -5920,6 +5923,911 @@
       "inventory_lot_required": "Lot-tracked goods need a lot code.",
       "inventory_receipt_not_found": "No receipt has this number.",
       "inventory_invalid_transition": "This order is not waiting for goods."
+    }
+  },
+  "finance": {
+    "crumb": "Bếp Mộc · books of the customer root and of Chợ Bếp Mộc · accounting currency VND",
+    "title": "Accounting",
+    "description": "Append-only double-entry ledger, reconciliation with partners, e-invoices, tax, period close and accounting exports. The system never holds money: it records obligations and matches them against statements of licensed partners.",
+    "tabs": {
+      "label": "Parts of Accounting",
+      "ledger": "Ledger",
+      "exceptions": "Exceptions queue",
+      "bank": "Bank accounts",
+      "einvoices": "E-invoices",
+      "series": "Series and mandates",
+      "tax": "Tax",
+      "periods": "Periods",
+      "export": "Accounting export"
+    },
+    "books": {
+      "main": "Bếp Mộc book",
+      "market": "Chợ Bếp Mộc book"
+    },
+    "unitTypes": {
+      "tenant": "customer root",
+      "region": "region",
+      "store": "store",
+      "warehouse": "warehouse",
+      "marketplace": "marketplace",
+      "seller": "marketplace seller"
+    },
+    "basis": {
+      "label": "Legal basis:",
+      "since": "In effect from",
+      "until": "until",
+      "review": "Check against the original text / with a legal professional."
+    },
+    "purposes": {
+      "cash_on_hand": "Cash at counter",
+      "cash_bank": "Bank deposits",
+      "clearing_gateway": "Payment gateway receivable",
+      "clearing_carrier_cod": "Carrier COD receivable",
+      "inventory_stock": "Goods in stock",
+      "tax_vat_input": "Input VAT",
+      "expense_gateway_fee": "Gateway fee expense",
+      "shipping_carrier_fee": "Shipping expense",
+      "orders_buyer_prepayments": "Buyer prepayments",
+      "payable_supplier": "Payable to suppliers",
+      "payable_seller_available": "Payable to sellers",
+      "revenue_sales": "Sales revenue",
+      "revenue_shipping": "Delivery fee revenue",
+      "revenue_platform_fee": "Marketplace fee revenue (net of tax)",
+      "tax_vat_output": "Output VAT",
+      "tax_withheld_vat": "VAT withheld for household sellers",
+      "tax_withheld_pit": "PIT withheld for household sellers"
+    },
+    "kinds": {
+      "capture": "on payment",
+      "deliver": "on delivery",
+      "settle": "on completion",
+      "gateway_fee": "Gateway fees for {date}",
+      "manual": "manual",
+      "reversal": "reversal"
+    },
+    "sources": {
+      "orders": "Orders",
+      "marketplace": "Marketplace",
+      "ledger": "Ledger"
+    },
+    "channels": {
+      "pos": "in-store sale",
+      "web": "website",
+      "vietqr": "VietQR auto-matched",
+      "marketplace": "marketplace, collected by partner",
+      "statement": "gateway statement reconciliation",
+      "manual": "manual"
+    },
+    "notes": {
+      "orders_capture": "The order is not delivered yet, so no revenue is recorded; revenue is recorded when the order becomes \"Delivered\". The Orders module posted this entry: correct it with a refund or cancellation on the order (which posts a reversal), not by reversing it here.",
+      "orders_deliver": "Posted by the Orders module when the order became \"Delivered\". Correct it with a refund or cancellation on the order (which posts a reversal), not by reversing it here.",
+      "orders_capture_market": "The money sits in the collection account of a licensed payment partner, not with the platform. The seller's share, marketplace fee and withheld tax are recorded when the order completes.",
+      "marketplace_settle_market": "Return window over: split into the seller's share, marketplace fee and withheld tax. Withholding applies only to household and individual sellers; rates come from the dated tax table (see the Tax tab).",
+      "ledger_gateway_fee": "Posted when reconciling the gateway statement: gateway fees are deducted from the payout.",
+      "ledger_manual": "Manual entry. If wrong, reverse it (needs ledger.reverse); the reversal is dated in an open period."
+    },
+    "entry": {
+      "button": "Post manual entry",
+      "title": "Post manual entry",
+      "intro": "A posted entry cannot be edited, only reversed. Write a fixed description; never a buyer's name or phone number, because entries cannot be deleted.",
+      "done": "Entry posted; debits equal credits, sealed within 10 seconds",
+      "book": "Book",
+      "description": "Description",
+      "descriptionPlaceholder": "Transfer fees for November",
+      "descriptionHint": "No buyer names, phone numbers or emails.",
+      "date": "Effective date",
+      "dateHint": "Must be in an open period.",
+      "reference": "Reference",
+      "referenceHint": "Sending the same reference again does not post twice.",
+      "attachment": "Supporting document (optional)",
+      "attachmentHint": "Number of the payment or receipt voucher.",
+      "line": "Line {n}",
+      "account": "Account",
+      "debit": "Debit",
+      "credit": "Credit",
+      "removeLine": "Remove line {n}",
+      "chooseAccount": "Choose an account",
+      "addLine": "Add line",
+      "totalDebit": "Total debit",
+      "totalCredit": "Total credit",
+      "balanced": "Debits equal credits",
+      "empty": "No amounts yet",
+      "difference": "Off by {amount}",
+      "submit": "Post entry"
+    },
+    "ledger": {
+      "kpis": {
+        "label": "Key figures of the Bếp Mộc book",
+        "gateway": "Payment gateway receivable",
+        "gatewaySub": "Waiting for the gateway payout",
+        "cod": "COD receivable",
+        "codSub": "COD reconciliation is on the Shipping screen",
+        "prepaid": "Buyer prepayments",
+        "prepaidSub": "Collected, not delivered: not revenue yet",
+        "vat": "Output VAT {month}",
+        "vatSub": "Provisional up to today",
+        "about": "Movements of {month} in the Bếp Mộc book, computed from entry lines."
+      },
+      "title": "Recent entries",
+      "about": "Every entry has at least two lines and total debits equal total credits. Entries are append-only: never edited or deleted; mistakes are fixed with a reversing entry. Every ten seconds the system seals new entries into a hash chain to detect tampering.",
+      "filter": "Filter entries",
+      "all": "All",
+      "filters": {
+        "manual": "Manual",
+        "reversed": "Reversed"
+      },
+      "empty": "No entries match this filter.",
+      "entry": "Entry",
+      "book": "Book",
+      "date": "Effective date",
+      "amount": "Amount",
+      "state": "Status",
+      "states": {
+        "pending_seal": "Awaiting seal",
+        "sealed": "Sealed",
+        "reversed": "Reversed",
+        "reversal": "Reversal"
+      },
+      "source": "Source",
+      "period": "Period",
+      "posted": "Posted at",
+      "actor": "Posted by",
+      "system": "System",
+      "seal": "Seal",
+      "sealPending": "Waiting for the sealing job (10 seconds)",
+      "attachment": "Supporting document",
+      "lines": "Entry lines (total debit = total credit)",
+      "debit": "Debit",
+      "credit": "Credit",
+      "reversesNote": "Reverses entry {reference}. Reason: {reason}",
+      "reversedNote": "Reversed by {reference}. An entry can be reversed only once.",
+      "reverse": {
+        "button": "Reverse entry",
+        "title": "Reverse entry {reference}",
+        "intro": "The system posts a new entry that swaps debits and credits. The original stays and becomes \"Reversed\".",
+        "once": "An entry can be reversed only once.",
+        "period": "The reversal must be dated in an open period.",
+        "submit": "Reverse",
+        "done": "Reversal posted; the original is now \"Reversed\"",
+        "reason": "Reason",
+        "reasonHint": "Say why, for example \"Wrong debit account\". No personal data.",
+        "date": "Effective date"
+      },
+      "bookNote": "Store orders are recorded in the Bếp Mộc book. Marketplace orders are recorded in the Chợ Bếp Mộc book: the buyer's money sits with the collection partner, and the book only records what is owed to sellers.",
+      "trial": {
+        "title": "Trial balance · {book}",
+        "range": "Movements {from} – {to}.",
+        "about": "Sums the debit and credit movements of every account.",
+        "filter": "Choose book and period",
+        "account": "Account",
+        "debit": "Debit movements",
+        "credit": "Credit movements",
+        "total": "Total",
+        "balanced": "Both columns are equal.",
+        "unbalanced": "The columns differ: a sign of a system error; tell an administrator.",
+        "foot": "Balances are derived from entry lines; a periodic check recomputes them and reports any account that drifts. Chart-of-accounts numbers are used only for exports (see the Accounting export tab)."
+      }
+    },
+    "exceptions": {
+      "title": "Items to handle",
+      "about": "When incoming money matches no payment, the system does not guess; it puts the item here. Someone with ledger.reconcile chooses how to handle each item and records a reason.",
+      "filter": "Filter exceptions",
+      "all": "All",
+      "chips": {
+        "open": "To handle",
+        "amount_mismatch": "Wrong amount",
+        "unmatched_credit": "No code",
+        "late_payment": "Late",
+        "resolved": "Handled"
+      },
+      "empty": "No items match this filter.",
+      "item": "Item",
+      "related": "Related",
+      "amount": "Amount",
+      "found": "Found",
+      "state": "Status",
+      "kinds": {
+        "amount_mismatch": "Wrong amount",
+        "unmatched_credit": "Money in without a code",
+        "duplicate_payment": "Paid twice",
+        "missing_in_statement": "Missing from statement",
+        "unknown_in_statement": "Unknown in statement",
+        "late_payment": "Paid late"
+      },
+      "kindHints": {
+        "amount_mismatch": "transfer differs from amount due",
+        "unmatched_credit": "no payment code in the memo",
+        "duplicate_payment": "money received a second time",
+        "missing_in_statement": "in the books, not in the statement",
+        "unknown_in_statement": "in the statement, not in the books",
+        "late_payment": "the payment had expired"
+      },
+      "viaCode": "VietQR · code {code}",
+      "memo": "memo \"{memo}\"",
+      "unknown": "Unknown",
+      "received": "got {amount}",
+      "expected": "due {amount}",
+      "status": {
+        "open": "To handle",
+        "resolved": "Handled",
+        "ignored": "Ignored"
+      },
+      "facts": {
+        "account": "Receiving account",
+        "provider": "Partner",
+        "memo": "Transfer memo",
+        "expected": "Amount due",
+        "received": "Amount received",
+        "short": "Difference",
+        "booked": "Received at",
+        "cancelled": "Order cancelled at",
+        "succeeded": "Payment succeeded at",
+        "statement": "Statement date"
+      },
+      "advice": {
+        "amount_mismatch": "The money went straight into the store's own account (self-collection); the system holds nothing. Usually: ask the buyer to transfer the rest and then match, or refund what was received and cancel the order.",
+        "unmatched_credit": "Probably a manual transfer without the code. Find an order waiting for exactly this amount and match it; if there is none, refund the sender.",
+        "duplicate_payment": "One payment received money twice: refund the extra to the buyer, then mark it \"Refunded outside the system\".",
+        "missing_in_statement": "Usually caused by the gateway's statement cut-off time. Reconcile again when the next day's statement is out; if still missing, contact the gateway.",
+        "unknown_in_statement": "A transaction in the statement that is not in the books, such as a gateway test transaction.",
+        "late_payment": "A cancelled order is not reopened. Direct transfers do not go through a gateway, so refund by hand and mark it \"Refunded outside the system\"."
+      },
+      "noCandidates": "No order at this receiving unit is waiting for exactly {amount}.",
+      "candidates": "Orders waiting for the same amount: {codes}.",
+      "resolvedBy": "{who}: \"{action}\" · {note} ·",
+      "actions": {
+        "match": "Match to a payment",
+        "refunded_outside": "Refunded outside the system",
+        "ignore": "Ignore"
+      },
+      "reconcileNow": "Reconcile now",
+      "reconcileQueued": "Reconciliation of the gateway statement for {date} is queued; new mismatches will show here",
+      "reconcileNext": "Reconcile again with the next day's statement",
+      "resolve": {
+        "button": "Resolve with reason",
+        "title": "Resolve exception",
+        "intro": "Choose how to handle it. \"Match\" posts through the same path as an automatic match. The reason is stored with your name.",
+        "submit": "Resolve",
+        "done": "Exception resolved and reason recorded",
+        "action": "How to handle",
+        "code": "Payment code (when matching)",
+        "codeHint": "The short code in the transfer memo, such as AXK7Q2M9TP.",
+        "note": "Reason",
+        "noteHint": "For example: The buyer confirmed the short transfer and paid the rest."
+      },
+      "noCustodyStrong": "The system never holds money.",
+      "noCustody": "Money goes straight into the store's account or the collection account of a licensed partner; this screen only matches the books with statements. COD reconciliation with carriers is on the Shipping screen.",
+      "codLink": "Open COD reconciliation",
+      "runs": {
+        "title": "Recent reconciliations",
+        "about": "Every day the system pulls the gateway statement for the previous day and matches by transaction code and amount.",
+        "statement": "Statement date",
+        "provider": "Partner",
+        "by": "Requested by",
+        "state": "Status",
+        "status": {
+          "queued": "Queued",
+          "running": "Reconciling",
+          "done": "Done"
+        },
+        "opened": "{count, plural, =0 {No new exceptions} one {# new exception} other {# new exceptions}}"
+      }
+    },
+    "bank": {
+      "title": "Accounts receiving transfers",
+      "about": "VietQR transfers go straight into the store's account. The system reads balance changes through a statement partner to match payments automatically; no platform account ever receives buyers' money. Only the last four digits of account numbers are shown.",
+      "add": {
+        "button": "Add account",
+        "title": "Add receiving account",
+        "intro": "The account must belong to the store or company, never to the platform. Connection details for the statement partner are entered under Settings › Partner connections and kept in the secret store.",
+        "submit": "Add",
+        "done": "Account added; turn on balance reading after connecting the partner",
+        "bin": "Bank BIN",
+        "binHint": "Six digits. Sample list: {banks}.",
+        "number": "Account number",
+        "name": "Account holder",
+        "unit": "Unit (store)"
+      },
+      "account": "Account",
+      "unit": "Unit",
+      "feed": "Balance reading",
+      "lastRead": "Last read",
+      "state": "Status",
+      "modes": {
+        "push": "Partner pushes",
+        "poll": "System polls"
+      },
+      "everySeconds": "every {seconds} seconds",
+      "signed": "signed webhook",
+      "never": "Not read yet",
+      "status": {
+        "active": "Reading balance changes",
+        "paused": "Paused",
+        "not_connected": "Not connected"
+      },
+      "facts": {
+        "bin": "BIN",
+        "holder": "Account holder",
+        "provider": "Statement partner",
+        "noProvider": "Not connected",
+        "matched": "Matched this month",
+        "matchedCount": "{count, plural, one {# transaction} other {# transactions}}",
+        "queued": "In the exceptions queue",
+        "queuedCount": "{count, plural, one {# transaction} other {# transactions}}",
+        "pauseReason": "Why paused",
+        "since": "Since"
+      },
+      "pauseReasons": {
+        "authorization_expired": "The statement partner reported that the authorization expired",
+        "manual": "Paused by a manager"
+      },
+      "pausedNote": "While paused, transfer orders of {unit} must be confirmed by staff in Orders. Turning it back on catches up from the last cursor.",
+      "notConnectedNote": "Connect a statement partner under Settings › Partner connections, then turn on balance reading.",
+      "activeNote": "While paused, new transfers are not matched automatically.",
+      "undo": "Undo",
+      "undone": "Undone",
+      "pause": "Pause reading",
+      "paused": "Balance reading paused",
+      "resume": "Turn back on",
+      "resumed": "Turned back on; catching up from the last cursor",
+      "connect": "Connect partner",
+      "qr": {
+        "title": "Try a VietQR code",
+        "about": "A NAPAS VietQR code holds the bank code, account number, amount and memo. The page draws the QR image from the code string; trying it here creates no payment.",
+        "cannot": "Needs ledger.settings_manage and a connected account.",
+        "account": "Receiving account",
+        "amount": "Amount (dong)",
+        "memo": "Transfer memo",
+        "memoHint": "A short code of capital letters and digits only, because banks strip accents and cut memos short.",
+        "submit": "Make code",
+        "image": "VietQR code for {amount}, memo {memo}",
+        "made": "Code for {amount}, memo {memo}.",
+        "expires": "A real payment would expire at",
+        "copy": "Copy code"
+      },
+      "due": {
+        "title": "Payment deadline",
+        "strong": "Payment deadline.",
+        "text": "Transfer payments expire after {minutes} minutes (server setting). Money arriving later goes to the \"Paid late\" queue. The bank code list is data with its source and date.",
+        "custody": "No platform account receives buyers' money."
+      }
+    },
+    "einvoices": {
+      "kpis": {
+        "label": "E-invoice figures",
+        "issued": "Issued · {symbol}",
+        "last": "Last number {number}",
+        "rejected": "Rejected",
+        "rejectedSub": "Fix and resend with the same number",
+        "submitting": "Sending",
+        "submittingSub": "Waiting for the provider's code",
+        "register": "From cash registers · {symbol}",
+        "registerSub": "Sent to the tax authority the same day"
+      },
+      "rejectedStrong": "{count, plural, one {# invoice was rejected.} other {# invoices were rejected.}}",
+      "rejectedText": "The provider reported invalid buyer details. Fix the buyer details and resend: the invoice keeps its number; no new number is used.",
+      "connectionStrong": "The e-invoice provider connection has an error:",
+      "connectionLink": "Check under Settings › Partner connections",
+      "title": "Documents",
+      "about": "Invoices are made on delivery. Numbers are sequential per series with no gaps; drafts have no number. An invoice with a tax authority code can only be corrected with an adjusting or replacing invoice.",
+      "filter": "Filter documents",
+      "all": "All",
+      "chips": {
+        "rejected": "Rejected",
+        "submitting": "Sending",
+        "accepted": "Has authority code",
+        "draft": "Draft",
+        "corrected": "Corrected"
+      },
+      "empty": "No documents match this filter.",
+      "number": "Number · series",
+      "buyer": "Buyer",
+      "order": "Order",
+      "total": "Total",
+      "date": "Issue date",
+      "state": "Status",
+      "noNumber": "No number yet",
+      "kinds": {
+        "vat_invoice": "VAT invoice",
+        "sales_invoice": "Sales invoice",
+        "cash_register_invoice": "Cash register invoice",
+        "withholding_certificate": "PIT withholding certificate",
+        "cash_receipt": "Cash receipt"
+      },
+      "kindsShort": {
+        "vat_invoice": "VAT invoice",
+        "sales_invoice": "sales invoice",
+        "cash_register_invoice": "cash register",
+        "withholding_certificate": "PIT withholding",
+        "cash_receipt": "cash receipt"
+      },
+      "corrections": {
+        "adjustment": "adjustment",
+        "replacement": "replacement"
+      },
+      "business": "business",
+      "consumer": "individual",
+      "status": {
+        "draft": "Draft",
+        "issued": "Numbered",
+        "submitting": "Sending",
+        "accepted": "Has authority code",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "replaced": "Replaced",
+        "adjusted": "Adjusted"
+      },
+      "draftTitle": "Draft · {symbol}",
+      "detailTitle": "Invoice {number} · {symbol}",
+      "facts": {
+        "kind": "Kind",
+        "issuer": "Issued by",
+        "onBehalf": "On behalf of",
+        "onBehalfValue": "{seller}, under mandate {mandate}",
+        "buyer": "Buyer",
+        "taxCode": "tax code {code}",
+        "noTaxCode": "no tax code",
+        "softwareCode": "Software-generated code",
+        "authority": "Tax authority code",
+        "lookup": "Lookup code",
+        "adjustmentOf": "Adjusts",
+        "replacementOf": "Replaces",
+        "retention": "Kept until"
+      },
+      "providerError": "Provider error:",
+      "lines": "Goods and services",
+      "subtotal": "Subtotal before tax",
+      "tax": "VAT",
+      "grand": "Total payable",
+      "history": "History",
+      "events": {
+        "created": "Draft created",
+        "issued": "Number assigned",
+        "submitted": "Sent to provider",
+        "accepted": "Tax authority code received",
+        "rejected": "Rejected",
+        "resubmitted": "Resent with the same number",
+        "cancelled": "Cancelled by error notice",
+        "replaced": "Replaced by invoice",
+        "adjusted": "Adjusted by invoice"
+      },
+      "notes": {
+        "draft": "A draft has no number, so it can be edited or deleted. Issuing assigns the next number of the series and sends it to the provider.",
+        "issued": "Numbered; internal documents are not sent to a provider.",
+        "submitting": "The number was assigned before sending. If the provider fails, the system resends without a new number and checks the status every 5 minutes.",
+        "accepted": "Has a tax authority code: it cannot be edited. Correct mistakes with an adjusting or replacing invoice, or cancel it with an error notice.",
+        "rejected": "Ask the buyer for the correct details, then resend with the same number. A tax code has 10 digits, or 10 digits, a dash and 3 digits.",
+        "cancelled": "Cancelled by an error notice to the tax authority; still kept for the full period.",
+        "replaced": "Replaced by a new invoice; still kept for the full period.",
+        "adjusted": "Has a linked adjusting invoice; still kept for the full period."
+      },
+      "fix": {
+        "button": "Fix and resend with same number",
+        "title": "Fix buyer details",
+        "intro": "The invoice keeps its series and number; only fix the reported fields and resend to the provider.",
+        "submit": "Save and resend",
+        "done": "Invoice resent with the same number; waiting for the provider's code",
+        "taxCode": "Buyer tax code",
+        "taxCodePlaceholder": "10 digits or 10-3 digits",
+        "taxCodeHint": "Ask the buyer; a 12-digit personal ID needs checking against current rules.",
+        "name": "Company name",
+        "address": "Address",
+        "addressPlaceholder": "Number, street, ward / commune, province / city"
+      },
+      "refresh": "Check status again",
+      "refreshed": "Asked the provider again; the new status shows in the table",
+      "correct": {
+        "button": "Correct invoice",
+        "title": "Correct invoice {number}",
+        "intro": "An invoice with a tax authority code cannot be edited directly.",
+        "adjustment": "Adjust: make a draft adjusting invoice linked to the original (for example the buyer returned part of the goods).",
+        "replacement": "Replace: make a draft new invoice replacing the original (for example a wrong buyer name).",
+        "cancel": "Cancel by error notice: the original becomes \"Cancelled\" at once; this cannot be undone.",
+        "submit": "Make document",
+        "done": "Correction recorded; any correcting document is a draft, issue it to assign a number",
+        "how": "How to correct",
+        "kinds": {
+          "adjustment": "Adjust",
+          "replacement": "Replace",
+          "cancel": "Cancel by error notice"
+        },
+        "reason": "Reason",
+        "reasonHint": "For example: The buyer returned 1 cast iron pan."
+      },
+      "issue": {
+        "button": "Issue",
+        "title": "Issue invoice · {symbol}",
+        "number": "Assigns the next number of the series; numbers have no gaps and cannot be taken back.",
+        "keep": "Once numbered, the invoice cannot be deleted and must be kept for at least 10 years.",
+        "send": "The invoice is sent to the provider to get a tax authority code.",
+        "submit": "Issue",
+        "done": "Number assigned and sent to the provider"
+      },
+      "delete": {
+        "button": "Delete draft",
+        "title": "Delete draft invoice",
+        "point": "A draft has no number, so it can be deleted; an issued document cannot.",
+        "submit": "Delete",
+        "done": "Draft deleted"
+      },
+      "basisIssue": "Invoices are made on delivery.",
+      "basisCorrection": "Correcting invoices."
+    },
+    "series": {
+      "title": "Invoice and document series",
+      "about": "A series symbol shows the invoice kind and year, for example 1C26TBM: 1 is a VAT invoice, C means it carries a tax authority code, 26 is the year 2026. Each series has its own numbers; a new year uses a new series.",
+      "add": {
+        "button": "Add series",
+        "title": "Add series",
+        "intro": "Numbers of a new series start at 00000001.",
+        "submit": "Add",
+        "done": "Series added; numbers start at 00000001",
+        "unit": "Issuing unit",
+        "kind": "Kind",
+        "symbol": "Symbol",
+        "symbolHint": "Invoices: 1 digit, C or K, 2-digit year, 1 letter, 2 letters (1C27TBM). Withholding certificates: CT/27E.",
+        "year": "Year"
+      },
+      "symbol": "Symbol",
+      "kind": "Kind",
+      "unit": "Issuing unit",
+      "last": "Last number",
+      "state": "Status",
+      "status": {
+        "active": "In use",
+        "inactive": "Retired"
+      },
+      "facts": {
+        "provider": "Provider",
+        "internal": "Internal document (not sent to a provider)",
+        "year": "Year",
+        "next": "Next number"
+      },
+      "gapless": "A number is assigned only when issuing, in the same step as the document: no gaps, no duplicates.",
+      "deactivate": {
+        "button": "Retire",
+        "title": "Retire series {symbol}",
+        "new": "New documents need another series.",
+        "keep": "Documents already issued in this series keep their numbers.",
+        "submit": "Retire",
+        "done": "Series {symbol} retired"
+      },
+      "foot": "Series 2C26TNN and CT/26E are samples; check them against the rules on invoice and withholding certificate symbols.",
+      "mandates": {
+        "title": "Invoicing mandates",
+        "about": "A marketplace seller can mandate the marketplace to issue invoices on its behalf. Without a mandate in effect, the marketplace cannot issue invoices for that seller.",
+        "add": {
+          "button": "Add mandate",
+          "title": "Add invoicing mandate",
+          "intro": "Without a mandate in effect, the marketplace cannot issue invoices for the seller.",
+          "submit": "Add",
+          "done": "Mandate added",
+          "seller": "Mandating seller",
+          "kind": "Invoice kind",
+          "from": "Valid from",
+          "to": "Valid to",
+          "signed": "A signed mandate document exists",
+          "signedHint": "Attach it in the seller's file; the mandate must be notified to the tax authority."
+        },
+        "principal": "Mandating party",
+        "kind": "Invoice kind",
+        "valid": "Validity",
+        "state": "Status",
+        "actions": "Actions",
+        "entities": {
+          "enterprise": "company",
+          "household": "household business"
+        },
+        "range": "{from} – {to}",
+        "status": {
+          "valid": "In effect",
+          "scheduled": "Not yet in effect",
+          "expired": "Expired",
+          "revoked": "Revoked"
+        },
+        "revoke": {
+          "button": "Revoke",
+          "title": "Revoke mandate of {seller}",
+          "stop": "The marketplace stops issuing invoices for this seller from now on.",
+          "issued": "Invoices already issued under the mandate stay as they are.",
+          "submit": "Revoke",
+          "done": "Mandate of {seller} revoked"
+        },
+        "basis": "Invoicing mandates."
+      }
+    },
+    "tax": {
+      "expiring": {
+        "strong": "The {rate} VAT rate ends on {date}.",
+        "products": "{count, plural, one {# product uses} other {# products use}} this tax group.",
+        "successor": "The \"vn\" pack version {pack} already has a {rate} row from {date}.",
+        "none": "There is no next rate yet: a new tax data pack is needed.",
+        "extend": "If the reduction is extended, the platform imports a new pack; customers do not edit their products."
+      },
+      "vat": {
+        "title": "VAT by period",
+        "about": "Output is tax credited to the output VAT account; input is tax debited to the input VAT account, summed from the period's entry lines.",
+        "book": "Choose book",
+        "period": "Period",
+        "output": "Output VAT",
+        "input": "Input VAT",
+        "net": "Difference",
+        "state": "Figures",
+        "month": "{month}",
+        "payable": "payable",
+        "carry": "carried forward as credit",
+        "provisional": "Provisional",
+        "closed": "Period closed",
+        "outputByRate": "Output by rate",
+        "inputByRate": "Input by rate",
+        "none": "None.",
+        "base": "taxable amount {amount}",
+        "snapshot": "Each line keeps the rate used at the time, so changing the tax table does not change figures of past periods.",
+        "foot": "Provisional figures from the ledger, for checking; the tax return itself is not filed here."
+      },
+      "rates": {
+        "title": "VAT table · vn pack version {pack}",
+        "about": "Each row has a start date (included) and an end date (excluded). The tax date follows the selling store's time zone, so 23:30 on 31 December Vietnam time is still the old year.",
+        "category": "Tax group",
+        "rate": "Rate",
+        "valid": "In effect",
+        "state": "Status",
+        "range": "{from} – before {to}",
+        "since": "From {from}",
+        "states": {
+          "current": "In effect",
+          "expiring": "Ending soon",
+          "scheduled": "Not yet in effect"
+        },
+        "exempt": "Not subject to VAT",
+        "foot": "Rates are dated data in the \"vn\" pack, never hard-coded. Invoices and entries keep the rate used at the time."
+      },
+      "withholding": {
+        "title": "Marketplace withholding",
+        "about": "A marketplace that handles payments withholds and pays tax on behalf of household and individual sellers. Company sellers file their own.",
+        "line": "Business line",
+        "vat": "VAT",
+        "pit": "PIT",
+        "lines": {
+          "goods": "Selling goods",
+          "services": "Services",
+          "production_transport": "Production, transport"
+        }
+      },
+      "quote": {
+        "title": "Try a tax calculation",
+        "category": "Tax group",
+        "gross": "Price including tax (dong)",
+        "taxPoint": "Tax date",
+        "hint": "Splits tax out of a tax-inclusive price, rounding once.",
+        "submit": "Calculate",
+        "result": "{gross} includes {rate} VAT: {net} before tax, {tax} tax.",
+        "later": "With a tax date from {date} ({rate}): {net} and {tax}.",
+        "snapshot": "Documents keep a snapshot of the rate (pack {pack}, round half up)."
+      },
+      "profiles": {
+        "title": "Tax profile per unit",
+        "about": "A unit without its own profile uses the profile of the nearest parent. The tax regime decides the invoice kind: credit method gives VAT invoices, household businesses give sales invoices.",
+        "unit": "Unit",
+        "taxCode": "Tax code",
+        "regime": "Regime",
+        "source": "Source",
+        "actions": "Actions",
+        "fromParent": "from {unit}",
+        "regimes": {
+          "vat_credit": "Credit method",
+          "vat_direct": "Direct on revenue",
+          "household": "Household business",
+          "exempt": "Not subject to tax"
+        },
+        "missing": "No profile",
+        "inherited": "Inherited",
+        "own": "Own profile",
+        "none": "Missing",
+        "edit": "Edit profile",
+        "create": "Create own profile",
+        "title2": "Tax profile · {unit}",
+        "createIntro": "This unit uses the profile of {unit}. Saving here gives it its own profile and stops inheriting.",
+        "editIntro": "New invoices use the new details; issued invoices keep their snapshot.",
+        "save": "Save",
+        "saved": "Tax profile saved; new invoices use the new details",
+        "taxCodeHint": "10 digits, or 10 digits, a dash and 3 digits (dependent unit).",
+        "legalName": "Legal name",
+        "foot": "Tax codes here are samples."
+      },
+      "tiles": {
+        "label": "Tax data pack and rules",
+        "pack": "Tax data pack \"vn\"",
+        "latest": "Latest",
+        "version": "Version {version}",
+        "packText": "Imported {imported}, sources checked {checked}: {rates} rates, {withholding} withholding rates, {rules} rules.",
+        "packWho": "Only platform staff with tax.packs_manage import packs.",
+        "register": "Cash register invoice threshold",
+        "perYear": "{amount} / year",
+        "registerText": "Household businesses with revenue from this threshold use cash register invoices, from {from}.",
+        "products": "Products in the reduced 2% group",
+        "productsText": "Products choose a tax group, not a rate: changing the rate needs no product edits.",
+        "productsLink": "See tax groups in Products",
+        "mapping": "Account numbers for exports."
+      }
+    },
+    "periods": {
+      "title": "Periods of the {book}",
+      "about": "Periods close in month order. A closed period never reopens; new entries dated in it are refused. Mistakes in a closed period are fixed with a reversal in an open period.",
+      "book": "Choose book",
+      "period": "Period",
+      "entries": "Entries",
+      "sealed": "Sealed",
+      "closedBy": "Closed by",
+      "state": "Status",
+      "month": "{month}",
+      "current": "current period",
+      "notClosed": "not closed",
+      "allSealed": "All",
+      "someSealed": "{sealed} / {total}",
+      "status": {
+        "open": "Open",
+        "closed": "Closed"
+      },
+      "range": "From – to",
+      "check": {
+        "title": "Checks before closing",
+        "previousOk": "The previous period is closed.",
+        "previous": "The previous period ({month}) is not closed: periods close in month order.",
+        "endedOk": "The period has ended.",
+        "ended": "The period has not ended: closing early refuses entries for the remaining days.",
+        "sealedOk": "Every entry is sealed.",
+        "sealed": "{count, plural, one {# entry is} other {# entries are}} waiting to be sealed (the job runs every ten seconds).",
+        "balancedOk": "Trial balance matches: total debit = total credit.",
+        "balanced": "Trial balance does not match: tell an administrator before closing.",
+        "exceptionsOk": "No open exceptions in the period.",
+        "exceptions": "{count, plural, one {# exception} other {# exceptions}} of the period still open (does not block closing; better handle them first).",
+        "note": "When closing, the system waits for entries being posted, then fixes the closing balance of every account. The next period's opening balances come from it. Needs ledger.periods_close."
+      },
+      "close": {
+        "button": "Close {month}",
+        "title": "Close period {month}",
+        "intro": "This cannot be undone.",
+        "noReopen": "A closed period cannot be reopened.",
+        "rejected": "New entries dated in {month} will be refused.",
+        "reverse": "Mistakes are fixed with a reversal in an open period.",
+        "snapshot": "The closing balance of every account is fixed.",
+        "submit": "Close period",
+        "done": "Period {month} closed and closing balances fixed",
+        "confirm": "Type {text} to confirm"
+      },
+      "closedNote": "Closed: no new entries, never reopened.",
+      "integrity": {
+        "title": "Integrity checks",
+        "chain": "Ledger hash chain",
+        "broken": "Tampered",
+        "intact": "Intact",
+        "brokenText": "A sealed entry was edited or deleted: tell an administrator now. Checked at",
+        "chainText": "Recomputed {count} sealed entries: none edited or deleted; longest wait for a seal {minutes} minutes. Checked at",
+        "balances": "Running balances against entry lines",
+        "match": "Match",
+        "balancesText": "A periodic check recomputes balances from entry lines and reports any account that drifts.",
+        "retention": "Document retention",
+        "retentionText": "Documents and books are kept for at least {years} years after the financial year; they cannot be deleted earlier."
+      }
+    },
+    "export": {
+      "button": "Accounting export",
+      "title": "Accounting export",
+      "intro": "A job builds the export; download it from the Accounting export tab when it is ready.",
+      "submit": "Build export",
+      "done": "Export queued; download it from the list when it is ready",
+      "profile": "Export profile",
+      "format": "Format",
+      "formatHint": "Sample data can only download CSV; XLSX waits for the API.",
+      "from": "From",
+      "to": "To",
+      "profiles": {
+        "generic_journal": "General journal",
+        "generic_documents": "Document list"
+      },
+      "form": {
+        "title": "Build an export"
+      },
+      "excel": {
+        "title": "Opens in Excel",
+        "strong": "Opens in Excel.",
+        "text": "CSV uses UTF-8 with a BOM so Vietnamese text is not garbled; cells starting with = + - @ get a leading apostrophe so they do not become formulas. Profiles for specific accounting software are added only when the vendor publishes an import template.",
+        "mapping": "Account numbers follow the book's mapping (editable)."
+      },
+      "list": {
+        "title": "Recent exports",
+        "empty": "No exports yet.",
+        "export": "Export",
+        "period": "Period",
+        "by": "Built by",
+        "state": "Status",
+        "actions": "Actions",
+        "rows": "{count} rows",
+        "expires": "Download until {date}",
+        "matches": "matches trial balance",
+        "download": "Download",
+        "xlsxWaiting": "XLSX download waits for the API",
+        "retry": "Build again",
+        "retried": "Export queued again"
+      },
+      "status": {
+        "queued": "Queued",
+        "running": "Building",
+        "ready": "Ready",
+        "failed": "Failed"
+      },
+      "errors": {
+        "timeout": "Timed out; tried {attempts} times"
+      },
+      "map": {
+        "title": "Account number mapping",
+        "about": "The books use stable purposes (cash.bank, revenue.sales…); chart-of-accounts numbers are used only for exports.",
+        "purpose": "Purpose",
+        "code": "Number"
+      }
+    },
+    "codes": {
+      "ledger_unbalanced": "The entry is not balanced: total debit differs from total credit.",
+      "ledger_unbalanced_amounts": "The entry is not balanced: total debit {debit} differs from total credit {credit}.",
+      "ledger_currency_mixed": "Every line of an entry must use one currency.",
+      "ledger_period_closed": "The accounting period containing this date is closed. Post an adjusting entry in an open period.",
+      "ledger_period_order": "Close the previous period before this one.",
+      "ledger_period_not_ended": "This period has not ended; closing early refuses entries for the remaining days.",
+      "ledger_period_not_found": "This accounting period does not exist.",
+      "ledger_entry_not_found": "This entry does not exist.",
+      "ledger_already_reversed": "This entry has already been reversed.",
+      "ledger_exception_not_found": "This exception does not exist.",
+      "ledger_exception_not_open": "This item was already handled.",
+      "ledger_payment_not_found": "No payment has this code.",
+      "ledger_payment_state": "This payment is not waiting, so it cannot be matched (for example it expired or already succeeded).",
+      "ledger_bank_unknown": "No bank has this BIN.",
+      "ledger_bank_account_taken": "This account is already in the list.",
+      "ledger_bank_account_not_found": "This bank account does not exist.",
+      "ledger_feed_not_connected": "Connect the statement partner first.",
+      "reference_reused": "This reference was already used for a different entry. Use a new reference, or resend exactly the same content.",
+      "invoices_document_not_found": "This document does not exist.",
+      "invoices_document_state": "The document is not in a state that allows this; reload the page.",
+      "invoices_series_not_found": "This document series does not exist.",
+      "invoices_series_inactive": "This series is retired.",
+      "invoices_series_taken": "This series already exists for this unit and year.",
+      "invoices_mandate_missing": "No mandate in effect lets you issue invoices for this seller.",
+      "invoices_mandate_overlap": "This seller already has a mandate in effect for these dates.",
+      "invoices_mandate_not_found": "This mandate does not exist.",
+      "invoices_mandate_revoked": "This mandate was already revoked.",
+      "invoices_retention_hold": "Issued accounting documents must be kept for the full period and cannot be deleted.",
+      "invoices_correction_pending": "A correcting draft already exists for this invoice; issue or delete that draft first.",
+      "invoices_export_not_found": "This export does not exist.",
+      "invoices_export_not_ready": "The export is not ready or cannot be built again.",
+      "tax_category_unknown": "This tax group does not exist.",
+      "tax_rate_missing": "There is no rate for this group on that date. A new tax data pack is needed."
+    },
+    "fields": {
+      "required": "Fill in this field.",
+      "unknown": "Choose a value from the list.",
+      "money_vnd": "Enter a whole number of dong above 0, such as 44000 or 44,000.",
+      "length_1_200": "Write 1 to 200 characters.",
+      "length_5_200": "Write 5 to 200 characters.",
+      "length_1_100": "Write 1 to 100 characters.",
+      "personal_data": "No phone numbers or emails: entries cannot be deleted.",
+      "reference_format": "Use 1 to 100 characters without accents or spaces.",
+      "min_two_lines": "An entry needs at least two lines: one debit and one credit.",
+      "bank_bin": "A BIN has exactly 6 digits.",
+      "account_number": "An account number has 6 to 19 digits.",
+      "taken": "This value is already in use.",
+      "transfer_code": "Capital letters without accents and digits only, up to 25 characters.",
+      "tax_code": "Enter 10 digits, or 10 digits, a dash and 3 digits.",
+      "invoices_buyer_tax_code_invalid": "The buyer tax code must have 10 or 13 digits (10-3 form).",
+      "ledger_bank_unknown": "No bank has this BIN.",
+      "year": "Enter a four-digit year.",
+      "series_symbol": "The symbol does not have the expected form (such as 1C27TBM; withholding CT/27E).",
+      "series_year": "The year in the symbol must match the Year field.",
+      "after_start": "Choose a date after the start date.",
+      "acknowledge": "Tick this box to confirm.",
+      "confirm_text": "Type {value} exactly to confirm.",
+      "one_side": "Each line has one side only: debit or credit.",
+      "line_account": "Choose an account for this line.",
+      "line_amount": "Enter an amount in the debit or credit column."
     }
   }
 }

@@ -11,7 +11,7 @@ import type { ChangeState } from "@/lib/engage";
 import { type FormState, nextDone, problemState } from "@/lib/form";
 import { type SampleOutcome, sampleGuard, translateSample } from "@/lib/sample-action";
 
-export type Namespace = "catalog" | "inventory";
+export type Namespace = "catalog" | "inventory" | "finance";
 
 const key = (code: string) => code.replaceAll(".", "_");
 

@@ -20,7 +20,8 @@
       "platformFleet": "Đội database",
       "platformHealth": "Sức khoẻ",
       "platformSupport": "Vào dữ liệu khách",
-      "catalog": "Sản phẩm"
+      "catalog": "Sản phẩm",
+      "finance": "Tài chính"
     },
     "pages": {
       "dashboard": "Bảng điều khiển",
@@ -48,7 +49,8 @@
       "platformHealth": "Sức khoẻ",
       "platformSupport": "Vào dữ liệu khách",
       "catalog": "Sản phẩm và giá",
-      "inventory": "Tồn kho"
+      "inventory": "Tồn kho",
+      "finance": "Kế toán"
     },
     "about": {
       "dashboard": "Lời chào và lối vào mọi phân hệ bạn dùng được.",
@@ -75,7 +77,8 @@
       "platformHealth": "Tồn đọng theo module, cảnh báo, backup.",
       "platformSupport": "Quyền vào có hạn, có lý do; khách thấy mọi lần vào.",
       "catalog": "Sản phẩm, biến thể, danh mục, bảng giá theo cửa hàng, nhập CSV, bản nháp AI.",
-      "inventory": "Tồn theo kho, sổ biến động, chuyển kho, kiểm kê, lô và serial, nhập hàng, nhà cung cấp."
+      "inventory": "Tồn theo kho, sổ biến động, chuyển kho, kiểm kê, lô và serial, nhập hàng, nhà cung cấp.",
+      "finance": "Sổ cái kép, hàng chờ sai lệch, tài khoản ngân hàng, hoá đơn điện tử, ký hiệu và uỷ nhiệm, thuế, kỳ kế toán, xuất kế toán."
     }
   },
   "login": {
@@ -5920,6 +5923,911 @@
       "inventory_lot_required": "Hàng theo lô cần mã lô.",
       "inventory_receipt_not_found": "Không có phiếu nhập số này.",
       "inventory_invalid_transition": "Đơn này không còn chờ hàng."
+    }
+  },
+  "finance": {
+    "crumb": "Bếp Mộc · sổ của gốc khách và sổ của Chợ Bếp Mộc · tiền hạch toán VND",
+    "title": "Kế toán",
+    "description": "Sổ cái kép chỉ thêm, đối soát tiền với đối tác, hoá đơn điện tử, thuế, khoá sổ và xuất kế toán. Hệ thống không giữ tiền: chỉ ghi nghĩa vụ và đối chiếu với sao kê của đối tác có giấy phép.",
+    "tabs": {
+      "label": "Các phần của Kế toán",
+      "ledger": "Sổ cái",
+      "exceptions": "Hàng chờ sai lệch",
+      "bank": "Tài khoản ngân hàng",
+      "einvoices": "Hoá đơn điện tử",
+      "series": "Ký hiệu và uỷ nhiệm",
+      "tax": "Thuế",
+      "periods": "Kỳ kế toán",
+      "export": "Xuất kế toán"
+    },
+    "books": {
+      "main": "Sổ Bếp Mộc",
+      "market": "Sổ Chợ Bếp Mộc"
+    },
+    "unitTypes": {
+      "tenant": "gốc khách",
+      "region": "vùng",
+      "store": "cửa hàng",
+      "warehouse": "kho",
+      "marketplace": "sàn",
+      "seller": "người bán trên sàn"
+    },
+    "basis": {
+      "label": "Căn cứ:",
+      "since": "Hiệu lực từ",
+      "until": "tới",
+      "review": "Cần đối chiếu văn bản gốc / người có chuyên môn pháp lý."
+    },
+    "purposes": {
+      "cash_on_hand": "Tiền mặt tại quầy",
+      "cash_bank": "Tiền gửi ngân hàng",
+      "clearing_gateway": "Phải thu cổng thanh toán",
+      "clearing_carrier_cod": "Phải thu hãng vận chuyển (COD)",
+      "inventory_stock": "Hàng hoá trong kho",
+      "tax_vat_input": "Thuế GTGT đầu vào",
+      "expense_gateway_fee": "Chi phí phí cổng thanh toán",
+      "shipping_carrier_fee": "Chi phí vận chuyển",
+      "orders_buyer_prepayments": "Tiền người mua trả trước",
+      "payable_supplier": "Phải trả nhà cung cấp",
+      "payable_seller_available": "Phải trả người bán",
+      "revenue_sales": "Doanh thu bán hàng",
+      "revenue_shipping": "Doanh thu phí giao hàng",
+      "revenue_platform_fee": "Doanh thu phí sàn (chưa thuế)",
+      "tax_vat_output": "Thuế GTGT đầu ra",
+      "tax_withheld_vat": "GTGT khấu trừ thay hộ kinh doanh",
+      "tax_withheld_pit": "TNCN khấu trừ thay hộ kinh doanh"
+    },
+    "kinds": {
+      "capture": "khi thu tiền",
+      "deliver": "khi giao hàng",
+      "settle": "khi hoàn tất",
+      "gateway_fee": "Phí cổng thanh toán ngày {date}",
+      "manual": "ghi tay",
+      "reversal": "bút toán đảo"
+    },
+    "sources": {
+      "orders": "Đơn hàng",
+      "marketplace": "Sàn",
+      "ledger": "Sổ cái"
+    },
+    "channels": {
+      "pos": "bán tại quầy",
+      "web": "website",
+      "vietqr": "VietQR khớp tự động",
+      "marketplace": "sàn, thu hộ qua đối tác",
+      "statement": "đối soát sao kê cổng",
+      "manual": "ghi tay"
+    },
+    "notes": {
+      "orders_capture": "Đơn chưa giao nên chưa ghi doanh thu; doanh thu ghi khi đơn sang \"Đã giao\". Bút toán do module Đơn hàng sinh: sửa sai bằng hoàn tiền hay huỷ ở đơn (sinh bút toán đảo), không đảo tay ở đây.",
+      "orders_deliver": "Bút toán do module Đơn hàng sinh khi đơn sang \"Đã giao\". Sửa sai bằng hoàn tiền hay huỷ ở đơn (sinh bút toán đảo), không đảo tay ở đây.",
+      "orders_capture_market": "Tiền nằm ở tài khoản thu hộ của đối tác thanh toán có giấy phép, không ở nền tảng. Phần người bán, phí sàn và khấu trừ thay ghi khi đơn hoàn tất.",
+      "marketplace_settle_market": "Hết hạn đổi trả: chia phần người bán, phí sàn và thuế khấu trừ thay. Khấu trừ thay chỉ áp cho hộ, cá nhân kinh doanh; tỉ lệ đọc từ biểu thuế có ngày hiệu lực (xem tab Thuế).",
+      "ledger_gateway_fee": "Sinh khi đối soát sao kê của cổng: phí cổng trừ thẳng vào khoản cổng chuyển về.",
+      "ledger_manual": "Bút toán tay. Sai thì đảo (cần quyền ledger.reverse); bút toán đảo có ngày ở kỳ đang mở."
+    },
+    "entry": {
+      "button": "Ghi bút toán tay",
+      "title": "Ghi bút toán tay",
+      "intro": "Bút toán ghi rồi không sửa được, chỉ đảo. Diễn giải là chữ cố định, không ghi tên hay số điện thoại người mua vì bút toán không xoá được.",
+      "done": "Đã ghi bút toán; tổng Nợ bằng tổng Có, niêm phong trong 10 giây",
+      "book": "Sổ",
+      "description": "Diễn giải",
+      "descriptionPlaceholder": "Phí chuyển tiền tháng 11",
+      "descriptionHint": "Không ghi tên, số điện thoại hay email của người mua.",
+      "date": "Ngày hiệu lực",
+      "dateHint": "Phải thuộc kỳ đang mở.",
+      "reference": "Mã tham chiếu",
+      "referenceHint": "Gửi lại cùng mã không ghi hai lần.",
+      "attachment": "Chứng từ đính kèm (không bắt buộc)",
+      "attachmentHint": "Số phiếu chi, phiếu thu… của chứng từ gốc.",
+      "line": "Dòng {n}",
+      "account": "Tài khoản",
+      "debit": "Nợ",
+      "credit": "Có",
+      "removeLine": "Bỏ dòng {n}",
+      "chooseAccount": "Chọn tài khoản",
+      "addLine": "Thêm dòng",
+      "totalDebit": "Tổng Nợ",
+      "totalCredit": "Tổng Có",
+      "balanced": "Nợ bằng Có",
+      "empty": "Chưa có số tiền",
+      "difference": "Lệch {amount}",
+      "submit": "Ghi bút toán"
+    },
+    "ledger": {
+      "kpis": {
+        "label": "Số liệu chính của sổ Bếp Mộc",
+        "gateway": "Phải thu cổng thanh toán",
+        "gatewaySub": "Chờ cổng chuyển về",
+        "cod": "Phải thu COD",
+        "codSub": "Đối soát COD ở màn Vận chuyển",
+        "prepaid": "Tiền người mua trả trước",
+        "prepaidSub": "Đã thu, chưa giao: chưa là doanh thu",
+        "vat": "Thuế GTGT đầu ra {month}",
+        "vatSub": "Tạm tính tới hôm nay",
+        "about": "Số dư phát sinh của kỳ {month} trên sổ Bếp Mộc, tính từ dòng bút toán."
+      },
+      "title": "Bút toán gần đây",
+      "about": "Mỗi bút toán có ít nhất hai dòng, tổng Nợ bằng tổng Có. Bút toán chỉ được thêm: không sửa, không xoá; sai thì ghi bút toán đảo. Mười giây một lần hệ thống niêm phong bút toán mới vào chuỗi băm để phát hiện sửa lén.",
+      "filter": "Lọc bút toán",
+      "all": "Tất cả",
+      "filters": {
+        "manual": "Ghi tay",
+        "reversed": "Đã bị đảo"
+      },
+      "empty": "Không có bút toán nào khớp bộ lọc.",
+      "entry": "Bút toán",
+      "book": "Sổ",
+      "date": "Ngày hiệu lực",
+      "amount": "Số tiền",
+      "state": "Trạng thái",
+      "states": {
+        "pending_seal": "Chờ niêm phong",
+        "sealed": "Đã niêm phong",
+        "reversed": "Đã bị đảo",
+        "reversal": "Bút toán đảo"
+      },
+      "source": "Nguồn",
+      "period": "Kỳ",
+      "posted": "Ghi lúc",
+      "actor": "Người ghi",
+      "system": "Hệ thống",
+      "seal": "Niêm phong",
+      "sealPending": "Chờ job niêm phong (10 giây)",
+      "attachment": "Chứng từ đính kèm",
+      "lines": "Dòng bút toán (tổng Nợ = tổng Có)",
+      "debit": "Nợ",
+      "credit": "Có",
+      "reversesNote": "Đảo bút toán {reference}. Lý do: {reason}",
+      "reversedNote": "Đã đảo bằng {reference}. Đảo một bút toán chỉ được một lần.",
+      "reverse": {
+        "button": "Đảo bút toán",
+        "title": "Đảo bút toán {reference}",
+        "intro": "Hệ thống ghi một bút toán mới đổi Nợ thành Có. Bút toán gốc giữ nguyên và chuyển sang \"Đã bị đảo\".",
+        "once": "Một bút toán chỉ đảo được một lần.",
+        "period": "Ngày hiệu lực của bút toán đảo phải ở kỳ đang mở.",
+        "submit": "Đảo",
+        "done": "Đã ghi bút toán đảo; bút toán gốc chuyển sang \"Đã bị đảo\"",
+        "reason": "Lý do",
+        "reasonHint": "Ghi rõ vì sao đảo, vd \"Ghi nhầm tài khoản Nợ\". Không ghi dữ liệu cá nhân.",
+        "date": "Ngày hiệu lực"
+      },
+      "bookNote": "Đơn của cửa hàng ghi vào sổ Bếp Mộc. Đơn trên sàn ghi vào sổ của Chợ Bếp Mộc: tiền người mua nằm ở đối tác thu hộ, sổ chỉ ghi nghĩa vụ với người bán.",
+      "trial": {
+        "title": "Cân đối thử · {book}",
+        "range": "Phát sinh {from} – {to}.",
+        "about": "Cộng phát sinh Nợ và Có của mọi tài khoản.",
+        "filter": "Chọn sổ và kỳ",
+        "account": "Tài khoản",
+        "debit": "Phát sinh Nợ",
+        "credit": "Phát sinh Có",
+        "total": "Tổng cộng",
+        "balanced": "Hai cột bằng nhau.",
+        "unbalanced": "Hai cột lệch nhau: dấu hiệu lỗi hệ thống, báo quản trị viên.",
+        "foot": "Số dư suy từ dòng bút toán; bước kiểm định kỳ tính lại và báo tài khoản lệch. Số hiệu tài khoản theo chế độ kế toán chỉ dùng khi xuất (xem tab Xuất kế toán)."
+      }
+    },
+    "exceptions": {
+      "title": "Mục chờ xử lý",
+      "about": "Khi tiền vào không khớp thanh toán nào, hệ thống không tự đoán mà đưa vào đây. Mỗi mục cần người có quyền ledger.reconcile chọn cách xử lý và ghi lý do.",
+      "filter": "Lọc mục sai lệch",
+      "all": "Tất cả",
+      "chips": {
+        "open": "Chờ xử lý",
+        "amount_mismatch": "Lệch tiền",
+        "unmatched_credit": "Không mã",
+        "late_payment": "Trả trễ",
+        "resolved": "Đã xử lý"
+      },
+      "empty": "Không có mục nào khớp bộ lọc.",
+      "item": "Mục",
+      "related": "Liên quan",
+      "amount": "Số tiền",
+      "found": "Phát hiện",
+      "state": "Trạng thái",
+      "kinds": {
+        "amount_mismatch": "Lệch tiền",
+        "unmatched_credit": "Tiền vào không mã",
+        "duplicate_payment": "Trả trùng",
+        "missing_in_statement": "Thiếu trong sao kê",
+        "unknown_in_statement": "Lạ trong sao kê",
+        "late_payment": "Trả trễ"
+      },
+      "kindHints": {
+        "amount_mismatch": "số chuyển khác số cần trả",
+        "unmatched_credit": "nội dung không có mã thanh toán",
+        "duplicate_payment": "nhận tiền lần hai",
+        "missing_in_statement": "có ở sổ, thiếu ở sao kê",
+        "unknown_in_statement": "có ở sao kê, không có ở sổ",
+        "late_payment": "thanh toán đã hết hạn"
+      },
+      "viaCode": "VietQR · mã {code}",
+      "memo": "nội dung \"{memo}\"",
+      "unknown": "Chưa rõ",
+      "received": "nhận {amount}",
+      "expected": "cần {amount}",
+      "status": {
+        "open": "Chờ xử lý",
+        "resolved": "Đã xử lý",
+        "ignored": "Đã bỏ qua"
+      },
+      "facts": {
+        "account": "Tài khoản nhận",
+        "provider": "Đối tác",
+        "memo": "Nội dung chuyển khoản",
+        "expected": "Số cần trả",
+        "received": "Số đã nhận",
+        "short": "Chênh lệch",
+        "booked": "Lúc nhận",
+        "cancelled": "Đơn huỷ lúc",
+        "succeeded": "Thanh toán thành công lúc",
+        "statement": "Sao kê ngày"
+      },
+      "advice": {
+        "amount_mismatch": "Tiền vào thẳng tài khoản của cửa hàng (tự thu), hệ thống không giữ tiền. Cách thường làm: nhắn người mua chuyển thêm phần thiếu rồi khớp, hoặc hoàn lại khoản đã nhận rồi huỷ đơn.",
+        "unmatched_credit": "Có thể là người mua chuyển tay không ghi mã. Tìm đơn đang chờ thanh toán đúng số tiền rồi khớp; không tìm được thì hoàn lại người chuyển.",
+        "duplicate_payment": "Một thanh toán nhận tiền hai lần: hoàn lại khoản thừa cho người mua rồi đánh dấu \"Đã hoàn ngoài hệ thống\".",
+        "missing_in_statement": "Thường do giờ chốt sao kê của cổng. Đối soát lại khi có sao kê ngày kế tiếp; vẫn thiếu thì liên hệ cổng.",
+        "unknown_in_statement": "Giao dịch có trong sao kê nhưng không có trong sổ, vd giao dịch thử của cổng.",
+        "late_payment": "Đơn đã huỷ thì không mở lại. Chuyển khoản trực tiếp không đi qua cổng nên phải hoàn tay rồi đánh dấu \"Đã hoàn ngoài hệ thống\"."
+      },
+      "noCandidates": "Không có đơn nào đang chờ thanh toán đúng {amount} ở nút nhận tiền này.",
+      "candidates": "Đơn đang chờ thanh toán cùng số tiền: {codes}.",
+      "resolvedBy": "{who}: \"{action}\" · {note} ·",
+      "actions": {
+        "match": "Khớp vào thanh toán",
+        "refunded_outside": "Đã hoàn ngoài hệ thống",
+        "ignore": "Bỏ qua"
+      },
+      "reconcileNow": "Đối soát ngay",
+      "reconcileQueued": "Đã xếp việc đối soát sao kê cổng ngày {date}; mục lệch mới sẽ hiện ở đây",
+      "reconcileNext": "Đối soát lại với sao kê ngày kế tiếp",
+      "resolve": {
+        "button": "Xử lý kèm lý do",
+        "title": "Xử lý mục sai lệch",
+        "intro": "Chọn cách xử lý. \"Khớp\" chạy cùng đường ghi sổ như thanh toán tự khớp. Lý do lưu lại cùng người xử lý.",
+        "submit": "Xử lý",
+        "done": "Đã xử lý mục sai lệch và ghi lý do",
+        "action": "Cách xử lý",
+        "code": "Mã thanh toán (khi khớp)",
+        "codeHint": "Mã ngắn trong nội dung chuyển khoản, vd AXK7Q2M9TP.",
+        "note": "Lý do",
+        "noteHint": "Ví dụ: Người mua xác nhận chuyển thiếu, đã chuyển bù."
+      },
+      "noCustodyStrong": "Hệ thống không giữ tiền.",
+      "noCustody": "Tiền vào thẳng tài khoản của cửa hàng hay tài khoản thu hộ của đối tác có giấy phép; ở đây chỉ đối chiếu sổ với sao kê. Đối soát COD với hãng vận chuyển nằm ở màn Vận chuyển.",
+      "codLink": "Mở đối soát COD",
+      "runs": {
+        "title": "Lần đối soát gần đây",
+        "about": "Mỗi ngày hệ thống kéo sao kê của cổng cho ngày trước và khớp theo mã giao dịch và số tiền.",
+        "statement": "Sao kê ngày",
+        "provider": "Đối tác",
+        "by": "Người yêu cầu",
+        "state": "Trạng thái",
+        "status": {
+          "queued": "Chờ chạy",
+          "running": "Đang đối soát",
+          "done": "Xong"
+        },
+        "opened": "{count, plural, =0 {Không có mục lệch mới} other {# mục lệch mới}}"
+      }
+    },
+    "bank": {
+      "title": "Tài khoản nhận chuyển khoản",
+      "about": "Chuyển khoản VietQR đi thẳng vào tài khoản của cửa hàng. Hệ thống đọc biến động số dư qua đối tác đọc sao kê để tự khớp với thanh toán; không có tài khoản nào của nền tảng nhận tiền người mua. Số tài khoản chỉ hiện bốn số cuối.",
+      "add": {
+        "button": "Thêm tài khoản",
+        "title": "Thêm tài khoản nhận chuyển khoản",
+        "intro": "Tài khoản phải đứng tên cửa hàng hoặc công ty, không dùng tài khoản của nền tảng. Thông tin kết nối với đối tác đọc sao kê nhập ở Cài đặt › Kết nối đối tác và lưu ở kho secret.",
+        "submit": "Thêm",
+        "done": "Đã thêm tài khoản; bật đọc biến động sau khi kết nối đối tác",
+        "bin": "Mã BIN ngân hàng",
+        "binHint": "Sáu chữ số. Danh sách mẫu: {banks}.",
+        "number": "Số tài khoản",
+        "name": "Tên chủ tài khoản",
+        "unit": "Nút (cửa hàng)"
+      },
+      "account": "Tài khoản",
+      "unit": "Nút",
+      "feed": "Cách đọc biến động",
+      "lastRead": "Lần đọc cuối",
+      "state": "Trạng thái",
+      "modes": {
+        "push": "Đối tác đẩy về",
+        "poll": "Hệ thống hỏi định kỳ"
+      },
+      "everySeconds": "mỗi {seconds} giây",
+      "signed": "webhook có chữ ký",
+      "never": "Chưa đọc",
+      "status": {
+        "active": "Đang đọc biến động",
+        "paused": "Tạm dừng",
+        "not_connected": "Chưa kết nối"
+      },
+      "facts": {
+        "bin": "Mã BIN",
+        "holder": "Chủ tài khoản",
+        "provider": "Đối tác đọc sao kê",
+        "noProvider": "Chưa kết nối",
+        "matched": "Đã khớp tháng này",
+        "matchedCount": "{count, plural, other {# giao dịch}}",
+        "queued": "Đang trong hàng chờ",
+        "queuedCount": "{count, plural, other {# giao dịch}}",
+        "pauseReason": "Lý do tạm dừng",
+        "since": "Từ lúc"
+      },
+      "pauseReasons": {
+        "authorization_expired": "Đối tác đọc sao kê báo hết hạn uỷ quyền",
+        "manual": "Người quản lý tạm dừng"
+      },
+      "pausedNote": "Trong lúc tạm dừng, đơn chuyển khoản của {unit} cần nhân viên xác nhận tay ở Đơn hàng. Bật lại thì đọc bù từ con trỏ cuối.",
+      "notConnectedNote": "Kết nối đối tác đọc sao kê ở Cài đặt › Kết nối đối tác rồi bật đọc biến động.",
+      "activeNote": "Tạm dừng thì chuyển khoản mới sẽ không tự khớp cho tới khi bật lại.",
+      "undo": "Hoàn tác",
+      "undone": "Đã hoàn tác",
+      "pause": "Tạm dừng đọc",
+      "paused": "Đã tạm dừng đọc biến động số dư",
+      "resume": "Bật lại",
+      "resumed": "Đã bật lại; đọc bù từ con trỏ cuối",
+      "connect": "Kết nối đối tác",
+      "qr": {
+        "title": "Thử tạo mã VietQR",
+        "about": "Mã VietQR theo chuẩn của NAPAS chứa mã ngân hàng, số tài khoản, số tiền và nội dung. Giao diện vẽ ảnh QR từ chuỗi mã; thử ở đây không tạo thanh toán.",
+        "cannot": "Cần quyền ledger.settings_manage và một tài khoản đã kết nối.",
+        "account": "Tài khoản nhận",
+        "amount": "Số tiền (đồng)",
+        "memo": "Nội dung chuyển khoản",
+        "memoHint": "Mã ngắn chỉ có chữ hoa và số, vì ngân hàng hay bỏ dấu, cắt ngắn nội dung.",
+        "submit": "Tạo chuỗi mã",
+        "image": "Mã VietQR {amount}, nội dung {memo}",
+        "made": "Chuỗi mã cho {amount}, nội dung {memo}.",
+        "expires": "Thanh toán thật hết hạn lúc",
+        "copy": "Chép chuỗi mã"
+      },
+      "due": {
+        "title": "Hạn thanh toán",
+        "strong": "Hạn thanh toán.",
+        "text": "Thanh toán chuyển khoản hết hạn sau {minutes} phút (cấu hình chung). Tiền tới sau hạn vào hàng chờ \"Trả trễ\". Danh sách mã ngân hàng là dữ liệu có ghi nguồn và ngày.",
+        "custody": "Không có tài khoản nào của nền tảng nhận tiền người mua."
+      }
+    },
+    "einvoices": {
+      "kpis": {
+        "label": "Số liệu hoá đơn điện tử",
+        "issued": "Đã phát hành · {symbol}",
+        "last": "Số cuối {number}",
+        "rejected": "Bị trả lỗi",
+        "rejectedSub": "Sửa rồi gửi lại cùng số",
+        "submitting": "Đang gửi",
+        "submittingSub": "Chờ nhà cung cấp trả mã",
+        "register": "Từ máy tính tiền · {symbol}",
+        "registerSub": "Gửi cơ quan thuế trong ngày"
+      },
+      "rejectedStrong": "{count, plural, other {# hoá đơn bị trả lỗi.}}",
+      "rejectedText": "Nhà cung cấp báo thông tin người mua không hợp lệ. Sửa thông tin người mua rồi gửi lại: hoá đơn giữ nguyên số, không cấp số mới.",
+      "connectionStrong": "Kết nối nhà cung cấp hoá đơn đang lỗi:",
+      "connectionLink": "Kiểm tra ở Cài đặt › Kết nối đối tác",
+      "title": "Chứng từ",
+      "about": "Hoá đơn lập khi giao hàng. Số cấp tuần tự theo ký hiệu, không nhảy số; nháp chưa có số. Hoá đơn đã có mã của cơ quan thuế chỉ sửa bằng hoá đơn điều chỉnh hoặc thay thế.",
+      "filter": "Lọc chứng từ",
+      "all": "Tất cả",
+      "chips": {
+        "rejected": "Bị trả lỗi",
+        "submitting": "Đang gửi",
+        "accepted": "Đã có mã CQT",
+        "draft": "Nháp",
+        "corrected": "Đã sửa sai"
+      },
+      "empty": "Không có chứng từ nào khớp bộ lọc.",
+      "number": "Số · ký hiệu",
+      "buyer": "Người mua",
+      "order": "Đơn",
+      "total": "Tổng tiền",
+      "date": "Ngày lập",
+      "state": "Trạng thái",
+      "noNumber": "Chưa có số",
+      "kinds": {
+        "vat_invoice": "Hoá đơn GTGT",
+        "sales_invoice": "Hoá đơn bán hàng",
+        "cash_register_invoice": "Hoá đơn từ máy tính tiền",
+        "withholding_certificate": "Chứng từ khấu trừ TNCN",
+        "cash_receipt": "Phiếu thu"
+      },
+      "kindsShort": {
+        "vat_invoice": "HĐ GTGT",
+        "sales_invoice": "HĐ bán hàng",
+        "cash_register_invoice": "máy tính tiền",
+        "withholding_certificate": "khấu trừ TNCN",
+        "cash_receipt": "phiếu thu"
+      },
+      "corrections": {
+        "adjustment": "điều chỉnh",
+        "replacement": "thay thế"
+      },
+      "business": "doanh nghiệp",
+      "consumer": "cá nhân",
+      "status": {
+        "draft": "Nháp",
+        "issued": "Đã cấp số",
+        "submitting": "Đang gửi",
+        "accepted": "Đã có mã CQT",
+        "rejected": "Bị trả lỗi",
+        "cancelled": "Đã huỷ",
+        "replaced": "Đã bị thay thế",
+        "adjusted": "Đã điều chỉnh"
+      },
+      "draftTitle": "Nháp · {symbol}",
+      "detailTitle": "Hoá đơn {number} · {symbol}",
+      "facts": {
+        "kind": "Loại",
+        "issuer": "Bên lập",
+        "onBehalf": "Lập thay",
+        "onBehalfValue": "{seller}, theo uỷ nhiệm {mandate}",
+        "buyer": "Người mua",
+        "taxCode": "MST {code}",
+        "noTaxCode": "không có MST",
+        "softwareCode": "Mã do phần mềm sinh",
+        "authority": "Mã của cơ quan thuế",
+        "lookup": "Mã tra cứu",
+        "adjustmentOf": "Điều chỉnh cho",
+        "replacementOf": "Thay thế cho",
+        "retention": "Lưu tới"
+      },
+      "providerError": "Lỗi từ nhà cung cấp:",
+      "lines": "Hàng hoá, dịch vụ",
+      "subtotal": "Cộng tiền hàng chưa thuế",
+      "tax": "Thuế GTGT",
+      "grand": "Tổng thanh toán",
+      "history": "Lịch sử",
+      "events": {
+        "created": "Tạo nháp",
+        "issued": "Cấp số",
+        "submitted": "Gửi nhà cung cấp",
+        "accepted": "Có mã của cơ quan thuế",
+        "rejected": "Bị trả lỗi",
+        "resubmitted": "Gửi lại cùng số",
+        "cancelled": "Huỷ theo thông báo sai sót",
+        "replaced": "Bị thay thế bởi hoá đơn",
+        "adjusted": "Được điều chỉnh bởi hoá đơn"
+      },
+      "notes": {
+        "draft": "Nháp chưa có số nên sửa hay xoá được. Phát hành thì cấp số kế tiếp của ký hiệu và gửi nhà cung cấp.",
+        "issued": "Đã cấp số; chứng từ nội bộ không gửi nhà cung cấp.",
+        "submitting": "Số đã cấp trước khi gửi. Nhà cung cấp lỗi thì hệ thống gửi lại, không cấp số mới; hệ thống hỏi lại trạng thái 5 phút một lần.",
+        "accepted": "Đã có mã của cơ quan thuế: không sửa trực tiếp. Sai sót xử lý bằng hoá đơn điều chỉnh, thay thế, hay huỷ theo thông báo sai sót.",
+        "rejected": "Hỏi lại người mua thông tin đúng rồi gửi lại cùng số. Mã số thuế có 10 chữ số, hoặc 10 chữ số, gạch nối, 3 chữ số.",
+        "cancelled": "Đã huỷ theo thông báo sai sót gửi cơ quan thuế; vẫn lưu đủ thời hạn.",
+        "replaced": "Đã bị thay thế bởi hoá đơn mới; vẫn lưu đủ thời hạn.",
+        "adjusted": "Đã có hoá đơn điều chỉnh liên kết; vẫn lưu đủ thời hạn."
+      },
+      "fix": {
+        "button": "Sửa và gửi lại cùng số",
+        "title": "Sửa thông tin người mua",
+        "intro": "Hoá đơn giữ nguyên ký hiệu và số; chỉ sửa trường bị báo lỗi rồi gửi lại nhà cung cấp.",
+        "submit": "Lưu và gửi lại",
+        "done": "Đã gửi lại hoá đơn với cùng số; chờ nhà cung cấp trả mã",
+        "taxCode": "Mã số thuế người mua",
+        "taxCodePlaceholder": "10 số hoặc 10-3 số",
+        "taxCodeHint": "Hỏi lại người mua; số định danh 12 số của cá nhân cần đối chiếu quy định hiện hành.",
+        "name": "Tên đơn vị",
+        "address": "Địa chỉ",
+        "addressPlaceholder": "Số nhà, đường, phường / xã, tỉnh / thành"
+      },
+      "refresh": "Hỏi lại trạng thái",
+      "refreshed": "Đã hỏi lại nhà cung cấp; trạng thái mới hiện trên bảng",
+      "correct": {
+        "button": "Xử lý sai sót",
+        "title": "Xử lý sai sót hoá đơn {number}",
+        "intro": "Hoá đơn đã có mã của cơ quan thuế không sửa trực tiếp.",
+        "adjustment": "Điều chỉnh: lập nháp hoá đơn điều chỉnh liên kết hoá đơn gốc (vd người mua trả bớt hàng).",
+        "replacement": "Thay thế: lập nháp hoá đơn mới thay hoá đơn gốc (vd sai tên người mua).",
+        "cancel": "Huỷ theo thông báo sai sót: hoá đơn gốc chuyển sang \"Đã huỷ\" ngay, không đảo được.",
+        "submit": "Lập chứng từ",
+        "done": "Đã xử lý sai sót; chứng từ sửa sai (nếu có) là nháp, phát hành để cấp số",
+        "how": "Cách xử lý",
+        "kinds": {
+          "adjustment": "Điều chỉnh",
+          "replacement": "Thay thế",
+          "cancel": "Huỷ theo thông báo sai sót"
+        },
+        "reason": "Lý do",
+        "reasonHint": "Ví dụ: Người mua trả 1 chảo gang."
+      },
+      "issue": {
+        "button": "Phát hành",
+        "title": "Phát hành hoá đơn · {symbol}",
+        "number": "Cấp số kế tiếp của ký hiệu; số không nhảy và không thu hồi được.",
+        "keep": "Từ lúc có số, hoá đơn không xoá được và phải lưu ít nhất 10 năm.",
+        "send": "Hoá đơn gửi nhà cung cấp để lấy mã của cơ quan thuế.",
+        "submit": "Phát hành",
+        "done": "Đã cấp số và gửi nhà cung cấp"
+      },
+      "delete": {
+        "button": "Xoá nháp",
+        "title": "Xoá hoá đơn nháp",
+        "point": "Nháp chưa có số nên xoá được; chứng từ đã phát hành thì không.",
+        "submit": "Xoá",
+        "done": "Đã xoá nháp"
+      },
+      "basisIssue": "Hoá đơn lập khi giao hàng.",
+      "basisCorrection": "Xử lý hoá đơn sai sót."
+    },
+    "series": {
+      "title": "Ký hiệu hoá đơn, chứng từ",
+      "about": "Ký hiệu cho biết loại hoá đơn và năm, vd 1C26TBM: 1 là hoá đơn GTGT, C là có mã của cơ quan thuế, 26 là năm 2026. Mỗi ký hiệu có dãy số riêng, sang năm dùng ký hiệu mới.",
+      "add": {
+        "button": "Thêm ký hiệu",
+        "title": "Thêm ký hiệu",
+        "intro": "Dãy số của ký hiệu mới bắt đầu từ 00000001.",
+        "submit": "Thêm",
+        "done": "Đã thêm ký hiệu; số bắt đầu từ 00000001",
+        "unit": "Nút lập",
+        "kind": "Loại",
+        "symbol": "Ký hiệu",
+        "symbolHint": "Hoá đơn: 1 chữ số, C hoặc K, 2 số năm, 1 chữ, 2 chữ (1C27TBM). Chứng từ khấu trừ: CT/27E.",
+        "year": "Năm"
+      },
+      "symbol": "Ký hiệu",
+      "kind": "Loại",
+      "unit": "Nút lập",
+      "last": "Số cuối",
+      "state": "Trạng thái",
+      "status": {
+        "active": "Đang dùng",
+        "inactive": "Ngừng dùng"
+      },
+      "facts": {
+        "provider": "Nhà cung cấp",
+        "internal": "Chứng từ nội bộ (không gửi nhà cung cấp)",
+        "year": "Năm",
+        "next": "Số kế tiếp"
+      },
+      "gapless": "Số chỉ cấp khi phát hành, trong cùng một bước với chứng từ: không nhảy số, không cấp trùng.",
+      "deactivate": {
+        "button": "Ngừng dùng",
+        "title": "Ngừng ký hiệu {symbol}",
+        "new": "Chứng từ mới cần ký hiệu khác.",
+        "keep": "Chứng từ đã phát hành theo ký hiệu này vẫn giữ nguyên số.",
+        "submit": "Ngừng dùng",
+        "done": "Đã ngừng ký hiệu {symbol}"
+      },
+      "foot": "Ký hiệu 2C26TNN và CT/26E là ký hiệu mẫu, cần đối chiếu quy định về ký hiệu hoá đơn và chứng từ khấu trừ thuế.",
+      "mandates": {
+        "title": "Uỷ nhiệm lập hoá đơn",
+        "about": "Người bán trên sàn có thể uỷ nhiệm cho sàn lập hoá đơn thay. Không có uỷ nhiệm còn hiệu lực thì sàn không lập được hoá đơn thay người bán đó.",
+        "add": {
+          "button": "Thêm uỷ nhiệm",
+          "title": "Thêm uỷ nhiệm lập hoá đơn",
+          "intro": "Không có uỷ nhiệm còn hiệu lực thì sàn không lập được hoá đơn thay người bán.",
+          "submit": "Thêm",
+          "done": "Đã thêm uỷ nhiệm",
+          "seller": "Người bán uỷ nhiệm",
+          "kind": "Loại hoá đơn",
+          "from": "Hiệu lực từ",
+          "to": "Hiệu lực tới",
+          "signed": "Đã có văn bản uỷ nhiệm đã ký",
+          "signedHint": "Đính kèm văn bản ở hồ sơ người bán; việc uỷ nhiệm phải thông báo với cơ quan thuế."
+        },
+        "principal": "Bên uỷ nhiệm",
+        "kind": "Loại hoá đơn",
+        "valid": "Hiệu lực",
+        "state": "Trạng thái",
+        "actions": "Thao tác",
+        "entities": {
+          "enterprise": "doanh nghiệp",
+          "household": "hộ kinh doanh"
+        },
+        "range": "{from} – {to}",
+        "status": {
+          "valid": "Còn hiệu lực",
+          "scheduled": "Chờ hiệu lực",
+          "expired": "Hết hiệu lực",
+          "revoked": "Đã thu hồi"
+        },
+        "revoke": {
+          "button": "Thu hồi",
+          "title": "Thu hồi uỷ nhiệm của {seller}",
+          "stop": "Sàn ngừng lập hoá đơn thay người bán này từ bây giờ.",
+          "issued": "Hoá đơn đã lập theo uỷ nhiệm vẫn giữ nguyên.",
+          "submit": "Thu hồi",
+          "done": "Đã thu hồi uỷ nhiệm của {seller}"
+        },
+        "basis": "Uỷ nhiệm lập hoá đơn."
+      }
+    },
+    "tax": {
+      "expiring": {
+        "strong": "Mức GTGT {rate} hết hiệu lực từ {date}.",
+        "products": "{count, plural, other {# sản phẩm}} dùng nhóm thuế này.",
+        "successor": "Gói \"vn\" bản {pack} đã có dòng {rate} áp dụng từ {date}.",
+        "none": "Chưa có thuế suất kế tiếp: cần nhập gói dữ liệu thuế mới.",
+        "extend": "Nếu mức giảm được gia hạn, nền tảng nhập gói mới; khách không phải sửa sản phẩm."
+      },
+      "vat": {
+        "title": "Thuế GTGT theo kỳ",
+        "about": "Đầu ra là thuế ghi Có ở tài khoản thuế GTGT đầu ra, đầu vào là thuế ghi Nợ ở tài khoản thuế GTGT đầu vào, cộng từ dòng bút toán của kỳ.",
+        "book": "Chọn sổ",
+        "period": "Kỳ",
+        "output": "GTGT đầu ra",
+        "input": "GTGT đầu vào",
+        "net": "Chênh lệch",
+        "state": "Số liệu",
+        "month": "Tháng {month}",
+        "payable": "còn phải nộp",
+        "carry": "được khấu trừ chuyển kỳ sau",
+        "provisional": "Tạm tính",
+        "closed": "Đã khoá sổ",
+        "outputByRate": "Đầu ra theo thuế suất",
+        "inputByRate": "Đầu vào theo thuế suất",
+        "none": "Không có.",
+        "base": "giá chưa thuế {amount}",
+        "snapshot": "Mỗi dòng lưu thuế suất lúc tính, nên đổi biểu thuế không làm đổi số của kỳ cũ.",
+        "foot": "Số liệu tạm tính từ sổ cái để đối chiếu; tờ khai nộp cơ quan thuế không làm ở đây."
+      },
+      "rates": {
+        "title": "Biểu thuế GTGT · gói vn bản {pack}",
+        "about": "Mỗi dòng có ngày bắt đầu (gồm) và ngày kết thúc (không gồm). Ngày tính thuế theo múi giờ của cửa hàng bán, nên 23:30 ngày 31/12 giờ Việt Nam vẫn là năm cũ.",
+        "category": "Nhóm thuế",
+        "rate": "Thuế suất",
+        "valid": "Hiệu lực",
+        "state": "Trạng thái",
+        "range": "{from} – trước {to}",
+        "since": "Từ {from}",
+        "states": {
+          "current": "Đang áp dụng",
+          "expiring": "Sắp hết hiệu lực",
+          "scheduled": "Chờ hiệu lực"
+        },
+        "exempt": "Không chịu thuế",
+        "foot": "Thuế suất là dữ liệu có ngày hiệu lực trong gói \"vn\", không viết cứng trong code. Hoá đơn và bút toán lưu lại thuế suất lúc tính."
+      },
+      "withholding": {
+        "title": "Khấu trừ thay của sàn",
+        "about": "Sàn có chức năng thanh toán khấu trừ và nộp thay thuế cho người bán là hộ, cá nhân kinh doanh. Người bán là doanh nghiệp tự kê khai.",
+        "line": "Ngành",
+        "vat": "GTGT",
+        "pit": "TNCN",
+        "lines": {
+          "goods": "Bán hàng hoá",
+          "services": "Dịch vụ",
+          "production_transport": "Sản xuất, vận tải"
+        }
+      },
+      "quote": {
+        "title": "Tính thử thuế",
+        "category": "Nhóm thuế",
+        "gross": "Giá đã gồm thuế (đồng)",
+        "taxPoint": "Ngày tính thuế",
+        "hint": "Tách ngược từ giá đã gồm thuế, làm tròn một lần.",
+        "submit": "Tính",
+        "result": "{gross} gồm GTGT {rate}: giá chưa thuế {net}, thuế {tax}.",
+        "later": "Nếu ngày tính thuế từ {date} ({rate}): {net} và {tax}.",
+        "snapshot": "Chứng từ lưu ảnh chụp thuế suất (gói {pack}, làm tròn nửa lên)."
+      },
+      "profiles": {
+        "title": "Hồ sơ thuế theo nút",
+        "about": "Nút không có hồ sơ riêng thì dùng hồ sơ của nút cấp trên gần nhất. Chế độ thuế quyết định loại hoá đơn: khấu trừ thì hoá đơn GTGT, hộ kinh doanh thì hoá đơn bán hàng.",
+        "unit": "Nút",
+        "taxCode": "Mã số thuế",
+        "regime": "Chế độ",
+        "source": "Nguồn",
+        "actions": "Thao tác",
+        "fromParent": "theo {unit}",
+        "regimes": {
+          "vat_credit": "Khấu trừ",
+          "vat_direct": "Trực tiếp trên doanh thu",
+          "household": "Hộ kinh doanh",
+          "exempt": "Không chịu thuế"
+        },
+        "missing": "Chưa có hồ sơ",
+        "inherited": "Kế thừa",
+        "own": "Hồ sơ riêng",
+        "none": "Thiếu",
+        "edit": "Sửa hồ sơ",
+        "create": "Tạo hồ sơ riêng",
+        "title2": "Hồ sơ thuế · {unit}",
+        "createIntro": "Nút này đang dùng hồ sơ của {unit}. Lưu ở đây thì nút có hồ sơ riêng và thôi kế thừa.",
+        "editIntro": "Hoá đơn mới dùng thông tin mới; hoá đơn đã lập giữ ảnh chụp cũ.",
+        "save": "Lưu",
+        "saved": "Đã lưu hồ sơ thuế; hoá đơn mới dùng thông tin mới",
+        "taxCodeHint": "10 chữ số, hoặc 10 chữ số, gạch nối, 3 chữ số (đơn vị phụ thuộc).",
+        "legalName": "Tên pháp lý",
+        "foot": "Mã số thuế ở đây là mẫu."
+      },
+      "tiles": {
+        "label": "Gói dữ liệu thuế và quy tắc",
+        "pack": "Gói dữ liệu thuế \"vn\"",
+        "latest": "Mới nhất",
+        "version": "Bản {version}",
+        "packText": "Nhập {imported}, nguồn kiểm {checked}: {rates} thuế suất, {withholding} tỉ lệ khấu trừ thay, {rules} quy tắc.",
+        "packWho": "Chỉ nhân sự nền tảng có quyền tax.packs_manage nhập gói.",
+        "register": "Ngưỡng hoá đơn máy tính tiền",
+        "perYear": "{amount} / năm",
+        "registerText": "Hộ kinh doanh có doanh thu từ ngưỡng này dùng hoá đơn khởi tạo từ máy tính tiền, từ {from}.",
+        "products": "Sản phẩm dùng nhóm thuế giảm 2%",
+        "productsText": "Sản phẩm chọn nhóm thuế, không chọn thuế suất: đổi mức thì không phải sửa sản phẩm.",
+        "productsLink": "Xem nhóm thuế ở Sản phẩm",
+        "mapping": "Số hiệu tài khoản khi xuất."
+      }
+    },
+    "periods": {
+      "title": "Kỳ của {book}",
+      "about": "Khoá sổ theo thứ tự tháng. Khoá rồi không mở lại; bút toán mới có ngày trong kỳ đã khoá bị từ chối. Sai sót của kỳ đã khoá sửa bằng bút toán đảo ở kỳ đang mở.",
+      "book": "Chọn sổ",
+      "period": "Kỳ",
+      "entries": "Bút toán",
+      "sealed": "Niêm phong",
+      "closedBy": "Khoá bởi",
+      "state": "Trạng thái",
+      "month": "Tháng {month}",
+      "current": "kỳ hiện tại",
+      "notClosed": "chưa khoá",
+      "allSealed": "Đủ",
+      "someSealed": "{sealed} / {total}",
+      "status": {
+        "open": "Đang mở",
+        "closed": "Đã khoá"
+      },
+      "range": "Từ – tới",
+      "check": {
+        "title": "Kiểm trước khi khoá",
+        "previousOk": "Kỳ trước đã khoá.",
+        "previous": "Kỳ trước ({month}) chưa khoá: khoá theo thứ tự tháng.",
+        "endedOk": "Kỳ đã kết thúc.",
+        "ended": "Kỳ chưa kết thúc: khoá sớm làm bút toán của những ngày còn lại bị từ chối.",
+        "sealedOk": "Mọi bút toán đã niêm phong.",
+        "sealed": "{count, plural, other {# bút toán}} đang chờ niêm phong (job chạy mười giây một lần).",
+        "balancedOk": "Cân đối thử khớp: tổng Nợ = tổng Có.",
+        "balanced": "Cân đối thử lệch: báo quản trị viên trước khi khoá.",
+        "exceptionsOk": "Không còn mục sai lệch của kỳ.",
+        "exceptions": "{count, plural, other {# mục sai lệch}} của kỳ còn mở (không chặn khoá, nên xử lý trước).",
+        "note": "Lúc khoá, hệ thống chờ mọi bút toán đang ghi xong rồi chốt số dư cuối kỳ của từng tài khoản. Số dư đầu kỳ sau lấy từ số chốt này. Cần quyền ledger.periods_close."
+      },
+      "close": {
+        "button": "Khoá sổ {month}",
+        "title": "Khoá sổ {month}",
+        "intro": "Việc này không hoàn tác được.",
+        "noReopen": "Khoá rồi không mở lại được.",
+        "rejected": "Bút toán mới có ngày trong {month} sẽ bị từ chối.",
+        "reverse": "Sai sót sửa bằng bút toán đảo ở kỳ đang mở.",
+        "snapshot": "Số dư cuối kỳ của từng tài khoản được chốt.",
+        "submit": "Khoá sổ",
+        "done": "Đã khoá kỳ {month} và chốt số dư cuối kỳ",
+        "confirm": "Gõ {text} để xác nhận"
+      },
+      "closedNote": "Kỳ đã khoá: không nhận bút toán mới, không mở lại.",
+      "integrity": {
+        "title": "Kiểm toàn vẹn",
+        "chain": "Chuỗi băm sổ cái",
+        "broken": "Bị sửa",
+        "intact": "Toàn vẹn",
+        "brokenText": "Có bút toán đã niêm phong bị sửa hay xoá: báo quản trị viên ngay. Kiểm lúc",
+        "chainText": "Tính lại {count} bút toán đã niêm phong: không bút toán nào bị sửa hay xoá; chờ niêm phong lâu nhất {minutes} phút. Kiểm lúc",
+        "balances": "Số dư cộng dồn so với dòng bút toán",
+        "match": "Khớp",
+        "balancesText": "Bước kiểm định kỳ tính lại số dư từ dòng bút toán và báo tài khoản lệch.",
+        "retention": "Lưu trữ chứng từ",
+        "retentionText": "Chứng từ và sổ lưu ít nhất {years} năm sau năm tài chính; không xoá được trước hạn."
+      }
+    },
+    "export": {
+      "button": "Xuất kế toán",
+      "title": "Xuất kế toán",
+      "intro": "Lập bản xuất bằng job; tải ở tab Xuất kế toán khi xong.",
+      "submit": "Lập bản xuất",
+      "done": "Đã xếp việc lập bản xuất; tải ở danh sách khi xong",
+      "profile": "Hồ sơ xuất",
+      "format": "Định dạng",
+      "formatHint": "Bản mẫu chỉ tải được CSV; XLSX chờ API.",
+      "from": "Từ ngày",
+      "to": "Tới ngày",
+      "profiles": {
+        "generic_journal": "Sổ nhật ký chung",
+        "generic_documents": "Danh sách chứng từ"
+      },
+      "form": {
+        "title": "Lập bản xuất"
+      },
+      "excel": {
+        "title": "Mở được bằng Excel",
+        "strong": "Mở được bằng Excel.",
+        "text": "CSV dùng UTF-8 có BOM để tiếng Việt không vỡ; ô bắt đầu bằng = + - @ được thêm dấu nháy để không thành công thức. Hồ sơ cho phần mềm kế toán cụ thể chỉ thêm khi có mẫu nhập họ công bố.",
+        "mapping": "Số hiệu tài khoản theo ánh xạ của sổ (sửa được)."
+      },
+      "list": {
+        "title": "Bản xuất gần đây",
+        "empty": "Chưa có bản xuất nào.",
+        "export": "Bản xuất",
+        "period": "Kỳ",
+        "by": "Người lập",
+        "state": "Trạng thái",
+        "actions": "Thao tác",
+        "rows": "{count} dòng",
+        "expires": "Hết hạn tải {date}",
+        "matches": "khớp cân đối thử",
+        "download": "Tải về",
+        "xlsxWaiting": "Tải XLSX chờ API",
+        "retry": "Lập lại",
+        "retried": "Đã xếp lại việc lập bản xuất"
+      },
+      "status": {
+        "queued": "Chờ chạy",
+        "running": "Đang lập",
+        "ready": "Sẵn sàng tải",
+        "failed": "Lỗi"
+      },
+      "errors": {
+        "timeout": "Hết thời gian chờ; đã thử {attempts} lần"
+      },
+      "map": {
+        "title": "Ánh xạ số hiệu tài khoản",
+        "about": "Sổ dùng mục đích ổn định (cash.bank, revenue.sales…); số hiệu theo chế độ kế toán chỉ dùng khi xuất.",
+        "purpose": "Mục đích",
+        "code": "Số hiệu"
+      }
+    },
+    "codes": {
+      "ledger_unbalanced": "Bút toán không cân: tổng Nợ khác tổng Có.",
+      "ledger_unbalanced_amounts": "Bút toán không cân: tổng Nợ {debit} khác tổng Có {credit}.",
+      "ledger_currency_mixed": "Mọi dòng của một bút toán phải cùng một loại tiền.",
+      "ledger_period_closed": "Kỳ kế toán chứa ngày này đã khoá. Ghi bút toán điều chỉnh vào kỳ đang mở.",
+      "ledger_period_order": "Phải khoá kỳ trước trước khi khoá kỳ này.",
+      "ledger_period_not_ended": "Kỳ này chưa kết thúc; khoá sớm làm bút toán của những ngày còn lại bị từ chối.",
+      "ledger_period_not_found": "Không tìm thấy kỳ kế toán này.",
+      "ledger_entry_not_found": "Không tìm thấy bút toán này.",
+      "ledger_already_reversed": "Bút toán này đã được đảo.",
+      "ledger_exception_not_found": "Không tìm thấy mục chờ xử lý này.",
+      "ledger_exception_not_open": "Mục này đã được xử lý.",
+      "ledger_payment_not_found": "Không tìm thấy thanh toán có mã này.",
+      "ledger_payment_state": "Thanh toán này không ở trạng thái chờ, không khớp được (vd đã hết hạn hay đã thành công).",
+      "ledger_bank_unknown": "Không có ngân hàng mang mã BIN này.",
+      "ledger_bank_account_taken": "Tài khoản này đã có trong danh sách.",
+      "ledger_bank_account_not_found": "Không tìm thấy tài khoản ngân hàng này.",
+      "ledger_feed_not_connected": "Kết nối đối tác đọc sao kê trước.",
+      "reference_reused": "Mã tham chiếu này đã dùng cho một bút toán khác. Dùng mã mới, hoặc gửi lại đúng nội dung cũ.",
+      "invoices_document_not_found": "Không tìm thấy chứng từ này.",
+      "invoices_document_state": "Chứng từ không ở trạng thái làm được việc này; tải lại trang.",
+      "invoices_series_not_found": "Không tìm thấy ký hiệu chứng từ này.",
+      "invoices_series_inactive": "Ký hiệu này đã ngừng dùng.",
+      "invoices_series_taken": "Ký hiệu này đã có cho nút và năm này.",
+      "invoices_mandate_missing": "Chưa có uỷ nhiệm còn hiệu lực để lập hoá đơn thay người bán này.",
+      "invoices_mandate_overlap": "Người bán này đã có uỷ nhiệm còn hiệu lực trùng khoảng ngày này.",
+      "invoices_mandate_not_found": "Không tìm thấy uỷ nhiệm này.",
+      "invoices_mandate_revoked": "Uỷ nhiệm này đã thu hồi.",
+      "invoices_retention_hold": "Chứng từ kế toán đã phát hành phải lưu đủ thời hạn, không xoá được.",
+      "invoices_correction_pending": "Đã có một chứng từ sửa sai nháp cho hoá đơn này; phát hành hay xoá nháp đó trước.",
+      "invoices_export_not_found": "Không tìm thấy bản xuất này.",
+      "invoices_export_not_ready": "Bản xuất chưa xong hoặc không lập lại được.",
+      "tax_category_unknown": "Không có nhóm thuế này.",
+      "tax_rate_missing": "Chưa có thuế suất cho nhóm này vào ngày đó. Cần nhập gói dữ liệu thuế mới."
+    },
+    "fields": {
+      "required": "Điền ô này.",
+      "unknown": "Chọn một giá trị trong danh sách.",
+      "money_vnd": "Nhập số đồng nguyên lớn hơn 0, vd 44000 hay 44.000.",
+      "length_1_200": "Viết 1 đến 200 ký tự.",
+      "length_5_200": "Viết 5 đến 200 ký tự.",
+      "length_1_100": "Viết 1 đến 100 ký tự.",
+      "personal_data": "Không ghi số điện thoại hay email: bút toán không xoá được.",
+      "reference_format": "Dùng 1 đến 100 ký tự không dấu, không khoảng trắng.",
+      "min_two_lines": "Bút toán cần ít nhất hai dòng: một dòng Nợ và một dòng Có.",
+      "bank_bin": "Mã BIN có đúng 6 chữ số.",
+      "account_number": "Số tài khoản có 6 đến 19 chữ số.",
+      "taken": "Giá trị này đã có.",
+      "transfer_code": "Chỉ chữ hoa không dấu và số, tối đa 25 ký tự.",
+      "tax_code": "Nhập 10 chữ số, hoặc 10 chữ số, gạch nối, 3 chữ số.",
+      "invoices_buyer_tax_code_invalid": "Mã số thuế người mua phải có 10 hoặc 13 chữ số (dạng 10-3).",
+      "ledger_bank_unknown": "Không có ngân hàng mang mã BIN này.",
+      "year": "Nhập năm bốn chữ số.",
+      "series_symbol": "Ký hiệu không đúng dạng (vd 1C27TBM; chứng từ khấu trừ CT/27E).",
+      "series_year": "Năm trong ký hiệu phải khớp ô Năm.",
+      "after_start": "Chọn ngày sau ngày bắt đầu.",
+      "acknowledge": "Đánh dấu ô này để xác nhận.",
+      "confirm_text": "Gõ đúng {value} để xác nhận.",
+      "one_side": "Mỗi dòng chỉ ghi một bên: Nợ hoặc Có.",
+      "line_account": "Chọn tài khoản cho dòng này.",
+      "line_amount": "Nhập số tiền ở cột Nợ hoặc Có."
     }
   }
 }

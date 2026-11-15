@@ -546,3 +546,55 @@ layout riêng mà không lặp code khung; luật "chạy thử trước" và "g
 Component không biết đường dẫn, phải đẩy cả đầu trang xuống client; khung trượt chi tiết khách như
 bản thiết kế — không mở thẳng được và chật trên điện thoại; một màn "Vận hành nền tảng" sáu tab như
 bản thiết kế — thanh bên đã có bảy mục, tab lặp lại thanh bên.
+
+## W-016 · Phân hệ Tài chính: màn "Kế toán" (dữ liệu mẫu) — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Phân hệ Tài chính (`finance`, biểu tượng `wallet`) vào sổ điều hướng, đứng sau Nội dung và trước Tổ
+  chức theo thứ tự `RAIL_TENANT` của bản thiết kế. Một màn "Kế toán" `/finance` (`sample: { step: "36" }`)
+  hiện khi người xem có một trong `ledger.read`, `invoices.read`, `tax.read`, `invoices.export`
+  (permission dự kiến của đặc tả bước 36, khai ở `src/lib/finance.ts`). Tắt dữ liệu mẫu thì màn trả 404.
+- Tám tab, mỗi tab một đường dẫn con, theo thứ tự của bản thiết kế: Sổ cái (`/finance`), Hàng chờ sai
+  lệch (`exceptions`), Tài khoản ngân hàng (`bank`), Hoá đơn điện tử (`einvoices`), Ký hiệu và uỷ nhiệm
+  (`series`), Thuế (`tax`), Kỳ kế toán (`periods`), Xuất kế toán (`export`). Tab chỉ hiện khi có permission
+  đọc của nó; `/finance` chuyển sang tab đầu tiên người xem dùng được khi thiếu `ledger.read`. Chi tiết
+  một dòng mở bằng `?open=<id>` thành dòng mở rộng ngay dưới, như W-013.
+- Dữ liệu mẫu theo ba module của đặc tả: `src/sample/finance.ts` (`ledger`: sổ, tài khoản theo mục đích,
+  bút toán, chuỗi băm, kỳ, cân đối thử, thanh toán, hàng chờ sai lệch, lần đối soát, tài khoản ngân hàng,
+  VietQR), `src/sample/finance-invoices.ts` (`invoices`: chứng từ, ký hiệu, uỷ nhiệm, bản xuất), và phần
+  thêm cuối `src/sample/tax.ts` (`tax`: khấu trừ thay, quy tắc có ngày hiệu lực, gói dữ liệu, hồ sơ thuế
+  theo nút, tính thử) — chỉ thêm, không đổi khoá cũ. Một bộ dữ liệu: nút từ `org.ts` (`SAMPLE_UNIT_IDS`),
+  sản phẩm trên hoá đơn từ `catalog.ts` (`VARIANT_ID`), thuế suất từ `tax.ts`, lỗi kết nối nhà cung cấp hoá
+  đơn đọc từ `settings.ts`. Mã đơn `BM-2611-04xx` khai ở `FINANCE_ORDER_REFS` (`finance.ts`); khi gộp với
+  `sample/order-refs.ts` của phân hệ Bán hàng thì trỏ về đó.
+- Giữ đúng luật của core trong hàm mẫu: tiền là số nguyên đồng + mã tiền tệ; bút toán chỉ thêm, sai thì
+  đảo (một lần), tổng Nợ = tổng Có (`ledger.unbalanced`), kỳ khoá theo thứ tự tháng và không mở lại,
+  `reference` gửi lại cùng nội dung trả bản cũ (D-184); chuỗi băm `ledger-v1` không gồm `tenant_id`, kiểm
+  toàn vẹn tính lại thật; số hoá đơn chỉ cấp khi phát hành, không nhảy số, gửi lại cùng số khi bị trả
+  lỗi; hoá đơn đã có mã chỉ sửa bằng chứng từ liên kết; chứng từ đã phát hành không xoá được (lưu 10 năm);
+  tách thuế từ giá gồm thuế làm tròn một lần bằng số nguyên lớn (không qua số thực). Core không giữ tiền
+  (D-187): màn chỉ đối chiếu sổ với sao kê; đối soát COD nằm ở màn Vận chuyển, ở đây chỉ dẫn sang
+  `/sales/shipping`.
+- Mỗi kỳ có phần phát sinh gộp (để số liệu như một chuỗi đang chạy) cộng với bút toán chi tiết; cân đối
+  thử và GTGT đầu ra / đầu vào theo kỳ cộng cả hai, có test giữ hai cột luôn cân.
+- Việc core làm bằng job tiến theo thời gian thật mỗi lần đọc: niêm phong 10 giây, nhà cung cấp trả mã
+  sau 4 giây, bản xuất xong sau 5 giây, lần đối soát xong sau 4 giây.
+- Điểm luật là dữ liệu có ngày hiệu lực kèm văn bản (`TaxRule`, hiện bằng `TaxBasis`): hoá đơn khi giao
+  hàng, xử lý sai sót, uỷ nhiệm, ngưỡng máy tính tiền, lưu trữ 10 năm, ánh xạ số hiệu tài khoản, chuẩn
+  VietQR, thu hộ cần giấy phép; chưa chắc thì ghi "cần đối chiếu văn bản gốc".
+- Ba form có phần chạy ở trình duyệt (`components/finance/forms.tsx`): ghi bút toán tay nhiều dòng, cộng
+  Nợ / Có ngay khi gõ (Server Action vẫn kiểm lại); thử mã VietQR (chuỗi EMVCo + CRC-16, ảnh QR vẽ ở máy
+  chủ bằng `qrPath`); tính thử thuế. Mọi hộp thoại khác dùng `FormDialog` / `InlineForm` / `ConfirmAction`.
+  Khoá sổ phải gõ lại tên kỳ. `commerce-action.ts` nhận thêm namespace `finance` (chỉ thêm).
+- Tải bản xuất qua route `/finance/export/{id}/download` của giao diện (CSV UTF-8 có BOM, chặn công thức
+  bằng `csvCell` của `catalog.ts`); XLSX chờ API.
+- Khoá kho mẫu trên `globalThis` mang số phiên bản (`autoxide.sample.finance.1`,
+  `autoxide.sample.finance-invoices.1`).
+
+Lý do: chủ dự án muốn dựng đủ phân hệ theo bản thiết kế `Finance` trong lúc team API làm bước 36 (W-006);
+luật số hai của core đòi điểm luật hay đổi là dữ liệu có ngày hiệu lực và ghi căn cứ.
+
+Đã cân nhắc: bút toán tay hai ô (một Nợ, một Có) như bản thiết kế — luôn cân nên không thử được kiểm Nợ =
+Có, và bút toán thật hay nhiều dòng; khung chi tiết bên phải — như W-013, dòng mở rộng mở thẳng được;
+tách Thuế và Hoá đơn thành màn riêng — bản thiết kế và nhóm người dùng (kế toán) là một màn tám tab.

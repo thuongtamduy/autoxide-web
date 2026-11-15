@@ -298,3 +298,28 @@ describe("nhóm Sản phẩm (dữ liệu mẫu, bước 41–42)", () => {
     expect(activePage(real, "/catalog/prices")?.page.id).toBe("catalog");
   });
 });
+
+describe("nhóm Tài chính (dữ liệu mẫu, bước 36)", () => {
+  it("đứng sau Nội dung, trước Tổ chức; chỉ hiện khi bật dữ liệu mẫu, theo permission dự kiến", async () => {
+    const { NAV: real } = await import("./nav");
+    const ids = real.map((g) => g.id);
+    expect(ids.indexOf("finance")).toBe(ids.indexOf("content") + 1);
+    expect(ids.indexOf("org")).toBe(ids.indexOf("finance") + 1);
+    const group = real.find((g) => g.id === "finance");
+    expect(group?.icon).toBe("wallet");
+    expect(group?.pages.map((p) => p.href)).toEqual(["/finance"]);
+    const off = visibleNav({ allPermissions: true, permissions: [], modules: [] }, real);
+    expect(off.some((g) => g.id === "finance")).toBe(false);
+    const clerk = visibleNav(
+      { allPermissions: false, permissions: ["invoices.read"], modules: [], sample: true },
+      real,
+    );
+    expect(clerk.find((g) => g.id === "finance")?.pages.map((p) => p.id)).toEqual(["finance"]);
+    const stranger = visibleNav(
+      { allPermissions: false, permissions: ["forms.read"], modules: [], sample: true },
+      real,
+    );
+    expect(stranger.some((g) => g.id === "finance")).toBe(false);
+    expect(activePage(real, "/finance/einvoices")?.page.id).toBe("finance");
+  });
+});
