@@ -153,9 +153,9 @@ describe("sổ cái: ghi, đảo, cân", () => {
   it("thuế GTGT theo kỳ: đầu ra trừ đầu vào, cộng cả bút toán chi tiết", async () => {
     const { data } = await vatSummary("main");
     const nov = data.find((p) => p.month === "2026-11");
-    expect(nov?.output_total).toEqual(vnd(38_912_000 + 26_593 + 140_741));
+    expect(nov?.output_total).toEqual(vnd(38_912_000 + 26_592 + 140_741));
     expect(nov?.input_total).toEqual(vnd(17_160_000));
-    expect(Number(nov?.net.amount)).toBe(38_912_000 + 26_593 + 140_741 - 17_160_000);
+    expect(Number(nov?.net.amount)).toBe(38_912_000 + 26_592 + 140_741 - 17_160_000);
   });
 });
 

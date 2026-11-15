@@ -440,7 +440,7 @@ function seed(): Store {
   };
   // Biến động gần đây (bản thiết kế), mới trước khi đọc.
   const recent: Parameters<typeof mv>[] = [
-    ["CG26", ORG.WH, "sale", -1, at(2 * HOUR), ["orders", "BM-2611-0411"], SYSTEM],
+    ["HT1L", ORG.WH, "sale", -1, at(26 * HOUR), ["orders", "BM-2611-0417"], SYSTEM],
     [
       "TG35",
       ORG.WH,
@@ -474,8 +474,8 @@ function seed(): Store {
       THAO,
       { reason_code: "damaged", note: "Vỡ" },
     ],
-    ["HT1L", ORG.Q3, "return", 1, at(2 * DAY), ["orders", "BM-2611-0371"], SYSTEM],
-    ["HT1L", ORG.Q3, "sale", -1, at(2 * DAY - HOUR), ["orders", "BM-2611-0380"], SYSTEM],
+    ["HT1L", ORG.Q3, "return", 1, at(2 * DAY), ["orders", "BM-2611-0379"], SYSTEM],
+    ["CG26", ORG.Q3, "sale", -2, at(2 * DAY - HOUR), ["orders", "BM-2611-0414"], SYSTEM],
     [
       "HT1L",
       ORG.WH,
@@ -534,7 +534,7 @@ function seed(): Store {
       ["supplier_return", "TH-0005"],
       BAO,
     ],
-    ["TG25", ORG.WH, "sale", -1, at(5 * HOUR), ["orders", "BM-2611-0407"], SYSTEM],
+    ["CG28", ORG.Q3, "sale", -1, at(3 * DAY + 2 * HOUR), ["orders", "BM-2611-0396"], SYSTEM],
   ];
   // Số dư đầu kỳ: phần còn lại để `on_hand` bằng đúng tổng sổ của dòng.
   const sums = new Map<string, number>();
@@ -829,8 +829,8 @@ function seed(): Store {
     serial(5, "DB3-26-00421", ORG.WH, "in_stock", null),
     serial(6, "DB3-26-00422", ORG.WH, "in_stock", null),
     serial(7, "DB3-26-00423", ORG.WH, "in_stock", null),
-    serial(8, "DB3-26-00377", null, "sold", "BM-2611-0396"),
-    serial(9, "DB3-26-00351", ORG.WH, "returned", "BM-2611-0371", "Khách trả lại, chờ kiểm"),
+    serial(8, "DB3-26-00377", null, "sold", "BM-2611-0412"),
+    serial(9, "DB3-26-00351", ORG.WH, "returned", "BM-2611-0386", "Khách trả lại, chờ kiểm"),
     serial(10, "DB3-26-00290", ORG.WH, "written_off", null, "Mẻ lưỡi"),
   ];
 

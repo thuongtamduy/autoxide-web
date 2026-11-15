@@ -366,14 +366,14 @@ function seed(): Store {
         series_id: SERIES_ID.vat,
         number: 4126,
         status: "submitting",
-        buyer: person("Phan Minh Đức"),
+        buyer: person("Tạ Quang Vinh"),
         source_id: "BM-2611-0396",
         history: [
           { at: "2026-11-13T03:15:00Z", event: "issued", note: null },
           { at: "2026-11-13T03:15:00Z", event: "submitted", note: null },
         ],
       },
-      [980_556, 78_444, 1_059_000],
+      [1_392_592, 111_408, 1_504_000],
     ),
     doc(
       3,
@@ -384,7 +384,7 @@ function seed(): Store {
         issue_date: "2026-11-12",
         buyer: company("Công ty TNHH Lá Chuối Xanh (mẫu)", "[MÃ SỐ THUẾ MẪU — SAI]"),
         buyer_requested_company: true,
-        source_id: "BM-2611-0393",
+        source_id: "BM-2611-0392",
         provider_error: {
           code: "MST_NOT_FOUND",
           message: "Mã số thuế người mua không tồn tại",
@@ -406,7 +406,7 @@ function seed(): Store {
         issue_date: "2026-11-12",
         buyer: company("Công ty CP Phố Bếp (mẫu)", "[MST MẪU 9 CHỮ SỐ]"),
         buyer_requested_company: true,
-        source_id: "BM-2611-0390",
+        source_id: "BM-2611-0401",
         provider_error: {
           code: "MST_FORMAT",
           message: "Mã số thuế người mua sai định dạng (9 chữ số)",
@@ -417,7 +417,7 @@ function seed(): Store {
           { at: "2026-11-12T08:40:00Z", event: "rejected", note: "MST_FORMAT" },
         ],
       },
-      [1_518_519, 121_481, 1_640_000],
+      [597_222, 47_778, 645_000],
     ),
     doc(
       5,
@@ -440,9 +440,9 @@ function seed(): Store {
         number: 212,
         status: "accepted",
         issue_date: "2026-11-10",
-        buyer: person("Võ Thị Nhàn"),
+        buyer: person("Võ Ngọc Ánh"),
         source_module: "marketplace",
-        source_id: "BM-2611-0388",
+        source_id: "BM-2611-0390",
         org_id: SAMPLE_UNIT_IDS.market,
         org_name: "Chợ Bếp Mộc",
         on_behalf_of: {
@@ -453,7 +453,7 @@ function seed(): Store {
         authority_code: "[MÃ CQT MẪU]-212",
         history: [{ at: "2026-11-10T06:00:00Z", event: "accepted", note: null }],
       },
-      [409_091, 40_909, 450_000],
+      [413_889, 31_111, 445_000],
     ),
     doc(
       7,
@@ -465,10 +465,15 @@ function seed(): Store {
         buyer: company("Phạm Quốc Huy — xin hoá đơn công ty (mẫu)", "[MÃ SỐ THUẾ MẪU]"),
         buyer_requested_company: true,
         source_id: "BM-2611-0414",
-        lines: [line(1, VARIANT_ID.BNI3, "Bộ nồi inox 3 chiếc", 1, 2_882_000, "8")],
+        lines: [
+          line(1, VARIANT_ID.CG26, "Chảo gang 26 cm", 2, 690_000, "8"),
+          line(2, VARIANT_ID.DB3, "Bộ dao bếp 3 món", 1, 820_000, "8"),
+          line(3, null, "Phí vận chuyển", 1, 30_000, "8"),
+          line(4, null, "Giảm giá", 1, -168_000, "8"),
+        ],
         history: [{ at: "2026-11-13T04:30:00Z", event: "created", note: null }],
       },
-      [2_668_519, 213_481, 2_882_000],
+      [1_909_259, 152_741, 2_062_000],
     ),
     doc(
       8,
@@ -477,14 +482,14 @@ function seed(): Store {
         number: 3870,
         status: "replaced",
         issue_date: "2026-11-03",
-        buyer: person("Lê Văn Hùng"),
+        buyer: person("Ngô Gia Hạnh"),
         source_id: "BM-2611-0322",
         history: [
           { at: "2026-11-03T03:00:00Z", event: "accepted", note: null },
           { at: "2026-11-04T02:20:00Z", event: "replaced", note: "00003902" },
         ],
       },
-      [500_000, 40_000, 540_000],
+      [321_667, 23_333, 345_000],
     ),
     doc(
       9,
@@ -493,14 +498,14 @@ function seed(): Store {
         number: 3511,
         status: "cancelled",
         issue_date: "2026-10-28",
-        buyer: person("Ngô Bảo Châu"),
+        buyer: person("Phạm Ngọc Sơn"),
         source_id: "BM-2611-0288",
         history: [
           { at: "2026-10-28T08:00:00Z", event: "accepted", note: null },
           { at: "2026-10-28T09:10:00Z", event: "cancelled", note: null },
         ],
       },
-      [240_741, 19_259, 260_000],
+      [581_296, 43_704, 625_000],
     ),
   ];
   const mandates: Mandate[] = [

@@ -610,11 +610,15 @@ export async function priceCart(
 
 // ---------------------------------------------------------------- Vòng đời và tiền của một đơn
 
-const SELLERS: Record<string, Seller> = {
+// Người bán trên sàn, cùng tên với `market-data.ts` (màn Sàn). Đơn sinh thêm chỉ chọn trong ba người
+// bán đầu (`FILLER_SELLERS`), để bộ sinh số giữ nguyên các đơn sinh khác.
+const SELLERS = {
   na: { name: "Gia Dụng Nhà Na", kind: "household" },
   btx: { name: "Gốm Sứ Bát Tràng Xưa", kind: "enterprise" },
-  bep: { name: "Bếp Xanh Đà Lạt", kind: "household" },
-};
+  bep: { name: "Bếp Nhà Thỏ", kind: "household" },
+  khan: { name: "Khăn Bông Hạ Long", kind: "household" },
+} as const satisfies Record<string, Seller>;
+const FILLER_SELLERS: readonly Seller[] = [SELLERS.na, SELLERS.btx, SELLERS.bep];
 
 const MARKET_NAME = "Chợ Bếp Mộc";
 
@@ -831,6 +835,20 @@ interface OrderSeed {
 // chuyển), sổ cái và giao dịch ngân hàng (Tài chính), đổi trả và đánh giá (Cửa hàng).
 const SEEDS: readonly OrderSeed[] = [
   {
+    number: "BM-2611-0301",
+    at: [-16, 9, 30],
+    channel: "marketplace",
+    buyer: "Phạm Gia Huy",
+    items: [
+      ["DB3", 1],
+      ["BG6", 1],
+    ],
+    method: "ewallet",
+    fee: 0,
+    status: "completed",
+    seller: SELLERS.na,
+  },
+  {
     number: "BM-2611-0317",
     at: [-26, 10, 0],
     channel: "web",
@@ -859,7 +877,7 @@ const SEEDS: readonly OrderSeed[] = [
     method: "ewallet",
     fee: 0,
     status: "completed",
-    seller: SELLERS.na as Seller,
+    seller: SELLERS.na,
   },
   {
     number: "BM-2611-0352",
@@ -870,6 +888,17 @@ const SEEDS: readonly OrderSeed[] = [
     method: "cod",
     fee: 30_000,
     status: "completed",
+  },
+  {
+    number: "BM-2611-0360",
+    at: [-6, 15, 20],
+    channel: "marketplace",
+    buyer: "Tạ Minh Châu",
+    items: [["NI20", 1]],
+    method: "ewallet",
+    fee: 0,
+    status: "delivered",
+    seller: SELLERS.na,
   },
   {
     number: "BM-2611-0362",
@@ -925,6 +954,17 @@ const SEEDS: readonly OrderSeed[] = [
     status: "completed",
   },
   {
+    number: "BM-2611-0384",
+    at: [-8, 10, 15],
+    channel: "marketplace",
+    buyer: "Đinh Thu Trang",
+    items: [["BG6", 1]],
+    method: "ewallet",
+    fee: 30_000,
+    status: "delivered",
+    seller: SELLERS.btx,
+  },
+  {
     number: "BM-2611-0386",
     at: [-12, 10, 0],
     channel: "web",
@@ -955,6 +995,27 @@ const SEEDS: readonly OrderSeed[] = [
     fee: 25_000,
     status: "completed",
     seller: SELLERS.btx as Seller,
+  },
+  {
+    number: "BM-2611-0392",
+    at: [-3, 15, 30],
+    channel: "web",
+    buyer: "Công ty TNHH Lá Chuối Xanh (mẫu)",
+    items: [["DB3", 3]],
+    method: "card",
+    fee: 0,
+    status: "delivered",
+  },
+  {
+    number: "BM-2611-0393",
+    at: [-12, 14, 0],
+    channel: "marketplace",
+    buyer: "Hoàng Văn Lộc",
+    items: [["BG6", 4]],
+    method: "ewallet",
+    fee: 0,
+    status: "completed",
+    seller: SELLERS.btx,
   },
   {
     number: "BM-2611-0395",
@@ -1007,6 +1068,29 @@ const SEEDS: readonly OrderSeed[] = [
     status: "preparing",
     province: "01",
     pickup: { status: "ready", ready: [-3, 17, 0], hold: [0, 20, 0], code: "530217" },
+  },
+  {
+    number: "BM-2611-0402",
+    at: [-3, 9, 40],
+    channel: "marketplace",
+    buyer: "Lâm Ngọc Diệp",
+    items: [["KB4-XA", 3]],
+    method: "ewallet",
+    fee: 25_000,
+    status: "delivered",
+    seller: SELLERS.khan,
+    province: "01",
+  },
+  {
+    number: "BM-2611-0404",
+    at: [-4, 11, 5],
+    channel: "marketplace",
+    buyer: "Quách Bảo Ngọc",
+    items: [["BG6", 2]],
+    method: "ewallet",
+    fee: 0,
+    status: "delivered",
+    seller: SELLERS.btx,
   },
   {
     number: "BM-2611-0405",
@@ -1172,7 +1256,7 @@ const SEEDS: readonly OrderSeed[] = [
     method: "ewallet",
     fee: 25_000,
     status: "preparing",
-    seller: SELLERS.na as Seller,
+    seller: SELLERS.na,
     province: "01",
   },
   {
@@ -1199,6 +1283,11 @@ const SEEDS: readonly OrderSeed[] = [
 ];
 
 const FIRST_NUMBER = 8;
+/**
+ * Mã từng là đơn sinh, sau được viết tay để khớp màn Sàn và hoá đơn (W-021). Bộ sinh vẫn rút số ngẫu
+ * nhiên cho các mã này rồi bỏ đơn sinh, nên mọi đơn sinh khác (và số liệu dựa trên chúng) không đổi.
+ */
+const REPLACED_FILLERS = new Set([301, 360, 384, 392, 393, 402, 404]);
 const LAST_NUMBER = 419;
 /** Số đơn "chờ xử lý" của bản thiết kế. */
 const PENDING_TARGET = 37;
@@ -1669,12 +1758,12 @@ async function seedOrders(s: Pick<Store, "invoiceSeq" | "pickupCodes">): Promise
     account?: AccountSeed;
   }[] = [];
   for (let n = FIRST_NUMBER; n <= LAST_NUMBER; n += 1) {
-    if (explicit.has(n)) continue;
+    if (explicit.has(n) && !REPLACED_FILLERS.has(n)) continue;
     const placed = placedOf(n);
     const roll = rand();
     const channel: Channel = roll < 0.22 ? "marketplace" : roll < 0.42 ? "pos" : "web";
     const org = channel === "marketplace" ? ORG.ROOT : pick(stores);
-    const seller = channel === "marketplace" ? (pick(Object.values(SELLERS)) as Seller) : null;
+    const seller = channel === "marketplace" ? (pick(FILLER_SELLERS) as Seller) : null;
     const method: PaymentMethod =
       channel === "pos"
         ? pick(["cash", "cash", "card_terminal", "vietqr"] as const)
@@ -1706,6 +1795,9 @@ async function seedOrders(s: Pick<Store, "invoiceSeq" | "pickupCodes">): Promise
       channel === "pos" && rand() < 0.7
         ? "Khách tại quầy"
         : `${pick(LAST_NAMES)} ${pick(MIDDLE)} ${pick(FIRST_NAMES)}`;
+    // Mã nay đã viết tay (`REPLACED_FILLERS`): vẫn rút đủ số ngẫu nhiên như trước rồi bỏ, để các đơn
+    // sinh sau giữ nguyên.
+    if (explicit.has(n)) continue;
     plans.push({ n, placed, channel, org, seller, method, items, buyer, status });
   }
   // Đơn nhập từ kênh bán (W-019): một phần đơn web của cửa hàng có tài khoản kênh. Chỉ đổi kênh, cách

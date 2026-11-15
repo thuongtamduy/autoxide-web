@@ -652,8 +652,8 @@ function seed(): Store {
       },
       [
         [a("main", "orders.buyer_prepayments"), "debit", 389_000],
-        [a("main", "revenue.sales"), "credit", 332_407],
-        [a("main", "tax.vat_output"), "credit", 26_593, vat8(332_407)],
+        [a("main", "revenue.sales"), "credit", 332_408],
+        [a("main", "tax.vat_output"), "credit", 26_592, vat8(332_408)],
         [a("main", "revenue.shipping"), "credit", 30_000],
       ],
     ),
@@ -900,8 +900,8 @@ function seed(): Store {
     {
       ...payment(
         4,
-        SAMPLE_UNIT_IDS.thuDuc,
-        "CN Thủ Đức",
+        SAMPLE_UNIT_IDS.cauGiay,
+        "CN Cầu Giấy",
         null,
         1_230_000,
         "succeeded",

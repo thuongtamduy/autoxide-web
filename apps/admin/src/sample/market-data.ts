@@ -366,19 +366,19 @@ const MAI = "Ngô Mai";
 const SYSTEM = "system";
 
 /**
- * Mã đơn trên sàn. Đơn đã có ở `order-refs.ts` dùng đúng ID ở đó; đơn chỉ có ở sàn (chưa có bộ đơn
- * hàng mẫu, bước 45) mang ID của file này — bộ đơn hàng dựng sau nên dùng đúng các mã và ID này.
+ * Mã đơn trên sàn. Mọi mã đều có ở `order-refs.ts` và `orders.ts` (kênh `marketplace`, cùng người bán,
+ * cùng món và tiền hàng — test của `orders.test.ts` giữ điều này), nên mở đơn từ màn Sàn ra đúng đơn.
  */
 export const MARKET_ORDER_NUMBERS = [
   "BM-2611-0301",
   "BM-2611-0350",
   "BM-2611-0360",
-  "BM-2611-0386",
+  "BM-2611-0384",
   "BM-2611-0393",
   "BM-2611-0402",
-  "BM-2611-0408",
+  "BM-2611-0404",
+  "BM-2611-0413",
   "BM-2611-0417",
-  "BM-2611-0421",
 ] as const;
 
 export function marketOrderId(number: string): string {
@@ -737,7 +737,7 @@ export const SETTLEMENT_SEEDS: readonly SettlementSeed[] = [
     n: 1,
     seller: SELLER.nhaNa,
     number: "BM-2611-0301",
-    gross: 1_250_000,
+    gross: 1_240_000,
     status: "paid",
     placed: -16,
     delivered: -13,
@@ -770,7 +770,7 @@ export const SETTLEMENT_SEEDS: readonly SettlementSeed[] = [
     n: 4,
     seller: SELLER.nhaNa,
     number: "BM-2611-0360",
-    gross: 380_000,
+    gross: 540_000,
     status: "held",
     placed: -6,
     delivered: -3,
@@ -781,7 +781,7 @@ export const SETTLEMENT_SEEDS: readonly SettlementSeed[] = [
   {
     n: 5,
     seller: SELLER.gomSu,
-    number: "BM-2611-0386",
+    number: "BM-2611-0384",
     gross: 420_000,
     status: "held",
     placed: -8,
@@ -803,8 +803,8 @@ export const SETTLEMENT_SEEDS: readonly SettlementSeed[] = [
   {
     n: 7,
     seller: SELLER.gomSu,
-    number: "BM-2611-0408",
-    gross: 860_000,
+    number: "BM-2611-0404",
+    gross: 840_000,
     status: "held",
     placed: -4,
     delivered: -1,
@@ -816,20 +816,21 @@ export const SETTLEMENT_SEEDS: readonly SettlementSeed[] = [
     n: 8,
     seller: SELLER.khanBong,
     number: "BM-2611-0402",
-    gross: 285_000,
+    gross: 297_000,
     status: "held",
     placed: -3,
     delivered: -1,
     completed: null,
     payout: null,
   },
+  // Gốm Sứ: đơn mới, chờ người bán nhận.
   {
     n: 9,
-    seller: SELLER.khanBong,
-    number: "BM-2611-0421",
-    gross: 190_000,
+    seller: SELLER.gomSu,
+    number: "BM-2611-0413",
+    gross: 420_000,
     status: "pending",
-    placed: 0,
+    placed: -2,
     delivered: null,
     completed: null,
     payout: null,
@@ -951,7 +952,7 @@ function seedDisputes(): Dispute[] {
     dispute(
       1,
       "TC-2611-0031",
-      "BM-2611-0386",
+      "BM-2611-0384",
       SELLER.gomSu,
       "damaged",
       420_000,
@@ -979,8 +980,8 @@ function seedDisputes(): Dispute[] {
       "BM-2611-0402",
       SELLER.khanBong,
       "missing_item",
-      95_000,
-      285_000,
+      99_000,
+      297_000,
       "open",
       -20 * HOUR,
       [msg(5, "buyer", "opened", "Đặt 3 bộ khăn, nhận 2 bộ.", -20 * HOUR, 1)],
@@ -996,8 +997,8 @@ function seedDisputes(): Dispute[] {
       "resolved",
       -10 * DAY,
       [
-        msg(6, "buyer", "opened", "Nồi màu khác ảnh.", -10 * DAY, 2),
-        msg(7, "seller", "reply", "Ảnh sản phẩm ghi rõ màu bạc; nồi đúng mẫu.", -9 * DAY),
+        msg(6, "buyer", "opened", "Chảo màu khác ảnh.", -10 * DAY, 2),
+        msg(7, "seller", "reply", "Ảnh sản phẩm ghi rõ màu đen; chảo đúng mẫu.", -9 * DAY),
         msg(8, "platform", "decision", "Hàng đúng mô tả; từ chối yêu cầu hoàn.", -8 * DAY),
       ],
       {
@@ -1013,8 +1014,8 @@ function seedDisputes(): Dispute[] {
       "BM-2611-0360",
       SELLER.nhaNa,
       "damaged",
-      380_000,
-      380_000,
+      540_000,
+      540_000,
       "open",
       -40 * HOUR,
       [msg(9, "buyer", "opened", "Nồi bị móp một bên thành.", -40 * HOUR, 2)],
@@ -1066,15 +1067,15 @@ function seedOrders(): MarketOrder[] {
     status,
   });
   return [
-    order("BM-2611-0421", SELLER.khanBong, 0, 190_000, 2, "paid"),
+    order("BM-2611-0413", SELLER.gomSu, -2, 420_000, 1, "paid"),
     order("BM-2611-0417", SELLER.nhaNa, -1, 414_000, 2, "paid"),
-    order("BM-2611-0408", SELLER.gomSu, -4, 860_000, 3, "delivered"),
-    order("BM-2611-0402", SELLER.khanBong, -3, 285_000, 3, "delivered"),
+    order("BM-2611-0404", SELLER.gomSu, -4, 840_000, 2, "delivered"),
+    order("BM-2611-0402", SELLER.khanBong, -3, 297_000, 3, "delivered"),
     order("BM-2611-0393", SELLER.gomSu, -12, 1_680_000, 4, "completed"),
-    order("BM-2611-0386", SELLER.gomSu, -8, 420_000, 1, "delivered"),
-    order("BM-2611-0360", SELLER.nhaNa, -6, 380_000, 1, "delivered"),
+    order("BM-2611-0384", SELLER.gomSu, -8, 420_000, 1, "delivered"),
+    order("BM-2611-0360", SELLER.nhaNa, -6, 540_000, 1, "delivered"),
     order("BM-2611-0350", SELLER.nhaNa, -11, 690_000, 1, "completed"),
-    order("BM-2611-0301", SELLER.nhaNa, -16, 1_250_000, 2, "completed"),
+    order("BM-2611-0301", SELLER.nhaNa, -16, 1_240_000, 2, "completed"),
   ];
 }
 

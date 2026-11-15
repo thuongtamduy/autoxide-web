@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { NO_FILTERS, PENDING_STATUSES, readFilters } from "@/lib/orders";
 import { ORG, resetSampleCatalog } from "./catalog";
 import { FINANCE_ORDER_REFS } from "./finance";
+import { listDocuments } from "./finance-invoices";
+import { listMovements } from "./inventory";
+import { seedMarket } from "./market-data";
 import { ORDER_REFS, orderByNumber } from "./order-refs";
 import {
   acceptOrders,
@@ -311,6 +314,61 @@ describe("mã đơn dùng chung giữa các phân hệ", () => {
   it("mọi mã đơn mà Tài chính trỏ tới đều có trong ORDER_REFS", () => {
     for (const number of Object.values(FINANCE_ORDER_REFS)) {
       expect(orderByNumber(number), number).not.toBeNull();
+    }
+  });
+
+  it("hoá đơn trỏ tới đơn có thật: cùng tổng tiền, cùng thuế, cùng người mua; hoá đơn thay người bán đúng người bán", async () => {
+    for (const d of (await listDocuments()).data) {
+      const o = await findOrderByNumber(d.source_id);
+      expect(o, d.source_id).not.toBeNull();
+      expect(d.total.amount, d.source_id).toBe(o?.total.amount);
+      expect(d.tax.amount, d.source_id).toBe(o?.tax.amount);
+      expect(Number(d.subtotal.amount) + Number(d.tax.amount)).toBe(Number(d.total.amount));
+      if (!d.buyer_requested_company) expect(d.buyer.name, d.source_id).toBe(o?.buyer.name);
+      if (d.lines.length > 0) {
+        expect(d.lines.reduce((sum, l) => sum + Number(l.total.amount), 0)).toBe(
+          Number(d.total.amount),
+        );
+      }
+      if (d.on_behalf_of) {
+        expect(o?.channel).toBe("marketplace");
+        expect(o?.seller?.name).toBe(d.on_behalf_of.name);
+      } else {
+        expect(o?.channel, d.source_id).not.toBe("marketplace");
+      }
+    }
+  });
+
+  it("xuất bán và nhận trả theo đơn trỏ tới đơn có đúng món đó", async () => {
+    for (const kind of ["sale", "return"] as const) {
+      const { data } = await listMovements({ kind, limit: 200 });
+      const byOrder = data.filter((x) => x.source_type === "orders");
+      expect(byOrder.length, kind).toBeGreaterThan(0);
+      for (const m of byOrder) {
+        const o = await findOrderByNumber(m.source_label);
+        expect(o, m.source_label).not.toBeNull();
+        expect(
+          o?.lines.some((l) => l.sku === m.sku),
+          `${m.source_label} ${m.sku}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("đơn trên sàn có ở Đơn hàng: kênh sàn, cùng người bán, cùng số món và tiền hàng", async () => {
+    const market = seedMarket();
+    for (const m of market.orders) {
+      const o = await findOrderByNumber(m.number);
+      expect(o, m.number).not.toBeNull();
+      expect(o?.id).toBe(m.id);
+      expect(o?.channel, m.number).toBe("marketplace");
+      const seller = market.sellers.find((s) => s.org_id === m.seller_org_id);
+      expect(o?.seller?.name, m.number).toBe(seller?.display_name);
+      expect(o?.subtotal.amount, m.number).toBe(m.total.amount);
+      expect(
+        o?.lines.reduce((n, l) => n + l.quantity, 0),
+        m.number,
+      ).toBe(m.items);
     }
   });
 });

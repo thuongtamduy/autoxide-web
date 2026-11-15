@@ -397,7 +397,7 @@ describe("quyết toán và chi trả", () => {
   it("đơn của người bán chỉ là đơn của nút đó", async () => {
     const page = await listSellerOrders(SELLER.gomSu);
     expect(page.data.every((o) => o.seller_org_id === SELLER.gomSu)).toBe(true);
-    expect(page.data.length).toBe(3);
+    expect(page.data.length).toBe(4);
   });
 });
 
@@ -439,7 +439,7 @@ describe("tranh chấp", () => {
     );
     expect(done.ok && done.data.status).toBe("resolved");
     const st = (await listSettlements({ seller: SELLER.gomSu })).data.find(
-      (x) => x.order_number === "BM-2611-0386",
+      (x) => x.order_number === "BM-2611-0384",
     );
     expect(st?.gross.amount).toBe("220000");
     expect(
