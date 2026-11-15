@@ -1,0 +1,492 @@
+/* Hai màn Đơn hàng và Cửa hàng (bản thiết kế Orders, StoreOps). Lớp `ord-`, đặt dưới `.ax`; khung
+   bảng / dòng mở rộng dùng lại `cat-` của phân hệ Sản phẩm, `pm-` của Khuyến mại. */
+
+/* Ô của bản in (hoá đơn, phiếu giao) — đặt trước các luật `td` cụ thể hơn của bảng đơn. */
+.ax .ord-paper table td,
+.ax .ord-paper table th {
+  padding: 3px 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ax .b-pub {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+/* View đã lưu: chip có biểu tượng phạm vi */
+.ax .ord-views {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ax .ord-views .scope {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+/* Đang lọc: chip bỏ được từng tham số */
+.ax .ord-applied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.ax .ord-applied .chip {
+  gap: 6px;
+}
+
+/* Bảng đơn: cột Tổng dính bên phải khi bảng cuộn ngang */
+.ax .ord-table th.ord-total,
+.ax .ord-table td.ord-total {
+  position: sticky;
+  right: 0;
+  background: var(--sheet);
+  box-shadow: inset 1px 0 0 var(--line);
+  text-align: right;
+  white-space: nowrap;
+}
+.ax .ord-table td.ord-check,
+.ax .ord-table th.ord-check {
+  width: 36px;
+}
+.ax .ord-table td.ord-check input {
+  width: 18px;
+  height: 18px;
+}
+.ax .ord-table .ord-m {
+  display: none;
+}
+.ax .ord-table tr[data-checked] td {
+  background: var(--panel);
+}
+@media (max-width: 720px) {
+  /* Điện thoại: mỗi đơn một thẻ — mã đơn và tổng ở dòng đầu, người mua · nơi bán · giờ và trạng thái
+     ở dòng sau; ô chọn bên trái cho thao tác hàng loạt. */
+  .ax .ord-table tr {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "chk code total"
+      "chk who status";
+    gap: 4px 10px;
+  }
+  .ax .ord-table tr[data-checked] {
+    background: var(--panel);
+  }
+  .ax .ord-table tr[data-checked] td {
+    background: transparent;
+  }
+  .ax .ord-table td.ord-check {
+    grid-area: chk;
+    width: auto;
+    justify-content: center;
+  }
+  .ax .ord-table td.ord-check label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -12px 0 0 -8px;
+  }
+  .ax .ord-table td.rt-title {
+    grid-area: code;
+    order: 0;
+  }
+  .ax .ord-table td.ord-total {
+    grid-area: total;
+    position: static;
+    box-shadow: none;
+    background: transparent;
+    font-weight: 600;
+  }
+  .ax .ord-table td.ord-total::before,
+  .ax .ord-table td.ord-status::before {
+    display: none;
+  }
+  .ax .ord-table td.ord-m {
+    display: flex;
+    grid-area: who;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+  .ax .ord-table td.ord-status {
+    grid-area: status;
+    align-items: flex-end;
+  }
+  .ax .ord-table td.ord-d {
+    display: none;
+  }
+}
+
+/* Thanh thao tác hàng loạt: dính đáy khi đã chọn */
+.ax .ord-bulk {
+  /* Cố định ở đáy màn hình (khung bảng có overflow nên `sticky` không bám được). */
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  bottom: 16px;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--sheet);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+.ax .ord-bulk .btn {
+  min-height: 36px;
+}
+.ax .ord-bulk .linkish {
+  background: none;
+  border: 0;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  padding: 6px 4px;
+}
+
+@media (max-width: 720px) {
+  /* Trên điện thoại thanh đáy của khung che 12px dưới cùng: đặt thanh hàng loạt cao hơn. */
+  .ax .ord-bulk {
+    bottom: 84px;
+    width: calc(100vw - 32px);
+  }
+}
+
+/* Hỏi bằng lời */
+.ax .ord-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ax .ord-ask-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+.ax .ord-ask-row > .fld {
+  flex: 1 1 280px;
+}
+.ax .ord-parsed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .ord-parsed > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 10px;
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 13px;
+}
+.ax .ord-parsed select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ink);
+  min-height: 32px;
+}
+
+/* Chi tiết đơn: thân chính và cột bên */
+.ax .ord-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .ax .ord-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ax .ord-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Tiến trình đơn: mỗi bước một vạch */
+.ax .ord-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .ord-steps > li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax .ord-steps > li::before {
+  content: "";
+  height: 4px;
+  border-radius: 2px;
+  background: var(--hover);
+}
+.ax .ord-steps > li[data-done]::before {
+  background: var(--accent);
+}
+.ax .ord-steps > li[data-bad]::before {
+  background: var(--bad);
+}
+.ax .ord-steps > li[data-done] {
+  color: var(--ink);
+}
+.ax .ord-steps > li[aria-current] {
+  font-weight: 600;
+}
+
+/* Tổng tiền */
+.ax .ord-sums {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 13.5px;
+}
+.ax .ord-sums dt {
+  color: var(--ink-2);
+}
+.ax .ord-sums dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ax .ord-sums .big {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Khối dòng tiền, đề xuất của agent */
+.ax .ord-flow,
+.ax .ord-proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ax .ord-proposal {
+  background: var(--warn-bg);
+}
+.ax .ord-proposal h3,
+.ax .ord-flow h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.ax .ord-proposal p,
+.ax .ord-flow p {
+  margin: 0;
+}
+
+/* Hộp xác nhận hoàn tiền: số tiền, nơi tiền về */
+.ax .ord-confirm {
+  display: grid;
+  grid-template-columns: minmax(110px, max-content) 1fr;
+  gap: 6px 14px;
+  margin: 0;
+}
+.ax .ord-confirm dt {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.ax .ord-confirm dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.ax .ord-confirm .big {
+  font-size: 18px;
+  font-weight: 700;
+}
+.ax .ord-warn {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--warn-bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+/* Bán tại quầy */
+.ax .ord-pos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .ax .ord-pos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ax .ord-pos-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ax .ord-pos-items > li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--sheet);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ax .ord-pos-items .cell2 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ax .ord-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ax .ord-qty .btn {
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+}
+.ax .ord-qty output {
+  min-width: 2ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ax .ord-pays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Thanh sao của thống kê đánh giá */
+.ax .ord-stars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ax .ord-stars > li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.ax .ord-stars meter {
+  width: 100%;
+  height: 8px;
+}
+.ax .ord-media {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .ord-media > li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 96px;
+  height: 72px;
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 11.5px;
+  color: var(--ink-2);
+  text-align: center;
+  padding: 4px;
+  overflow-wrap: anywhere;
+}
+
+/* Bản xem trước hoá đơn, phiếu giao: trang giấy */
+.ax .ord-paper {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 20px 22px;
+  background: #fff;
+  color: #111;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ax .ord-paper.wide {
+  max-width: 720px;
+}
+.ax .ord-paper h2 {
+  margin: 0;
+  font-size: 16px;
+  text-align: center;
+}
+.ax .ord-paper table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ax .ord-paper .r {
+  text-align: right;
+}
+.ax .ord-paper .muted {
+  color: #555;
+}
+.ax .ord-paper hr {
+  border: 0;
+  border-top: 1px dashed #999;
+  margin: 4px 0;
+}
+.ax .ord-slip + .ord-slip {
+  margin-top: 16px;
+}
+@media print {
+  .ax .rail,
+  .ax .topbar,
+  .ax .subnav,
+  .ax .bottombar,
+  .ax .no-print {
+    display: none;
+  }
+  .ax .ord-paper {
+    box-shadow: none;
+    max-width: none;
+  }
+  .ax .ord-slip {
+    break-after: page;
+  }
+}

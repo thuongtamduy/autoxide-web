@@ -20,6 +20,14 @@ import {
 import { FINANCE_PERMISSIONS } from "@/lib/finance";
 import { MARKET_PERMISSIONS, SELLER_SPACE_PERMISSIONS } from "@/lib/market";
 import {
+  ORDERS_MANAGE,
+  ORDERS_POS_SELL,
+  ORDERS_POS_SHIFT,
+  ORDERS_READ,
+  ORDERS_RETURNS_MANAGE,
+  ORDERS_REVIEWS_MODERATE,
+} from "@/lib/orders";
+import {
   AUDIT_READ,
   CASES_READ,
   CONTENT_READ,
@@ -84,13 +92,18 @@ export interface NavGroup {
 export const NAV: NavGroup[] = [
   { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
   {
-    // Bán hàng: theo bản thiết kế gồm Đơn hàng, Vận chuyển, Cửa hàng, Kênh bán. Đơn hàng (bước 45)
-    // sẽ đứng ĐẦU nhóm, trước Vận chuyển; Cửa hàng, Kênh bán (bước 45, 48) theo sau. Vận chuyển dựng
-    // bằng dữ liệu mẫu vì core chưa có module `shipping` (bước 44, W-015); hiện khi xem được một
-    // trong các tab của nó.
+    // Bán hàng: theo bản thiết kế gồm Đơn hàng, Vận chuyển, Cửa hàng, Kênh bán. Đơn hàng và Cửa hàng
+    // (bước 45, W-017), Vận chuyển (bước 44, W-015) dựng bằng dữ liệu mẫu vì core chưa có module
+    // `orders`, `shipping`; mỗi màn hiện khi xem được một trong các tab của nó. Kênh bán (bước 48) dựng sau.
     id: "sales",
     icon: "cart",
     pages: [
+      {
+        id: "orders",
+        href: "/sales/orders",
+        permission: [ORDERS_READ, ORDERS_RETURNS_MANAGE, ORDERS_POS_SELL],
+        sample: { step: "45" },
+      },
       {
         id: "shipping",
         href: "/sales/shipping",
@@ -102,6 +115,17 @@ export const NAV: NavGroup[] = [
           SHIPPING_CARRIERS_MANAGE,
         ],
         sample: { step: "44" },
+      },
+      {
+        id: "stores",
+        href: "/sales/stores",
+        permission: [
+          ORDERS_MANAGE,
+          ORDERS_POS_SHIFT,
+          ORDERS_RETURNS_MANAGE,
+          ORDERS_REVIEWS_MODERATE,
+        ],
+        sample: { step: "45" },
       },
     ],
   },

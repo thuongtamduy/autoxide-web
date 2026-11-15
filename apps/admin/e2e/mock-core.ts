@@ -15,6 +15,7 @@
 // hết sau 1 giây), để test đi qua đường làm mới token. `GET /__stats` trả số lần làm mới;
 // `POST /__reset` đưa mọi thứ về ban đầu (tài khoản, phiên, passkey, xác thực hai bước);
 // `POST /__sessions` thêm một phiên như khi đăng nhập ở thiết bị khác.
+// `POST /__ai` (`{"enabled": true}`) bật AI (`GET /api/v1/ai/status`) để thử "Hỏi bằng lời" của Đơn hàng.
 
 import { randomBytes, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -29,6 +30,7 @@ import {
   resetContent,
   seedLegal,
   seedPages,
+  setAiEnabled,
 } from "./mock-content.ts";
 import { ENGAGE_MODULES, engageRoutes, resetEngage } from "./mock-engage.ts";
 import {
@@ -214,6 +216,10 @@ const server = createServer(async (request, response) => {
     if (!account) return problem(response, 404, "not_found", "No such account.");
     const session = startSession(account, text(body, "user_agent") || null);
     return send(response, 201, { id: session.id });
+  }
+  if (route === "POST /__ai") {
+    setAiEnabled((await json(request)).enabled === true);
+    return send(response, 204);
   }
   if (route === "POST /__content/bump") return contentBump(request, response);
   if (route === "POST /__content/pages") return seedPages(response);

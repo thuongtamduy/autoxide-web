@@ -8,7 +8,8 @@ import { resetStructure, structureRoutes } from "./mock-structure.ts";
 
 // Khối của màn Nội dung: bài viết và trang, phiên bản (ETag / If-Match), đăng, gỡ, lưu trữ,
 // gửi duyệt, lịch, phiên bản cũ, danh mục, tác giả, bản dịch, kiểm SEO, link xem trước. AI tắt
-// (`GET /api/v1/ai/status` báo `enabled: false`), như core chưa cấu hình AI.
+// (`GET /api/v1/ai/status` báo `enabled: false`), như core chưa cấu hình AI; `POST /__ai`
+// (`{"enabled": true}`) bật để thử "Hỏi bằng lời" của màn Đơn hàng.
 // `POST /__content/bump` (`{"id"}`) sửa một bài như có người khác sửa, để thử xung đột 412.
 
 type MockEntry = Schemas["EntryResponse"] & { version: number };
@@ -148,7 +149,19 @@ function keepRevision(entry: MockEntry, reason: string) {
   });
 }
 
+/** AI có bật không (`GET /api/v1/ai/status`); mặc định tắt, `POST /__ai` bật để thử "Hỏi bằng lời". */
+let aiEnabled = false;
+
+export function setAiEnabled(on: boolean) {
+  aiEnabled = on;
+}
+
+export function aiOn(): boolean {
+  return aiEnabled;
+}
+
 export function resetContent() {
+  aiEnabled = false;
   contentClock = Date.parse("2026-11-15T00:00:00Z");
   CONTENT_AUTHORS = structuredClone(SEED_AUTHORS);
   CONTENT_TERMS = structuredClone(SEED_TERMS);
@@ -300,9 +313,9 @@ export async function contentRoutes(
   if (route === "GET /api/v1/ai/status") {
     return send(response, 200, {
       data: {
-        enabled: false,
-        provider: "",
-        model: "",
+        enabled: aiEnabled,
+        provider: aiEnabled ? "mock" : "",
+        model: aiEnabled ? "mock-model" : "",
         images: false,
         embeddings_enabled: false,
         embedding_model: "",
