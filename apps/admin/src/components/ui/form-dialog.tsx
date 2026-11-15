@@ -184,6 +184,9 @@ function DialogField({ field, state }: { field: FieldSpec; state: DialogState })
   if (field.kind === "select") {
     return (
       <SelectField
+        // React đặt lại form sau mỗi lần gửi và ô chọn quay về lựa chọn đầu tiên; đổi `key` theo giá trị
+        // vừa gửi để ô dựng lại với đúng lựa chọn khi báo lỗi (W-018).
+        key={value ?? ""}
         label={field.label}
         name={field.name}
         options={field.options}

@@ -11,18 +11,23 @@ import {
   MenuLink,
   PlatformBottomBar,
   Rail,
+  SellerBottomBar,
   type ShellGroup,
   type ShellPage,
   Subnav,
 } from "@/components/shell/nav-client";
 import { initialsOf } from "@/lib/initials";
+import { MARKETPLACE_SELL } from "@/lib/market";
 import { getMe, getModules } from "@/lib/viewer";
 import {
   ACCOUNT_PAGE,
   NAV,
   NAV_PLATFORM,
+  NAV_SELLER,
   type NavGroup,
+  navOf,
   PLATFORM_HOME,
+  SELLER_HOME,
   type Viewer,
   visibleNav,
   type Workspace,
@@ -36,11 +41,15 @@ import { sampleDataEnabled } from "@/sample";
 // Hai không gian dùng chung khung này (W-014): không gian của khách (`tenant`, layout `(admin)`)
 // và mặt điều khiển nền tảng (`platform`, layout `(platform)`). Mỗi không gian một sổ điều hướng,
 // đầu trang và thanh đáy riêng; menu tài khoản có lối sang không gian kia khi người xem dùng được.
+// Không gian thứ ba là Trung tâm người bán (`seller`, layout `(seller)`, W-018): `context` là gian
+// hàng đang xem, hiện ở đầu trang.
 export async function AdminShell({
   workspace,
+  context,
   children,
 }: {
   workspace: Workspace;
+  context?: { title: string; sub: string };
   children: ReactNode;
 }) {
   const t = await getTranslations();
@@ -64,16 +73,38 @@ export async function AdminShell({
       })),
     }));
   const platform = workspace === "platform";
-  const groups = shellGroups(platform ? NAV_PLATFORM : NAV);
-  // Lối sang không gian kia: mặt điều khiển chỉ khi người xem thấy ít nhất một màn của nó.
-  const other: ShellPage | null = platform
-    ? { id: "tenantSpace", label: t("platform.shell.toTenant"), href: "/" }
-    : (() => {
-        const first = shellGroups(NAV_PLATFORM)[0]?.pages[0];
-        return first
-          ? { id: "platformSpace", label: t("platform.shell.toPlatform"), href: PLATFORM_HOME }
-          : null;
-      })();
+  const seller = workspace === "seller";
+  const groups = shellGroups(navOf(workspace));
+  // Lối sang không gian khác: mặt điều khiển chỉ khi người xem thấy ít nhất một màn của nó; Trung tâm
+  // người bán cho người bán thật, hay "Xem như người bán" cho người xem được hồ sơ người bán (W-018).
+  const others: { page: ShellPage; icon: "home" | "scope" | "store" }[] = [];
+  const toTenant = { id: "tenantSpace", label: t("platform.shell.toTenant"), href: "/" };
+  if (workspace === "tenant") {
+    if (shellGroups(NAV_PLATFORM).length > 0) {
+      others.push({
+        page: { id: "platformSpace", label: t("platform.shell.toPlatform"), href: PLATFORM_HOME },
+        icon: "scope",
+      });
+    }
+    if (shellGroups(NAV_SELLER).length > 0) {
+      const own = me.permissions.includes(MARKETPLACE_SELL);
+      others.push({
+        page: {
+          id: "sellerSpace",
+          label: own ? t("seller.shell.toSeller") : t("seller.shell.preview"),
+          href: SELLER_HOME,
+        },
+        icon: "store",
+      });
+    }
+  } else if (platform) {
+    others.push({ page: toTenant, icon: "home" });
+  } else if (
+    // Người bán chỉ có quyền bán thì không gian của khách gần như trống: không mời sang đó.
+    visibleNav(viewer, NAV).some((g) => g.id !== "home" && g.id !== "settings")
+  ) {
+    others.push({ page: toTenant, icon: "home" });
+  }
   const account: ShellPage = {
     id: ACCOUNT_PAGE.id,
     label: t("nav.pages.account"),
@@ -90,10 +121,15 @@ export async function AdminShell({
     <div className="ax" data-workspace={workspace}>
       <Rail
         groups={groups}
-        home={platform ? PLATFORM_HOME : "/"}
+        home={platform ? PLATFORM_HOME : seller ? SELLER_HOME : "/"}
         {...(platform ? { tag: t("platform.shell.tag") } : {})}
+        {...(seller ? { tag: t("seller.shell.tag") } : {})}
         labels={{
-          home: platform ? t("platform.shell.rail") : t("shell.areas"),
+          home: platform
+            ? t("platform.shell.rail")
+            : seller
+              ? t("seller.shell.rail")
+              : t("shell.areas"),
           collapse: t("shell.collapse"),
           expand: t("shell.expand"),
           collapseLabel: t("shell.collapseLabel"),
@@ -109,6 +145,16 @@ export async function AdminShell({
                   {t("platform.shell.name")}
                 </span>
                 <span className="ell pf-ctx-sub">{t("platform.shell.sub")}</span>
+              </span>
+            </Link>
+          ) : seller ? (
+            <Link href={SELLER_HOME} className="ctx pf-ctx" aria-label={t("seller.shell.home")}>
+              <span className="tav">{initialsOf(context?.title ?? "")}</span>
+              <span className="pf-ctx-text">
+                <span className="ell" style={{ fontWeight: 600 }}>
+                  {context?.title ?? t("seller.shell.name")}
+                </span>
+                <span className="ell pf-ctx-sub">{context?.sub ?? t("seller.shell.sub")}</span>
               </span>
             </Link>
           ) : (
@@ -158,6 +204,17 @@ export async function AdminShell({
             nav: t("shell.quickNav"),
           }}
         />
+      ) : seller ? (
+        <SellerBottomBar
+          groups={groups}
+          labels={{
+            shop: t("seller.shell.bottomShop"),
+            money: t("seller.shell.bottomMoney"),
+            search: t("shell.searchShort"),
+            areas: t("shell.areas"),
+            nav: t("shell.quickNav"),
+          }}
+        />
       ) : (
         <BottomBar
           groups={groups}
@@ -172,7 +229,7 @@ export async function AdminShell({
 
       <CommandPalette
         groups={groups}
-        extra={other ? [account, other] : [account]}
+        extra={[account, ...others.map((o) => o.page)]}
         labels={{
           title: t("shell.search"),
           placeholder: t("shell.searchPlaceholder"),
@@ -214,14 +271,15 @@ export async function AdminShell({
           </span>
         </div>
         <MenuLink href={account.href} label={account.label} icon="user" menu="usermenu" />
-        {other ? (
+        {others.map((o) => (
           <MenuLink
-            href={other.href}
-            label={other.label}
-            icon={platform ? "home" : "scope"}
+            key={o.page.id}
+            href={o.page.href}
+            label={o.page.label}
+            icon={o.icon}
             menu="usermenu"
           />
-        ) : null}
+        ))}
         <ThemeForm label={t("shell.theme")} names={themes} />
         <div style={{ padding: "6px 10px" }}>
           <LanguageSwitch />

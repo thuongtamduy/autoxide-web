@@ -303,7 +303,9 @@ describe("nhóm Tài chính (dữ liệu mẫu, bước 36)", () => {
   it("đứng sau Nội dung, trước Tổ chức; chỉ hiện khi bật dữ liệu mẫu, theo permission dự kiến", async () => {
     const { NAV: real } = await import("./nav");
     const ids = real.map((g) => g.id);
-    expect(ids.indexOf("finance")).toBe(ids.indexOf("content") + 1);
+    // Sàn (W-018) đứng giữa Nội dung và Tài chính như `RAIL_TENANT` (Khách hàng, bước 47, chưa dựng).
+    expect(ids.indexOf("market")).toBe(ids.indexOf("content") + 1);
+    expect(ids.indexOf("finance")).toBe(ids.indexOf("market") + 1);
     expect(ids.indexOf("org")).toBe(ids.indexOf("finance") + 1);
     const group = real.find((g) => g.id === "finance");
     expect(group?.icon).toBe("wallet");
@@ -356,5 +358,60 @@ describe("Khuyến mại và Vận chuyển (dữ liệu mẫu, bước 43–44)
     expect(clerk.map((g) => g.id)).toEqual(["home", "sales", "settings"]);
     expect(activePage(real, "/sales/shipping/cod")?.page.id).toBe("shipping");
     expect(activePage(real, "/marketing/promotions/flash")?.page.id).toBe("promotions");
+  });
+});
+
+describe("Sàn và Trung tâm người bán (dữ liệu mẫu, bước 46, W-018)", () => {
+  it("Vận hành sàn: biểu tượng store, theo permission dự kiến, chỉ khi bật dữ liệu mẫu", async () => {
+    const { NAV: real } = await import("./nav");
+    const group = real.find((g) => g.id === "market");
+    expect(group?.icon).toBe("store");
+    expect(group?.pages.map((p) => p.href)).toEqual(["/market"]);
+    const off = visibleNav({ allPermissions: true, permissions: [], modules: [] }, real);
+    expect(off.some((g) => g.id === "market")).toBe(false);
+    const judge = visibleNav(
+      {
+        allPermissions: false,
+        permissions: ["marketplace.disputes.resolve"],
+        modules: [],
+        sample: true,
+      },
+      real,
+    );
+    expect(judge.find((g) => g.id === "market")?.pages.map((p) => p.id)).toEqual(["market"]);
+    // Người bán (chỉ `marketplace.sell`) không thấy màn vận hành của sàn.
+    const seller = visibleNav(
+      { allPermissions: false, permissions: ["marketplace.sell"], modules: [], sample: true },
+      real,
+    );
+    expect(seller.some((g) => g.id === "market")).toBe(false);
+    expect(activePage(real, "/market/payouts")?.page.id).toBe("market");
+  });
+
+  it("không gian thứ ba: /seller, năm mục theo RAIL_SELLER, không trộn với sổ của khách", async () => {
+    const { workspaceOf, navOf, NAV_SELLER, NAV: real } = await import("./nav");
+    expect(workspaceOf("/seller")).toBe("seller");
+    expect(workspaceOf("/seller/money")).toBe("seller");
+    expect(workspaceOf("/sellers")).toBe("tenant");
+    expect(workspaceOf("/market")).toBe("tenant");
+    expect(navOf("seller")).toBe(NAV_SELLER);
+    expect(NAV_SELLER.map((g) => [g.icon, g.pages[0]?.href])).toEqual([
+      ["home", "/seller"],
+      ["cart", "/seller/orders"],
+      ["box", "/seller/products"],
+      ["store", "/seller/shop"],
+      ["wallet", "/seller/money"],
+    ]);
+    const hrefs = real.flatMap((g) => g.pages.map((p) => p.href));
+    expect(hrefs.some((h) => h.startsWith("/seller"))).toBe(false);
+    const ids = (viewer: Partial<Viewer>) =>
+      visibleNav({ allPermissions: false, permissions: [], modules: [], ...viewer }, NAV_SELLER)
+        .length;
+    expect(ids({ permissions: ["marketplace.sell"], sample: true })).toBe(5);
+    expect(ids({ permissions: ["marketplace.sellers.read"], sample: true })).toBe(5);
+    expect(ids({ permissions: ["marketplace.sell"], sample: false })).toBe(0);
+    expect(ids({ permissions: ["orders.read"], sample: true })).toBe(0);
+    expect(activePage(NAV_SELLER, "/seller/shop/performance")?.page.id).toBe("sellerShop");
+    expect(activePage(NAV_SELLER, "/seller")?.page.id).toBe("sellerHome");
   });
 });

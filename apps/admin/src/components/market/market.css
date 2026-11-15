@@ -1,0 +1,133 @@
+/* Phân hệ Sàn (W-018): màn "Vận hành sàn" và Trung tâm người bán. Dùng lại khung (`kpis`, `note`,
+   `cat-detail`, `cp-check`, `timeline`, `eg-facts`) và token màu; ở đây chỉ phần riêng. */
+.ax .mk-h3 {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Bảng quyết toán: mỗi dòng một khoản, số canh phải, dòng thực chi đậm có kẻ trên */
+.ax .mk-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  max-width: 520px;
+}
+.ax .mk-lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13.5px;
+}
+.ax .mk-lines dt {
+  color: var(--ink-2);
+}
+.ax .mk-lines dd {
+  margin: 0;
+  white-space: nowrap;
+}
+.ax .mk-lines > .mk-total {
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+/* Băng "Xem như người bán": luôn thấy, nói rõ đây là chế độ thử, không phải quyền của người bán */
+.ax .mk-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  font-size: 13.5px;
+}
+.ax .mk-preview p {
+  flex: 1 1 320px;
+  margin: 0;
+}
+.ax .mk-preview form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ax .mk-preview select {
+  min-height: 36px;
+}
+
+/* Thẻ việc của người bán (tranh chấp cần trả lời, bước còn thiếu) */
+.ax .mk-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .mk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+}
+.ax .mk-card p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.ax .mk-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+/* Kết quả tính thử phí */
+.ax .mk-preview-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.ax .mk-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .ax .mk-preview {
+    margin-bottom: 12px;
+  }
+  .ax .mk-preview form,
+  .ax .mk-preview .btn {
+    width: 100%;
+  }
+  .ax .mk-preview .btn,
+  .ax .mk-preview select {
+    min-height: 44px;
+  }
+}
+
+/* Nhãn "Người bán" cạnh tên trên thanh bên của Trung tâm người bán: một dòng */
+.ax[data-workspace="seller"] .rail-tag {
+  white-space: nowrap;
+}
+.ax .mk-preview select.inp {
+  width: auto;
+  min-width: 200px;
+  max-width: 280px;
+}
+@media (max-width: 720px) {
+  .ax .mk-preview select.inp {
+    width: 100%;
+    max-width: none;
+  }
+}

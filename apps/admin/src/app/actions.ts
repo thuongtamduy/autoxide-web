@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isLocale, LOCALE_COOKIE } from "@/i18n/locales";
 import { anonymousClient } from "@/lib/core";
+import { SELLER_PREVIEW_COOKIE } from "@/lib/market";
 import { REFRESH_COOKIE, SESSION_COOKIES } from "@/lib/session";
 import { isTheme, THEME_COOKIE } from "@/lib/theme";
 
@@ -22,6 +23,8 @@ export async function signOut(): Promise<void> {
   for (const name of SESSION_COOKIES) {
     store.delete(name);
   }
+  // "Xem như người bán" (W-018) gắn với phiên này, không để lại cho người đăng nhập sau.
+  store.delete(SELLER_PREVIEW_COOKIE);
   redirect("/login");
 }
 

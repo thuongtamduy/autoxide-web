@@ -423,6 +423,9 @@ function seed(): Store {
         acceptance("001", 2, "Gia Dụng Nhà Na", "web", "3fa19c02", -40 * DAY),
         acceptance("002", 2, "Gốm Sứ Bát Tràng Xưa", "web", "3fa19c02", -42 * DAY),
         acceptance("003", 2, "Bếp Nhà Thỏ", "mobile_app", "3fa19c02", -44 * DAY),
+        // Thêm cho màn Vận hành sàn (W-018): người bán đang bán đã chấp nhận bản hiện hành.
+        acceptance("006", 2, "Dao Kéo Đa Sỹ Truyền Thống", "web", "3fa19c02", -43 * DAY),
+        acceptance("007", 2, "Khăn Bông Hạ Long", "web", "3fa19c02", -41 * DAY),
       ],
     ],
     [
@@ -430,6 +433,9 @@ function seed(): Store {
       [
         acceptance("004", 2, "Gia Dụng Nhà Na", "web", "1c8a7d53", -40 * DAY),
         acceptance("005", 2, "Dao Kéo Đa Sỹ Truyền Thống", "web", "1c8a7d53", -43 * DAY),
+        acceptance("008", 2, "Gốm Sứ Bát Tràng Xưa", "web", "1c8a7d53", -42 * DAY),
+        acceptance("009", 2, "Bếp Nhà Thỏ", "mobile_app", "1c8a7d53", -44 * DAY),
+        acceptance("010", 2, "Khăn Bông Hạ Long", "web", "1c8a7d53", -41 * DAY),
       ],
     ],
   ]);
@@ -709,6 +715,70 @@ export async function listDocuments(): Promise<{ data: LegalDocument[] }> {
 /** Thay bằng GET /api/v1/compliance/documents/{id}/acceptances (bước 37) khi core có. */
 export async function listAcceptances(documentId: string): Promise<{ data: Acceptance[] }> {
   return { data: [...(store().acceptances.get(documentId) ?? [])] };
+}
+
+/** Một chủ thể đã chấp nhận bản đang hiệu lực của văn bản loại `kind` chưa (W-018). */
+export interface AcceptanceState {
+  kind: DocumentKind;
+  title: string;
+  version: number | null;
+  accepted_at: string | null;
+}
+
+/**
+ * Thay bằng `LegalDocuments::has_accepted` (bước 37): sàn hỏi qua trait, giao diện người bán đọc
+ * qua `GET /api/v1/marketplace/sellers/me` (bước 46). Thêm cho màn Vận hành sàn.
+ */
+export async function acceptanceOf(kind: DocumentKind, subject: string): Promise<AcceptanceState> {
+  const doc = store().documents.find((d) => d.kind === kind);
+  const current = doc ? currentVersion(doc) : undefined;
+  // Bản mới không đòi chấp nhận lại thì lần chấp nhận bản trước vẫn còn giá trị: bản cần có là bản
+  // hiệu lực mới nhất có `requires_reacceptance` (không có thì bản đang hiệu lực).
+  const today = dayOf();
+  const needed =
+    doc?.versions.find((v) => v.effective_from <= today && v.requires_reacceptance) ?? current;
+  const found =
+    doc && needed
+      ? (store().acceptances.get(doc.id) ?? []).find(
+          (a) => a.subject === subject && a.version >= needed.version,
+        )
+      : undefined;
+  return {
+    kind,
+    title: doc?.title ?? kind,
+    version: current?.version ?? null,
+    accepted_at: found?.accepted_at ?? null,
+  };
+}
+
+/**
+ * Thay bằng `POST /api/v1/compliance/documents/{id}/acceptances` (bước 37) khi core có: người bán
+ * chấp nhận bản đang hiệu lực. Gửi lại khi đã chấp nhận thì trả bản cũ (không ghi hai lần).
+ */
+export async function recordAcceptance(
+  kind: DocumentKind,
+  subject: string,
+): Promise<SampleOutcome<AcceptanceState>> {
+  const doc = store().documents.find((d) => d.kind === kind);
+  const current = doc ? currentVersion(doc) : undefined;
+  if (!doc || !current) {
+    return failed(404, "compliance.document_not_found", "No document of this kind is in effect.");
+  }
+  const list = store().acceptances.get(doc.id) ?? [];
+  if (!list.some((a) => a.subject === subject && a.version === current.version)) {
+    list.unshift({
+      id: crypto.randomUUID(),
+      version: current.version,
+      subject,
+      channel: "web",
+      method: "click_wrap",
+      sha256: current.sha256,
+      accepted_at: new Date().toISOString(),
+    });
+    store().acceptances.set(doc.id, list);
+    current.accepted_count += 1;
+  }
+  return { ok: true, data: await acceptanceOf(kind, subject) };
 }
 
 /**

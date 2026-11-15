@@ -347,6 +347,25 @@ function seed(websiteIds: readonly string[]): Store {
         true,
       ),
       kyc("06", 5, "Khăn Bông Hạ Long", "household_business", "ekyc", "sell", "verified", -200),
+      // Thêm cho màn Vận hành sàn (W-018): hồ sơ cũ của người bán đã bán trên Chợ Bếp Mộc. Gốm Sứ
+      // còn hạn (hồ sơ "pending" ở trên là lần xác thực lại khi đổi người đại diện); Gia Dụng Nhà Na
+      // hết hạn 14 ngày trước nên sàn tạm khoá tới khi hồ sơ mới được duyệt; Bếp Nhà Thỏ đã xác thực
+      // để bán (hồ sơ "pending" ở trên là cho bán qua livestream).
+      kyc(
+        "07",
+        1,
+        "Gốm Sứ Bát Tràng Xưa",
+        "organization",
+        "business_registry",
+        "sell",
+        "verified",
+        -250,
+      ),
+      {
+        ...kyc("08", 0, "Gia Dụng Nhà Na", "household_business", "ekyc", "sell", "verified", -744),
+        status: "expired",
+      },
+      kyc("09", 2, "Bếp Nhà Thỏ", "individual", "vneid", "sell", "verified", -3),
     ],
     incidents: [
       {

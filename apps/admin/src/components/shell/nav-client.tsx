@@ -191,6 +191,56 @@ export function PlatformBottomBar({
   );
 }
 
+/**
+ * Thanh đáy điện thoại của Trung tâm người bán (W-018): Gian hàng, Tiền, Tìm, Phân hệ — như bản thiết
+ * kế, khác thanh đáy của không gian khách và của mặt điều khiển nền tảng.
+ */
+export function SellerBottomBar({
+  groups,
+  labels,
+}: {
+  groups: ShellGroup[];
+  labels: { shop: string; money: string; search: string; areas: string; nav: string };
+}) {
+  const active = useActive(groups);
+  const home = groups.find((group) => group.id === "sellerHome")?.pages[0];
+  const money = groups.find((group) => group.id === "sellerMoney")?.pages[0];
+  const atMoney = active?.group.id === "sellerMoney";
+  const atHome = active !== null && !atMoney;
+  return (
+    <nav className="bottombar" aria-label={labels.nav}>
+      {home ? (
+        <Link
+          href={home.href}
+          className={atHome ? "on" : undefined}
+          aria-current={active?.group.id === "sellerHome" ? "page" : undefined}
+        >
+          <Icon name="store" />
+          {labels.shop}
+        </Link>
+      ) : null}
+      {money ? (
+        <Link
+          href={money.href}
+          className={atMoney ? "on" : undefined}
+          aria-current={atMoney ? "page" : undefined}
+        >
+          <Icon name="wallet" />
+          {labels.money}
+        </Link>
+      ) : null}
+      <button type="button" popoverTarget="qs">
+        <Icon name="search" />
+        {labels.search}
+      </button>
+      <button type="button" popoverTarget="mods">
+        <Icon name="grid" />
+        {labels.areas}
+      </button>
+    </nav>
+  );
+}
+
 /** Bảng "Phân hệ" (điện thoại): lưới mọi phân hệ, phân hệ đang mở được tô. */
 export function AreasGrid({ groups }: { groups: ShellGroup[] }) {
   const active = useActive(groups);

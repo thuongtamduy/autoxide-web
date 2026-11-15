@@ -651,3 +651,79 @@ luật số hai của core đòi điểm luật hay đổi là dữ liệu có n
 Đã cân nhắc: bút toán tay hai ô (một Nợ, một Có) như bản thiết kế — luôn cân nên không thử được kiểm Nợ =
 Có, và bút toán thật hay nhiều dòng; khung chi tiết bên phải — như W-013, dòng mở rộng mở thẳng được;
 tách Thuế và Hoá đơn thành màn riêng — bản thiết kế và nhóm người dùng (kế toán) là một màn tám tab.
+
+## W-018 · Phân hệ Sàn: "Vận hành sàn" và Trung tâm người bán, không gian thứ ba (dữ liệu mẫu) — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Phân hệ Sàn (`market`, biểu tượng `store`) vào sổ điều hướng giữa Nội dung và Tài chính, đúng thứ tự
+  `RAIL_TENANT` (Khách hàng của bước 47 sẽ đứng ngay trước). Một màn "Vận hành sàn" `/market`
+  (`sample: { step: "46" }`) hiện khi có một trong các permission dự kiến của đặc tả 46 (khai ở
+  `src/lib/market.ts`). Năm tab, mỗi tab một đường dẫn con và một permission: Người bán (`/market`,
+  `marketplace.sellers.read`), Duyệt sản phẩm (`listings`, `marketplace.listings.review`), Phí sàn
+  (`fees`, `marketplace.fees.manage`), Chi trả (`payouts`, `marketplace.finance.read`), Tranh chấp
+  (`disputes`, `marketplace.disputes.resolve`). Chi tiết một dòng mở bằng `?open=` như W-013.
+- **Không gian thứ ba `seller`** (mở rộng `Workspace` của W-014, chỉ thêm): route group `(seller)`, mọi
+  đường dẫn dưới `/seller`, sổ `NAV_SELLER` năm mục theo `RAIL_SELLER` (Tổng quan, Đơn, Sản phẩm, Gian
+  hàng, Tiền), nhãn "Người bán" cạnh tên, đầu trang là gian hàng đang xem, thanh đáy điện thoại riêng
+  (Gian hàng · Tiền · Tìm · Phân hệ). `navOf` / `workspaceOf` nhận thêm `seller`; `AdminShell` nhận
+  `context` (tên gian hàng) và có lối sang các không gian khác dưới dạng danh sách. Trang: các bước để
+  được bán (`/seller`), đơn của tôi và tranh chấp (`/seller/orders`, `…/disputes`), sản phẩm và trạng
+  thái duyệt (`/seller/products`), gian hàng và điểm vi phạm (`/seller/shop`, `…/performance`), đối soát
+  và chi trả kèm sao kê CSV (`/seller/money`, route `/seller/money/statement.csv`).
+- **Ai thấy gian hàng nào** (`sellerContext`, `src/lib/seller.ts`): người bán thật là người có
+  `marketplace.sell` ghi rõ trong role (không tính "mọi permission" của admin) — core sẽ trả gian hàng
+  của nút mình qua `GET /sellers/me`; dữ liệu mẫu chưa biết người đăng nhập thuộc nút nào nên trả gian
+  hàng mẫu đầu tiên. **"Xem như người bán"** là lối thử của người có `marketplace.sellers.read`, tách
+  khỏi quyền thật: chọn gian hàng (nút trên màn Vận hành sàn, bộ chọn khi vào `/seller`), id nút giữ
+  trong cookie `ax_seller_view` (httpOnly, 8 giờ, xoá khi đăng xuất, không phải secret); không cấp
+  permission nào, băng trên cùng nói rõ là chế độ thử, có đổi gian hàng và thoát. Thao tác trong chế độ
+  này chỉ đổi dữ liệu mẫu; **khi có API thì chế độ này chỉ để xem** (đọc `GET /sellers/{org_id}`,
+  `/settlements?seller=`, `/disputes?seller=`), vì core không có cơ chế mạo danh — lệnh ghi của người
+  bán cần phiên của chính người bán.
+- **Gắn với Tuân thủ mẫu thật**: KYC của người bán đọc từ sổ KYC của `compliance.ts` (hoạt động `sell`,
+  hồ sơ còn hạn thắng hồ sơ mới đang chờ), văn bản đã chấp nhận đọc từ `compliance-records.ts` (bản cần
+  có là bản hiệu lực mới nhất có "đòi chấp nhận lại"). Một hàm quyết "được bán không" (`gateOf`, như
+  `SellerGate::ensure_can_sell`): đang bán VÀ KYC còn hạn VÀ đã chấp nhận quy chế sàn và hợp đồng người
+  bán VÀ đủ giấy tờ ngành có điều kiện (quy tắc hàng có điều kiện của `catalog.ts`). Mỗi lần đọc chạy
+  việc core làm khi nghe event: KYC hết hạn hay văn bản mới chưa chấp nhận → tự tạm khoá kèm lý do; điều
+  kiện đủ lại → **tự mở lại** (chỉ với tạm khoá tự động; tạm khoá do người quyết phải "Mở lại"). Duyệt KYC
+  ở màn Tuân thủ đổi ngay tình trạng ở đây. Chỉ thêm vào hai file Tuân thủ: ba hồ sơ KYC cũ (Gốm Sứ còn
+  hạn, Gia Dụng Nhà Na hết hạn, Bếp Nhà Thỏ để bán), năm lần chấp nhận văn bản, `acceptanceOf` và
+  `recordAcceptance`.
+- **Tiền (D-187)**: sàn không giữ tiền; màn nói rõ tiền nằm ở tài khoản thu hộ của đối tác có giấy phép,
+  sàn chỉ gửi lệnh chi (căn cứ `payments.no_custody` của `tax.ts`). Quyết toán `net = gross + subsidy −
+  phí − khấu trừ thay`, hoa hồng theo dòng phí hiệu lực tại ngày đặt (ngành gần nhất thắng mặc định),
+  thuế GTGT của phí tách từ phí đã gồm thuế (thuế suất chuẩn của `tax.ts`), khấu trừ thay GTGT / TNCN chỉ
+  cho hộ và cá nhân kinh doanh theo tỉ lệ có ngày hiệu lực của `tax.ts` (NĐ 117/2025, cần đối chiếu văn
+  bản gốc) — số của bản thiết kế (690.000 ₫ → 638.250 ₫; 24.600.000 ₫ → 22.755.000 ₫) và bút toán đơn
+  BM-2611-0350 của sổ Chợ Bếp Mộc (`finance.ts`) khớp nhau, có test. Người bán chưa đủ điều kiện thì đợt
+  chi "tạm giữ" và gửi bị chặn (`marketplace.seller_not_active`); chi lại dùng cùng `reference`; đối tác
+  báo kết quả sau 4 giây (tài khoản sai tên chưa sửa thì lỗi lại). Số tài khoản nhận tiền chỉ đi qua form
+  một lần, dữ liệu mẫu chỉ giữ 4 số cuối, không điền lại.
+- Phí sàn là dữ liệu có ngày hiệu lực, chỉ thêm: dòng mới từ ngày mai trở đi, dòng đang mở cùng loại và
+  phạm vi tự đóng vào ngày trước đó; dòng chờ hiệu lực huỷ được (dòng cũ mở lại).
+- Hộp xác nhận nêu hệ quả cho việc về tiền hay không đảo được: duyệt hồ sơ, chấm dứt (thêm ô "tôi hiểu"),
+  gỡ sản phẩm, thêm dòng phí, huỷ dòng phí, gửi / chi lại lệnh chi, phân xử (ô "tôi hiểu tiền hoàn không
+  hoàn tác được"), người bán đồng ý hoàn, gửi hồ sơ, chấp nhận văn bản. Việc đảo được có Hoàn tác: tạm
+  khoá ↔ mở lại (`FormDialog` + `undoAction`), duyệt sản phẩm ↔ về "chờ duyệt" (`ChangeButtons`). Mọi
+  biểu mẫu gom lỗi một lần, lỗi dưới từng ô, mã lỗi `marketplace.*` dịch ở `market.codes.*` /
+  `market.fields.*` (`commerce-action.ts` nhận thêm namespace `market`, chỉ thêm).
+- Dữ liệu mẫu: `src/sample/market-data.ts` (kiểu theo bảng của đặc tả 46, dữ liệu ban đầu) và
+  `src/sample/market.ts` (hàm đọc / ghi, hàm tính thuần có test). Người bán là sáu nút `seller` của
+  `org.ts` (bản thiết kế có "Đồ Gỗ Mộc Lan", cây mẫu không có, nên dùng người bán sẵn có); sản phẩm của
+  người bán là lượt duyệt kèm tóm tắt (catalog mẫu chỉ có sản phẩm của Bếp Mộc). Mã đơn trên sàn ở
+  `MARKET_ORDER_NUMBERS` (đơn đã có trong `order-refs.ts` dùng đúng ID ở đó); bộ đơn hàng (bước 45) dựng
+  sau nên dùng đúng các mã này. Khoá kho mẫu `autoxide.sample.market.2`; lỗi lúc dựng kho không bị giữ lại.
+- Sửa chung (chỉ thêm): ô chọn của `FormDialog` / `InlineForm` mang `key` theo giá trị vừa gửi, vì React
+  đặt lại form sau mỗi lần gửi và ô chọn quay về lựa chọn đầu tiên — báo lỗi xong lựa chọn không mất.
+
+Lý do: chủ dự án giao dựng phân hệ Sàn và Trung tâm người bán theo bản thiết kế `Market` và
+`SellerCenter` trong lúc team API làm bước 46 (W-006). Luật TMĐT 122/2025, Điều 17 đòi xác thực người
+bán trước khi cho bán, nên điều kiện bán đọc thẳng từ Tuân thủ thay vì giữ một bản sao.
+
+Đã cân nhắc: Trung tâm người bán là một màn trong không gian khách — người bán chỉ được thấy nút của
+mình, bản thiết kế dùng thanh bên rút gọn riêng; giữ trạng thái KYC riêng trong dữ liệu sàn — hai nguồn
+sự thật, duyệt KYC ở Tuân thủ không đổi được tình trạng bán; "Xem như người bán" bằng cách cấp tạm
+`marketplace.sell` — trộn quyền thử với quyền thật, đúng điều giao việc yêu cầu tránh; thêm người bán
+"Đồ Gỗ Mộc Lan" vào cây mẫu — đổi số liệu của Cây tổ chức và Tuân thủ đã có test.

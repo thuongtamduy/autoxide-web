@@ -18,6 +18,7 @@ import {
   NEWSLETTER_READ,
 } from "@/lib/engage";
 import { FINANCE_PERMISSIONS } from "@/lib/finance";
+import { MARKET_PERMISSIONS, SELLER_SPACE_PERMISSIONS } from "@/lib/market";
 import {
   AUDIT_READ,
   CASES_READ,
@@ -169,6 +170,20 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    // Sàn: module `marketplace` của core chưa có (bước 46), nên màn "Vận hành sàn" dựng bằng dữ liệu
+    // mẫu (W-006, W-018). Đứng sau Khách hàng (bước 47, chưa dựng) và trước Tài chính như `RAIL_TENANT`.
+    id: "market",
+    icon: "store",
+    pages: [
+      {
+        id: "market",
+        href: "/market",
+        permission: MARKET_PERMISSIONS,
+        sample: { step: "46" },
+      },
+    ],
+  },
+  {
     // Tài chính: module `tax`, `ledger`, `invoices` của core chưa có (bước 36), nên màn "Kế toán"
     // dựng bằng dữ liệu mẫu (W-006, W-016); vẫn lọc theo permission dự kiến của đặc tả.
     id: "finance",
@@ -241,10 +256,13 @@ export const ACCOUNT_PAGE: NavPage = { id: "account", href: "/account" };
  * mặt điều khiển của nhân sự vận hành nền tảng (mọi đường dẫn dưới `/platform`), sổ `NAV_PLATFORM`,
  * thanh bên, đầu trang và thanh đáy riêng. Hai không gian không trộn mục của nhau.
  */
-export type Workspace = "tenant" | "platform";
+export type Workspace = "tenant" | "platform" | "seller";
 
 /** Trang đầu của mặt điều khiển nền tảng. */
 export const PLATFORM_HOME = "/platform";
+
+/** Trang đầu của Trung tâm người bán (W-018). */
+export const SELLER_HOME = "/seller";
 
 /**
  * Sổ của mặt điều khiển nền tảng: mỗi nhóm một mục thanh bên, theo thứ tự của bản thiết kế
@@ -338,16 +356,50 @@ export const NAV_PLATFORM: NavGroup[] = [
   },
 ];
 
+/**
+ * Sổ của Trung tâm người bán (W-018): không gian thứ ba, cho người bán trên sàn — chỉ thấy dữ liệu của
+ * nút người bán của mình. Thanh bên rút gọn theo `RAIL_SELLER` của bản thiết kế. Cả không gian chờ API
+ * của bước 46 (dữ liệu mẫu, W-006). Hiện cho người bán (`marketplace.sell`) và cho người xem được hồ sơ
+ * người bán để "Xem như người bán" (lối thử, không cấp quyền gì).
+ */
+export const NAV_SELLER: NavGroup[] = (
+  [
+    ["sellerHome", "home", SELLER_HOME],
+    ["sellerOrders", "cart", "/seller/orders"],
+    ["sellerProducts", "box", "/seller/products"],
+    ["sellerShop", "store", "/seller/shop"],
+    ["sellerMoney", "wallet", "/seller/money"],
+  ] as const
+).map(([id, icon, href]) => ({
+  id,
+  icon,
+  pages: [
+    {
+      id,
+      href,
+      permission: SELLER_SPACE_PERMISSIONS,
+      sample: { step: "46" },
+      ...(href === SELLER_HOME ? { exact: true } : {}),
+    },
+  ],
+}));
+
 /** Sổ điều hướng của một không gian. */
 export function navOf(workspace: Workspace): NavGroup[] {
-  return workspace === "platform" ? NAV_PLATFORM : NAV;
+  if (workspace === "platform") return NAV_PLATFORM;
+  if (workspace === "seller") return NAV_SELLER;
+  return NAV;
 }
 
-/** Không gian của một đường dẫn: `/platform` và mọi trang con là mặt điều khiển nền tảng. */
+/**
+ * Không gian của một đường dẫn: `/platform` và mọi trang con là mặt điều khiển nền tảng; `/seller` và
+ * mọi trang con là Trung tâm người bán.
+ */
 export function workspaceOf(pathname: string): Workspace {
-  return pathname === PLATFORM_HOME || pathname.startsWith(`${PLATFORM_HOME}/`)
-    ? "platform"
-    : "tenant";
+  const under = (home: string) => pathname === home || pathname.startsWith(`${home}/`);
+  if (under(PLATFORM_HOME)) return "platform";
+  if (under(SELLER_HOME)) return "seller";
+  return "tenant";
 }
 
 export interface Viewer {
