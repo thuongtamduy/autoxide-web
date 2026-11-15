@@ -119,9 +119,15 @@ test("Nhà phát triển: lần giao của mọi endpoint, lọc lỗi, tải Op
   }
   await request.post(`${CORE}/__webhooks/fire`, { data: { event: "notes.note_created" } });
 
-  await page.goto("/settings/webhooks?state=failing");
-  await expect(rows(page)).toHaveCount(1);
-  await expect(rows(page).first()).toContainText("fail.example.com/in");
+  // Lần giao gần nhất đi cùng danh sách (`last_delivery`); lọc đang bật / đã tắt ở core (`status`).
+  await page.goto("/settings/webhooks");
+  await expect(rows(page)).toHaveCount(2);
+  await expect(rows(page).filter({ hasText: "fail.example.com/in" })).toContainText("HTTP 502");
+  await expect(rows(page).filter({ hasText: "fail.example.com/in" })).toContainText("Failing");
+  await expect(rows(page).filter({ hasText: "ok.example.com/in" })).toContainText("Receiving");
+  await page.getByRole("link", { name: "Turned off" }).click();
+  await expect(page).toHaveURL(/status=disabled/);
+  await expect(page.locator(".empty")).toHaveText("No endpoints here.");
 
   await page.goto("/settings/developers");
   await expect(rows(page)).toHaveCount(2);
@@ -181,6 +187,110 @@ test("API key: lỗi gom một lần, sai mật khẩu, khoá hiện một lần
 
   await page.getByRole("link", { name: "MCP connection" }).click();
   await expect(page.getByTestId("mcp-endpoint")).toHaveText("http://127.0.0.1:4010/mcp");
+});
+
+test("API key: xác nhận bằng passkey hay mã của app; quản trị viên xem và thu hồi key của mọi người", async ({
+  page,
+  context,
+}) => {
+  // Authenticator ảo của Chromium: thêm một passkey cho admin, rồi dùng nó để xác nhận khi tạo key.
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("WebAuthn.enable");
+  await cdp.send("WebAuthn.addVirtualAuthenticator", {
+    options: {
+      protocol: "ctap2",
+      transport: "internal",
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+    },
+  });
+  await signIn(page, "/account/security");
+  await page.getByRole("button", { name: "Add passkey" }).click();
+  await dialog(page).getByLabel("Name").fill("Laptop");
+  await dialog(page).getByLabel("Current password").fill("admin password");
+  await dialog(page).getByRole("button", { name: "Continue" }).click();
+  await expect(toast(page)).toHaveText("Passkey added.");
+
+  await page.goto("/settings/api-keys/new");
+  // Sổ permission của chính mình (`/me/permissions`), kèm mô tả và mức rủi ro.
+  await expect(page.getByText("See and revoke the API keys of every user.")).toBeVisible();
+  const confirm = page.getByRole("radiogroup", { name: "Confirm it is you" });
+  await expect(confirm.getByRole("radio")).toHaveCount(2);
+  await confirm.getByText("Passkey").click();
+  await expect(page.getByLabel("Current password")).toHaveCount(0);
+  await page.getByLabel("Name", { exact: true }).fill("passkey-agent");
+  await page.getByLabel(/auth\.users\.read/).check();
+  await page.getByRole("button", { name: "Create key" }).click();
+  await expect(page.getByTestId("created-key").getByTestId("secret").first()).toHaveText(/^axk_/);
+
+  // Người đã bật app xác thực xác nhận bằng mã (sai thì báo dưới ô).
+  await context.clearCookies();
+  await page.goto("/login?next=%2Fsettings%2Fapi-keys%2Fnew");
+  await page.getByLabel("Email").fill("mfa@example.com");
+  await page.getByLabel("Password").fill("mfa password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Code").fill("123456");
+  await page.getByRole("button", { name: "Verify" }).click();
+  await expect(page).toHaveURL(/\/settings\/api-keys\/new$/);
+  await page
+    .getByRole("radiogroup", { name: "Confirm it is you" })
+    .getByText("Authenticator app")
+    .click();
+  await page.getByLabel("Name", { exact: true }).fill("mfa-agent");
+  await page.getByLabel(/notes\.read/).check();
+  await page.getByLabel("Code from your authenticator app").fill("000000");
+  await page.getByRole("button", { name: "Create key" }).click();
+  await expect(page.getByLabel("Code from your authenticator app")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await page.getByLabel("Code from your authenticator app").fill("123456");
+  await page.getByRole("button", { name: "Create key" }).click();
+  await expect(page.getByTestId("created-key").getByTestId("secret").first()).toHaveText(/^axk_/);
+
+  // Quản trị viên: tab "Key của mọi người", thu hồi key của người khác.
+  await context.clearCookies();
+  await signIn(page, "/settings/api-keys/all");
+  await expect(page).toHaveURL(/\/settings\/api-keys\/all$/);
+  await expect(rows(page)).toHaveCount(2);
+  const other = rows(page).filter({ hasText: "mfa-agent" });
+  await expect(other).toContainText("mfa@example.com");
+  await other.getByRole("button", { name: "Revoke" }).click();
+  await expect(dialog(page)).toContainText("The audit log records that you revoked it.");
+  await dialog(page).getByRole("button", { name: "Revoke key" }).click();
+  await expect(toast(page)).toHaveText("Revoked mfa-agent.");
+  await expect(rows(page)).toHaveCount(1);
+  await expect(rows(page).first()).toContainText("passkey-agent");
+});
+
+test("cài đặt của khách (core thật): đặt, secret không hiện lại, gỡ", async ({ page }) => {
+  await signIn(page, "/settings/connections");
+  const url = page.getByTestId("tset-kernel.public_url");
+  await expect(url).toContainText("the server-wide configuration applies");
+  await url.getByRole("button", { name: "Set kernel.public_url" }).click();
+  await dialog(page).getByRole("button", { name: "Save" }).click();
+  await expect(dialog(page).getByLabel("Value")).toHaveAttribute("aria-invalid", "true");
+  await dialog(page).getByLabel("Value").fill("https://shop.example");
+  await dialog(page).getByRole("button", { name: "Save" }).click();
+  await expect(toast(page)).toHaveText("Saved kernel.public_url.");
+  await expect(url).toContainText("https://shop.example");
+
+  const smtp = page.getByTestId("tset-mail.smtp_url");
+  await smtp.getByRole("button", { name: "Set mail.smtp_url" }).click();
+  await expect(dialog(page).getByLabel("Value")).toHaveAttribute("type", "password");
+  await dialog(page).getByLabel("Value").fill("smtp://user:secret@mail.example:587");
+  await dialog(page).getByRole("button", { name: "Save" }).click();
+  await expect(toast(page)).toHaveText("Saved mail.smtp_url.");
+  await expect(smtp).toContainText("set");
+  await expect(page.getByText("secret@mail.example")).toHaveCount(0);
+
+  await url.getByRole("button", { name: "Remove" }).click();
+  await dialog(page).getByRole("button", { name: "Remove" }).click();
+  await expect(toast(page)).toHaveText(
+    "Removed kernel.public_url; the server-wide configuration applies.",
+  );
+  await expect(url).toContainText("the server-wide configuration applies");
 });
 
 test("lệnh chờ duyệt (mẫu): hộp xác nhận nêu hệ quả, lệnh rủi ro dùng nút đỏ", async ({ page }) => {

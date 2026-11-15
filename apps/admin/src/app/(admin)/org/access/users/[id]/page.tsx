@@ -16,8 +16,10 @@ import { Icon } from "@/components/shell/icon";
 import { Flash } from "@/components/ui/flash";
 import { Time } from "@/components/ui/time";
 import { allRoles } from "@/lib/access";
+import { getClientConfig } from "@/lib/client-config";
 import { isForbidden, isNotFound, load, loadTagged } from "@/lib/core";
 import {
+  API_KEYS_MANAGE,
   PASSKEYS_MANAGE,
   ROLES_MANAGE,
   ROLES_READ,
@@ -31,7 +33,9 @@ type Role = components["schemas"]["RoleResponse"];
 type Passkey = components["schemas"]["PasskeyResponse"];
 
 // Trang một người dùng: hồ sơ, trạng thái, role, thao tác của quản trị viên. Nút nào người xem
-// không có permission thì không hiện (core vẫn kiểm ở mỗi lời gọi).
+// không có permission thì không hiện (core vẫn kiểm ở mỗi lời gọi). "Đặt mật khẩu đầu tiên" chỉ hiện
+// khi tài khoản chưa có mật khẩu (`has_password`), "Tắt xác thực hai bước" chỉ khi đang bật
+// (`mfa_enabled`).
 export default async function UserPage(props: PageProps<"/org/access/users/[id]">) {
   const t = await getTranslations();
   const { id } = await props.params;
@@ -70,13 +74,16 @@ export default async function UserPage(props: PageProps<"/org/access/users/[id]"
     }
     throw error;
   }
-  const [manage, assign, readRoles, passkeysManage] = await Promise.all([
+  const [manage, assign, readRoles, passkeysManage, keysManage] = await Promise.all([
     can(USERS_MANAGE),
     can(ROLES_MANAGE),
     can(ROLES_READ),
     can(PASSKEYS_MANAGE),
+    can(API_KEYS_MANAGE),
   ]);
   const passkeys = passkeysManage ? await passkeysOf(id) : null;
+  // Máy chủ chưa gửi thư thật (chỉ ghi ra tệp): báo trước khi quản trị viên bấm "Gửi thư đặt lại".
+  const mailOff = (await getClientConfig())?.mail?.sends === false;
   const roles = assign && readRoles ? await allRoles() : null;
   const who = user.name || user.email;
   const target = { id: user.id, email: user.email, who };
@@ -108,6 +115,30 @@ export default async function UserPage(props: PageProps<"/org/access/users/[id]"
                 t("access.status.unverified")
               )}
             </dd>
+          </div>
+          <div>
+            <dt>{t("access.users.lastSignIn")}</dt>
+            <dd data-testid="user-last-sign-in">
+              {user.last_sign_in_at ? (
+                <Time value={user.last_sign_in_at} />
+              ) : (
+                t("access.users.neverSignedIn")
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt>{t("access.user.signIn")}</dt>
+            <dd data-testid="user-sign-in">
+              {user.has_password ? t("access.user.hasPassword") : t("access.user.noPassword")} ·{" "}
+              {user.mfa_enabled ? t("access.user.mfaOn") : t("access.user.mfaOff")}
+            </dd>
+            {keysManage ? (
+              <dd>
+                <Link href={`/settings/api-keys/all?user=${user.id}`}>
+                  {t("access.user.apiKeys")}
+                </Link>
+              </dd>
+            ) : null}
           </div>
           <div>
             <dt>{t("access.users.created")}</dt>
@@ -195,19 +226,27 @@ export default async function UserPage(props: PageProps<"/org/access/users/[id]"
             {t("access.admin.title")}
           </h2>
           <p className="fhint">{t("access.admin.about")}</p>
+          {mailOff ? <p className="note warn">{t("access.admin.mailOff")}</p> : null}
           <div className="card list">
             <AdminRow title={t("access.admin.reset.title")} meta={t("access.admin.reset.meta")}>
               <ResetMailButton target={target} />
             </AdminRow>
-            <AdminRow title={t("access.admin.password.row")} meta={t("access.admin.password.meta")}>
-              <FirstPasswordDialog target={target} />
-            </AdminRow>
+            {user.has_password ? null : (
+              <AdminRow
+                title={t("access.admin.password.row")}
+                meta={t("access.admin.password.meta")}
+              >
+                <FirstPasswordDialog target={target} />
+              </AdminRow>
+            )}
             <AdminRow title={t("access.admin.sessions.row")} meta={t("access.admin.sessions.meta")}>
               <EndSessionsDialog target={target} />
             </AdminRow>
-            <AdminRow title={t("access.admin.mfa.row")} meta={t("access.admin.mfa.meta")}>
-              <RemoveMfaDialog target={target} />
-            </AdminRow>
+            {user.mfa_enabled ? (
+              <AdminRow title={t("access.admin.mfa.row")} meta={t("access.admin.mfa.meta")}>
+                <RemoveMfaDialog target={target} />
+              </AdminRow>
+            ) : null}
             <AdminRow title={t("access.user.delete.row")} meta={t("access.user.delete.meta")}>
               <DeleteUserDialog target={target} />
             </AdminRow>
@@ -232,6 +271,7 @@ export default async function UserPage(props: PageProps<"/org/access/users/[id]"
                   <span className="item-main">
                     <span className="item-title">{passkey.name}</span>
                     <span className="item-meta">
+                      {passkey.authenticator ? `${passkey.authenticator} · ` : ""}
                       {t("access.admin.passkeys.created")} <Time value={passkey.created_at} /> ·{" "}
                       {t("access.admin.passkeys.lastUsed")}{" "}
                       {passkey.last_used_at ? (

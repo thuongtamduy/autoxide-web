@@ -1129,6 +1129,68 @@ lâu; chủ dự án muốn làm tiếp không chờ. Ghim theo commit giữ đ�
 Đã cân nhắc: ghim theo "main mới nhất" — mỗi lần sinh lại SDK có thể ra hợp đồng khác, giao diện hỏng mà không
 biết vì sao; chờ bản phát hành — không biết bao giờ.
 
+## W-027 · Bỏ cách tạm ở tài khoản, người dùng, API key, audit, webhook, nền tảng: dùng API mới của core (đề bài A–D, bước 33) — 2026-11-15 — agent quyết
+
+Core `main` `27380c9` đã làm đề bài A–D của giao diện (D-264, D-265, D-271, D-272 của core) và một phần bước 33
+(khách hàng, placement, cài đặt theo khách: D-258, D-260, D-261). Giao diện bỏ các cách tạm đã ghi ở bảng thiếu
+API và nối endpoint mới.
+
+Quyết định:
+
+- **Lỗi của link trong thư**: `reason` của Problem (`expired`, `used`, `unknown`) chọn câu báo của `/verify-email`,
+  `/reset-password`, `/not-me` (`linkReason` ở `src/lib/form.ts`). Core cũ không trả `reason` thì coi như
+  `unknown`. `errors[].detail` đã do core dịch: không có cách tạm nào để bỏ.
+- **Permission**: bộ chọn của role đọc `GET /auth/permissions` (đã có `risk`), không ghép sổ module nữa. Người tạo
+  API key đọc `GET /me/permissions` (của chính mình, kèm mô tả và rủi ro) — đúng tập một key được phép có, không
+  cần `auth.roles.read`.
+- **Danh sách người dùng một lời gọi**: `include=roles`, lọc `status` ở core (chip Tất cả / Đang dùng / Đã khoá),
+  cột "Đăng nhập gần nhất". Giao việc ở Hộp việc cũng dùng `include=roles` + sổ role (hai lời gọi thay cho một lời
+  gọi mỗi người).
+- **Trang người dùng**: "Đặt mật khẩu đầu tiên" chỉ khi `has_password` là `false`, "Tắt xác thực hai bước" chỉ khi
+  `mfa_enabled`; làm xong thì trang làm mới và nút biến mất (báo bằng `useSubmit`, không chờ effect).
+- **Tài khoản của tôi**: email đang chờ xác minh (`pending_email`) hiện kèm hạn, huỷ bằng `DELETE /auth/me/email`.
+  Tài khoản chưa có mật khẩu **không** có endpoint đặt mật khẩu bằng phiên (D-265 của core — kẻ lấy được token sẽ
+  tạo được cách đăng nhập lâu dài): nút "Gửi link cho tôi" gọi `POST /auth/password-reset` với chính email của tài
+  khoản. Xoá tài khoản (cần mật khẩu) chỉ sang chỗ đặt mật khẩu. Máy chủ chưa gửi thư thật (`mail.sends` của
+  cấu hình cho giao diện) thì nói trước ở hai chỗ gửi thư.
+- **Phiên và passkey**: cột "Đăng nhập bằng" (`sign_in_method`), quốc gia (`country`, tên theo ngôn ngữ bằng
+  `Intl.DisplayNames`); tên loại passkey (`authenticator`) ở Tài khoản của tôi và ở trang người dùng.
+- **API key**: tab "Key của mọi người" (`auth.api_keys.manage`) xem và thu hồi key của ai cũng được; trang người
+  dùng có link "Xem API key của người này" (`?user=`). Tạo key xác nhận lại bằng mật khẩu, mã của app xác thực
+  (khi đã bật) hay passkey (khi đã có): passkey dùng **nghi thức đăng nhập** `POST /auth/login/passkey/options`
+  như core chọn; id nghi thức nằm trong cookie `httpOnly` (cùng cookie với việc thêm passkey), trình duyệt chỉ ký.
+  `send` nhận `own401` để mã 401 của chính việc đang làm (`auth.passkey_sign_in_failed`) không bị coi là hết phiên.
+- **Audit**: `include=actor` (tên người làm đi cùng mục) ở nhật ký và Hoạt động gần đây. Trang một mục vẫn đọc
+  `GET /auth/users/{id}` một lần (core chỉ nhận `include` ở danh sách).
+- **Webhook**: `last_delivery` đi cùng danh sách, lọc `status` (đang bật / đã tắt) ở core. Bỏ lọc "đang lỗi" trên
+  trang đang xem (cách tạm cũ); trạng thái lỗi vẫn hiện trên từng dòng.
+- **Cấu hình cho giao diện**: `getClientConfig()` (`src/lib/client-config.ts`, `cache` theo request, không cần
+  đăng nhập, `null` khi core cũ) — commit riêng để agent làm Nội dung / Media dùng chung. Ở phần này: địa chỉ
+  công khai cho trang kết nối MCP và lệnh `curl` mẫu (`src/lib/public-url.ts`; chưa đặt thì dùng địa chỉ trang
+  quản trị gọi core và nói rõ), cờ `mail.sends`.
+- **Cài đặt theo khách**: tab "Kết nối đối tác" thành tab thật (`kernel.settings.manage`): khối "Cài đặt của khách
+  này" đặt / gỡ bằng `PUT/DELETE /kernel/settings/{name}`; secret nhập bằng ô mật khẩu, không điền lại sau lỗi,
+  không bao giờ hiện lại. Nhà cung cấp SMS, thanh toán, hoá đơn điện tử vẫn là khối mẫu (bước 36, 39).
+- **Mặt điều khiển nền tảng**: sổ khách và placement đọc thật (`GET /kernel/tenants`, `/kernel/placements`), ghép
+  với dữ liệu mẫu theo **id** (`mergeTenants`, `mergePlacements` ở `src/lib/platform.ts`): khách của core trước,
+  rồi khách chỉ có trong dữ liệu mẫu (nhãn "mẫu"); trường core chưa có (mô hình kinh doanh, tên miền, vị trí,
+  migration còn chờ) lấy từ bản mẫu cùng id khi bật dữ liệu mẫu, không thì để trống. Thêm khách
+  (`POST /kernel/tenants`; bản cài `single` báo `tenant_single_mode`), trang khách của core (đổi tên, tạm khoá /
+  mở lại bằng `PATCH` kèm `If-Match`); khách mẫu vẫn mở trang mẫu cũ. Hai màn Khách hàng và Đội database hiện
+  cả khi tắt dữ liệu mẫu; gói, thuê bao, cấp phát, sức khoẻ, vào dữ liệu khách vẫn chỉ có khi bật. Lối sang mặt
+  điều khiển chỉ cho nhân sự của khách nền tảng (`platform` của `GET /kernel/tenant`; core cũ thì theo permission).
+
+Lý do: mỗi cách tạm ở trên là một lời gọi cho từng dòng, một bộ lọc chỉ trên trang đang xem, hay một nút bấm sai
+mới biết — đúng thứ đề bài A–D của core sửa. Ghép theo id giữ được luồng mẫu của bước 35 (cấp phát) mà không bao
+giờ thay dữ liệu thật bằng dữ liệu mẫu.
+
+Đã cân nhắc: thay cả sổ khách mẫu bằng sổ thật và bỏ luồng cấp phát mẫu — mất màn của bước 35 tới khi core có;
+giữ sổ mẫu khi bật dữ liệu mẫu — trái luật "không thay API có sẵn bằng dữ liệu mẫu"; một endpoint "đặt mật khẩu
+bằng phiên" — core đã từ chối có lý do (D-265).
+
+Core khác tài liệu: `LastDelivery.status` ghi `pending | delivered | failed` nhưng core trả trạng thái của lần giao
+(`succeeded`); giao diện nhận cả hai. `Created` của `POST /kernel/tenants` đặt `Location` thiếu tiền tố `/api/v1`.
+
 ## W-028 · Nội dung, media, menu, biểu mẫu, bản tin, bình luận dùng API mới của core (đề bài A–C); bỏ cách làm tạm — 2026-11-15 — agent quyết
 
 Core `27380c9` làm xong đề bài giao diện (D-264, D-266–D-271 của core). Các màn dưới đây bỏ cách làm tạm (gọi

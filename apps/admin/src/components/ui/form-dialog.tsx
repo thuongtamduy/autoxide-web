@@ -35,7 +35,8 @@ interface Base {
 /** Một ô của hộp thoại, mô tả bằng dữ liệu để trang (Server Component) truyền chữ đã dịch. */
 export type FieldSpec =
   | (Base & {
-      kind: "text" | "email" | "date" | "number";
+      /** `password`: giá trị bí mật (secret của khách) — không hiện chữ khi gõ. */
+      kind: "text" | "email" | "date" | "number" | "password";
       mono?: boolean;
       defaultValue?: string;
       placeholder?: string;
@@ -245,7 +246,8 @@ function DialogField({ field, state }: { field: FieldSpec; state: DialogState })
       mono={field.mono ?? false}
       hint={field.hint}
       placeholder={field.placeholder}
-      defaultValue={value ?? field.defaultValue}
+      // Không điền lại giá trị bí mật sau khi báo lỗi (state đi qua trình duyệt).
+      defaultValue={field.kind === "password" ? undefined : (value ?? field.defaultValue)}
       error={error}
     />
   );

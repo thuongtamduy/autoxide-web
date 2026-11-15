@@ -26,12 +26,7 @@ export interface GeneralTab {
 const TABS: (GeneralTab & { permission: string })[] = [
   { id: "plan", href: "/settings/plan", permission: BILLING_READ, sample: "35" },
   { id: "domains", href: "/settings/domains", permission: DOMAINS_MANAGE, sample: "33" },
-  {
-    id: "connections",
-    href: "/settings/connections",
-    permission: TENANT_SETTINGS_MANAGE,
-    sample: "33",
-  },
+  { id: "connections", href: "/settings/connections", permission: TENANT_SETTINGS_MANAGE },
   { id: "modules", href: "/settings/modules", permission: MODULES_READ },
   { id: "jobs", href: "/settings/jobs", permission: DEVTOOLS_READ, sample: "52" },
   { id: "staff", href: "/org/access/users", permission: USERS_READ, external: true },

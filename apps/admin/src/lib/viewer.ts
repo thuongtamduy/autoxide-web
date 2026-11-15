@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Me, ModuleInfo } from "@autoxide/sdk";
+import { ApiError, type components, type Me, type ModuleInfo } from "@autoxide/sdk";
 import { cache } from "react";
 import type { Viewer } from "@/nav/nav";
 import { holds } from "@/nav/nav";
@@ -24,6 +24,21 @@ export const getModules = cache(async (): Promise<ModuleInfo[] | null> => {
     throw error;
   }
 });
+
+/**
+ * Khách của request (`GET /kernel/tenant`, bước 33): tên, chế độ của bản cài, có phải khách nền tảng
+ * (nhân sự vận hành) không. `null` khi core không trả được (core cũ chưa có endpoint).
+ */
+export const getCurrentTenant = cache(
+  async (): Promise<components["schemas"]["CurrentTenant"] | null> => {
+    try {
+      return (await load((client) => client.GET("/api/v1/kernel/tenant"))).data;
+    } catch (error) {
+      if (error instanceof ApiError) return null;
+      throw error;
+    }
+  },
+);
 
 /** Quyền của người đang đăng nhập, để ẩn nút họ không dùng được (core vẫn kiểm ở mỗi lời gọi). */
 export const getViewer = cache(async (): Promise<Viewer> => {

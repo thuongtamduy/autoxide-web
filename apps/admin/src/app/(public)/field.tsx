@@ -44,13 +44,16 @@ export function PublicField({
 export function PublicAlert({
   error,
   code,
+  reason,
 }: {
   error?: string | undefined;
   code?: string | undefined;
+  /** `reason` của Problem khi có (token trong link: `expired`, `used`, `unknown`). */
+  reason?: string | undefined;
 }) {
   if (!error) return null;
   return (
-    <p role="alert" data-code={code} className="text-sm text-danger">
+    <p role="alert" data-code={code} data-reason={reason} className="text-sm text-danger">
       {error}
     </p>
   );

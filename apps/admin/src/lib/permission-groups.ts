@@ -7,8 +7,9 @@ export interface PermissionInfo {
   name: string;
   description: string;
   /**
-   * Mức cẩn thận khi cấp (core v0.14.0, `ModulePermission.risk` của `GET /kernel/modules`): `read`,
-   * `write`, `destructive`, `sensitive_data`, `money`. Không đọc được sổ module thì bỏ trống.
+   * Mức cẩn thận khi cấp (`risk` của `GET /auth/permissions` và `GET /me/permissions`): `read`,
+   * `write`, `destructive`, `sensitive_data`, `money`. Trống với permission role còn giữ mà sổ không
+   * còn (module đã gỡ).
    */
   risk?: string;
 }
@@ -21,18 +22,6 @@ export function notableRisk(permission: PermissionInfo): NotableRisk | null {
   return (NOTABLE_RISKS as readonly string[]).includes(permission.risk ?? "")
     ? (permission.risk as NotableRisk)
     : null;
-}
-
-/** Gắn mức rủi ro từ sổ module vào sổ permission (theo tên); permission không có trong sổ module giữ nguyên. */
-export function withRisk(
-  catalog: readonly PermissionInfo[],
-  modules: readonly { permissions: readonly { name: string; risk: string }[] }[],
-): PermissionInfo[] {
-  const risks = new Map(modules.flatMap((m) => m.permissions.map((p) => [p.name, p.risk])));
-  return catalog.map((p) => {
-    const risk = risks.get(p.name);
-    return risk ? { ...p, risk } : p;
-  });
 }
 
 export interface PermissionGroup {

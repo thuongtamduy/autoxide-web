@@ -204,7 +204,10 @@ function applyStep(run: Provisioning, at: string): void {
 
 // ---------------------------------------------------------------- Khách hàng (bước 33)
 
-/** Thay bằng GET /api/v1/kernel/tenants?status=&parent_id= (bước 33) khi core có. */
+/**
+ * Khách mẫu. Core đã có `GET /api/v1/kernel/tenants` (bước 33): `lib/platform-server.ts` đọc khách
+ * thật rồi chỉ thêm khách mẫu mà core không có (vd từ luồng cấp phát mẫu của bước 35, W-027).
+ */
 export async function listTenants(
   query: { status?: TenantStatus; parent_id?: string; limit?: number; cursor?: string } = {},
 ): Promise<SamplePage<Tenant>> {
@@ -218,7 +221,7 @@ export async function listTenants(
   });
 }
 
-/** Thay bằng GET /api/v1/kernel/tenants/{id} (bước 33) khi core có. */
+/** Khách mẫu theo id; khách của core đọc `GET /api/v1/kernel/tenants/{id}` (W-027). */
 export async function getTenant(id: string): Promise<{ data: Tenant } | null> {
   syncPlatform();
   const tenant = store().tenants.find((x) => x.id === id);
@@ -226,8 +229,8 @@ export async function getTenant(id: string): Promise<{ data: Tenant } | null> {
 }
 
 /**
- * Tạm khoá hẳn / mở lại khách. Thay bằng PATCH /api/v1/kernel/tenants/{id} `{status, reason}`
- * (bước 33; `reason` là đề xuất mới để ghi vào audit) khi core có.
+ * Tạm khoá hẳn / mở lại khách MẪU. Khách của core dùng `PATCH /api/v1/kernel/tenants/{id}` (W-027;
+ * core chưa nhận `reason` — đề xuất mới để ghi vào audit).
  */
 export async function setTenantStatus(
   id: string,
@@ -258,7 +261,10 @@ export async function setTenantStatus(
 
 // ---------------------------------------------------------------- Placement (bước 33)
 
-/** Thay bằng GET /api/v1/kernel/placements (bước 33) khi core có. Không bao giờ có URL. */
+/**
+ * Placement mẫu. Core đã có `GET /api/v1/kernel/placements` (bước 33): `lib/platform-server.ts` ghép
+ * placement thật với trường mẫu chưa có (`location`, `pending_migrations`). Không bao giờ có URL.
+ */
 export async function listPlacements(): Promise<{ data: Placement[] }> {
   syncPlatform();
   return { data: structuredClone(store().placements) };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { nextDone, parseForm, problemState } from "./form";
+import { linkReason, nextDone, parseForm, problemState } from "./form";
 
 function form(values: Record<string, string>): FormData {
   const data = new FormData();
@@ -76,6 +76,25 @@ describe("problemState", () => {
     );
 
     expect(state).toEqual({ code: "auth.login_throttled", error: "Wait 60 seconds." });
+  });
+});
+
+describe("linkReason", () => {
+  const base = { type: "about:blank", title: "Bad Request", status: 400 };
+  const code = "auth.invalid_reset_token";
+
+  it("giữ reason của core cho token trong link", () => {
+    const state = problemState({ ...base, code, detail: "Ask for a new one.", reason: "used" }, []);
+    expect(state.reason).toBe("used");
+    expect(linkReason(state, code)).toBe("used");
+    expect(linkReason({ ...state, reason: "expired" }, code)).toBe("expired");
+  });
+
+  it("thiếu hay lạ thì là unknown; lỗi khác thì null", () => {
+    expect(linkReason({ code }, code)).toBe("unknown");
+    expect(linkReason({ code, reason: "later" }, code)).toBe("unknown");
+    expect(linkReason({ code: "auth.login_throttled" }, code)).toBeNull();
+    expect(linkReason({}, code)).toBeNull();
   });
 });
 

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
 import { Chips } from "@/components/engage/common";
 import { TipHeading } from "@/components/help/info-tip";
 import {
@@ -11,8 +10,10 @@ import {
   TENANT_BADGE,
   UsageMeter,
 } from "@/components/platform/common";
+import { NewTenantDialog } from "@/components/platform/new-tenant";
 import { ProvisionDialog } from "@/components/platform/provision-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
+import { load } from "@/lib/core";
 import { oneOf, type SearchParams } from "@/lib/engage";
 import { formatMoney } from "@/lib/format";
 import { initialsOf } from "@/lib/initials";
@@ -25,25 +26,44 @@ import {
   type TenantFilter,
   type TenantRow,
 } from "@/lib/platform";
+import {
+  type PlatformData,
+  platformData,
+  platformGate,
+  platformRefused,
+} from "@/lib/platform-server";
 import { can } from "@/lib/viewer";
-import { listPlacements, listTenants } from "@/sample/platform";
+import { sampleDataEnabled } from "@/sample";
 import { getUsage, listPlans, listSubscriptions, nearestLimit } from "@/sample/platform-plans";
 
 const ENDPOINTS =
-  "GET /api/v1/kernel/tenants, GET /api/v1/kernel/placements (bước 33); GET /api/v1/plans/subscriptions, GET /api/v1/plans/tenants/{id}/usage, GET /api/v1/plans/plans (bước 35)";
+  "GET /api/v1/plans/subscriptions, GET /api/v1/plans/tenants/{id}/usage, GET /api/v1/plans/plans (bước 35)";
 
-// Màn "Khách hàng" của mặt điều khiển (dữ liệu mẫu, W-014): sổ khách kèm mô hình, gói, vị trí dữ
-// liệu, migration, thuê bao, hạn mức gần chạm nhất. Không có dữ liệu nghiệp vụ của khách ở đây.
+// Màn "Khách hàng" của mặt điều khiển: sổ khách và placement THẬT của core (bước 33) — tên, trạng
+// thái, cây khách, nơi lưu, migration; tạo khách mới bằng `POST /kernel/tenants`. Gói, thuê bao, hạn
+// mức (bước 35) và khách chỉ có trong luồng cấp phát mẫu là dữ liệu mẫu (W-014), chỉ khi bật dữ liệu
+// mẫu. Không có dữ liệu nghiệp vụ của khách ở đây.
 export default async function TenantsPage(props: { searchParams: Promise<SearchParams> }) {
-  const gate = await sampleGate(TENANTS_READ);
+  const gate = await platformGate(TENANTS_READ);
   if (gate) return gate;
   const t = await getTranslations("platform");
   const locale = await getLocale();
   const params = await props.searchParams;
   const filter: TenantFilter = oneOf(params, "filter", TENANT_FILTERS) ?? "all";
-  const [{ data: tenants }, { data: placements }, { data: subs }, { data: plans }] =
-    await Promise.all([listTenants(), listPlacements(), listSubscriptions(), listPlans()]);
-  const usage = await Promise.all(tenants.map((x) => getUsage(x.id)));
+  const sample = sampleDataEnabled();
+  let data: PlatformData;
+  try {
+    data = await platformData();
+  } catch (error) {
+    const refused = await platformRefused(error);
+    if (refused) return refused;
+    throw error;
+  }
+  const { tenants, placements } = data;
+  const [{ data: subs }, { data: plans }] = sample
+    ? await Promise.all([listSubscriptions(), listPlans()])
+    : [{ data: [] }, { data: [] }];
+  const usage = sample ? await Promise.all(tenants.map((x) => getUsage(x.id))) : [];
   const rows: TenantRow[] = tenants.map((tenant, index) => {
     const subscription = subs.find((s) => s.tenant_id === tenant.id) ?? null;
     return {
@@ -64,6 +84,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
     })),
   ).filter(({ item }) => matchesFilter(item, filter));
   const [provision, manage] = await Promise.all([can(PROVISION), can(TENANTS_MANAGE)]);
+  const mode = await currentMode();
   const customers = rows.filter((row) => !row.tenant.is_platform);
   const now = Date.now();
   const kpis = [
@@ -74,25 +95,29 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         models: new Set(customers.map((r) => r.tenant.business_model)).size,
       }),
     },
-    {
-      key: "trial",
-      value: customers.filter((row) => row.subscription?.status === "trialing").length,
-      sub: t("tenants.kpi.trialSub", {
-        count: customers.filter(
-          (row) =>
-            row.subscription?.status === "trialing" &&
-            row.subscription.trial_ends_at !== null &&
-            daysUntil(row.subscription.trial_ends_at, now) <= 7,
-        ).length,
-      }),
-    },
-    {
-      key: "overdue",
-      value: customers.filter((row) =>
-        ["past_due", "suspended"].includes(row.subscription?.status ?? ""),
-      ).length,
-      sub: t("tenants.kpi.overdueSub"),
-    },
+    ...(sample
+      ? [
+          {
+            key: "trial",
+            value: customers.filter((row) => row.subscription?.status === "trialing").length,
+            sub: t("tenants.kpi.trialSub", {
+              count: customers.filter(
+                (row) =>
+                  row.subscription?.status === "trialing" &&
+                  row.subscription.trial_ends_at !== null &&
+                  daysUntil(row.subscription.trial_ends_at, now) <= 7,
+              ).length,
+            }),
+          },
+          {
+            key: "overdue",
+            value: customers.filter((row) =>
+              ["past_due", "suspended"].includes(row.subscription?.status ?? ""),
+            ).length,
+            sub: t("tenants.kpi.overdueSub"),
+          },
+        ]
+      : []),
     {
       key: "migration",
       value: placements.filter((p) => p.schema_state !== "ready").length,
@@ -123,8 +148,8 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         crumb={t("tenants.crumb")}
         title={t("tenants.title")}
         description={t("tenants.description")}
-        step="33"
-        endpoint={ENDPOINTS}
+        step={sample ? "35" : undefined}
+        endpoint={sample ? ENDPOINTS : undefined}
         actions={
           <>
             {manage ? (
@@ -132,10 +157,22 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                 {t("tenants.migrateAll")}
               </Link>
             ) : null}
-            {provision ? <ProvisionDialog /> : null}
+            {manage ? (
+              <NewTenantDialog
+                placements={placements
+                  .filter((p) => p.source === "core")
+                  .map((p) => ({ value: p.name, label: p.name }))}
+                parents={tenants
+                  .filter((x) => x.source === "core")
+                  .map((x) => ({ value: x.id, label: x.name }))}
+              />
+            ) : null}
+            {provision && sample ? <ProvisionDialog /> : null}
           </>
         }
       />
+
+      {mode === "single" ? <p className="note">{t("tenants.singleMode")}</p> : null}
 
       <section className="kpis pf-kpis" aria-label={t("tenants.kpi.label")}>
         {kpis.map((kpi) => (
@@ -167,8 +204,8 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                 <Th>{t("tenants.col.tenant")}</Th>
                 <Th>{t("tenants.col.plan")}</Th>
                 <Th>{t("tenants.col.place")}</Th>
-                <Th>{t("tenants.col.subscription")}</Th>
-                <Th>{t("tenants.col.limit")}</Th>
+                {sample ? <Th>{t("tenants.col.subscription")}</Th> : null}
+                {sample ? <Th>{t("tenants.col.limit")}</Th> : null}
               </tr>
             </thead>
             <tbody>
@@ -186,6 +223,11 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                           <Link href={`/platform/tenants/${tenant.id}`} className="open">
                             {tenant.name}
                           </Link>
+                          {tenant.source === "sample" ? (
+                            <span className="tag" title={t("tenants.sampleRowHint")}>
+                              {t("tenants.sampleRow")}
+                            </span>
+                          ) : null}
                           <span className="sub mono ell">
                             {tenant.primary_domain ?? tenant.slug}
                           </span>
@@ -203,7 +245,9 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                         <span>
                           {tenant.is_platform
                             ? t("tenants.platformTenant")
-                            : (plan?.name ?? t("tenants.noPlan"))}
+                            : sample
+                              ? (plan?.name ?? t("tenants.noPlan"))
+                              : "—"}
                         </span>
                         <span className="sub">
                           {tenant.business_model ? t(`models.${tenant.business_model}`) : "—"}
@@ -222,7 +266,8 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                             <span className="mono">{placement.name}</span>
                           </span>
                           <span className="sub">
-                            {t(`backend.${placement.backend}`)} · {placement.location}
+                            {t(`backend.${placement.backend}`)}
+                            {placement.location ? ` · ${placement.location}` : ""}
                           </span>
                           {placement.schema_state !== "ready" ? (
                             <StatusBadge
@@ -241,26 +286,30 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                         <span className="muted">{t("tenants.preparing")}</span>
                       )}
                     </Td>
-                    <Td label={t("tenants.col.subscription")}>
-                      {subscription ? (
-                        <span className="cell2">
-                          <StatusBadge
-                            className={SUB_BADGE[subscription.status]}
-                            label={t(`subStatus.${subscription.status}`)}
-                          />
-                          {note ? <span className="sub">{note}</span> : null}
-                        </span>
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </Td>
-                    <Td label={t("tenants.col.limit")}>
-                      {row.nearest ? (
-                        <UsageMeter usage={row.nearest} compact />
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </Td>
+                    {sample ? (
+                      <Td label={t("tenants.col.subscription")}>
+                        {subscription ? (
+                          <span className="cell2">
+                            <StatusBadge
+                              className={SUB_BADGE[subscription.status]}
+                              label={t(`subStatus.${subscription.status}`)}
+                            />
+                            {note ? <span className="sub">{note}</span> : null}
+                          </span>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
+                      </Td>
+                    ) : null}
+                    {sample ? (
+                      <Td label={t("tenants.col.limit")}>
+                        {row.nearest ? (
+                          <UsageMeter usage={row.nearest} compact />
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
+                      </Td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -270,52 +319,63 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         </div>
       </section>
 
-      <section className="block" aria-labelledby="pf-plans-h">
-        <div className="block-head">
-          <TipHeading id="pf-plans-h" tip="plans">
-            {t("tenants.plansTitle")}
-          </TipHeading>
-          <Link href="/platform/plans" className="btn sm">
-            {t("tenants.plansOpen")}
-          </Link>
-        </div>
-        <p className="fhint">{t("tenants.plansAbout")}</p>
-        <ul className="pf-planrow">
-          {plans
-            .filter((p) => p.kind === "base" && p.status === "active")
-            .map((plan) => {
-              const cheapest = [...plan.prices]
-                .filter((p) => p.active)
-                .sort((a, b) => a.amount_minor - b.amount_minor)[0];
-              return (
-                <li key={plan.id} className="card pf-plan">
-                  <span className="pf-plan-head">
-                    <b>{plan.name}</b>
-                    <span className="cnt">
-                      {t("tenants.subscribers", { count: plan.subscriber_count })}
+      {sample ? (
+        <section className="block" aria-labelledby="pf-plans-h">
+          <div className="block-head">
+            <TipHeading id="pf-plans-h" tip="plans">
+              {t("tenants.plansTitle")}
+            </TipHeading>
+            <Link href="/platform/plans" className="btn sm">
+              {t("tenants.plansOpen")}
+            </Link>
+          </div>
+          <p className="fhint">{t("tenants.plansAbout")}</p>
+          <ul className="pf-planrow">
+            {plans
+              .filter((p) => p.kind === "base" && p.status === "active")
+              .map((plan) => {
+                const cheapest = [...plan.prices]
+                  .filter((p) => p.active)
+                  .sort((a, b) => a.amount_minor - b.amount_minor)[0];
+                return (
+                  <li key={plan.id} className="card pf-plan">
+                    <span className="pf-plan-head">
+                      <b>{plan.name}</b>
+                      <span className="cnt">
+                        {t("tenants.subscribers", { count: plan.subscriber_count })}
+                      </span>
                     </span>
-                  </span>
-                  <span className="pf-plan-price">
-                    {cheapest
-                      ? t("price", {
-                          amount: formatMoney(
-                            cheapest.amount_minor,
-                            cheapest.amount_currency,
-                            locale,
-                          ),
-                          interval: t(`interval.${cheapest.interval}`),
-                        })
-                      : "—"}
-                  </span>
-                  <span className="fhint">
-                    {t("tenants.modules", { count: plan.modules.length })}
-                  </span>
-                  <span className="fhint">{t(`placementKind.${plan.placement}`)}</span>
-                </li>
-              );
-            })}
-        </ul>
-      </section>
+                    <span className="pf-plan-price">
+                      {cheapest
+                        ? t("price", {
+                            amount: formatMoney(
+                              cheapest.amount_minor,
+                              cheapest.amount_currency,
+                              locale,
+                            ),
+                            interval: t(`interval.${cheapest.interval}`),
+                          })
+                        : "—"}
+                    </span>
+                    <span className="fhint">
+                      {t("tenants.modules", { count: plan.modules.length })}
+                    </span>
+                    <span className="fhint">{t(`placementKind.${plan.placement}`)}</span>
+                  </li>
+                );
+              })}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
+}
+
+/** Chế độ của bản cài (`single`: một khách, không tạo thêm được), `null` khi không đọc được. */
+async function currentMode(): Promise<string | null> {
+  try {
+    return (await load((client) => client.GET("/api/v1/kernel/tenant"))).data.mode;
+  } catch {
+    return null;
+  }
 }

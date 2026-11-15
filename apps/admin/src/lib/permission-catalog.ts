@@ -1,18 +1,20 @@
-// Sổ permission cho bộ chọn của role và API key, đọc ở máy chủ. Mô tả lấy từ `GET /auth/permissions`
-// (cần `auth.roles.read`); mức rủi ro lấy từ sổ module `GET /kernel/modules` (cần
-// `kernel.modules.read`) — thiếu quyền đọc sổ module thì vẫn có sổ permission, chỉ thiếu nhãn rủi ro.
+// Sổ permission cho bộ chọn, đọc ở máy chủ. Core trả mô tả theo `Accept-Language` và mức rủi ro
+// trong cùng một câu trả lời (D-264 của core).
 import "server-only";
-import { isForbidden, load } from "./core";
-import { type PermissionInfo, withRisk } from "./permission-groups";
+import { load } from "./core";
+import type { PermissionInfo } from "./permission-groups";
 
-/** Sổ permission kèm mức rủi ro. Ném lỗi của core như `load` (kể cả 403 của sổ permission). */
+/** Sổ permission của cả hệ thống (`GET /auth/permissions`, cần `auth.roles.read`) — cho màn Role. */
 export async function permissionCatalog(): Promise<PermissionInfo[]> {
-  const [catalog, modules] = await Promise.all([
-    load((client) => client.GET("/api/v1/auth/permissions")),
-    load((client) => client.GET("/api/v1/kernel/modules")).catch((error: unknown) => {
-      if (isForbidden(error)) return null;
-      throw error;
-    }),
-  ]);
-  return modules ? withRisk(catalog.data, modules.data) : catalog.data;
+  const { data } = await load((client) => client.GET("/api/v1/auth/permissions"));
+  return data;
+}
+
+/**
+ * Permission của chính người đang đăng nhập (`GET /me/permissions`, ai đăng nhập cũng gọi được),
+ * kèm mô tả và rủi ro — đúng tập một API key của họ được phép có.
+ */
+export async function myPermissions(): Promise<PermissionInfo[]> {
+  const { data } = await load((client) => client.GET("/api/v1/me/permissions"));
+  return data;
 }

@@ -12,6 +12,26 @@ export function creationOptionsJson(options: unknown): PublicKeyCredentialCreati
   return options as PublicKeyCredentialCreationOptionsJSON;
 }
 
+/**
+ * Options của core cho `PublicKeyCredential.parseRequestOptionsFromJSON()` (đăng nhập hay xác nhận
+ * lại bằng passkey); nhận cả dạng bọc trong `publicKey`.
+ */
+export function requestOptionsJson(options: unknown): PublicKeyCredentialRequestOptionsJSON {
+  if (typeof options === "object" && options !== null && "publicKey" in options) {
+    return (options as { publicKey: PublicKeyCredentialRequestOptionsJSON }).publicKey;
+  }
+  return options as PublicKeyCredentialRequestOptionsJSON;
+}
+
+/** Trình duyệt có đủ API để ký bằng passkey từ options dạng JSON. */
+export function passkeySignInSupported(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.PublicKeyCredential?.parseRequestOptionsFromJSON === "function" &&
+    typeof navigator.credentials?.get === "function"
+  );
+}
+
 /** Trình duyệt có đủ API để thêm passkey từ options dạng JSON. */
 export function passkeysSupported(): boolean {
   return (

@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CopyButton } from "@/components/ui/secret-once";
-import { coreUrl } from "@/lib/env";
+import { publicApiUrl } from "@/lib/public-url";
 
 // Tab "Kết nối MCP": địa chỉ endpoint MCP của core (`/mcp`, Streamable HTTP, theo README của core)
-// và cách cấu hình agent. Chỉ là hướng dẫn, không gọi API.
+// và cách cấu hình agent. Địa chỉ là địa chỉ công khai core công bố (`GET /kernel/client-config`);
+// core chưa đặt thì dùng địa chỉ trang quản trị gọi core và nói rõ điều đó.
 export default async function McpPage() {
   const t = await getTranslations("settings.mcp");
-  const endpoint = `${coreUrl()}/mcp`;
+  const base = await publicApiUrl();
+  const endpoint = `${base.url}/mcp`;
   const claude = `claude mcp add --transport http autoxide ${endpoint} --header "Authorization: Bearer <api key>"`;
   const json = JSON.stringify(
     {
@@ -36,7 +38,9 @@ export default async function McpPage() {
               {endpoint}
             </code>
             <CopyButton text={endpoint} />
-            <span className="fhint">{t("endpointHint")}</span>
+            <span className="fhint">
+              {base.configured ? t("endpointPublic") : t("endpointHint")}
+            </span>
           </div>
           <ol className="steps">
             <li>

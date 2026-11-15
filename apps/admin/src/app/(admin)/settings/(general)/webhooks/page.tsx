@@ -10,30 +10,34 @@ import { isForbidden, load } from "@/lib/core";
 import { WEBHOOKS_MANAGE } from "@/lib/permissions";
 import { type EndpointState, endpointState, shortUrl } from "@/lib/webhooks";
 
-type Delivery = components["schemas"]["DeliveryResponse"];
+/** Bộ lọc của core (`status`): đang nhận event hay đã tắt. */
+const STATUSES = ["active", "disabled"] as const;
+type Status = (typeof STATUSES)[number];
 
-const STATES: EndpointState[] = ["receiving", "failing", "disabled"];
 const BADGE: Record<EndpointState, string> = {
   receiving: "badge b-ok",
   failing: "badge b-bad",
   disabled: "badge b-arch",
 };
 
-// Tab "Webhook": endpoint nhận event của hệ thống, kèm lần giao gần nhất. Core chưa trả trạng thái
-// giao trong danh sách endpoint, nên đọc lần giao mới nhất của từng endpoint (song song). Lọc theo
-// trạng thái trên trang đang xem (tối đa 200 endpoint mỗi trang).
+// Tab "Webhook": endpoint nhận event của hệ thống, kèm lần giao gần nhất (`last_delivery`, đi cùng
+// danh sách — không gọi thêm cho từng endpoint). Lọc đang bật / đã tắt ở core (`status`), trên cả
+// danh sách chứ không chỉ trang đang xem.
 export default async function WebhooksPage(props: PageProps<"/settings/webhooks">) {
   const t = await getTranslations();
   const params = await props.searchParams;
   const cursor = typeof params.cursor === "string" ? params.cursor : undefined;
-  const wanted = STATES.find((s) => s === params.state);
+  const status: Status | null = STATUSES.find((s) => s === params.status) ?? null;
+  const base = status ? `/settings/webhooks?status=${status}` : "/settings/webhooks";
   let page: components["schemas"]["Page_EndpointResponse"];
   let events: components["schemas"]["EventTypeResponse"][];
   try {
     [page, { data: events }] = await Promise.all([
       load((client) =>
         client.GET("/api/v1/webhooks", {
-          params: { query: { limit: 200, ...(cursor ? { cursor } : {}) } },
+          params: {
+            query: { limit: 50, ...(status ? { status } : {}), ...(cursor ? { cursor } : {}) },
+          },
         }),
       ),
       load((client) => client.GET("/api/v1/webhooks/events")),
@@ -49,21 +53,10 @@ export default async function WebhooksPage(props: PageProps<"/settings/webhooks"
     }
     throw error;
   }
-  const lasts = await Promise.all(
-    page.data.map(async (endpoint): Promise<Delivery | null> => {
-      const { data } = await load((client) =>
-        client.GET("/api/v1/webhooks/{id}/deliveries", {
-          params: { path: { id: endpoint.id }, query: { limit: 1 } },
-        }),
-      );
-      return data[0] ?? null;
-    }),
-  );
-  const rows = page.data.map((endpoint, index) => {
-    const last = lasts[index] ?? null;
+  const rows = page.data.map((endpoint) => {
+    const last = endpoint.last_delivery ?? null;
     return { endpoint, last, state: endpointState(endpoint, last) };
   });
-  const shown = rows.filter((row) => !wanted || row.state === wanted);
   const next = page.pagination.next_cursor;
   return (
     <div className="blocks">
@@ -77,27 +70,22 @@ export default async function WebhooksPage(props: PageProps<"/settings/webhooks"
         </div>
         <p className="fhint">{t("settings.webhooks.about")}</p>
         <nav className="chips" aria-label={t("settings.webhooks.filter")}>
-          <Link
-            className={wanted ? "chip" : "chip on"}
-            href="/settings/webhooks"
-            aria-current={wanted ? undefined : "page"}
-          >
-            {t("settings.webhooks.all")} <span className="cnt">{rows.length}</span>
-          </Link>
-          {STATES.map((s) => (
-            <Link
-              key={s}
-              className={wanted === s ? "chip on" : "chip"}
-              href={`/settings/webhooks?state=${s}`}
-              aria-current={wanted === s ? "page" : undefined}
-            >
-              {t(`settings.webhooks.state.${s}`)}{" "}
-              <span className="cnt">{rows.filter((r) => r.state === s).length}</span>
-            </Link>
-          ))}
+          {[null, ...STATUSES].map((value) => {
+            const on = value === status;
+            return (
+              <Link
+                key={value ?? "all"}
+                className={on ? "chip on" : "chip"}
+                href={value ? `/settings/webhooks?status=${value}` : "/settings/webhooks"}
+                aria-current={on ? "page" : undefined}
+              >
+                {value ? t(`settings.webhooks.status.${value}`) : t("settings.webhooks.all")}
+              </Link>
+            );
+          })}
         </nav>
         <div className="card tcard">
-          {shown.length === 0 ? (
+          {rows.length === 0 ? (
             <p className="empty">{t("settings.webhooks.empty")}</p>
           ) : (
             <Table cards>
@@ -110,7 +98,7 @@ export default async function WebhooksPage(props: PageProps<"/settings/webhooks"
                 </tr>
               </thead>
               <tbody>
-                {shown.map(({ endpoint, last, state }) => (
+                {rows.map(({ endpoint, last, state }) => (
                   <tr key={endpoint.id}>
                     <Td className="rt-title">
                       <span className="cell2">
@@ -154,14 +142,14 @@ export default async function WebhooksPage(props: PageProps<"/settings/webhooks"
         {cursor || next ? (
           <nav className="pager" aria-label={t("access.pages")}>
             {cursor ? (
-              <Link className="btn sm" href="/settings/webhooks">
+              <Link className="btn sm" href={base}>
                 {t("access.first")}
               </Link>
             ) : null}
             {next ? (
               <Link
                 className="btn sm"
-                href={`/settings/webhooks?cursor=${encodeURIComponent(next)}`}
+                href={`${base}${status ? "&" : "?"}cursor=${encodeURIComponent(next)}`}
               >
                 {t("access.next")}
               </Link>

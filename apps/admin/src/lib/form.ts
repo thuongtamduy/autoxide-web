@@ -11,6 +11,11 @@ export interface FormState {
   error?: string;
   /** `code` lỗi của core, để test và giao diện rẽ nhánh. */
   code?: string;
+  /**
+   * `reason` của Problem khi core trả (vd token trong link: `expired`, `used`, `unknown`), để nói
+   * đúng chuyện gì đã xảy ra thay vì một câu chung.
+   */
+  reason?: string;
   /** Lỗi theo tên ô (`name` của input, cũng là tên trường của core). */
   fields?: Record<string, string>;
   /** Giá trị không bí mật vừa gửi, điền lại sau khi báo lỗi (React đặt lại form sau mỗi lần gửi). */
@@ -69,6 +74,9 @@ export function problemState(
     byField[field] ??= problem.detail;
   }
   const state: FormState = { code: problem.code };
+  if (problem.reason) {
+    state.reason = problem.reason;
+  }
   if (Object.keys(byField).length > 0) {
     state.fields = byField;
   }
@@ -76,4 +84,19 @@ export function problemState(
     state.error = problem.detail;
   }
   return state;
+}
+
+/** Lý do core từ chối token trong link (D-264 của core). */
+export const LINK_REASONS = ["expired", "used", "unknown"] as const;
+export type LinkReason = (typeof LINK_REASONS)[number];
+
+/**
+ * Lý do token trong link bị từ chối, khi lỗi đúng là `code` của token đó; `null` khi lỗi khác. Core
+ * cũ (chưa có `reason`) hay lý do lạ tính là `unknown`: vẫn báo được "link không dùng được".
+ */
+export function linkReason(state: FormState, code: string): LinkReason | null {
+  if (state.code !== code) return null;
+  return (LINK_REASONS as readonly string[]).includes(state.reason ?? "")
+    ? (state.reason as LinkReason)
+    : "unknown";
 }

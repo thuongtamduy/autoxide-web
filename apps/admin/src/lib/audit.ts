@@ -49,3 +49,17 @@ export function parseSubject(
   if (colon <= 0 || colon === subject.length - 1) return null;
   return { kind: subject.slice(0, colon), id: subject.slice(colon + 1) };
 }
+
+/**
+ * Tên người làm theo id, từ `actor_name` mà core trả kèm mỗi mục khi gọi `include=actor`. Mục không
+ * có tên (tài khoản đã xoá, hệ thống làm) không có trong bảng: giao diện hiện mã rút gọn.
+ */
+export function actorNames(
+  entries: readonly { actor_user_id?: string | null; actor_name?: string | null }[],
+): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const entry of entries) {
+    if (entry.actor_user_id && entry.actor_name) names.set(entry.actor_user_id, entry.actor_name);
+  }
+  return names;
+}

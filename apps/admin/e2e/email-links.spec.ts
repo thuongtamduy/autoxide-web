@@ -9,7 +9,7 @@ test.beforeEach(async ({ request }) => {
   await request.post(`${CORE}/__reset`);
 });
 
-test("xác minh email: không cần đăng nhập, chỉ gửi khi bấm; token đã dùng báo theo code", async ({
+test("xác minh email: không cần đăng nhập, chỉ gửi khi bấm; token đã dùng hay hết hạn báo theo reason", async ({
   page,
 }) => {
   await page.goto("/verify-email?token=verify-ok");
@@ -26,7 +26,14 @@ test("xác minh email: không cần đăng nhập, chỉ gửi khi bấm; token 
     "data-code",
     "auth.invalid_verification_token",
   );
-  await expect(page.getByText("send a new verification mail from My account")).toBeVisible();
+  await expect(page.locator("p[role=alert]")).toHaveAttribute("data-reason", "used");
+  await expect(page.getByText("This link was already used.")).toBeVisible();
+
+  // Core nói rõ link hết hạn (`reason`), không chỉ "không dùng được".
+  await page.goto("/verify-email?token=verify-expired");
+  await page.getByRole("button", { name: "Confirm my email" }).click();
+  await expect(page.getByText("This link has expired.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Go to My account" })).toBeVisible();
 
   await page.goto("/verify-email");
   await expect(page.getByText("This link is incomplete.")).toBeVisible();
@@ -64,7 +71,14 @@ test("đặt lại mật khẩu: token sai, hai ô khác nhau, luật của core
     "data-code",
     "auth.invalid_reset_token",
   );
+  await expect(page.getByText("This link is not valid")).toBeVisible();
   await expect(page.getByRole("link", { name: "Ask for a new link" })).toBeVisible();
+
+  await page.goto("/reset-password?token=reset-expired");
+  await page.getByLabel("New password", { exact: true }).fill("a brand new password");
+  await page.getByLabel("New password again").fill("a brand new password");
+  await page.getByRole("button", { name: "Change password" }).click();
+  await expect(page.getByText("This link has expired: it works for 30 minutes.")).toBeVisible();
 
   await page.goto("/reset-password?token=reset-ok");
   await page.getByLabel("New password", { exact: true }).fill("a brand new password");
@@ -89,7 +103,7 @@ test("đặt lại mật khẩu: token sai, hai ô khác nhau, luật của core
   await expect(page.getByTestId("me")).toHaveText("viewer@example.com");
 });
 
-test("không phải tôi đổi email: trang công khai, chỉ khoá khi bấm; token đã dùng báo theo code", async ({
+test("không phải tôi đổi email: trang công khai, chỉ khoá khi bấm; token đã dùng hay hết hạn báo theo reason", async ({
   page,
 }) => {
   await page.goto("/not-me?token=report-ok");
@@ -107,7 +121,8 @@ test("không phải tôi đổi email: trang công khai, chỉ khoá khi bấm; 
     "data-code",
     "auth.invalid_email_change_report_token",
   );
-  await expect(page.getByText("This link is unknown, expired or already used.")).toBeVisible();
+  await expect(page.locator("p[role=alert]")).toHaveAttribute("data-reason", "used");
+  await expect(page.getByText("the account is already locked")).toBeVisible();
 
   await page.goto("/not-me");
   await expect(page.getByText("This link is incomplete.")).toBeVisible();

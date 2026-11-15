@@ -382,21 +382,15 @@ export const SELLER_HOME = "/seller";
 
 /**
  * Sổ của mặt điều khiển nền tảng: mỗi nhóm một mục thanh bên, theo thứ tự của bản thiết kế
- * (`RAIL_PLATFORM`). Cả mặt điều khiển chờ API của bước 33, 34, 35, 39 của core: dựng bằng dữ liệu
- * mẫu (W-006); permission là tên dự kiến trong đặc tả bước (admin có sẵn mọi permission).
+ * (`RAIL_PLATFORM`). Khách hàng và đội database dùng API thật của bước 33 (W-027); gói, thuê bao, cấp
+ * phát, sức khoẻ, vào dữ liệu khách chờ bước 34, 35, 39: dựng bằng dữ liệu mẫu (W-006), permission là
+ * tên dự kiến trong đặc tả bước (admin có sẵn mọi permission).
  */
 export const NAV_PLATFORM: NavGroup[] = [
   {
     id: "platformTenants",
     icon: "users",
-    pages: [
-      {
-        id: "platformTenants",
-        href: PLATFORM_HOME,
-        permission: TENANTS_READ,
-        sample: { step: "33" },
-      },
-    ],
+    pages: [{ id: "platformTenants", href: PLATFORM_HOME, permission: TENANTS_READ }],
   },
   {
     id: "platformPlans",
@@ -437,14 +431,7 @@ export const NAV_PLATFORM: NavGroup[] = [
   {
     id: "platformFleet",
     icon: "db",
-    pages: [
-      {
-        id: "platformFleet",
-        href: "/platform/fleet",
-        permission: PLACEMENTS_READ,
-        sample: { step: "33" },
-      },
-    ],
+    pages: [{ id: "platformFleet", href: "/platform/fleet", permission: PLACEMENTS_READ }],
   },
   {
     id: "platformHealth",

@@ -36,3 +36,16 @@ export function formatBytes(bytes: number, locale: string): string {
   );
   return `${text} ${units[unit]}`;
 }
+
+/**
+ * Tên quốc gia theo ngôn ngữ từ mã ISO 3166-1 hai chữ (`country` của phiên đăng nhập): `VN` →
+ * "Việt Nam" (vi) / "Vietnam" (en). Mã không đúng dạng thì trả nguyên mã.
+ */
+export function countryName(code: string, locale: string): string {
+  if (!/^[A-Z]{2}$/.test(code)) return code;
+  try {
+    return new Intl.DisplayNames([locale], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}

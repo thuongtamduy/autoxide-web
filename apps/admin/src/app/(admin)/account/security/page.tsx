@@ -1,18 +1,25 @@
 import { getTranslations } from "next-intl/server";
+import { PasswordLinkButton } from "@/components/account/email";
 import { AddPasskeyDialog, RemovePasskeyDialog } from "@/components/account/passkeys";
 import { PasswordDialog } from "@/components/account/password-dialog";
 import { TotpActions } from "@/components/account/totp";
 import { Icon } from "@/components/shell/icon";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
+import { getClientConfig } from "@/lib/client-config";
 import { load } from "@/lib/core";
+import { getMe } from "@/lib/viewer";
 
 // Tab "Đăng nhập và bảo mật": mật khẩu, xác thực hai bước (app xác thực, mã khôi phục), passkey.
+// Tài khoản chưa có mật khẩu (`has_password`, vào bằng passkey) thấy nút xin thư đặt mật khẩu đầu
+// tiên thay cho "Đổi mật khẩu".
 export default async function SecurityPage() {
   const t = await getTranslations("account");
-  const [mfa, passkeys] = await Promise.all([
+  const [me, mfa, passkeys, config] = await Promise.all([
+    getMe(),
     load((client) => client.GET("/api/v1/auth/me/mfa")),
     load((client) => client.GET("/api/v1/auth/me/passkeys", { params: { query: { limit: 200 } } })),
+    getClientConfig(),
   ]);
   const { totp_enabled: totp, recovery_codes_remaining: remaining } = mfa.data;
   return (
@@ -22,16 +29,18 @@ export default async function SecurityPage() {
           {t("security.title")}
         </h2>
         <div className="card list">
-          <div className="item">
-            <span className="sq-ic">
+          <div className="item" data-testid="password">
+            <span className={me.has_password ? "sq-ic" : "sq-ic warn"}>
               <Icon name="key" />
             </span>
             <span className="item-main">
               <span className="item-title">{t("password.title")}</span>
-              <span className="item-meta">{t("password.meta")}</span>
+              <span className="item-meta">
+                {me.has_password ? t("password.meta") : t("password.noneMeta")}
+              </span>
             </span>
             <span className="item-acts">
-              <PasswordDialog />
+              {me.has_password ? <PasswordDialog /> : <PasswordLinkButton email={me.email} />}
             </span>
           </div>
           <div className="item" data-testid="totp">
@@ -53,6 +62,9 @@ export default async function SecurityPage() {
             </span>
           </div>
         </div>
+        {!me.has_password && config?.mail?.sends === false ? (
+          <p className="note warn">{t("password.mailOff")}</p>
+        ) : null}
         {totp && remaining <= 3 ? (
           <p className="note warn" role="status">
             {t("totp.lowCodes", { remaining })}
@@ -87,7 +99,12 @@ export default async function SecurityPage() {
                 {passkeys.data.map((passkey) => (
                   <tr key={passkey.id}>
                     <Td className="rt-title">
-                      <b>{passkey.name}</b>
+                      <span className="cell2">
+                        <b>{passkey.name}</b>
+                        {passkey.authenticator ? (
+                          <span className="sub">{passkey.authenticator}</span>
+                        ) : null}
+                      </span>
                     </Td>
                     <Td className="whitespace-nowrap" label={t("passkeys.addedOn")}>
                       <Time value={passkey.created_at} />

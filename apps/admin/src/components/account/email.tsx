@@ -2,9 +2,21 @@
 
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
-import { changeEmail, resendVerification } from "@/app/(admin)/account/actions";
+import {
+  cancelEmailChange,
+  changeEmail,
+  resendVerification,
+  sendPasswordLink,
+} from "@/app/(admin)/account/actions";
 import { Dialog } from "@/components/ui/dialog";
-import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "@/components/ui/form";
+import {
+  DialogButtons,
+  Field,
+  FormAlert,
+  useFocusInvalid,
+  useOnDone,
+  useSubmit,
+} from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 
 /** Nút gửi lại thư xác minh; lỗi (vd gửi quá nhanh) hiện ngay dưới nút. */
@@ -17,6 +29,43 @@ export function ResendVerification({ email }: { email: string }) {
     <form action={action} className="inline-form">
       <button type="submit" className="btn sm" disabled={pending}>
         {t("resend")}
+      </button>
+      <FormAlert state={state} />
+    </form>
+  );
+}
+
+/** Huỷ yêu cầu đổi email đang chờ xác minh; email hiện tại giữ nguyên. */
+export function CancelEmailChange({ email }: { email: string }) {
+  const t = useTranslations("account.email");
+  const toast = useToast();
+  // `useSubmit`: dòng email đang chờ (cùng nút này) biến mất khi trang làm mới, nên báo ngay.
+  const [state, action, pending] = useSubmit(cancelEmailChange, () =>
+    toast(t("cancelled", { email })),
+  );
+  return (
+    <form action={action} className="inline-form">
+      <button type="submit" className="btn sm" disabled={pending}>
+        {t("cancelChange")}
+      </button>
+      <FormAlert state={state} />
+    </form>
+  );
+}
+
+/**
+ * Tài khoản chưa có mật khẩu: xin thư có link đặt mật khẩu đầu tiên (core gửi tới chính email của
+ * tài khoản — cách core chọn để chỉ chủ hộp thư đặt được).
+ */
+export function PasswordLinkButton({ email }: { email: string }) {
+  const t = useTranslations("account.password");
+  const toast = useToast();
+  const [state, action, pending] = useActionState(sendPasswordLink, {});
+  useOnDone(state.done, () => toast(t("linkSent", { email })));
+  return (
+    <form action={action} className="inline-form">
+      <button type="submit" className="btn sm pri" disabled={pending}>
+        {t("sendLink")}
       </button>
       <FormAlert state={state} />
     </form>

@@ -10,6 +10,8 @@ export const USERS_READ = "auth.users.read";
 export const USERS_MANAGE = "auth.users.manage";
 /** Xem và gỡ passkey của người khác (core bước 32, D-251): cho người lo khôi phục tài khoản. */
 export const PASSKEYS_MANAGE = "auth.passkeys.manage";
+/** Xem và thu hồi API key của mọi người (`/api/v1/auth/all-api-keys`, D-272 của core). */
+export const API_KEYS_MANAGE = "auth.api_keys.manage";
 /** Xem role và sổ permission (`GET /api/v1/auth/roles`, `/permissions`). */
 export const ROLES_READ = "auth.roles.read";
 /** Tạo, sửa, xoá role và gán role cho người dùng. */
@@ -45,8 +47,9 @@ export const BILLING_READ = "plans.billing.read";
 export const BILLING_MANAGE = "plans.billing.manage";
 /** Thêm, xác minh, gỡ tên miền của khách (bước 33). */
 export const DOMAINS_MANAGE = "kernel.domains.manage";
-/** Đặt cấu hình và secret theo khách: kết nối đối tác (bước 33). */
+/** Đặt cấu hình và secret theo khách (`/api/v1/kernel/settings`, bước 33 của core). */
 export const TENANT_SETTINGS_MANAGE = "kernel.settings.manage";
+
 /** Bàn kỹ thuật: nhật ký request, event theo bản ghi, job (bước 52). */
 export const DEVTOOLS_READ = "kernel.devtools.read";
 
@@ -96,9 +99,10 @@ export const POLICIES_MANAGE = "compliance.policies.manage";
 /** Bỏ nhãn AI của nội dung đã đăng (module `content`). */
 export const CONTENT_PUBLISH = "content.publish";
 
-// Permission của nhân sự vận hành nền tảng (bước 33, 34, 35, 39 của core, chưa có): mặt điều khiển
-// nền tảng dùng dữ liệu mẫu (W-014). Core còn đòi người gọi thuộc khách nền tảng
-// (`tenant_platform_only`), vì admin của một khách thường có mọi permission.
+// Permission của nhân sự vận hành nền tảng. Khách, placement đã có ở core (bước 33, D-260); gói,
+// thuê bao, cấp phát, sức khoẻ, hỗ trợ (bước 34, 35, 39) chưa có: phần đó dùng dữ liệu mẫu (W-014).
+// Core còn đòi người gọi thuộc khách nền tảng (`tenant_platform_only`), vì admin của một khách thường
+// có mọi permission.
 /** Xem sổ khách hàng (`GET /api/v1/kernel/tenants`). */
 export const TENANTS_READ = "kernel.tenants.read";
 /** Tạo khách, đổi tên, tạm khoá / mở lại khách (`POST`, `PATCH /kernel/tenants…`). */

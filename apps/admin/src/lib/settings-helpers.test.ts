@@ -1,8 +1,8 @@
 import type { components } from "@autoxide/sdk";
 import { describe, expect, it } from "vitest";
-import { expiresAt, grantable } from "./api-keys";
-import { auditFilter, auditHref, parseSubject } from "./audit";
-import { formatBytes, formatMoney } from "./format";
+import { expiresAt } from "./api-keys";
+import { actorNames, auditFilter, auditHref, parseSubject } from "./audit";
+import { countryName, formatBytes, formatMoney } from "./format";
 import { endpointState, mergeDeliveries, shortUrl } from "./webhooks";
 
 type Endpoint = components["schemas"]["EndpointResponse"];
@@ -33,6 +33,16 @@ describe("webhook", () => {
       "failing",
     );
     expect(endpointState(endpoint("a"), null)).toBe("receiving");
+    expect(endpointState(endpoint("a"), { status: "succeeded", response_status: 200 })).toBe(
+      "receiving",
+    );
+    // Chờ thử lại sau một lần bị trả lời lỗi: đang lỗi; chờ lần đầu: chưa.
+    expect(endpointState(endpoint("a"), { status: "pending", response_status: 502 })).toBe(
+      "failing",
+    );
+    expect(endpointState(endpoint("a"), { status: "pending", response_status: null })).toBe(
+      "receiving",
+    );
   });
 
   it("gộp lần giao của nhiều endpoint, mới nhất trước, lọc theo trạng thái", () => {
@@ -62,19 +72,16 @@ describe("API key", () => {
     expect(expiresAt("never", now)).toBeNull();
     expect(expiresAt("lạ", now)).toBeNull();
   });
+});
 
-  it("chỉ chọn được permission mình có", () => {
-    const catalog = [
-      { name: "a.read", description: "A" },
-      { name: "b.read", description: "B" },
-    ];
-    expect(grantable(catalog, { all_permissions: true, permissions: [] })).toHaveLength(2);
-    expect(grantable(catalog, { all_permissions: false, permissions: ["b.read"] })).toEqual([
-      { name: "b.read", description: "B" },
+describe("tên người làm trong audit", () => {
+  it("lấy từ actor_name của core; mục không có tên thì vắng", () => {
+    const names = actorNames([
+      { actor_user_id: "u1", actor_name: "Ada" },
+      { actor_user_id: "u2", actor_name: null },
+      { actor_user_id: null },
     ]);
-    expect(grantable(null, { all_permissions: false, permissions: ["c.x"] })).toEqual([
-      { name: "c.x", description: "" },
-    ]);
+    expect([...names]).toEqual([["u1", "Ada"]]);
   });
 });
 
@@ -96,6 +103,12 @@ describe("bộ lọc audit", () => {
 });
 
 describe("định dạng", () => {
+  it("tên quốc gia theo ngôn ngữ; mã lạ giữ nguyên", () => {
+    expect(countryName("VN", "vi")).toBe("Việt Nam");
+    expect(countryName("VN", "en")).toBe("Vietnam");
+    expect(countryName("vn?", "en")).toBe("vn?");
+  });
+
   it("tiền theo đơn vị nhỏ nhất của tiền tệ", () => {
     // Intl đặt khoảng trắng không ngắt dòng trước ký hiệu tiền.
     expect(formatMoney(118_800_000, "VND", "vi")).toBe("118.800.000\u00a0₫");

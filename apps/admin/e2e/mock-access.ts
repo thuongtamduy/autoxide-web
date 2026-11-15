@@ -9,12 +9,26 @@
 // `reset-ok` (đặt lại mật khẩu của viewer@example.com, dùng một lần).
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { type Account, empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
+import {
+  type Account,
+  empty,
+  json,
+  problem,
+  type Schemas,
+  send,
+  text,
+  tokenReason,
+} from "./mock-http.ts";
 
 export const ADMIN_ROLE = "01a1e000-0000-7000-8000-00000000ad01";
 const EDITOR_ROLE = "01a1e000-0000-7000-8000-00000000ed01";
 
-const CATALOG: Schemas["PermissionResponse"][] = [
+export const PERMISSION_CATALOG: Schemas["PermissionResponse"][] = [
+  {
+    name: "auth.api_keys.manage",
+    description: "See and revoke the API keys of every user.",
+    risk: "destructive",
+  },
   { name: "auth.roles.manage", description: "Create, change and delete roles.", risk: "write" },
   { name: "auth.roles.read", description: "See roles.", risk: "read" },
   { name: "auth.users.manage", description: "Create and change user accounts.", risk: "write" },
@@ -60,7 +74,7 @@ export function resetAccess() {
   resetRequests.length = 0;
 }
 
-function userView(account: Account): Schemas["UserResponse"] {
+function userView(account: Account, withRoles = false): Schemas["UserResponse"] {
   return {
     id: account.id,
     email: account.email,
@@ -69,6 +83,10 @@ function userView(account: Account): Schemas["UserResponse"] {
     email_verified_at: account.verified ? "2026-11-13T08:00:00Z" : null,
     has_password: account.hasPassword,
     mfa_enabled: account.mfa,
+    last_sign_in_at: account.lastSignInAt,
+    ...(withRoles
+      ? { roles: rolesOf(account).map((role) => ({ id: role.id, name: role.name })) }
+      : {}),
     created_at: account.createdAt,
     updated_at: account.updatedAt,
   };
@@ -121,7 +139,7 @@ function roleInput(body: Record<string, unknown>): {
   if (!ROLE_NAME.test(name)) {
     errors.push({ field: "name", code: "format", detail: "must be lowercase letters and digits" });
   }
-  const unknown = permissions.filter((p) => !CATALOG.some((c) => c.name === p));
+  const unknown = permissions.filter((p) => !PERMISSION_CATALOG.some((c) => c.name === p));
   if (unknown.length > 0) {
     errors.push({
       field: "permissions",
@@ -164,7 +182,9 @@ export async function publicRoutes(
         response,
         400,
         "auth.invalid_verification_token",
-        "The email-verification token is unknown, expired or already used.",
+        "This verification link is unknown, expired or already used. Ask for a new verification mail.",
+        undefined,
+        tokenReason(token, usedTokens.has(token)),
       );
       return true;
     }
@@ -181,7 +201,9 @@ export async function publicRoutes(
         response,
         400,
         "auth.invalid_email_change_report_token",
-        "The report token is unknown, expired or already used.",
+        "This link is unknown, expired or already used.",
+        undefined,
+        tokenReason(token, usedTokens.has(token)),
       );
       return true;
     }
@@ -203,7 +225,9 @@ export async function publicRoutes(
         response,
         400,
         "auth.invalid_reset_token",
-        "The reset token is unknown, expired or used.",
+        "This password-reset link is unknown, expired or already used. Ask for a new one.",
+        undefined,
+        tokenReason(token, usedTokens.has(token)),
       );
       return true;
     }
@@ -239,7 +263,9 @@ export async function accessRoutes(
   const method = request.method ?? "GET";
   if (!path.startsWith("/api/v1/auth/users") && !path.startsWith("/api/v1/auth/roles")) {
     if (method === "GET" && path === "/api/v1/auth/permissions") {
-      send(response, 200, { data: CATALOG } satisfies Schemas["Data_Vec_PermissionResponse"]);
+      send(response, 200, {
+        data: PERMISSION_CATALOG,
+      } satisfies Schemas["Data_Vec_PermissionResponse"]);
       return true;
     }
     return false;
@@ -251,10 +277,20 @@ export async function accessRoutes(
   if (path === "/api/v1/auth/users") {
     if (method === "GET") {
       const search = (url.searchParams.get("search") ?? "").toLowerCase();
+      const status = url.searchParams.get("status");
+      const include = url.searchParams.get("include");
+      if (
+        (status && status !== "active" && status !== "disabled") ||
+        (include && include !== "roles")
+      ) {
+        problem(response, 400, "bad_request", "A query parameter has an invalid value.");
+        return true;
+      }
       const list = live()
         .filter((a) => !search || a.email.includes(search) || a.name.toLowerCase().includes(search))
+        .filter((a) => !status || (status === "disabled") === Boolean(a.disabledAt))
         .reverse()
-        .map(userView);
+        .map((a) => userView(a, include === "roles"));
       send(response, 200, page(list, url) satisfies Schemas["Page_UserResponse"]);
       return true;
     }
@@ -298,6 +334,8 @@ export async function accessRoutes(
       disabledAt: null,
       roleIds: [],
       hasPassword: Boolean(password),
+      lastSignInAt: null,
+      pendingEmail: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -443,6 +481,7 @@ export async function accessRoutes(
         return true;
       }
       account.passkeys.splice(index, 1);
+      account.credentialIds.splice(index, 1);
       empty(response, 204);
       return true;
     }
