@@ -64,7 +64,7 @@ const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
 const CODE = "123456";
 const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 
-/** Như giá trị mặc định của core (`GET /api/v1/kernel/client-config`). */
+/** Như giá trị mặc định của core (`GET /api/v1/kernel/client-config`; đã đối chiếu với core thật). */
 const CLIENT_CONFIG: Schemas["ClientConfigResponse"] = {
   kernel: { version: "0.15.0", public_url: null },
   mail: { from: "Autoxide <noreply@localhost>", sends: false },
@@ -89,7 +89,7 @@ const CLIENT_CONFIG: Schemas["ClientConfigResponse"] = {
   content: {
     locales: ["en", "vi"],
     default_locale: "en",
-    post_path_prefix: "/blog/",
+    post_path_prefix: "blog",
     embed_hosts: ["youtube.com", "youtu.be", "youtube-nocookie.com", "vimeo.com"],
     max_body_bytes: 524_288,
   },
