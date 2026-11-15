@@ -928,3 +928,34 @@ của core để thay bằng API dễ, và để số đếm menu, hộp việc,
 Đã cân nhắc: một bảng việc riêng trong dữ liệu mẫu — sai thiết kế của core (việc tính từ dữ liệu, tự biến
 mất); đếm trên menu bằng một lời gọi riêng mỗi màn — nhiều lời gọi, số menu và hộp việc lệch nhau; lấy
 hoạt động gần đây từ dữ liệu mẫu — core đã có nhật ký audit thật, không thay API có sẵn bằng mẫu (W-006).
+
+## W-021 · SDK theo core v0.14.0; alt ảnh theo ngôn ngữ và mức rủi ro của permission đọc từ core; dữ liệu mẫu khớp nhau giữa các màn — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- **SDK ghim theo bản phát hành của core, v0.14.0** (`CORE_VERSION` trong `packages/sdk/scripts/generate.mjs`;
+  README ghi "v0.14.0 trở lên"). Endpoint đã có ở nhánh `main` của core nhưng chưa phát hành (passkey của người
+  khác cho quản trị viên, xuất bài nộp form, báo "không phải tôi" khi đổi email) chờ bản phát hành kế tiếp rồi
+  mới nối: SDK chỉ theo tag, không theo một commit chưa phát hành.
+- **Alt theo ngôn ngữ ở Thư viện media đọc và ghi ở core**: ngôn ngữ đầu (mặc định của nội dung) là `alt` của
+  tệp (`PATCH`); ngôn ngữ khác là `alts[ngôn ngữ]`, ghi bằng `PUT /media/{id}/alts/{locale}`, ô trống thì `DELETE`
+  (người đọc ngôn ngữ đó lại thấy `alt`). Ghi lần lượt, mỗi lần dùng `ETag` lần trước trả về. Ngôn ngữ máy chủ không
+  mở thì hiện lỗi `media.unsupported_locale` của core. Bộ chọn ảnh của trình soạn bài điền sẵn alt đúng ngôn ngữ
+  của bài. Chỉ cờ "ảnh trang trí" còn là dữ liệu mẫu (core chưa có).
+- **Nhãn mức rủi ro cạnh permission** ở bộ chọn của role và API key: `risk` lấy từ sổ module
+  (`GET /kernel/modules`, cần `kernel.modules.read`) vì `GET /auth/permissions` chưa trả trường này; chỉ nêu
+  `destructive`, `sensitive_data`, `money`. Không đọc được sổ module thì bộ chọn vẫn chạy, không có nhãn.
+- **Dữ liệu mẫu khớp nhau giữa các màn**, có test giữ:
+  - mọi đơn của màn Sàn có ở màn Đơn hàng (kênh sàn, cùng người bán, cùng món và tiền hàng); hai mã trùng đơn web
+    được dời (0386→0384, 0408→0404);
+  - bộ sinh đơn vẫn rút đủ số ngẫu nhiên cho mã nay viết tay (`REPLACED_FILLERS`), nên đơn sinh khác không đổi;
+  - thuế của đơn trong sổ cái tính theo từng dòng như màn Đơn hàng; cửa hàng của đơn khớp nhau;
+  - xuất bán, nhận trả, serial của Tồn kho trỏ tới đơn có đúng món;
+  - hoá đơn cùng tổng tiền, thuế, người mua với đơn; hoá đơn thay mặt người bán chỉ cho đơn sàn của người đó.
+
+Lý do: core đã có API thì không giữ dữ liệu mẫu cho phần đó (W-006). Dữ liệu mẫu lệch nhau giữa các màn (mở đơn
+từ màn Sàn ra một đơn web khác, hoá đơn khác tiền với đơn) làm người thử tưởng giao diện sai.
+
+Đã cân nhắc: ghim SDK theo `main` của core — có thêm endpoint nhưng hợp đồng chưa chốt, đổi lại thì giao diện hỏng
+theo; gọi thêm `GET /kernel/modules` ở mọi màn có permission — chỉ ba màn chọn permission cần mức rủi ro; sinh lại
+toàn bộ đơn mẫu theo số ngẫu nhiên riêng cho từng mã — đổi hết số liệu mà các màn và test đang dùng.
