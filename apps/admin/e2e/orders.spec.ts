@@ -23,10 +23,15 @@ test("đơn hàng: số đếm khớp, view, hỏi bằng lời, xác nhận hà
   await expect(page.getByRole("heading", { level: 1, name: "Orders" })).toBeVisible();
   await expect(page.getByText("412 orders in the last 30 days · 37 pending")).toBeVisible();
   await expect(page.getByText("Sample data · waiting for API step 45").first()).toBeVisible();
-  // Đơn hàng đứng đầu nhóm Bán hàng, rồi Vận chuyển, rồi Cửa hàng.
+  // Đơn hàng đứng đầu nhóm Bán hàng, rồi Vận chuyển, Cửa hàng, Kênh bán (W-019).
   const sub = page.getByRole("navigation", { name: "Sales", exact: true });
   // Màn có việc đang chờ mang số đếm cạnh tên (W-020).
-  await expect(sub.getByRole("link")).toHaveText([/^Orders\s*\d*$/, /^Shipping\s*\d*$/, "Stores"]);
+  await expect(sub.getByRole("link")).toHaveText([
+    /^Orders\s*\d*$/,
+    /^Shipping\s*\d*$/,
+    "Stores",
+    "Sales channels",
+  ]);
 
   // View "Chờ xử lý": số trên chip bằng số đơn khớp.
   await page.getByRole("link", { name: /^Pending\s+37$/ }).click();

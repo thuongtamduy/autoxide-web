@@ -151,6 +151,12 @@ export default async function OrderPage(props: PageProps<"/sales/orders/[id]">) 
             </span>{" "}
             <span className={PAY_BADGE[o.payment_status]}>{t(`pay.${o.payment_status}`)}</span>{" "}
             {o.buyer.name} · {t(`channel.${o.channel}`)} ·{" "}
+            {o.channel_account ? (
+              <>
+                <Link href="/sales/channels/inbound">{o.channel_account.name}</Link>{" "}
+                <span className="mono">{o.external_ref}</span> ·{" "}
+              </>
+            ) : null}
             {o.seller ? `${o.org_name} · ${o.seller.name}` : o.org_name} ·{" "}
             <Time value={o.placed_at} />
           </p>

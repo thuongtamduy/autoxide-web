@@ -18,7 +18,10 @@ export type Namespace =
   | "promotions"
   | "shipping"
   | "market"
-  | "orders";
+  | "orders"
+  | "customers"
+  | "channels"
+  | "affiliate";
 
 const key = (code: string) => code.replaceAll(".", "_");
 

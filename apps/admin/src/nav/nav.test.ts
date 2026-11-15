@@ -304,7 +304,9 @@ describe("nhóm Tài chính (dữ liệu mẫu, bước 36)", () => {
     const { NAV: real } = await import("./nav");
     const ids = real.map((g) => g.id);
     // Sàn (W-018) đứng giữa Nội dung và Tài chính như `RAIL_TENANT` (Khách hàng, bước 47, chưa dựng).
-    expect(ids.indexOf("market")).toBe(ids.indexOf("content") + 1);
+    // Khách hàng (W-019) đứng giữa Nội dung và Sàn, đúng thứ tự `RAIL_TENANT`.
+    expect(ids.indexOf("buyers")).toBe(ids.indexOf("content") + 1);
+    expect(ids.indexOf("market")).toBe(ids.indexOf("buyers") + 1);
     expect(ids.indexOf("finance")).toBe(ids.indexOf("market") + 1);
     expect(ids.indexOf("org")).toBe(ids.indexOf("finance") + 1);
     const group = real.find((g) => g.id === "finance");
@@ -341,6 +343,7 @@ describe("Khuyến mại và Vận chuyển (dữ liệu mẫu, bước 43–44)
       "forms",
       "newsletter",
       "comments",
+      "affiliate",
     ]);
     const sales = real.find((g) => g.id === "sales");
     expect(sales?.icon).toBe("cart");
@@ -349,6 +352,7 @@ describe("Khuyến mại và Vận chuyển (dữ liệu mẫu, bước 43–44)
       "/sales/orders",
       "/sales/shipping",
       "/sales/stores",
+      "/sales/channels",
     ]);
     // Tắt dữ liệu mẫu: không còn Khuyến mại, cả nhóm Bán hàng biến mất.
     const off = visibleNav({ ...admin, sample: false }, real);
@@ -426,5 +430,43 @@ describe("Sàn và Trung tâm người bán (dữ liệu mẫu, bước 46, W-01
     expect(ids({ permissions: ["orders.read"], sample: true })).toBe(0);
     expect(activePage(NAV_SELLER, "/seller/shop/performance")?.page.id).toBe("sellerShop");
     expect(activePage(NAV_SELLER, "/seller")?.page.id).toBe("sellerHome");
+  });
+});
+
+describe("Khách hàng, Kênh bán, Tiếp thị liên kết (dữ liệu mẫu, bước 47–49, W-019)", () => {
+  it("Khách hàng là nhóm riêng sau Nội dung (biểu tượng user); Kênh bán cuối Bán hàng; Tiếp thị liên kết cuối Tiếp thị", async () => {
+    const { NAV: real } = await import("./nav");
+    const ids = real.map((g) => g.id);
+    expect(ids.indexOf("buyers")).toBe(ids.indexOf("content") + 1);
+    const buyers = real.find((g) => g.id === "buyers");
+    expect(buyers?.icon).toBe("user");
+    expect(buyers?.pages.map((p) => p.href)).toEqual(["/customers"]);
+    expect(real.find((g) => g.id === "sales")?.pages.at(-1)?.href).toBe("/sales/channels");
+    expect(real.find((g) => g.id === "mkt")?.pages.at(-1)?.href).toBe("/marketing/affiliate");
+    // Tắt dữ liệu mẫu: không còn nhóm Khách hàng, không có Kênh bán hay Tiếp thị liên kết.
+    const admin: Viewer = { allPermissions: true, permissions: [], modules: [], sample: false };
+    const off = visibleNav(admin, real);
+    expect(off.some((g) => g.id === "buyers")).toBe(false);
+    expect(off.flatMap((g) => g.pages).some((p) => p.id === "affiliate")).toBe(false);
+    // Kế toán chỉ có quyền đối soát kênh thấy Kênh bán; nhân viên rủi ro COD thấy Khách hàng.
+    const accountant = visibleNav(
+      { allPermissions: false, permissions: ["channels.finance.read"], modules: [], sample: true },
+      real,
+    );
+    expect(accountant.find((g) => g.id === "sales")?.pages.map((p) => p.id)).toEqual(["channels"]);
+    const risk = visibleNav(
+      { allPermissions: false, permissions: ["orders.risk.manage"], modules: [], sample: true },
+      real,
+    );
+    expect(risk.find((g) => g.id === "buyers")?.pages.map((p) => p.id)).toEqual(["customers"]);
+    // Người tiếp thị đăng nhập (chỉ `affiliate.partner`) thấy màn Tiếp thị liên kết (góc của mình).
+    const partner = visibleNav(
+      { allPermissions: false, permissions: ["affiliate.partner"], modules: [], sample: true },
+      real,
+    );
+    expect(partner.find((g) => g.id === "mkt")?.pages.map((p) => p.id)).toEqual(["affiliate"]);
+    expect(activePage(real, "/customers/cod")?.page.id).toBe("customers");
+    expect(activePage(real, "/sales/channels/inbound")?.page.id).toBe("channels");
+    expect(activePage(real, "/marketing/affiliate/payouts")?.page.id).toBe("affiliate");
   });
 });

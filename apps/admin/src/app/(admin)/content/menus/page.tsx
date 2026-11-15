@@ -192,7 +192,7 @@ export default async function MenusPage(props: PageProps<"/content/menus">) {
       {opened?.ok ? (
         <section className="block" aria-label={t("editorLabel")}>
           <MenuEditor
-            key={`${opened.data.menu.id}:${opened.data.etag}`}
+            key={opened.data.menu.id}
             menu={opened.data.menu}
             etag={opened.data.etag}
             kinds={kinds}

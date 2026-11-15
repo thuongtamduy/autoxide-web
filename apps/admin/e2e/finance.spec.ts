@@ -90,7 +90,8 @@ test("hàng chờ sai lệch, hoá đơn bị trả lỗi, khoá sổ, tính th�
   await dialog(page).getByLabel("Type 10/2026 to confirm").fill("10/2026");
   await dialog(page).getByRole("button", { name: "Close period" }).click();
   await expect(toast(page)).toContainText("Period Oct 2026 closed");
-  await expect(page.getByRole("row", { name: /Oct 2026/ })).toContainText("Closed");
+  // Dòng của kỳ (tên bắt đầu bằng tên kỳ); dòng chi tiết đang mở bên dưới cũng chứa "Oct 2026".
+  await expect(page.getByRole("row", { name: /^Oct 2026/ })).toContainText("Closed");
 
   // Tính thử thuế: tách ngược, làm tròn một lần; kèm mức sau khi hết giảm.
   await page.goto("/finance/tax");

@@ -7,7 +7,26 @@
 // không bày ra màn mà người dùng mở vào chỉ thấy lỗi. Khi core có sổ điều hướng (bước 51,
 // `Module::navigation`) thì lấy danh sách này từ core thay cho file này.
 import type { IconName } from "@/components/shell/icon";
+import {
+  AFFILIATE_FINANCE,
+  AFFILIATE_LIVE_MANAGE,
+  AFFILIATE_MANAGE,
+  AFFILIATE_PARTNER,
+  AFFILIATE_READ,
+} from "@/lib/affiliate";
 import { CATALOG_PRODUCTS_READ, INVENTORY_READ } from "@/lib/catalog";
+import {
+  CHANNELS_FINANCE_READ,
+  CHANNELS_MANAGE,
+  CHANNELS_ORDERS_MANAGE,
+  CHANNELS_READ,
+} from "@/lib/channels";
+import {
+  AUTH_CUSTOMERS_READ,
+  CUSTOMERS_READ,
+  CUSTOMERS_SEGMENTS_MANAGE,
+  ORDERS_RISK_MANAGE,
+} from "@/lib/customers";
 import {
   COMMENTS_EXPORT,
   COMMENTS_MANAGE,
@@ -142,6 +161,12 @@ export const NAV: NavGroup[] = [
         ],
         sample: { step: "45" },
       },
+      {
+        id: "channels",
+        href: "/sales/channels",
+        permission: [CHANNELS_READ, CHANNELS_MANAGE, CHANNELS_ORDERS_MANAGE, CHANNELS_FINANCE_READ],
+        sample: { step: "48" },
+      },
     ],
   },
   {
@@ -198,6 +223,18 @@ export const NAV: NavGroup[] = [
         permission: [COMMENTS_READ, COMMENTS_MANAGE, COMMENTS_EXPORT],
         counter: ["comments.pending"],
       },
+      {
+        id: "affiliate",
+        href: "/marketing/affiliate",
+        permission: [
+          AFFILIATE_READ,
+          AFFILIATE_MANAGE,
+          AFFILIATE_FINANCE,
+          AFFILIATE_LIVE_MANAGE,
+          AFFILIATE_PARTNER,
+        ],
+        sample: { step: "49" },
+      },
     ],
   },
   {
@@ -215,6 +252,25 @@ export const NAV: NavGroup[] = [
       // Menu của website là module `menus` riêng (chưa có trong core): dữ liệu mẫu (W-006).
       { id: "menus", href: "/content/menus", permission: MENUS_READ, sample: { step: "menus" } },
       { id: "media", href: "/content/media", module: "media", permission: MEDIA_READ },
+    ],
+  },
+  {
+    // Khách hàng (bước 47, cùng tài khoản người mua của bước 34 và rủi ro COD của bước 45): module
+    // `customers` chưa có trong core, nên màn dựng bằng dữ liệu mẫu (W-006, W-019).
+    id: "buyers",
+    icon: "user",
+    pages: [
+      {
+        id: "customers",
+        href: "/customers",
+        permission: [
+          CUSTOMERS_READ,
+          AUTH_CUSTOMERS_READ,
+          CUSTOMERS_SEGMENTS_MANAGE,
+          ORDERS_RISK_MANAGE,
+        ],
+        sample: { step: "47" },
+      },
     ],
   },
   {

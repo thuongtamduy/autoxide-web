@@ -75,6 +75,17 @@ export function MenuEditor({
   const [selected, setSelected] = useState<string | null>(base[0]?.id ?? null);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
+  // Bản mới từ máy chủ (sau khi lưu, hoặc "Tải bản mới" khi người khác vừa lưu): nhận cây mới nhưng
+  // giữ mục đang chọn và bảng xem trước đang mở, thay vì dựng lại cả trình sửa (React khuyên chỉnh
+  // state ngay trong lúc render khi prop đổi, không dùng useEffect).
+  const [seenEtag, setSeenEtag] = useState(initialEtag);
+  if (seenEtag !== initialEtag) {
+    setSeenEtag(initialEtag);
+    setRows(base);
+    setEtag(initialEtag);
+    if (initialEtag !== etag) setOutcome(null);
+    if (!base.some((row) => row.id === selected)) setSelected(base[0]?.id ?? null);
+  }
   const dirty = JSON.stringify(rows) !== JSON.stringify(base);
   const byId = useMemo(() => new Map(objects.map((o) => [`${o.kind}:${o.id}`, o])), [objects]);
   const kindOf = (kind: string | null) => kinds.find((k) => k.kind === kind);
