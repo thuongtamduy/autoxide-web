@@ -288,3 +288,54 @@ export async function eraseFormsData(state: DataState, formData: FormData): Prom
   refresh();
   return { done: nextDone(state), email };
 }
+
+// ---------------------------------------------------------------- Xuất CSV chạy nền
+
+export type FormExport = components["schemas"]["ExportResponse"];
+
+/**
+ * Xuất bài nộp chạy nền (core: `POST /forms/{id}/submissions/exports`, cần `forms.export`) cho form nhiều
+ * bài nộp. Core chỉ cho một lượt xuất chưa xong mỗi form (409 `forms.export_in_progress`).
+ */
+export async function startFormExport(
+  formId: string,
+  status: string,
+): Promise<
+  { ok: true; data: FormExport } | { ok: false; problem: components["schemas"]["Problem"] }
+> {
+  if (!z.uuid().safeParse(formId).success) return badRequest();
+  const wanted = SUBMISSION_STATUSES.find((s) => s === status);
+  const result = await send((client) =>
+    client.POST("/api/v1/forms/{id}/submissions/exports", {
+      params: { path: { id: formId } },
+      body: wanted ? { status: wanted } : {},
+    }),
+  );
+  return result.ok ? { ok: true, data: result.data.data } : result;
+}
+
+/** Trạng thái một lượt xuất (`pending`, `running`, `ready`, `failed`); hỏi lại vài giây một lần. */
+export async function readFormExport(
+  exportId: string,
+): Promise<
+  { ok: true; data: FormExport } | { ok: false; problem: components["schemas"]["Problem"] }
+> {
+  if (!z.uuid().safeParse(exportId).success) return badRequest();
+  const result = await send((client) =>
+    client.GET("/api/v1/forms/exports/{export_id}", { params: { path: { export_id: exportId } } }),
+  );
+  return result.ok ? { ok: true, data: result.data.data } : result;
+}
+
+function badRequest(): { ok: false; problem: components["schemas"]["Problem"] } {
+  return {
+    ok: false,
+    problem: {
+      type: "about:blank",
+      title: "Bad Request",
+      status: 400,
+      code: "invalid_request",
+      detail: "The request is not valid.",
+    },
+  };
+}

@@ -27,13 +27,15 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
   pages, categories, tags, authors and redirects; **website menus** (category bar, mega menu,
   footer; items point to posts, categories or addresses; storefront preview); the **media
   library** (upload, folders, tags, alt text per language with optional AI suggestions, trash).
-- **Marketing**: forms and their submissions, newsletter lists, campaigns and subscribers,
-  comment moderation.
+- **Marketing**: forms and their submissions (CSV export, also in the background for large forms),
+  newsletter lists, campaigns and subscribers, comment moderation (plain text or Markdown).
 - **Organization › Users and roles**: accounts, roles with a permission picker (risky permissions
-  are labelled), sign-out everywhere, two-step sign-in reset.
+  are labelled), sign-out everywhere, two-step sign-in reset, removing the passkeys of someone who
+  lost their device.
 - **Settings**: modules, webhooks, audit log, API keys and AI agents (MCP), developer tools.
 - **My account**: profile, email and password, two-step sign-in, passkeys, devices, your data.
-- **Pages opened from mail** (no sign-in): verify an email, forgot and reset password.
+- **Pages opened from mail** (no sign-in): verify an email, forgot and reset password, and "it was
+  not me" when someone else changed your email.
 
 **Screens on sample data** (marked "Sample data · waiting for API step N"), because the core
 builds them in later steps: Sales (orders, returns, counter sales, shipping and COD, stores,
@@ -45,7 +47,8 @@ has no API for yet use sample data the same way. Sample data shows only when
 app's memory and lost on restart. The sample records agree across screens (an order, its
 shipment, its ledger entries and its invoice are the same order).
 
-Works with Autoxide core **v0.14.0** or newer.
+Works with Autoxide core from commit `e2c3596` of its `main` branch or newer (the next release,
+v0.15.0, will include it).
 
 ## Requirements
 
@@ -78,19 +81,22 @@ Open <http://localhost:3000> and sign in with your core account.
 
 ### Mail links
 
-The core sends verification and password-reset mails. Set these two variables **on the core**
-so the links in those mails open this app (replace the address with where this app is served):
+The core sends verification and password-reset mails, and tells the old address when an account's
+email changes. Set these variables **on the core** so the links in those mails open this app
+(replace the address with where this app is served):
 
 ```bash
 AUTOXIDE_AUTH_EMAIL_VERIFICATION_URL=https://admin.example.com/verify-email?token={token}
 AUTOXIDE_AUTH_PASSWORD_RESET_URL=https://admin.example.com/reset-password?token={token}
+AUTOXIDE_AUTH_EMAIL_CHANGE_REPORT_URL=https://admin.example.com/not-me?token={token}
 ```
 
 The core puts the token where `{token}` is. Without them, the mails contain the token and tell the
 reader to call the API. During development the core writes mail as `.eml` files to
 `AUTOXIDE_MAIL_FILE_DIR` (default `data/mail`) when no SMTP server is set; open the link from
 there. Opening a verification link does nothing until the person presses "Confirm my email",
-so mail scanners that open every link do not use up the token.
+so mail scanners that open every link do not use up the token. The same goes for `/not-me`: the
+account is locked only when the person presses "It was not me".
 
 ### Production
 

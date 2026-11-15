@@ -108,6 +108,16 @@ export default async function CommentPage(props: PageProps<"/marketing/comments/
         <section className="block" aria-labelledby="body-h">
           <h2 id="body-h" className="h2">
             {t("text")}
+            {comment.format === "markdown" ? (
+              // Người duyệt thấy nguyên văn người viết gõ (kể cả địa chỉ thật của link), không phải bản đã dựng.
+              <span
+                className="badge b-info"
+                style={{ marginInlineStart: 8 }}
+                title={t("markdownHint")}
+              >
+                Markdown
+              </span>
+            ) : null}
           </h2>
           <div className="card padded">
             {comment.body ? (

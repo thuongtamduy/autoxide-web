@@ -26,12 +26,14 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
   trang, danh mục, thẻ, tác giả và chuyển hướng; **menu của website** (thanh danh mục, bảng xổ lớn,
   chân trang; mục trỏ tới bài, danh mục hay địa chỉ; xem trước mặt tiền); **thư viện media** (tải
   lên, thư mục, thẻ, alt theo từng ngôn ngữ kèm gợi ý của AI, thùng rác).
-- **Tiếp thị**: biểu mẫu và bài nộp, danh sách, chiến dịch và người nhận bản tin, duyệt bình luận.
+- **Tiếp thị**: biểu mẫu và bài nộp (xuất CSV, xuất nền cho form nhiều bài nộp), danh sách, chiến dịch
+  và người nhận bản tin, duyệt bình luận (chữ thường hay Markdown).
 - **Tổ chức › Người dùng và role**: tài khoản, role với bộ chọn permission (permission rủi ro có
-  nhãn), đăng xuất mọi nơi, tắt xác thực hai bước.
+  nhãn), đăng xuất mọi nơi, tắt xác thực hai bước, gỡ passkey của người mất thiết bị.
 - **Cài đặt**: module, webhook, nhật ký audit, API key và AI agent (MCP), công cụ cho lập trình viên.
 - **Tài khoản của tôi**: hồ sơ, email và mật khẩu, xác thực hai bước, passkey, thiết bị, dữ liệu của bạn.
-- **Trang mở từ mail** (không cần đăng nhập): xác nhận email, quên và đặt lại mật khẩu.
+- **Trang mở từ mail** (không cần đăng nhập): xác nhận email, quên và đặt lại mật khẩu, và "không phải
+  tôi" khi người khác đổi email của bạn.
 
 **Các màn dùng dữ liệu mẫu** (có nhãn "Dữ liệu mẫu · chờ API bước N"), vì core dựng chúng ở các bước
 sau: Bán hàng (đơn hàng, đổi trả, bán tại quầy, vận chuyển và COD, cửa hàng, kênh bán), Sản phẩm
@@ -42,7 +44,8 @@ liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định b�
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).
 
-Chạy với core Autoxide **v0.14.0** trở lên.
+Chạy với core Autoxide từ commit `e2c3596` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
+sẽ có).
 
 ## Cần có
 
@@ -75,18 +78,21 @@ Mở <http://localhost:3000> và đăng nhập bằng tài khoản core.
 
 ### Link trong thư
 
-Core gửi thư xác minh email và thư đặt lại mật khẩu. Đặt hai biến này **ở core** để link trong
-thư mở ứng dụng này (thay địa chỉ bằng nơi ứng dụng chạy):
+Core gửi thư xác minh email, thư đặt lại mật khẩu, và báo tới địa chỉ cũ khi email của tài khoản bị
+đổi. Đặt các biến này **ở core** để link trong thư mở ứng dụng này (thay địa chỉ bằng nơi ứng dụng
+chạy):
 
 ```bash
 AUTOXIDE_AUTH_EMAIL_VERIFICATION_URL=https://admin.example.com/verify-email?token={token}
 AUTOXIDE_AUTH_PASSWORD_RESET_URL=https://admin.example.com/reset-password?token={token}
+AUTOXIDE_AUTH_EMAIL_CHANGE_REPORT_URL=https://admin.example.com/not-me?token={token}
 ```
 
 Core đặt token vào chỗ `{token}`. Không đặt thì thư chứa token và bảo người đọc gọi API. Khi chạy
 thử, core chưa có máy chủ SMTP thì ghi thư thành file `.eml` vào `AUTOXIDE_MAIL_FILE_DIR` (mặc
 định `data/mail`); mở link từ đó. Mở link xác minh chưa làm gì cho tới khi người dùng bấm "Xác
-minh email của tôi", để trình quét link của hộp thư (mở thử mọi link) không dùng mất token.
+minh email của tôi", để trình quét link của hộp thư (mở thử mọi link) không dùng mất token. Trang
+`/not-me` cũng vậy: tài khoản chỉ bị khoá khi người dùng bấm "Không phải tôi".
 
 ### Chạy thật
 

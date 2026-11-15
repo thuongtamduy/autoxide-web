@@ -7,6 +7,7 @@ import {
   EndSessionsDialog,
   FirstPasswordDialog,
   RemoveMfaDialog,
+  RemovePasskeyDialog,
   ResetMailButton,
 } from "@/components/access/user-admin";
 import { RenameForm, RolesForm, StatusControl } from "@/components/access/user-edit";
@@ -16,11 +17,18 @@ import { Flash } from "@/components/ui/flash";
 import { Time } from "@/components/ui/time";
 import { allRoles } from "@/lib/access";
 import { isForbidden, isNotFound, load, loadTagged } from "@/lib/core";
-import { ROLES_MANAGE, ROLES_READ, USERS_MANAGE, USERS_READ } from "@/lib/permissions";
+import {
+  PASSKEYS_MANAGE,
+  ROLES_MANAGE,
+  ROLES_READ,
+  USERS_MANAGE,
+  USERS_READ,
+} from "@/lib/permissions";
 import { can } from "@/lib/viewer";
 
 type User = components["schemas"]["UserResponse"];
 type Role = components["schemas"]["RoleResponse"];
+type Passkey = components["schemas"]["PasskeyResponse"];
 
 // Trang một người dùng: hồ sơ, trạng thái, role, thao tác của quản trị viên. Nút nào người xem
 // không có permission thì không hiện (core vẫn kiểm ở mỗi lời gọi).
@@ -62,11 +70,13 @@ export default async function UserPage(props: PageProps<"/org/access/users/[id]"
     }
     throw error;
   }
-  const [manage, assign, readRoles] = await Promise.all([
+  const [manage, assign, readRoles, passkeysManage] = await Promise.all([
     can(USERS_MANAGE),
     can(ROLES_MANAGE),
     can(ROLES_READ),
+    can(PASSKEYS_MANAGE),
   ]);
+  const passkeys = passkeysManage ? await passkeysOf(id) : null;
   const roles = assign && readRoles ? await allRoles() : null;
   const who = user.name || user.email;
   const target = { id: user.id, email: user.email, who };
@@ -204,8 +214,73 @@ export default async function UserPage(props: PageProps<"/org/access/users/[id]"
           </div>
         </section>
       ) : null}
+
+      {passkeys ? (
+        <section className="block" aria-labelledby="passkeys-h">
+          <h2 id="passkeys-h" className="h2">
+            {t("access.admin.passkeys.title")}
+          </h2>
+          <p className="fhint">{t("access.admin.passkeys.about")}</p>
+          {passkeys === "forbidden" ? (
+            <p className="card empty">{t("access.admin.passkeys.forbidden")}</p>
+          ) : passkeys.length === 0 ? (
+            <p className="card empty">{t("access.admin.passkeys.none")}</p>
+          ) : (
+            <div className="card list">
+              {passkeys.map((passkey) => (
+                <div key={passkey.id} className="item">
+                  <span className="item-main">
+                    <span className="item-title">{passkey.name}</span>
+                    <span className="item-meta">
+                      {t("access.admin.passkeys.created")} <Time value={passkey.created_at} /> ·{" "}
+                      {t("access.admin.passkeys.lastUsed")}{" "}
+                      {passkey.last_used_at ? (
+                        <Time value={passkey.last_used_at} />
+                      ) : (
+                        t("access.admin.passkeys.never")
+                      )}
+                    </span>
+                  </span>
+                  <span className="item-acts">
+                    <RemovePasskeyDialog
+                      target={target}
+                      passkey={{ id: passkey.id, name: passkey.name }}
+                    />
+                  </span>
+                </div>
+              ))}
+              {passkeys.length > 1 ? (
+                <div className="item">
+                  <span className="item-main" />
+                  <span className="item-acts">
+                    <RemovePasskeyDialog target={target} />
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </section>
+      ) : null}
     </div>
   );
+}
+
+/**
+ * Passkey của một người (`auth.passkeys.manage`). Core từ chối (403) khi người đó có permission mà người
+ * xem không có: hiện câu giải thích thay vì làm hỏng cả trang.
+ */
+async function passkeysOf(id: string): Promise<Passkey[] | "forbidden"> {
+  try {
+    const { data } = await load((client) =>
+      client.GET("/api/v1/auth/users/{id}/passkeys", {
+        params: { path: { id }, query: { limit: 50 } },
+      }),
+    );
+    return data;
+  } catch (error) {
+    if (isForbidden(error)) return "forbidden";
+    throw error;
+  }
 }
 
 function AdminRow({ title, meta, children }: { title: string; meta: string; children: ReactNode }) {

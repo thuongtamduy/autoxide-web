@@ -170,6 +170,32 @@ export async function removeUserMfa(state: FormState, formData: FormData): Promi
   return { done: nextDone(state) };
 }
 
+/** Gỡ một passkey của người khác (mất thiết bị). Mật khẩu và phiên của họ giữ nguyên. */
+export async function removeUserPasskey(state: FormState, formData: FormData): Promise<FormState> {
+  const passkey = String(formData.get("passkey_id") ?? "");
+  const result = await send((client) =>
+    client.DELETE("/api/v1/auth/users/{id}/passkeys/{passkey_id}", {
+      params: { path: { id: idOf(formData), passkey_id: passkey } },
+    }),
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  refresh();
+  return { done: nextDone(state) };
+}
+
+/** Gỡ mọi passkey của người khác: họ đăng nhập lại bằng mật khẩu rồi thêm passkey mới. */
+export async function removeAllUserPasskeys(
+  state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const result = await send((client) =>
+    client.DELETE("/api/v1/auth/users/{id}/passkeys", { params: { path: { id: idOf(formData) } } }),
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  refresh();
+  return { done: nextDone(state) };
+}
+
 const DeleteUserForm = z.object({ confirm_email: z.string().trim().min(1) });
 
 /** Xoá tài khoản: gõ lại email của người đó để xác nhận. Xong về danh sách. */

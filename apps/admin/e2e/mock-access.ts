@@ -171,6 +171,22 @@ export async function publicRoutes(
     send(response, 200, { data: userView(account) } satisfies Schemas["Data_UserResponse"]);
     return true;
   }
+  // Báo "không phải tôi đổi email" (core bước 32, D-250): token mẫu `report-ok`, dùng một lần.
+  if (route === "POST /api/v1/auth/email-change/report") {
+    const token = text(await json(request), "token");
+    if (token !== "report-ok" || usedTokens.has(token)) {
+      problem(
+        response,
+        400,
+        "auth.invalid_email_change_report_token",
+        "The report token is unknown, expired or already used.",
+      );
+      return true;
+    }
+    usedTokens.add(token);
+    empty(response, 204);
+    return true;
+  }
   if (route === "POST /api/v1/auth/password-reset") {
     resetRequests.push(text(await json(request), "email"));
     empty(response, 202);
@@ -288,7 +304,7 @@ export async function accessRoutes(
     send(response, 201, { data: userView(account) } satisfies Schemas["Data_UserResponse"]);
     return true;
   }
-  const user = /^\/api\/v1\/auth\/users\/([^/]+)(\/[a-z]+)?$/.exec(path);
+  const user = /^\/api\/v1\/auth\/users\/([^/]+)(\/[a-z]+(?:\/[^/]+)?)?$/.exec(path);
   if (user) {
     const account = live().find((a) => a.id === user[1]);
     const tail = user[2] ?? "";
@@ -399,6 +415,32 @@ export async function accessRoutes(
     if (tail === "/mfa" && method === "DELETE") {
       account.mfa = false;
       account.recoveryCodes = [];
+      empty(response, 204);
+      return true;
+    }
+    // Passkey của người khác (core bước 32, D-251): xem, gỡ một, gỡ hết.
+    if (tail === "/passkeys" && method === "GET") {
+      send(
+        response,
+        200,
+        page([...account.passkeys].reverse(), url) satisfies Schemas["Page_PasskeyResponse"],
+      );
+      return true;
+    }
+    if (tail === "/passkeys" && method === "DELETE") {
+      account.passkeys = [];
+      account.credentialIds = [];
+      empty(response, 204);
+      return true;
+    }
+    const one = tail.match(/^\/passkeys\/([^/]+)$/);
+    if (one && method === "DELETE") {
+      const index = account.passkeys.findIndex((p) => p.id === one[1]);
+      if (index < 0) {
+        problem(response, 404, "auth.passkey_not_found", "The user has no passkey with this id.");
+        return true;
+      }
+      account.passkeys.splice(index, 1);
       empty(response, 204);
       return true;
     }

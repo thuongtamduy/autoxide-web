@@ -8,6 +8,8 @@ export const MODULES_READ = "kernel.modules.read";
 export const USERS_READ = "auth.users.read";
 /** Tạo, đổi tên, khoá / mở khoá, xoá tài khoản; đặt mật khẩu đầu tiên; đăng xuất, gỡ MFA. */
 export const USERS_MANAGE = "auth.users.manage";
+/** Xem và gỡ passkey của người khác (core bước 32, D-251): cho người lo khôi phục tài khoản. */
+export const PASSKEYS_MANAGE = "auth.passkeys.manage";
 /** Xem role và sổ permission (`GET /api/v1/auth/roles`, `/permissions`). */
 export const ROLES_READ = "auth.roles.read";
 /** Tạo, sửa, xoá role và gán role cho người dùng. */

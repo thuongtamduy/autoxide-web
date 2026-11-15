@@ -5,12 +5,21 @@ import { useActionState, useRef } from "react";
 import {
   deleteUser,
   endUserSessions,
+  removeAllUserPasskeys,
   removeUserMfa,
+  removeUserPasskey,
   sendResetMail,
   setFirstPassword,
 } from "@/app/(admin)/org/access/actions";
 import { Dialog } from "@/components/ui/dialog";
-import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "@/components/ui/form";
+import {
+  DialogButtons,
+  Field,
+  FormAlert,
+  useFocusInvalid,
+  useOnDone,
+  useSubmit,
+} from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 
 // Thao tác của quản trị viên trên tài khoản người khác. Mỗi thao tác một dòng: tên, câu nêu hệ
@@ -149,6 +158,75 @@ function RemoveMfaForm({ target, close }: { target: Target; close: () => void })
       <input type="hidden" name="id" value={target.id} />
       <FormAlert state={state} />
       <DialogButtons submit={t("submit")} pending={pending} close={close} danger />
+    </form>
+  );
+}
+
+/**
+ * Gỡ passkey của người khác (mất thiết bị): một chiếc (`passkey` có giá trị) hay tất cả. Mật khẩu và phiên
+ * của người đó giữ nguyên; core ghi event `auth.passkey_removed` kèm `by_administrator`.
+ */
+export function RemovePasskeyDialog({
+  target,
+  passkey,
+}: {
+  target: Target;
+  passkey?: { id: string; name: string };
+}) {
+  const t = useTranslations("access.admin.passkeys");
+  return (
+    <Dialog
+      label={passkey ? t("removeOne") : t("removeAll")}
+      ariaLabel={passkey ? t("removeOneNamed", { name: passkey.name }) : t("removeAll")}
+      title={
+        passkey
+          ? t("titleOne", { name: passkey.name, who: target.who })
+          : t("titleAll", { who: target.who })
+      }
+      triggerClass="btn sm danger"
+      intro={
+        <ul className="dlg-list">
+          <li>{passkey ? t("effectOne") : t("effectAll")}</li>
+          <li>{t("check")}</li>
+        </ul>
+      }
+    >
+      {(close) => <RemovePasskeyForm target={target} passkey={passkey} close={close} />}
+    </Dialog>
+  );
+}
+
+function RemovePasskeyForm({
+  target,
+  passkey,
+  close,
+}: {
+  target: Target;
+  passkey: { id: string; name: string } | undefined;
+  close: () => void;
+}) {
+  const t = useTranslations("access.admin.passkeys");
+  const toast = useToast();
+  // `useSubmit`, không phải `useActionState` + effect: dòng của passkey vừa gỡ biến mất cùng hộp thoại
+  // này khi trang làm mới, trước khi effect kịp báo.
+  const [state, action, pending] = useSubmit(
+    passkey ? removeUserPasskey : removeAllUserPasskeys,
+    () => {
+      close();
+      toast(passkey ? t("doneOne") : t("doneAll"));
+    },
+  );
+  return (
+    <form action={action} className="dlg-form">
+      <input type="hidden" name="id" value={target.id} />
+      {passkey ? <input type="hidden" name="passkey_id" value={passkey.id} /> : null}
+      <FormAlert state={state} />
+      <DialogButtons
+        submit={passkey ? t("submitOne") : t("submitAll")}
+        pending={pending}
+        close={close}
+        danger
+      />
     </form>
   );
 }

@@ -689,6 +689,28 @@
         "check": "Chắc chắn yêu cầu đúng là của họ: sau đó ai biết mật khẩu cũng đăng nhập được.",
         "submit": "Tắt xác thực hai bước",
         "done": "Đã tắt xác thực hai bước cho tài khoản này."
+      },
+      "passkeys": {
+        "title": "Passkey",
+        "about": "Passkey của người này. Gỡ khi họ mất thiết bị; sau đó họ đăng nhập bằng mật khẩu và thêm passkey mới. Mật khẩu và phiên của họ giữ nguyên.",
+        "none": "Người này chưa có passkey nào.",
+        "name": "Tên",
+        "created": "Ngày thêm",
+        "lastUsed": "Dùng lần cuối",
+        "never": "Chưa dùng",
+        "removeOne": "Gỡ",
+        "removeOneNamed": "Gỡ passkey {name}",
+        "removeAll": "Gỡ mọi passkey",
+        "titleOne": "Gỡ passkey “{name}” của {who}?",
+        "titleAll": "Gỡ mọi passkey của {who}?",
+        "effectOne": "Passkey này thôi dùng được ngay. Mật khẩu, passkey khác và phiên của họ giữ nguyên.",
+        "effectAll": "Mọi passkey thôi dùng được ngay. Họ đăng nhập bằng mật khẩu và thêm được passkey mới.",
+        "check": "Kiểm chắc yêu cầu đúng là của họ: gỡ passkey là cách lấy lại tài khoản.",
+        "submitOne": "Gỡ passkey",
+        "submitAll": "Gỡ mọi passkey",
+        "doneOne": "Đã gỡ passkey.",
+        "doneAll": "Đã gỡ mọi passkey.",
+        "forbidden": "Bạn không xem được passkey của người này: họ có permission mà bạn không có."
       }
     },
     "roles": {
@@ -916,6 +938,17 @@
       "rule": "12 đến 128 ký tự.",
       "repeat": "Nhập lại mật khẩu mới",
       "submit": "Đổi mật khẩu"
+    },
+    "notMe": {
+      "title": "Có người khác đổi email của bạn?",
+      "noToken": "Link này thiếu phần mã. Mở lại link trong thư.",
+      "description": "Thư bạn nhận báo email của tài khoản vừa bị đổi. Nếu không phải bạn đổi, hãy báo ở đây.",
+      "effects": "Báo xong, tài khoản bị khoá trước người đã đổi: đăng xuất mọi nơi, bỏ mật khẩu, API key, passkey và xác thực hai bước. Nếu địa chỉ cũ của bạn còn trống, email được trả về đó và bạn nhận thư để đặt mật khẩu mới.",
+      "submit": "Không phải tôi — khoá tài khoản",
+      "doneTitle": "Đã khoá tài khoản",
+      "done": "Người đã đổi email không vào được nữa. Nếu địa chỉ cũ còn trống, thư đặt mật khẩu mới đang được gửi tới đó; nếu không, hãy nhờ quản trị viên trả tài khoản cho bạn.",
+      "invalidHint": "Link không đúng, đã hết hạn hoặc đã dùng. Nếu vẫn không vào được tài khoản, hãy nhờ quản trị viên.",
+      "toLogin": "Tới trang đăng nhập"
     }
   },
   "settings": {
@@ -2637,6 +2670,13 @@
         "limitHint": "Trống: mặc định của máy chủ. Vượt thì bỏ qua, không báo.",
         "create": "Tạo biểu mẫu",
         "save": "Lưu biểu mẫu"
+      },
+      "bgExport": {
+        "start": "Xuất nền",
+        "working": "Đang chuẩn bị tệp…",
+        "download": "Tải tệp CSV",
+        "deletedAt": "tệp bị xoá lúc",
+        "failed": "Xuất không thành; hãy xuất lại."
       }
     },
     "newsletter": {
@@ -3159,7 +3199,9 @@
         "maxLength": "Dài nhất (ký tự)",
         "maxLinks": "Số link trước khi giữ lại",
         "editMinutes": "Tác giả được sửa trong",
-        "replyMails": "Thư báo trả lời"
+        "replyMails": "Thư báo trả lời",
+        "verifiedOnly": "Chỉ người đã xác minh được bình luận trên",
+        "markdown": "Bình luận được viết bằng Markdown"
       },
       "required": {
         "kind": "Hãy chọn cách cấm.",
@@ -3230,7 +3272,8 @@
           "guests_need_none": "Khách không xác thực tài khoản được: tắt cho khách, hoặc chọn không cần xác thực.",
           "unknown": "Hãy chọn một giá trị trong danh sách."
         }
-      }
+      },
+      "markdownHint": "Hiện nguyên văn người viết gõ; website dựng một phần nhỏ của Markdown (đậm, nghiêng, link, trích dẫn, mã)."
     },
     "data": {
       "title": "Dữ liệu theo email",

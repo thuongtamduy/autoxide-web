@@ -293,3 +293,31 @@ test("tab dữ liệu mẫu: lời mời, uỷ quyền, hồ sơ công khai, quy
   await expect(toast(page)).toHaveText("Access revoked.");
   await expect(page.getByRole("button", { name: "Revoke" })).toHaveCount(0);
 });
+
+test("quản trị viên xem và gỡ passkey của người mất thiết bị (một chiếc, rồi tất cả)", async ({
+  page,
+  request,
+}) => {
+  for (const name of ["iPhone của Lan", "Laptop cơ quan", "Khoá USB"]) {
+    await request.post(`${CORE}/__passkeys`, { data: { email: "viewer@example.com", name } });
+  }
+  await signIn(page, "/org/access/users");
+  await page.getByRole("link", { name: "viewer", exact: true }).click();
+  const section = page.getByRole("region", { name: "Passkeys" });
+  await expect(section.locator(".item-title")).toHaveText([
+    "Khoá USB",
+    "Laptop cơ quan",
+    "iPhone của Lan",
+  ]);
+
+  await section.getByRole("button", { name: "Remove passkey iPhone của Lan" }).click();
+  await expect(dialog(page)).toContainText("Their password, other passkeys and sessions stay");
+  await dialog(page).getByRole("button", { name: "Remove passkey" }).click();
+  await expect(toast(page)).toHaveText("Passkey removed.");
+  await expect(section.locator(".item-title")).toHaveText(["Khoá USB", "Laptop cơ quan"]);
+
+  await section.getByRole("button", { name: "Remove every passkey" }).click();
+  await dialog(page).getByRole("button", { name: "Remove every passkey" }).click();
+  await expect(toast(page)).toHaveText("Every passkey removed.");
+  await expect(section).toContainText("This person has no passkey.");
+});

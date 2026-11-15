@@ -1099,3 +1099,32 @@ người dùng mà core đã có chỗ giữ (D-207 của core), không cần AP
 
 Đã cân nhắc: đọc cờ giao diện ở mọi trang thay cho cookie — thêm một lời gọi core cho mỗi trang, và trang đăng
 nhập chưa có token; sửa bài thử cho chờ lâu hơn — che lỗi thật thay vì sửa.
+
+## W-025 · SDK ghim theo một commit trên `main` của core khi bản phát hành đến chậm; nối các tính năng bước 31–32 — 2026-11-15 — agent quyết
+
+Thay một phần W-021 ("SDK chỉ theo tag").
+
+Quyết định:
+
+- **`CORE_VERSION` của SDK có thể là SHA của một commit trên `main` của core**, không chỉ tag. Luôn ghim **một
+  commit cụ thể** (lặp lại được, core đổi gì sau đó không làm hỏng giao diện), không bao giờ ghim "main mới
+  nhất". Hiện ghim `e2c3596` (sau bước 32). Core phát hành bản có commit đó (v0.15.0) thì chuyển về tag. README
+  ghi rõ commit tối thiểu.
+- Nối các tính năng của bước 31–32:
+  - **Passkey của người khác** ở trang người dùng (`auth.passkeys.manage`): danh sách, gỡ một, gỡ hết, mỗi thao
+    tác hỏi lại và nêu hệ quả. Core từ chối (403) khi người đó có permission mà người xem không có: trang hiện
+    câu giải thích, không hỏng.
+  - **Xuất bài nộp chạy nền** (`forms.export`): nút "Xuất nền" cạnh "Xuất CSV"; hỏi lại trạng thái hai giây một
+    lần; tải tệp qua route của máy chủ giao diện (`/marketing/forms/exports/{id}/file`) — máy chủ xin link có chữ
+    ký mới rồi tự tải, ghép đường dẫn của link vào địa chỉ core mà giao diện dùng.
+  - **Trang công khai `/not-me?token=`** cho thư báo đổi email (`AUTOXIDE_AUTH_EMAIL_CHANGE_REPORT_URL` của
+    core): mở trang không làm gì, bấm "Không phải tôi" mới khoá tài khoản (trình quét link của hộp thư không
+    khoá nhầm).
+  - **Bình luận viết bằng Markdown**: nhãn "Markdown" ở trang duyệt (người duyệt vẫn thấy nguyên văn), tab Cài
+    đặt hiện `markdown` và `verified_only_types`.
+
+Lý do: core chỉ phát hành khi xong một giai đoạn (D-248 của core), nên tính năng đã xong trên `main` có thể chờ
+lâu; chủ dự án muốn làm tiếp không chờ. Ghim theo commit giữ được điều W-021 cần (hợp đồng cố định, lặp lại được).
+
+Đã cân nhắc: ghim theo "main mới nhất" — mỗi lần sinh lại SDK có thể ra hợp đồng khác, giao diện hỏng mà không
+biết vì sao; chờ bản phát hành — không biết bao giờ.

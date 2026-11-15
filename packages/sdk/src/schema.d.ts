@@ -136,6 +136,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/email-change/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report an email change you did not make.
+         * @description Needs no sign-in: the token comes from the mail sent to the old address after the
+         *     account's email changed. The account is then locked against whoever changed it: signed
+         *     out everywhere, its password removed (sign-in with a password stops working), its API
+         *     keys, passkeys, two-step sign-in and pending tokens removed. When no other account took
+         *     the old address meanwhile, the email goes back to it and a mail to choose a new password
+         *     is sent there (in the language of `Accept-Language`); otherwise ask an administrator.
+         */
+        post: operations["auth_report_email_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/email-verification/confirm": {
         parameters: {
             query?: never;
@@ -306,7 +331,9 @@ export interface paths {
          *     cannot do this). A verification mail goes to the NEW address; the email changes
          *     only when its token is confirmed with `POST /api/v1/auth/email-verification/confirm`,
          *     within 24 hours. Until then the old address stays in use. Wrong passwords count
-         *     towards the sign-in lock of the email.
+         *     towards the sign-in lock of the email. Once the change is confirmed, the OLD address gets
+         *     a mail saying so, with a token to report the change if the owner did not make it
+         *     (`POST /api/v1/auth/email-change/report`, valid 7 days).
          */
         post: operations["auth_change_email"];
         delete?: never;
@@ -839,6 +866,57 @@ export interface paths {
          *     set up a new device. Check who is asking before using this.
          */
         delete: operations["auth_reset_user_mfa"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/users/{id}/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the passkeys of a user.
+         * @description Requires `auth.passkeys.manage`, and that the user has no permission you lack. The same
+         *     fields as `GET /api/v1/auth/me/passkeys`: no key material. Newest first unless
+         *     `order=asc`.
+         */
+        get: operations["auth_list_user_passkeys"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove every passkey of a user who lost their devices.
+         * @description Requires `auth.passkeys.manage`, and that the user has no permission you lack. The user
+         *     signs in with the password and can add new passkeys. The password and sessions stay as they
+         *     are. Answers 204 also when the user had none.
+         */
+        delete: operations["auth_remove_user_passkeys"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/users/{id}/passkeys/{passkey_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove one passkey of a user who lost the device.
+         * @description Requires `auth.passkeys.manage`, and that the user has no permission you lack. The passkey
+         *     stops working at once. The password and the user's sessions stay as they are (like
+         *     `DELETE /api/v1/auth/users/{id}/mfa`). Check who is asking before using this. The event
+         *     `auth.passkey_removed` records `by_administrator`.
+         */
+        delete: operations["auth_remove_user_passkey"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2414,6 +2492,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/forms/exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a CSV export made in the background.
+         * @description Requires `forms.export`. While `pending` or `running`, ask again in a few seconds. Once
+         *     `ready`, `download_url` is a fresh link to the file each time you ask.
+         */
+        get: operations["forms_get_form_submissions_export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forms/exports/{export_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the file of a CSV export.
+         * @description No sign-in: the link from `download_url` carries its own signature and expiry, so it can be
+         *     opened in a browser. Do not share it: anyone with the link can download the file until it
+         *     expires.
+         */
+        get: operations["forms_download_form_submissions_export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/forms/public/{key}": {
         parameters: {
             query?: never;
@@ -2565,6 +2686,31 @@ export interface paths {
         get: operations["forms_export_form_submissions"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forms/{id}/submissions/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export the submissions of a form as CSV, in the background.
+         * @description Requires `forms.export`. For forms with many submissions: the file is written by a
+         *     background job, then `GET /api/v1/forms/exports/{export_id}` (the `Location` of the answer)
+         *     gives a download link. Same content as `GET /{id}/submissions/export`, byte for byte. One
+         *     export per form at a time. The file holds personal data and is deleted after
+         *     `AUTOXIDE_FORMS_EXPORT_KEEP_HOURS`, or as soon as submissions of the form are deleted by
+         *     email or the form is deleted.
+         */
+        post: operations["forms_create_form_submissions_export"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4196,6 +4342,8 @@ export interface components {
             /** Format: date-time */
             edited_at?: string | null;
             email_verified: boolean;
+            /** @description How `body` is written: `text` or `markdown`. */
+            format: components["schemas"]["Format"];
             /**
              * @description Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,
              *     `too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),
@@ -4291,6 +4439,8 @@ export interface components {
             enabled: boolean;
             /** @description Guests (no account) may comment. */
             guests_allowed: boolean;
+            /** @description Comments may be written in Markdown (`format: markdown`): show formatting buttons. */
+            markdown: boolean;
             /** @description Longest comment, in characters. */
             max_length: number;
             /** @description More links than this hold a comment for approval. */
@@ -4464,7 +4614,7 @@ export interface components {
         CreateCommentRequest: {
             /** @description Guests: the name to show (required). Signed-in users show the name of their profile. */
             author_name?: string | null;
-            /** @description Plain text; line breaks are kept, `http(s)` addresses become links. */
+            /** @description The text, as `format` says; line breaks are kept, `http(s)` addresses become links. */
             body: string;
             /** @description The value of the `altcha` widget, when the server uses a challenge. */
             challenge?: string | null;
@@ -4475,6 +4625,7 @@ export interface components {
              *     signed in.
              */
             form_token?: string | null;
+            format?: components["schemas"]["Format"] | null;
             /** @description Language of the author: `en` or `vi` (for the mails). */
             locale?: string | null;
             /** @description Mail me when someone replies (a confirmation mail is sent to `email` first). */
@@ -4523,6 +4674,10 @@ export interface components {
              * @description Parent page (pages only).
              */
             parent_id?: string | null;
+        };
+        /** @description What to export. The body may be omitted. */
+        CreateExportRequest: {
+            status?: components["schemas"]["SubmissionStatus"] | null;
         };
         /** @description A new folder. */
         CreateFolderRequest: {
@@ -4914,6 +5069,8 @@ export interface components {
                 /** Format: date-time */
                 edited_at?: string | null;
                 email_verified: boolean;
+                /** @description How `body` is written: `text` or `markdown`. */
+                format: components["schemas"]["Format"];
                 /**
                  * @description Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,
                  *     `too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),
@@ -4984,6 +5141,8 @@ export interface components {
                 enabled: boolean;
                 /** @description Guests (no account) may comment. */
                 guests_allowed: boolean;
+                /** @description Comments may be written in Markdown (`format: markdown`): show formatting buttons. */
+                markdown: boolean;
                 /** @description Longest comment, in characters. */
                 max_length: number;
                 /** @description More links than this hold a comment for approval. */
@@ -5317,6 +5476,47 @@ export interface components {
                  * @description Submissions deleted.
                  */
                 deleted: number;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_ExportResponse: {
+            /** @description A CSV export made in the background. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: date-time */
+                download_expires_at?: string | null;
+                /**
+                 * @description Link to the file, only while `ready`: it needs no sign-in, so it can be opened in a
+                 *     browser, and it works until `download_expires_at`. An absolute URL when
+                 *     `AUTOXIDE_HTTP_PUBLIC_URL` is set, otherwise a path on this API. Get the export again
+                 *     for a fresh link.
+                 */
+                download_url?: string | null;
+                /**
+                 * Format: date-time
+                 * @description When the file is deleted (`AUTOXIDE_FORMS_EXPORT_KEEP_HOURS` after it was finished).
+                 */
+                expires_at?: string | null;
+                /** Format: date-time */
+                finished_at?: string | null;
+                /** Format: uuid */
+                form_id: string;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: int64
+                 * @description Rows in the file (without the header line), once `ready`.
+                 */
+                row_count?: number | null;
+                /**
+                 * Format: int64
+                 * @description Size of the file in bytes, once `ready`.
+                 */
+                size?: number | null;
+                /** @description `pending` and `running` until the file is written; then `ready` or `failed`. */
+                state: components["schemas"]["ExportState"];
+                status?: components["schemas"]["SubmissionStatus"] | null;
             };
         };
         /** @description Envelope of a single result. */
@@ -5933,11 +6133,13 @@ export interface components {
                  *     ]
                  */
                 badges: string[];
-                /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
+                /** @description The text as written (plain text or Markdown, see `format`). Never insert it as HTML. */
                 body: string;
                 /**
                  * @description The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as
-                 *     links with `rel="nofollow ugc noopener"`.
+                 *     links with `rel="nofollow ugc noopener"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,
+                 *     `<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as
+                 *     their text. Insert this, never `body`.
                  */
                 body_html: string;
                 /** Format: date-time */
@@ -5949,6 +6151,8 @@ export interface components {
                  * @description When the author last changed it.
                  */
                 edited_at?: string | null;
+                /** @description How `body` is written: `text` or `markdown`. */
+                format: components["schemas"]["Format"];
                 /** Format: uuid */
                 id: string;
                 /**
@@ -6907,11 +7111,16 @@ export interface components {
             body: string;
             /** @description Guests: the `edit_token` received when posting. Signed-in authors omit it. */
             edit_token?: string | null;
+            format?: components["schemas"]["Format"] | null;
         };
         /** @description A comment just changed, for its author. */
         EditedComment: components["schemas"]["PublicComment"] & {
             /** @description `pending` when the change waits for approval (show "your change awaits approval"). */
             status: components["schemas"]["CommentVisibility"];
+        };
+        /** @description The token from the mail sent to the old address after an email change. */
+        EmailChangeReport: {
+            token: string;
         };
         /** @description Everything the forms hold about one email address. */
         EmailDataResponse: {
@@ -7129,6 +7338,50 @@ export interface components {
             /** @example auth.user_created */
             name: string;
         };
+        /** @description A CSV export made in the background. */
+        ExportResponse: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            download_expires_at?: string | null;
+            /**
+             * @description Link to the file, only while `ready`: it needs no sign-in, so it can be opened in a
+             *     browser, and it works until `download_expires_at`. An absolute URL when
+             *     `AUTOXIDE_HTTP_PUBLIC_URL` is set, otherwise a path on this API. Get the export again
+             *     for a fresh link.
+             */
+            download_url?: string | null;
+            /**
+             * Format: date-time
+             * @description When the file is deleted (`AUTOXIDE_FORMS_EXPORT_KEEP_HOURS` after it was finished).
+             */
+            expires_at?: string | null;
+            /** Format: date-time */
+            finished_at?: string | null;
+            /** Format: uuid */
+            form_id: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: int64
+             * @description Rows in the file (without the header line), once `ready`.
+             */
+            row_count?: number | null;
+            /**
+             * Format: int64
+             * @description Size of the file in bytes, once `ready`.
+             */
+            size?: number | null;
+            /** @description `pending` and `running` until the file is written; then `ready` or `failed`. */
+            state: components["schemas"]["ExportState"];
+            status?: components["schemas"]["SubmissionStatus"] | null;
+        };
+        /**
+         * @description Where an export is: `pending` (asked for, waiting for the job), `running` (the file is being
+         *     written), `ready` (get `download_url`) or `failed` (ask for a new one).
+         * @enum {string}
+         */
+        ExportState: "pending" | "running" | "ready" | "failed";
         /** @description A field of a form. */
         Field: {
             help?: components["schemas"]["Localized"] | null;
@@ -7317,6 +7570,12 @@ export interface components {
             /** @description Send it with the form (the receiving endpoint says in which field). Valid once. */
             token: string;
         };
+        /**
+         * @description How the body of a comment is written: `text` (plain text; addresses become links) or
+         *     `markdown` (a small part of Markdown: bold, italics, links, quotes, code).
+         * @enum {string}
+         */
+        Format: "text" | "markdown";
         /** @description Health of the service. */
         Health: {
             /**
@@ -8090,6 +8349,8 @@ export interface components {
                 /** Format: date-time */
                 edited_at?: string | null;
                 email_verified: boolean;
+                /** @description How `body` is written: `text` or `markdown`. */
+                format: components["schemas"]["Format"];
                 /**
                  * @description Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,
                  *     `too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),
@@ -8623,11 +8884,13 @@ export interface components {
                  *     ]
                  */
                 badges: string[];
-                /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
+                /** @description The text as written (plain text or Markdown, see `format`). Never insert it as HTML. */
                 body: string;
                 /**
                  * @description The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as
-                 *     links with `rel="nofollow ugc noopener"`.
+                 *     links with `rel="nofollow ugc noopener"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,
+                 *     `<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as
+                 *     their text. Insert this, never `body`.
                  */
                 body_html: string;
                 /** Format: date-time */
@@ -8639,6 +8902,8 @@ export interface components {
                  * @description When the author last changed it.
                  */
                 edited_at?: string | null;
+                /** @description How `body` is written: `text` or `markdown`. */
+                format: components["schemas"]["Format"];
                 /** Format: uuid */
                 id: string;
                 /**
@@ -9427,11 +9692,13 @@ export interface components {
              *     ]
              */
             badges: string[];
-            /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
+            /** @description The text as written (plain text or Markdown, see `format`). Never insert it as HTML. */
             body: string;
             /**
              * @description The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as
-             *     links with `rel="nofollow ugc noopener"`.
+             *     links with `rel="nofollow ugc noopener"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,
+             *     `<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as
+             *     their text. Insert this, never `body`.
              */
             body_html: string;
             /** Format: date-time */
@@ -9443,6 +9710,8 @@ export interface components {
              * @description When the author last changed it.
              */
             edited_at?: string | null;
+            /** @description How `body` is written: `text` or `markdown`. */
+            format: components["schemas"]["Format"];
             /** Format: uuid */
             id: string;
             /**
@@ -11340,6 +11609,58 @@ export interface operations {
             };
             /** @description You have no key with this id; code `auth.api_key_not_found`. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_report_email_change: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailChangeReport"];
+            };
+        };
+        responses: {
+            /** @description Reported; the account is locked and, when the old address was free, given back to it. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The token is unknown, expired or used; code `auth.invalid_email_change_report_token`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The body is missing a field or a value is invalid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14062,6 +14383,219 @@ export interface operations {
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_list_user_passkeys: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the user's passkeys. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PasskeyResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No user has this id; code `auth.user_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A paging parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_remove_user_passkeys: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every passkey of the user is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No user has this id; code `auth.user_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_remove_user_passkey: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the user. */
+                id: string;
+                /** @description Id of the passkey. */
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No user has this id (code `auth.user_not_found`), or the user has no passkey with this id (code `auth.passkey_not_found`). */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -20974,6 +21508,137 @@ export interface operations {
             };
         };
     };
+    forms_get_form_submissions_export: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the export. */
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ExportResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `forms.export`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No export has this id, or it was deleted; code `forms.export_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    forms_download_form_submissions_export: {
+        parameters: {
+            query: {
+                /** @description When the link stops working, in seconds since 1970 (UTC). */
+                expires: number;
+                /** @description Signature of the link. */
+                signature: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the export. */
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV file. */
+            200: {
+                headers: {
+                    /** @description `attachment` with the file name `<key>-submissions.csv`. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description `expires` or `signature` is missing or not well formed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The link is wrong or has expired; code `forms.export_link_invalid`. Get a new one from `GET /api/v1/forms/exports/{export_id}`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The export or its file was deleted; code `forms.export_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     forms_get_public_form: {
         parameters: {
             query?: {
@@ -21779,6 +22444,95 @@ export interface operations {
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    forms_create_form_submissions_export: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the form. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Optional; may be omitted. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Asked for; the job writes the file shortly. */
+            201: {
+                headers: {
+                    /** @description Address of the export. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ExportResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `forms.export`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No form has this id; code `forms.not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The form already has an export that is not finished; code `forms.export_in_progress` (its id is in the message). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `status` is invalid; see `errors`. */
             422: {
                 headers: {
                     [name: string]: unknown;

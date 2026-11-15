@@ -40,6 +40,8 @@ export default async function CommentSettingsPage() {
               [t("set.enabled"), yes(s.enabled)],
               [t("set.guests"), yes(s.guests_allowed)],
               [t("set.signedInOnly"), s.signed_in_only_types.join(", ") || t("none")],
+              [t("set.verifiedOnly"), s.verified_only_types.join(", ") || t("none")],
+              [t("set.markdown"), yes(s.markdown)],
               [t("set.types"), s.target_types.join(", ") || t("none")],
               [t("set.maxLength"), String(s.max_length)],
               [t("set.maxLinks"), String(s.max_links)],

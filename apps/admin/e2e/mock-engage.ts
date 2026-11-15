@@ -62,6 +62,7 @@ const etag = (updated: string) => `W/"${updated}"`;
 
 let forms: Form[] = [];
 let submissions: Submission[] = [];
+let exports: Schemas["ExportResponse"][] = [];
 let lists: List[] = [];
 let subscribers: Subscriber[] = [];
 let suppressions: Suppression[] = [];
@@ -80,6 +81,7 @@ const answer = (key: string, type: Schemas["FieldType"], vi: string, value: unkn
 
 export function resetEngage() {
   clock = Date.parse("2026-11-15T00:00:00Z");
+  exports = [];
   const formId = randomUUID();
   const at = now();
   forms = [
@@ -212,6 +214,7 @@ export function resetEngage() {
       author_email: `${author.split(" ")[0]?.toLowerCase()}@example.com`,
       email_verified: false,
       badges: [],
+      format: "text",
       body,
       body_html: body,
       status: "pending",
@@ -404,6 +407,40 @@ export async function engageRoutes(
     }
     return true;
   }
+  if (seg[0] === "forms" && seg[1] === "exports" && seg[2]) {
+    const job = exports.find((x) => x.id === seg[2]);
+    if (!job) {
+      notFound(response, "forms.export_not_found");
+      return true;
+    }
+    if (seg[3] === "file") {
+      const form = forms.find((f) => f.id === job.form_id);
+      if (url.searchParams.get("signature") !== "mock" || !form) {
+        problem(response, 403, "forms.export_link_invalid", "The link is wrong or has expired.");
+        return true;
+      }
+      response.writeHead(200, {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${form.key}-submissions.csv"`,
+      });
+      response.end(csvOf(form));
+      return true;
+    }
+    if (job.state === "pending") {
+      const form = forms.find((f) => f.id === job.form_id);
+      Object.assign(job, {
+        state: "ready",
+        finished_at: now(),
+        row_count: submissions.filter((s) => s.form_id === job.form_id).length,
+        size: form ? Buffer.byteLength(csvOf(form)) : 0,
+        expires_at: new Date(Date.now() + 24 * 3_600_000).toISOString(),
+        download_expires_at: new Date(Date.now() + 600_000).toISOString(),
+        download_url: `/api/v1/forms/exports/${job.id}/file?expires=9999999999&signature=mock`,
+      });
+    }
+    send(response, 200, { data: job } satisfies Schemas["Data_ExportResponse"]);
+    return true;
+  }
   if (seg[0] === "forms" && seg[1]) {
     const form = forms.find((f) => f.id === seg[1]);
     if (!form) {
@@ -411,23 +448,33 @@ export async function engageRoutes(
       return true;
     }
     if (seg[2] === "submissions" && seg[3] === "export") {
-      const rows = submissions.filter((s) => s.form_id === form.id);
-      const cell = (v: string) => `"${/^[=+\-@]/.test(v) ? `'${v}` : v}"`;
-      const csv = [
-        ["id", "created_at", "status", "email", ...form.fields.map((f) => f.key)]
-          .map(cell)
-          .join(","),
-        ...rows.map((s) =>
-          [s.id, s.created_at, s.status, s.email ?? "", ...s.answers.map((a) => String(a.value))]
-            .map(cell)
-            .join(","),
-        ),
-      ].join("\r\n");
       response.writeHead(200, {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${form.key}-submissions.csv"`,
       });
-      response.end(`﻿${csv}\r\n`);
+      response.end(csvOf(form));
+      return true;
+    }
+    // Xuất chạy nền (core bước 31): lượt xuất `pending`, lần đọc đầu thành `ready` (job giả chạy xong).
+    if (seg[2] === "submissions" && seg[3] === "exports" && method === "POST") {
+      if (exports.some((x) => x.form_id === form.id && x.state !== "ready")) {
+        problem(
+          response,
+          409,
+          "forms.export_in_progress",
+          "The form already has an export running.",
+        );
+        return true;
+      }
+      const job: Schemas["ExportResponse"] = {
+        id: randomUUID(),
+        form_id: form.id,
+        state: "pending",
+        created_at: now(),
+      };
+      exports.push(job);
+      response.setHeader("Location", `/api/v1/forms/exports/${job.id}`);
+      send(response, 201, { data: job } satisfies Schemas["Data_ExportResponse"]);
       return true;
     }
     if (seg[2] === "submissions") {
@@ -725,6 +772,7 @@ export async function engageRoutes(
         guests_allowed: true,
         signed_in_only_types: [],
         verified_only_types: [],
+        markdown: false,
         target_types: ["content.entry", "demo.page"],
         max_length: 5000,
         max_links: 2,
@@ -863,4 +911,18 @@ export async function engageRoutes(
   }
   problem(response, 404, "not_found", "No such endpoint (mock).");
   return true;
+}
+
+function csvOf(form: Form): string {
+  const rows = submissions.filter((s) => s.form_id === form.id);
+  const cell = (v: string) => `"${/^[=+\-@]/.test(v) ? `'${v}` : v}"`;
+  const csv = [
+    ["id", "created_at", "status", "email", ...form.fields.map((f) => f.key)].map(cell).join(","),
+    ...rows.map((s) =>
+      [s.id, s.created_at, s.status, s.email ?? "", ...s.answers.map((a) => String(a.value))]
+        .map(cell)
+        .join(","),
+    ),
+  ].join("\r\n");
+  return `\uFEFF${csv}\r\n`;
 }

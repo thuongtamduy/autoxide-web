@@ -18,6 +18,21 @@ export async function confirmEmail(state: FormState, formData: FormData): Promis
   return { done: nextDone(state), values: { email: result.data.data.email } };
 }
 
+/**
+ * Báo "không phải tôi đổi email" bằng token trong thư gửi tới địa chỉ cũ (core bước 32, D-250). Core khoá
+ * tài khoản trước kẻ đã đổi (đăng xuất mọi nơi, bỏ mật khẩu, API key, passkey, xác thực hai bước) và, nếu
+ * địa chỉ cũ còn trống, trả email về đó kèm thư đặt mật khẩu mới.
+ */
+export async function reportEmailChange(state: FormState, formData: FormData): Promise<FormState> {
+  const token = String(formData.get("token") ?? "");
+  const result = await send(
+    (client) => client.POST("/api/v1/auth/email-change/report", { body: { token } }),
+    { guest: true },
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  return { done: nextDone(state) };
+}
+
 const ForgotForm = z.object({ email: z.string().trim().min(1) });
 
 /**

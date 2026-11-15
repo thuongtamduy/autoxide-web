@@ -56,6 +56,6 @@ export const config = {
   // trong trang xem trước công khai cũng phải tải được khi người xem chưa đăng nhập.
   // `proxy.test.ts` kiểm danh sách này.
   matcher: [
-    "/((?!(?:login|verify-email|forgot-password|reset-password|preview|media)(?:/|$)|_next/static|_next/image|favicon.ico|robots.txt).*)",
+    "/((?!(?:login|verify-email|forgot-password|reset-password|not-me|preview|media)(?:/|$)|_next/static|_next/image|favicon.ico|robots.txt).*)",
   ],
 };

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { deleteForm, setFormStatus } from "@/app/(admin)/marketing/forms/actions";
 import { ChangeButtons, ConfirmButton } from "@/components/engage/actions";
+import { BackgroundExport } from "@/components/engage/background-export";
 import { Back, Chips, Facts, Forbidden, PageHead, Pager } from "@/components/engage/common";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
@@ -97,6 +98,7 @@ export default async function FormPage(props: PageProps<"/marketing/forms/[id]">
                 {t("export")}
               </a>
             ) : null}
+            {exporter ? <BackgroundExport formId={id} status={status ?? ""} /> : null}
             {manage ? (
               <Link className="btn pri" href={`${base}/edit`}>
                 {t("edit")}

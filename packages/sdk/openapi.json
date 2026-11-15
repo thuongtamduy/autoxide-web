@@ -906,6 +906,10 @@
           "email_verified": {
             "type": "boolean"
           },
+          "format": {
+            "$ref": "#/components/schemas/Format",
+            "description": "How `body` is written: `text` or `markdown`."
+          },
           "hold_reason": {
             "description": "Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,\n`too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),\njoined by commas.",
             "type": [
@@ -996,6 +1000,7 @@
           "badges",
           "email_verified",
           "body",
+          "format",
           "body_html",
           "reply_count",
           "report_count",
@@ -1138,6 +1143,10 @@
             "description": "Guests (no account) may comment.",
             "type": "boolean"
           },
+          "markdown": {
+            "description": "Comments may be written in Markdown (`format: markdown`): show formatting buttons.",
+            "type": "boolean"
+          },
           "max_length": {
             "description": "Longest comment, in characters.",
             "minimum": 0,
@@ -1188,6 +1197,7 @@
           "max_length",
           "max_links",
           "edit_minutes",
+          "markdown",
           "reply_mails",
           "token_scope"
         ],
@@ -1514,7 +1524,7 @@
             ]
           },
           "body": {
-            "description": "Plain text; line breaks are kept, `http(s)` addresses become links.",
+            "description": "The text, as `format` says; line breaks are kept, `http(s)` addresses become links.",
             "type": "string"
           },
           "challenge": {
@@ -1536,6 +1546,17 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "format": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Format",
+                "description": "`text` (the default: plain text) or `markdown` (bold, italics, links, quotes, code;\nonly when `GET /public/settings` says `markdown: true`)."
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "locale": {
@@ -1644,6 +1665,23 @@
           }
         ],
         "description": "A new post or page, created as a draft."
+      },
+      "CreateExportRequest": {
+        "description": "What to export. The body may be omitted.",
+        "properties": {
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SubmissionStatus",
+                "description": "`new`, `read`, `archived` or `spam`; omitted: every status but `spam` (like\n`GET /{id}/submissions/export`)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
       },
       "CreateFolderRequest": {
         "additionalProperties": false,
@@ -2527,6 +2565,10 @@
               "email_verified": {
                 "type": "boolean"
               },
+              "format": {
+                "$ref": "#/components/schemas/Format",
+                "description": "How `body` is written: `text` or `markdown`."
+              },
               "hold_reason": {
                 "description": "Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,\n`too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),\njoined by commas.",
                 "type": [
@@ -2617,6 +2659,7 @@
               "badges",
               "email_verified",
               "body",
+              "format",
               "body_html",
               "reply_count",
               "report_count",
@@ -2702,6 +2745,10 @@
                 "description": "Guests (no account) may comment.",
                 "type": "boolean"
               },
+              "markdown": {
+                "description": "Comments may be written in Markdown (`format: markdown`): show formatting buttons.",
+                "type": "boolean"
+              },
               "max_length": {
                 "description": "Longest comment, in characters.",
                 "minimum": 0,
@@ -2752,6 +2799,7 @@
               "max_length",
               "max_links",
               "edit_minutes",
+              "markdown",
               "reply_mails",
               "token_scope"
             ],
@@ -3452,6 +3500,99 @@
             },
             "required": [
               "deleted"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_ExportResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "description": "A CSV export made in the background.",
+            "properties": {
+              "created_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "download_expires_at": {
+                "format": "date-time",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "download_url": {
+                "description": "Link to the file, only while `ready`: it needs no sign-in, so it can be opened in a\nbrowser, and it works until `download_expires_at`. An absolute URL when\n`AUTOXIDE_HTTP_PUBLIC_URL` is set, otherwise a path on this API. Get the export again\nfor a fresh link.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "expires_at": {
+                "description": "When the file is deleted (`AUTOXIDE_FORMS_EXPORT_KEEP_HOURS` after it was finished).",
+                "format": "date-time",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "finished_at": {
+                "format": "date-time",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "form_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "row_count": {
+                "description": "Rows in the file (without the header line), once `ready`.",
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "size": {
+                "description": "Size of the file in bytes, once `ready`.",
+                "format": "int64",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "state": {
+                "$ref": "#/components/schemas/ExportState",
+                "description": "`pending` and `running` until the file is written; then `ready` or `failed`."
+              },
+              "status": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SubmissionStatus",
+                    "description": "The `status` the export was asked for; `null`: every status but `spam`."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "form_id",
+              "state",
+              "created_at"
             ],
             "type": "object"
           }
@@ -4796,11 +4937,11 @@
                 "type": "array"
               },
               "body": {
-                "description": "The text as written (plain text, line breaks kept). Never insert it as HTML.",
+                "description": "The text as written (plain text or Markdown, see `format`). Never insert it as HTML.",
                 "type": "string"
               },
               "body_html": {
-                "description": "The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as\nlinks with `rel=\"nofollow ugc noopener\"`.",
+                "description": "The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as\nlinks with `rel=\"nofollow ugc noopener\"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,\n`<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as\ntheir text. Insert this, never `body`.",
                 "type": "string"
               },
               "created_at": {
@@ -4818,6 +4959,10 @@
                   "string",
                   "null"
                 ]
+              },
+              "format": {
+                "$ref": "#/components/schemas/Format",
+                "description": "How `body` is written: `text` or `markdown`."
               },
               "id": {
                 "format": "uuid",
@@ -4864,6 +5009,7 @@
               "author",
               "badges",
               "body",
+              "format",
               "body_html",
               "deleted",
               "created_at",
@@ -7076,6 +7222,17 @@
               "string",
               "null"
             ]
+          },
+          "format": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Format",
+                "description": "`text` or `markdown`; omitted: as the comment was written."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -7102,6 +7259,18 @@
           }
         ],
         "description": "A comment just changed, for its author."
+      },
+      "EmailChangeReport": {
+        "description": "The token from the mail sent to the old address after an email change.",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
       },
       "EmailDataResponse": {
         "description": "Everything the forms hold about one email address.",
@@ -7552,6 +7721,100 @@
         ],
         "type": "object"
       },
+      "ExportResponse": {
+        "description": "A CSV export made in the background.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "download_expires_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "download_url": {
+            "description": "Link to the file, only while `ready`: it needs no sign-in, so it can be opened in a\nbrowser, and it works until `download_expires_at`. An absolute URL when\n`AUTOXIDE_HTTP_PUBLIC_URL` is set, otherwise a path on this API. Get the export again\nfor a fresh link.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "description": "When the file is deleted (`AUTOXIDE_FORMS_EXPORT_KEEP_HOURS` after it was finished).",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "form_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "row_count": {
+            "description": "Rows in the file (without the header line), once `ready`.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "size": {
+            "description": "Size of the file in bytes, once `ready`.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/ExportState",
+            "description": "`pending` and `running` until the file is written; then `ready` or `failed`."
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SubmissionStatus",
+                "description": "The `status` the export was asked for; `null`: every status but `spam`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "form_id",
+          "state",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "ExportState": {
+        "description": "Where an export is: `pending` (asked for, waiting for the job), `running` (the file is being\nwritten), `ready` (get `download_url`) or `failed` (ask for a new one).",
+        "enum": [
+          "pending",
+          "running",
+          "ready",
+          "failed"
+        ],
+        "type": "string"
+      },
       "Field": {
         "additionalProperties": false,
         "description": "A field of a form.",
@@ -7919,6 +8182,14 @@
           "submit_after"
         ],
         "type": "object"
+      },
+      "Format": {
+        "description": "How the body of a comment is written: `text` (plain text; addresses become links) or\n`markdown` (a small part of Markdown: bold, italics, links, quotes, code).",
+        "enum": [
+          "text",
+          "markdown"
+        ],
+        "type": "string"
       },
       "Health": {
         "description": "Health of the service.",
@@ -9640,6 +9911,10 @@
                 "email_verified": {
                   "type": "boolean"
                 },
+                "format": {
+                  "$ref": "#/components/schemas/Format",
+                  "description": "How `body` is written: `text` or `markdown`."
+                },
                 "hold_reason": {
                   "description": "Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,\n`too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),\njoined by commas.",
                   "type": [
@@ -9730,6 +10005,7 @@
                 "badges",
                 "email_verified",
                 "body",
+                "format",
                 "body_html",
                 "reply_count",
                 "report_count",
@@ -10753,11 +11029,11 @@
                   "type": "array"
                 },
                 "body": {
-                  "description": "The text as written (plain text, line breaks kept). Never insert it as HTML.",
+                  "description": "The text as written (plain text or Markdown, see `format`). Never insert it as HTML.",
                   "type": "string"
                 },
                 "body_html": {
-                  "description": "The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as\nlinks with `rel=\"nofollow ugc noopener\"`.",
+                  "description": "The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as\nlinks with `rel=\"nofollow ugc noopener\"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,\n`<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as\ntheir text. Insert this, never `body`.",
                   "type": "string"
                 },
                 "created_at": {
@@ -10775,6 +11051,10 @@
                     "string",
                     "null"
                   ]
+                },
+                "format": {
+                  "$ref": "#/components/schemas/Format",
+                  "description": "How `body` is written: `text` or `markdown`."
                 },
                 "id": {
                   "format": "uuid",
@@ -10821,6 +11101,7 @@
                 "author",
                 "badges",
                 "body",
+                "format",
                 "body_html",
                 "deleted",
                 "created_at",
@@ -12635,11 +12916,11 @@
             "type": "array"
           },
           "body": {
-            "description": "The text as written (plain text, line breaks kept). Never insert it as HTML.",
+            "description": "The text as written (plain text or Markdown, see `format`). Never insert it as HTML.",
             "type": "string"
           },
           "body_html": {
-            "description": "The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as\nlinks with `rel=\"nofollow ugc noopener\"`.",
+            "description": "The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as\nlinks with `rel=\"nofollow ugc noopener\"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,\n`<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as\ntheir text. Insert this, never `body`.",
             "type": "string"
           },
           "created_at": {
@@ -12657,6 +12938,10 @@
               "string",
               "null"
             ]
+          },
+          "format": {
+            "$ref": "#/components/schemas/Format",
+            "description": "How `body` is written: `text` or `markdown`."
           },
           "id": {
             "format": "uuid",
@@ -12703,6 +12988,7 @@
           "author",
           "badges",
           "body",
+          "format",
           "body_html",
           "deleted",
           "created_at",
@@ -16989,6 +17275,76 @@
         "x-permissions": []
       }
     },
+    "/api/v1/auth/email-change/report": {
+      "post": {
+        "description": "Needs no sign-in: the token comes from the mail sent to the old address after the\naccount's email changed. The account is then locked against whoever changed it: signed\nout everywhere, its password removed (sign-in with a password stops working), its API\nkeys, passkeys, two-step sign-in and pending tokens removed. When no other account took\nthe old address meanwhile, the email goes back to it and a mail to choose a new password\nis sent there (in the language of `Accept-Language`); otherwise ask an administrator.",
+        "operationId": "auth_report_email_change",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Reported; the account is locked and, when the old address was free, given back to it."
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The token is unknown, expired or used; code `auth.invalid_email_change_report_token`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body is missing a field or a value is invalid."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "summary": "Report an email change you did not make.",
+        "tags": [
+          "auth"
+        ],
+        "x-public": true
+      }
+    },
     "/api/v1/auth/email-verification/confirm": {
       "post": {
         "description": "Needs no sign-in: the token proves the mail was received. When the token was sent\nfor a new address (`POST /api/v1/auth/me/email`), the account's email becomes that\naddress; sign in with it from now on. Every other verification token of the\naccount stops working.",
@@ -17693,7 +18049,7 @@
     },
     "/api/v1/auth/me/email": {
       "post": {
-        "description": "Needs the current password and a session signed in with a password (an API key\ncannot do this). A verification mail goes to the NEW address; the email changes\nonly when its token is confirmed with `POST /api/v1/auth/email-verification/confirm`,\nwithin 24 hours. Until then the old address stays in use. Wrong passwords count\ntowards the sign-in lock of the email.",
+        "description": "Needs the current password and a session signed in with a password (an API key\ncannot do this). A verification mail goes to the NEW address; the email changes\nonly when its token is confirmed with `POST /api/v1/auth/email-verification/confirm`,\nwithin 24 hours. Until then the old address stays in use. Wrong passwords count\ntowards the sign-in lock of the email. Once the change is confirmed, the OLD address gets\na mail saying so, with a token to report the change if the owner did not make it\n(`POST /api/v1/auth/email-change/report`, valid 7 days).",
         "operationId": "auth_change_email",
         "parameters": [
           {
@@ -21114,6 +21470,354 @@
         ],
         "x-permissions": [
           "auth.users.manage"
+        ]
+      }
+    },
+    "/api/v1/auth/users/{id}/passkeys": {
+      "delete": {
+        "description": "Requires `auth.passkeys.manage`, and that the user has no permission you lack. The user\nsigns in with the password and can add new passkeys. The password and sessions stay as they\nare. Answers 204 also when the user had none.",
+        "operationId": "auth_remove_user_passkeys",
+        "parameters": [
+          {
+            "description": "Id of the user.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Every passkey of the user is removed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No user has this id; code `auth.user_not_found`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove every passkey of a user who lost their devices.",
+        "tags": [
+          "auth"
+        ],
+        "x-permissions": [
+          "auth.passkeys.manage"
+        ]
+      },
+      "get": {
+        "description": "Requires `auth.passkeys.manage`, and that the user has no permission you lack. The same\nfields as `GET /api/v1/auth/me/passkeys`: no key material. Newest first unless\n`order=asc`.",
+        "operationId": "auth_list_user_passkeys",
+        "parameters": [
+          {
+            "description": "Id of the user.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum number of items to return, 1 to 200. Defaults to 50.",
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Where to continue: the `next_cursor` of the previous page. Omit for the\nfirst page. Treat the value as opaque.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "`desc` (newest first, the default) or `asc` (oldest first). Keep the same\norder (and `sort`, where offered) while following `next_cursor`.",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "description": "Sort direction of a list. Lists are ordered by creation time, unless the endpoint offers\na `sort` parameter to order by something else.",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PasskeyResponse"
+                }
+              }
+            },
+            "description": "One page of the user's passkeys."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No user has this id; code `auth.user_not_found`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A paging parameter is invalid; see `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the passkeys of a user.",
+        "tags": [
+          "auth"
+        ],
+        "x-permissions": [
+          "auth.passkeys.manage"
+        ]
+      }
+    },
+    "/api/v1/auth/users/{id}/passkeys/{passkey_id}": {
+      "delete": {
+        "description": "Requires `auth.passkeys.manage`, and that the user has no permission you lack. The passkey\nstops working at once. The password and the user's sessions stay as they are (like\n`DELETE /api/v1/auth/users/{id}/mfa`). Check who is asking before using this. The event\n`auth.passkey_removed` records `by_administrator`.",
+        "operationId": "auth_remove_user_passkey",
+        "parameters": [
+          {
+            "description": "Id of the user.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Id of the passkey.",
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No user has this id (code `auth.user_not_found`), or the user has no passkey with this id (code `auth.passkey_not_found`)."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove one passkey of a user who lost the device.",
+        "tags": [
+          "auth"
+        ],
+        "x-permissions": [
+          "auth.passkeys.manage"
         ]
       }
     },
@@ -32409,6 +33113,214 @@
         ]
       }
     },
+    "/api/v1/forms/exports/{export_id}": {
+      "get": {
+        "description": "Requires `forms.export`. While `pending` or `running`, ask again in a few seconds. Once\n`ready`, `download_url` is a fresh link to the file each time you ask.",
+        "operationId": "forms_get_form_submissions_export",
+        "parameters": [
+          {
+            "description": "Id of the export.",
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ExportResponse"
+                }
+              }
+            },
+            "description": "The export."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `forms.export`; code `permission_denied`."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No export has this id, or it was deleted; code `forms.export_not_found`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a CSV export made in the background.",
+        "tags": [
+          "forms"
+        ],
+        "x-permissions": [
+          "forms.export"
+        ]
+      }
+    },
+    "/api/v1/forms/exports/{export_id}/file": {
+      "get": {
+        "description": "No sign-in: the link from `download_url` carries its own signature and expiry, so it can be\nopened in a browser. Do not share it: anyone with the link can download the file until it\nexpires.",
+        "operationId": "forms_download_form_submissions_export",
+        "parameters": [
+          {
+            "description": "Id of the export.",
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When the link stops working, in seconds since 1970 (UTC).",
+            "in": "query",
+            "name": "expires",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Signature of the link.",
+            "in": "query",
+            "name": "signature",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The CSV file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "`attachment` with the file name `<key>-submissions.csv`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`expires` or `signature` is missing or not well formed."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The link is wrong or has expired; code `forms.export_link_invalid`. Get a new one from `GET /api/v1/forms/exports/{export_id}`."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The export or its file was deleted; code `forms.export_not_found`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "summary": "Download the file of a CSV export.",
+        "tags": [
+          "forms"
+        ],
+        "x-public": true
+      }
+    },
     "/api/v1/forms/public/{key}": {
       "get": {
         "description": "No sign-in needed. The fields with their labels, help and choices in one language, the\ntoken scope and the success message. Admin settings (notification addresses, limits,\nretention, allowed origins) are never included.",
@@ -33745,6 +34657,152 @@
           }
         ],
         "summary": "Export the submissions of a form as CSV.",
+        "tags": [
+          "forms"
+        ],
+        "x-permissions": [
+          "forms.export"
+        ]
+      }
+    },
+    "/api/v1/forms/{id}/submissions/exports": {
+      "post": {
+        "description": "Requires `forms.export`. For forms with many submissions: the file is written by a\nbackground job, then `GET /api/v1/forms/exports/{export_id}` (the `Location` of the answer)\ngives a download link. Same content as `GET /{id}/submissions/export`, byte for byte. One\nexport per form at a time. The file holds personal data and is deleted after\n`AUTOXIDE_FORMS_EXPORT_KEEP_HOURS`, or as soon as submissions of the form are deleted by\nemail or the form is deleted.",
+        "operationId": "forms_create_form_submissions_export",
+        "parameters": [
+          {
+            "description": "Id of the form.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExportRequest"
+              }
+            }
+          },
+          "description": "Optional; may be omitted.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_ExportResponse"
+                }
+              }
+            },
+            "description": "Asked for; the job writes the file shortly.",
+            "headers": {
+              "Location": {
+                "description": "Address of the export.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `forms.export`; code `permission_denied`."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No form has this id; code `forms.not_found`."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The form already has an export that is not finished; code `forms.export_in_progress` (its id is in the message)."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`status` is invalid; see `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Export the submissions of a form as CSV, in the background.",
         "tags": [
           "forms"
         ],

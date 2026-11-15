@@ -689,6 +689,28 @@
         "check": "Make sure the request really comes from them: anyone who knows the password can then sign in.",
         "submit": "Turn off two-step sign-in",
         "done": "Two-step sign-in is off for this account."
+      },
+      "passkeys": {
+        "title": "Passkeys",
+        "about": "Passkeys of this person. Remove one when they lose the device; they then sign in with the password and can add a new passkey. Their password and sessions stay as they are.",
+        "none": "This person has no passkey.",
+        "name": "Name",
+        "created": "Added",
+        "lastUsed": "Last used",
+        "never": "Never",
+        "removeOne": "Remove",
+        "removeOneNamed": "Remove passkey {name}",
+        "removeAll": "Remove every passkey",
+        "titleOne": "Remove passkey “{name}” of {who}?",
+        "titleAll": "Remove every passkey of {who}?",
+        "effectOne": "This passkey stops working at once. Their password, other passkeys and sessions stay as they are.",
+        "effectAll": "Every passkey stops working at once. They sign in with the password and can add new passkeys.",
+        "check": "Make sure the request really comes from them: removing a passkey is how an account is recovered.",
+        "submitOne": "Remove passkey",
+        "submitAll": "Remove every passkey",
+        "doneOne": "Passkey removed.",
+        "doneAll": "Every passkey removed.",
+        "forbidden": "You cannot see the passkeys of this person: they have permissions you lack."
       }
     },
     "roles": {
@@ -916,6 +938,17 @@
       "rule": "12 to 128 characters.",
       "repeat": "New password again",
       "submit": "Change password"
+    },
+    "notMe": {
+      "title": "Did someone else change your email?",
+      "noToken": "This link is incomplete. Open the link from the mail again.",
+      "description": "The mail you got says the email of your account was changed. If you did not do it, report it here.",
+      "effects": "Reporting locks the account against whoever changed it: it is signed out everywhere, its password, API keys, passkeys and two-step sign-in are removed. When your old address is still free, it is given back and you get a mail to choose a new password.",
+      "submit": "It was not me — lock my account",
+      "doneTitle": "Account locked",
+      "done": "Whoever changed your email can no longer get in. If your old address was free, a mail to choose a new password is on its way to it; otherwise ask an administrator to give the account back to you.",
+      "invalidHint": "This link is unknown, expired or already used. If you still cannot get into your account, ask an administrator.",
+      "toLogin": "Go to sign-in"
     }
   },
   "settings": {
@@ -2637,6 +2670,13 @@
         "limitHint": "Empty: the server default. More are dropped silently.",
         "create": "Create form",
         "save": "Save form"
+      },
+      "bgExport": {
+        "start": "Export in the background",
+        "working": "Preparing the file…",
+        "download": "Download the CSV file",
+        "deletedAt": "the file is deleted",
+        "failed": "The export failed; start a new one."
       }
     },
     "newsletter": {
@@ -3159,7 +3199,9 @@
         "maxLength": "Longest comment (characters)",
         "maxLinks": "Links before holding",
         "editMinutes": "Authors may edit for",
-        "replyMails": "Reply mails"
+        "replyMails": "Reply mails",
+        "verifiedOnly": "Only verified people may comment on",
+        "markdown": "Comments may use Markdown"
       },
       "required": {
         "kind": "Choose how to ban.",
@@ -3230,7 +3272,8 @@
           "guests_need_none": "Guests cannot verify an account: turn guests off, or ask for no verification.",
           "unknown": "Choose one of the listed values."
         }
-      }
+      },
+      "markdownHint": "Shown as written; the site renders a small part of Markdown (bold, italics, links, quotes, code)."
     },
     "data": {
       "title": "Data by email",

@@ -223,6 +223,20 @@ const server = createServer(async (request, response) => {
     const session = startSession(account, text(body, "user_agent") || null);
     return send(response, 201, { id: session.id });
   }
+  if (route === "POST /__passkeys") {
+    // Nạp passkey cho một tài khoản (không qua WebAuthn), để thử màn quản trị gỡ passkey.
+    const body = await json(request);
+    const account = accounts.find((a) => a.email === text(body, "email"));
+    if (!account) return problem(response, 404, "not_found", "No such account.");
+    const passkey = {
+      id: randomUUID(),
+      name: text(body, "name") || "Passkey",
+      created_at: "2026-11-10T08:00:00Z",
+      last_used_at: null,
+    } satisfies Schemas["PasskeyResponse"];
+    account.passkeys.push(passkey);
+    return send(response, 201, { id: passkey.id });
+  }
   if (route === "POST /__ai") {
     setAiEnabled((await json(request)).enabled === true);
     return send(response, 204);
@@ -306,6 +320,13 @@ const server = createServer(async (request, response) => {
     });
   }
 
+  // Link tải tệp xuất có chữ ký và hạn riêng, không cần đăng nhập (như core).
+  if (
+    /^\/api\/v1\/forms\/exports\/[^/]+\/file$/.test(url.pathname) &&
+    (await engageRoutes(request, response, url, route))
+  ) {
+    return;
+  }
   const session = caller(request);
   if (!session) {
     return problem(response, 401, "auth.invalid_token", "Sign in.");

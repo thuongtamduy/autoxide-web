@@ -106,6 +106,15 @@ test("xuất CSV qua máy chủ của giao diện; dữ liệu theo email tra v�
   expect(csv.headers()["content-disposition"]).toContain("lien-he-submissions.csv");
   expect(await csv.text()).toContain('"chau@example.com"');
 
+  // Xuất chạy nền (form nhiều bài nộp): core xếp job, giao diện hỏi lại rồi hiện link tải qua máy chủ
+  // của giao diện (trình duyệt không cần gọi thẳng tới core).
+  await page.getByRole("button", { name: "Export in the background" }).click();
+  const download = page.getByRole("link", { name: "Download the CSV file" });
+  await expect(download).toBeVisible();
+  const file = await page.request.get((await download.getAttribute("href")) ?? "");
+  expect(file.headers()["content-disposition"]).toContain("lien-he-submissions.csv");
+  expect(await file.text()).toContain('"chau@example.com"');
+
   await page.goto("/marketing/forms/data");
   await page.getByRole("button", { name: "Look up" }).click();
   await expect(page.getByText("Enter an email address.")).toBeVisible();

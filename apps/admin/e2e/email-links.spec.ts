@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 // Trang mở từ link trong thư (xác minh email, quên / đặt lại mật khẩu): không cần đăng nhập, gọi
-// endpoint công khai của core giả (`mock-access.ts`; token mẫu `verify-ok`, `reset-ok`).
+// endpoint công khai của core giả (`mock-access.ts`; token mẫu `verify-ok`, `reset-ok`, `report-ok`).
 
 const CORE = "http://127.0.0.1:4010";
 
@@ -87,4 +87,28 @@ test("đặt lại mật khẩu: token sai, hai ô khác nhau, luật của core
   await page.getByLabel("Password").fill("a brand new password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByTestId("me")).toHaveText("viewer@example.com");
+});
+
+test("không phải tôi đổi email: trang công khai, chỉ khoá khi bấm; token đã dùng báo theo code", async ({
+  page,
+}) => {
+  await page.goto("/not-me?token=report-ok");
+  await expect(page).toHaveURL(/\/not-me\?token=report-ok$/);
+  await expect(
+    page.getByRole("heading", { name: "Did someone else change your email?" }),
+  ).toBeVisible();
+  await expect(page.getByText("Reporting locks the account")).toBeVisible();
+  await page.getByRole("button", { name: "It was not me — lock my account" }).click();
+  await expect(page.getByRole("status")).toContainText("can no longer get in");
+
+  await page.goto("/not-me?token=report-ok");
+  await page.getByRole("button", { name: "It was not me — lock my account" }).click();
+  await expect(page.locator("p[role=alert]")).toHaveAttribute(
+    "data-code",
+    "auth.invalid_email_change_report_token",
+  );
+  await expect(page.getByText("This link is unknown, expired or already used.")).toBeVisible();
+
+  await page.goto("/not-me");
+  await expect(page.getByText("This link is incomplete.")).toBeVisible();
 });
