@@ -200,3 +200,38 @@ Lý do: làm đúng hợp đồng `openapi.json`, một cách làm cho mỗi vi�
 Đã cân nhắc: tự xác minh email ngay khi mở trang — tiện hơn một bấm nhưng GET đổi dữ liệu và trình
 quét link dùng mất token; ẩn cột role trong danh sách tới khi core có API — bản thiết kế và giao
 việc cần role ở danh sách.
+
+## W-008 · Màn Nội dung (bài viết, trình soạn); thêm Tiptap cho thân bài — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Phân hệ Nội dung (`content`, biểu tượng `posts`) vào sổ điều hướng, đứng sau Tổng quan và trước
+  Tổ chức theo thứ tự 12 phân hệ. Màn "Bài viết" `/content` (module `content`, permission
+  `content.read`), soạn bài ở `/content/new` (`?kind=page` cho trang) và `/content/{id}`.
+- Danh sách lọc theo trạng thái (tab là link `?status=…`), loại, ngôn ngữ và chữ (`q` của
+  `GET /content/entries`, có pagination theo con trỏ và giữ bộ lọc), mới sửa lên đầu
+  (`sort=updated_at`). Không dùng `GET /content/search` cho ô tìm: nó không lọc theo trạng thái và
+  không có trang sau.
+- Thân bài là JSON ProseMirror / Tiptap theo danh sách node của core, nên thêm **Tiptap 3.32.2**
+  (`@tiptap/react`, `@tiptap/pm`, `@tiptap/core`, `@tiptap/starter-kit`, `@tiptap/extension-table`,
+  ghim đúng bản, phát hành hơn hai tuần). Thay phần "chưa dùng Tiptap" của W-002. Chỉ bật node
+  core nhận (tiêu đề 2–4, danh sách, trích dẫn, mã, bảng, đường kẻ); `image` (chỉ id media) và
+  `embed` là node tự khai để bài có sẵn không mất khối. JSON gửi đi luôn qua `toCoreBody`
+  (`src/lib/content.ts`, có test): bỏ thuộc tính Tiptap tự thêm (`target`, `rel`, `class` của
+  link…), bỏ link không an toàn, bỏ đoạn trống cuối bài. Core vẫn kiểm lại từng node.
+- Mọi lệnh đổi bài gửi `If-Match` với `ETag` đã đọc; Server Action trả kèm `ETag` mới. Lệnh cần
+  bản đã lưu (đăng, hẹn giờ, link xem trước) lưu chữ đang sửa trước rồi mới làm. 412 thì báo, không
+  ghi đè. Danh mục, thẻ, tác giả lưu riêng (`PUT …/terms`, `…/authors`, có hiệu lực ngay).
+- Nút AI (gợi ý SEO, dịch) chỉ bật khi `GET /ai/status` báo `enabled`; không thì tắt kèm lý do.
+  Gợi ý chỉ điền vào bản nháp; người bấm lưu thì bài mang `ai_generated`. Đăng bài có AI cần đánh
+  dấu "đã duyệt" (`ai_reviewed`).
+- Link xem trước trỏ về trang công khai `/preview?token=` của ứng dụng này (proxy bỏ qua, gọi
+  `GET /content/public/preview` như khách), vì core chưa cho biết địa chỉ website.
+- Website theo tên miền, trang bắt buộc theo luật và bài thuộc website nào dùng dữ liệu mẫu
+  (`src/sample/content.ts`, W-006; bước 37 của core).
+
+Lý do: làm đúng hợp đồng `openapi.json` và tài liệu `docs/CONTENT.md` của core; thân bài phải là
+JSON của trình soạn, tự viết trình soạn ProseMirror là vài nghìn dòng.
+
+Đã cân nhắc: textarea Markdown đổi sang JSON — mất bảng, link an toàn và vị trí lỗi của core;
+Lexical / Slate — JSON khác hình dạng core nhận.
