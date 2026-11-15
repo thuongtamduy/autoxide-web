@@ -20,8 +20,12 @@ Screens so far:
   permissions, events, jobs, schedules, MCP tools, deprecated endpoints and migration status.
   The screen is read-only: modules are compiled into the core, so installing or removing one
   means rebuilding the core.
+- **My account** (account menu, or Ctrl K): your profile and email verification, changing your
+  email or password, two-step sign-in with an authenticator app and recovery codes, passkeys,
+  the devices signed in to your account, downloading your data and deleting your account. Every
+  signed-in account can open it; no permission is needed.
 
-Works with Autoxide core **v0.5.0** or newer.
+Works with Autoxide core **v0.12.0** or newer.
 
 ## Requirements
 
@@ -82,6 +86,13 @@ refresh token works once, and copies of the app do not share the refresh in prog
   call to the core. When the access token expires, the proxy (`src/proxy.ts`) exchanges the
   refresh token for a new pair before the page renders.
 - **Two-step sign-in.** Accounts with an authenticator app get a code step.
+- **Devices.** The app's server forwards the browser's `User-Agent` to the core, so the list of
+  sessions under My account names each device. The session id is kept in an `httpOnly` cookie
+  too, to mark "this session" and keep it when signing out every other device.
+- **Passkeys.** Adding a passkey runs WebAuthn in the browser; the options and the result go
+  through the app's server. Passkeys work only when the core has `AUTOXIDE_AUTH_PASSKEY_RP_ID`
+  set to the domain of this app and `AUTOXIDE_AUTH_PASSKEY_ORIGINS` lists its address (for
+  example `https://admin.example.com`).
 - **SDK.** `packages/sdk` holds TypeScript types generated from the core's `openapi.json` and a
   small client. To upgrade the core, raise `CORE_VERSION` in
   `packages/sdk/scripts/generate.mjs`, then run `pnpm sdk:generate`. The compiler then shows

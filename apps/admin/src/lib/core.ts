@@ -1,11 +1,19 @@
 import "server-only";
 
 import { ApiError, type AutoxideClient, createAutoxideClient, toApiError } from "@autoxide/sdk";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { coreUrl } from "./env";
 import { ACCESS_COOKIE } from "./session";
+
+/**
+ * `User-Agent` của trình duyệt đang gọi trang này. Gửi kèm mọi lời gọi core: core lưu nó cho
+ * phiên tạo ra (đăng nhập, đổi mật khẩu), không có thì danh sách phiên chỉ thấy máy chủ Next.js.
+ */
+async function browserAgent(): Promise<string | undefined> {
+  return (await headers()).get("user-agent") ?? undefined;
+}
 
 /** Client gọi core thay mặt người đang đăng nhập (token lấy từ cookie). */
 export async function coreClient(): Promise<AutoxideClient> {
@@ -14,12 +22,17 @@ export async function coreClient(): Promise<AutoxideClient> {
     baseUrl: coreUrl(),
     accessToken: store.get(ACCESS_COOKIE)?.value,
     language: await getLocale(),
+    userAgent: await browserAgent(),
   });
 }
 
 /** Client gọi core như khách (đăng nhập, làm mới token). */
 export async function anonymousClient(): Promise<AutoxideClient> {
-  return createAutoxideClient({ baseUrl: coreUrl(), language: await getLocale() });
+  return createAutoxideClient({
+    baseUrl: coreUrl(),
+    language: await getLocale(),
+    userAgent: await browserAgent(),
+  });
 }
 
 type Result<T> = { data?: T; error?: unknown; response: Response };

@@ -3,7 +3,7 @@
   "info": {
     "title": "Autoxide API",
     "description": "REST API of Autoxide.\n\n## Conventions\n\nEvery endpoint follows the same rules, so learning one endpoint teaches all of them.\n\n- **Success**: a single result is `{\"data\": …}`; a list is `{\"data\": […], \"pagination\": {\"limit\", \"next_cursor\"}}`. Creating a record answers `201` with a `Location` header pointing to it.\n- **Errors**: always RFC 9457 Problem Details (`application/problem+json`). Branch on the stable `code` field, never on `detail`. Validation problems list every invalid field of the request in `errors`, all at once.\n- **Lists**: accept `limit` (1–200, default 50), `order` (`desc` or `asc`, by creation time) and `cursor`. Some lists also take `sort` to order by another field, and their own filters. To get the next page, pass `pagination.next_cursor` as `cursor` with the same `order`, `sort` and filters; `null` means last page.\n- **Authentication**: endpoints that need it list the `bearer` security scheme. Send `Authorization: Bearer <access token>`. A `401` response carries `WWW-Authenticate: Bearer`; its `code` says whether the token is missing, invalid or expired. Public endpoints list an empty requirement next to `bearer`: they work without a token, and a sent token must still be valid.\n- **Retries**: send `Idempotency-Key: <a random UUID>` with `POST`, `PUT`, `PATCH` and `DELETE`. Repeating the same request with the same key within 24 hours returns the first result (marked `Idempotent-Replayed: true`) instead of doing it twice; a different request with a used key gets `422`, and a repeat while the first is still running gets `409`.\n- **Concurrent edits**: reading a single record returns its version in `ETag`. Send it back in `If-Match` when changing the record: if someone changed it in between, the answer is `412` (code `precondition_failed`) instead of silently overwriting their change. Without `If-Match` the change is made anyway, except on endpoints that say `If-Match` is required: those answer `428` (code `precondition_required`).\n- **Caching**: send the `ETag` you have in `If-None-Match` when reading again; if nothing changed the answer is `304 Not Modified` with no body.\n- **Deprecation**: an endpoint being retired is marked `deprecated` here and answers with `Deprecation` (RFC 9745), `Sunset` (RFC 8594, the removal date) and `Link: <…>; rel=\"successor-version\"` headers. Move to the successor before the sunset date.\n- **Language**: send `Accept-Language` (e.g. `vi`) to get the `detail` of errors in that language; English (`en`) by default and for unsupported languages. Responses carry `Content-Language`. Codes never change with the language.\n- **Rate limits**: too many requests from one address are answered with `429` (code `rate_limited`) and a `Retry-After` header giving the seconds to wait.\n- **Request id**: every response carries `x-request-id`. Send your own to correlate calls; quote it when reporting a problem.\n- **IDs** are UUIDv7 strings; **timestamps** are UTC in RFC 3339; **money** is an integer amount in the smallest currency unit plus a currency code.",
-    "version": "0.5.0"
+    "version": "0.12.0"
   },
   "servers": [
     {
@@ -1873,7 +1873,7 @@
           "auth"
         ],
         "summary": "Start turning on two-step sign-in with an authenticator app.",
-        "description": "Returns a new secret to add to the app. Nothing changes until you confirm with\na code (`POST /api/v1/auth/me/mfa/totp/confirm`). Calling again replaces an\nunconfirmed secret. Needs a password session, not an API key.",
+        "description": "Returns a new secret to add to the app. Nothing changes until you confirm with\na code (`POST /api/v1/auth/me/mfa/totp/confirm`). Calling again replaces an\nunconfirmed secret. Needs a password session, not an API key, and your current password:\na stolen access token alone cannot tie someone else's authenticator app to your account.\nA wrong password counts as a failed sign-in.",
         "operationId": "auth_start_totp",
         "parameters": [
           {
@@ -1902,6 +1902,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTotpRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Add this secret to the authenticator app, then confirm.",
@@ -1909,6 +1919,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Data_TotpSetupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The current password is wrong; code `auth.wrong_password`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -3083,7 +3103,7 @@
           "auth"
         ],
         "summary": "Ask for a password-reset mail.",
-        "description": "Always answers 202, whether or not an account has this email, so the answer does\nnot reveal who has an account. When one does, a mail with a reset token (valid 30\nminutes) is sent in the language of `Accept-Language`. At most one mail per minute\nper account.",
+        "description": "Always answers 202, whether or not an account has this email, and in the same time:\nthe account is looked up and the mail sent by a background job a moment later, so\nneither the answer nor its timing reveals who has an account. When one does, a mail\nwith a reset token (valid 30 minutes) is sent in the language of `Accept-Language`. At\nmost one mail per minute per account.",
         "operationId": "auth_request_password_reset",
         "parameters": [
           {
@@ -19331,6 +19351,16 @@
             }
           },
           {
+            "name": "format",
+            "in": "query",
+            "description": "`webp`: with `w`, the WebP copy of that width (much smaller; the variant's\n`webp_url`). Until it is made, the JPEG or PNG copy is sent instead, so the address\nalways shows an image. Ignored without `w`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "webp"
+          },
+          {
             "name": "Range",
             "in": "header",
             "description": "One byte range, e.g. `bytes=0-1023`, `bytes=1024-` or `bytes=-500`. Several ranges are answered with the whole content.",
@@ -19455,6 +19485,16 @@
           },
           "416": {
             "description": "The range is outside the content; code `media.range_not_satisfiable`. `Content-Range: bytes */<size>` gives the size.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`format` is not `webp`; see `errors`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19725,6 +19765,16 @@
             }
           },
           {
+            "name": "format",
+            "in": "query",
+            "description": "`webp`: with `w`, the WebP copy of that width (much smaller; the variant's\n`webp_url`). Until it is made, the JPEG or PNG copy is sent instead, so the address\nalways shows an image. Ignored without `w`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "webp"
+          },
+          {
             "name": "Accept-Language",
             "in": "header",
             "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
@@ -19746,6 +19796,9 @@
           },
           "404": {
             "description": "No media item has this id that you may load."
+          },
+          "422": {
+            "description": "`format` is not `webp`."
           },
           "default": {
             "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem.",
@@ -24902,7 +24955,7 @@
           "health"
         ],
         "summary": "Readiness probe: can the service handle requests?",
-        "description": "Checks that the database answers. Stop sending traffic when this fails.",
+        "description": "Checks that the database answers. Stop sending traffic when this fails. While the process\nis shutting down (`AUTOXIDE_HTTP_DRAIN_SECONDS`), it fails even though requests are still\nhandled, so load balancers move traffic away before the server stops accepting connections.",
         "operationId": "health_ready",
         "parameters": [
           {
@@ -24930,7 +24983,7 @@
             }
           },
           "503": {
-            "description": "A dependency is unavailable; code `not_ready`.",
+            "description": "Not ready: code `not_ready` when the database does not answer, `shutting_down` while the process is shutting down.",
             "content": {
               "application/json": {
                 "schema": {
@@ -31278,6 +31331,7 @@
                 "body_schema_version",
                 "word_count",
                 "reading_time_minutes",
+                "body_media",
                 "seo",
                 "published_at",
                 "first_published_at",
@@ -31306,6 +31360,13 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/BodyNode"
+                },
+                "body_media": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicMedia"
+                  },
+                  "description": "The images used in `body` (nodes of type `image`), in order of appearance: find one by\nthe `mediaId` of the node to get its size and smaller copies for `srcset`. An image\nthat is no longer public is left out. `alt` here is the one of the media library; the\nnode carries its own."
                 },
                 "body_schema_version": {
                   "type": "integer",
@@ -35371,6 +35432,7 @@
                 "body_schema_version",
                 "word_count",
                 "reading_time_minutes",
+                "body_media",
                 "seo",
                 "published_at",
                 "first_published_at",
@@ -35399,6 +35461,13 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/BodyNode"
+                },
+                "body_media": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicMedia"
+                  },
+                  "description": "The images used in `body` (nodes of type `image`), in order of appearance: find one by\nthe `mediaId` of the node to get its size and smaller copies for `srcset`. An image\nthat is no longer public is left out. `alt` here is the one of the media library; the\nnode carries its own."
                 },
                 "body_schema_version": {
                   "type": "integer",
@@ -37162,6 +37231,7 @@
           "body_schema_version",
           "word_count",
           "reading_time_minutes",
+          "body_media",
           "seo",
           "published_at",
           "first_published_at",
@@ -37190,6 +37260,13 @@
           },
           "body": {
             "$ref": "#/components/schemas/BodyNode"
+          },
+          "body_media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicMedia"
+            },
+            "description": "The images used in `body` (nodes of type `image`), in order of appearance: find one by\nthe `mediaId` of the node to get its size and smaller copies for `srcset`. An image\nthat is no longer public is left out. `alt` here is the one of the media library; the\nnode carries its own."
           },
           "body_schema_version": {
             "type": "integer",
@@ -37732,7 +37809,15 @@
             "format": "int32"
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "description": "JPEG copy (PNG for images with transparency)."
+          },
+          "webp_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The same copy as WebP, usually far smaller: offer it in a `<picture>`\n`<source type=\"image/webp\">`. `null` while it is not made yet."
           },
           "width": {
             "type": "integer",
@@ -38542,6 +38627,19 @@
           "current_password": {
             "type": "string",
             "description": "Your current password: a stolen access token alone must not add a passkey."
+          }
+        }
+      },
+      "StartTotpRequest": {
+        "type": "object",
+        "description": "Confirms starting two-step sign-in.",
+        "required": [
+          "current_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "description": "Your current password."
           }
         }
       },
@@ -40095,6 +40193,23 @@
           "url": {
             "type": "string",
             "description": "Where to load it: the item's `url` with `&w=<width>`."
+          },
+          "webp_size": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Size of the WebP copy in bytes; `null` like `webp_url`.",
+            "minimum": 0
+          },
+          "webp_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The same copy as WebP, usually far smaller: `url` with `&format=webp`. Offer it in a\n`<picture>` `<source type=\"image/webp\">`, or in `srcset` when every browser you serve\nreads WebP. `null` while it is not made yet (images uploaded before WebP copies existed\nget one after `autoxide task media.refresh_variants`).",
+            "example": "/api/v1/media/0190f5a2-7c4e-7d1a-9b3c-2f1e0d9c8b7a/content?v=0190f5a2-7c4e-7d1a-9b3c-2f1e0d9c8b7b&w=640&format=webp"
           },
           "width": {
             "type": "integer",

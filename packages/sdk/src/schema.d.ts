@@ -411,7 +411,9 @@ export interface paths {
          * Start turning on two-step sign-in with an authenticator app.
          * @description Returns a new secret to add to the app. Nothing changes until you confirm with
          *     a code (`POST /api/v1/auth/me/mfa/totp/confirm`). Calling again replaces an
-         *     unconfirmed secret. Needs a password session, not an API key.
+         *     unconfirmed secret. Needs a password session, not an API key, and your current password:
+         *     a stolen access token alone cannot tie someone else's authenticator app to your account.
+         *     A wrong password counts as a failed sign-in.
          */
         post: operations["auth_start_totp"];
         delete?: never;
@@ -611,10 +613,11 @@ export interface paths {
         put?: never;
         /**
          * Ask for a password-reset mail.
-         * @description Always answers 202, whether or not an account has this email, so the answer does
-         *     not reveal who has an account. When one does, a mail with a reset token (valid 30
-         *     minutes) is sent in the language of `Accept-Language`. At most one mail per minute
-         *     per account.
+         * @description Always answers 202, whether or not an account has this email, and in the same time:
+         *     the account is looked up and the mail sent by a background job a moment later, so
+         *     neither the answer nor its timing reveals who has an account. When one does, a mail
+         *     with a reset token (valid 30 minutes) is sent in the language of `Accept-Language`. At
+         *     most one mail per minute per account.
          */
         post: operations["auth_request_password_reset"];
         delete?: never;
@@ -3556,7 +3559,9 @@ export interface paths {
         };
         /**
          * Readiness probe: can the service handle requests?
-         * @description Checks that the database answers. Stop sending traffic when this fails.
+         * @description Checks that the database answers. Stop sending traffic when this fails. While the process
+         *     is shutting down (`AUTOXIDE_HTTP_DRAIN_SECONDS`), it fails even though requests are still
+         *     handled, so load balancers move traffic away before the server stops accepting connections.
          */
         get: operations["health_ready"];
         put?: never;
@@ -6378,6 +6383,13 @@ export interface components {
                 /** @description Authors; the first is the main one. */
                 authors: components["schemas"]["PublicAuthor"][];
                 body: components["schemas"]["BodyNode"];
+                /**
+                 * @description The images used in `body` (nodes of type `image`), in order of appearance: find one by
+                 *     the `mediaId` of the node to get its size and smaller copies for `srcset`. An image
+                 *     that is no longer public is left out. `alt` here is the one of the media library; the
+                 *     node carries its own.
+                 */
+                body_media: components["schemas"]["PublicMedia"][];
                 /** Format: int32 */
                 body_schema_version: number;
                 /**
@@ -8260,6 +8272,13 @@ export interface components {
                 /** @description Authors; the first is the main one. */
                 authors: components["schemas"]["PublicAuthor"][];
                 body: components["schemas"]["BodyNode"];
+                /**
+                 * @description The images used in `body` (nodes of type `image`), in order of appearance: find one by
+                 *     the `mediaId` of the node to get its size and smaller copies for `srcset`. An image
+                 *     that is no longer public is left out. `alt` here is the one of the media library; the
+                 *     node carries its own.
+                 */
+                body_media: components["schemas"]["PublicMedia"][];
                 /** Format: int32 */
                 body_schema_version: number;
                 /**
@@ -9027,6 +9046,13 @@ export interface components {
             /** @description Authors; the first is the main one. */
             authors: components["schemas"]["PublicAuthor"][];
             body: components["schemas"]["BodyNode"];
+            /**
+             * @description The images used in `body` (nodes of type `image`), in order of appearance: find one by
+             *     the `mediaId` of the node to get its size and smaller copies for `srcset`. An image
+             *     that is no longer public is left out. `alt` here is the one of the media library; the
+             *     node carries its own.
+             */
+            body_media: components["schemas"]["PublicMedia"][];
             /** Format: int32 */
             body_schema_version: number;
             /**
@@ -9232,7 +9258,13 @@ export interface components {
         PublicVariant: {
             /** Format: int32 */
             height: number;
+            /** @description JPEG copy (PNG for images with transparency). */
             url: string;
+            /**
+             * @description The same copy as WebP, usually far smaller: offer it in a `<picture>`
+             *     `<source type="image/webp">`. `null` while it is not made yet.
+             */
+            webp_url?: string | null;
             /** Format: int32 */
             width: number;
         };
@@ -9602,6 +9634,11 @@ export interface components {
         /** @description Proof that you are the account owner. */
         StartPasskeyRegistrationRequest: {
             /** @description Your current password: a stolen access token alone must not add a passkey. */
+            current_password: string;
+        };
+        /** @description Confirms starting two-step sign-in. */
+        StartTotpRequest: {
+            /** @description Your current password. */
             current_password: string;
         };
         /**
@@ -10228,6 +10265,19 @@ export interface components {
             size: number;
             /** @description Where to load it: the item's `url` with `&w=<width>`. */
             url: string;
+            /**
+             * Format: int64
+             * @description Size of the WebP copy in bytes; `null` like `webp_url`.
+             */
+            webp_size?: number | null;
+            /**
+             * @description The same copy as WebP, usually far smaller: `url` with `&format=webp`. Offer it in a
+             *     `<picture>` `<source type="image/webp">`, or in `srcset` when every browser you serve
+             *     reads WebP. `null` while it is not made yet (images uploaded before WebP copies existed
+             *     get one after `autoxide task media.refresh_variants`).
+             * @example /api/v1/media/0190f5a2-7c4e-7d1a-9b3c-2f1e0d9c8b7a/content?v=0190f5a2-7c4e-7d1a-9b3c-2f1e0d9c8b7b&w=640&format=webp
+             */
+            webp_url?: string | null;
             /**
              * Format: int32
              * @example 640
@@ -11532,7 +11582,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartTotpRequest"];
+            };
+        };
         responses: {
             /** @description Add this secret to the authenticator app, then confirm. */
             200: {
@@ -11541,6 +11595,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Data_TotpSetupResponse"];
+                };
+            };
+            /** @description The current password is wrong; code `auth.wrong_password`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -22517,6 +22580,13 @@ export interface operations {
                  *     when the image is narrower, the original is sent.
                  */
                 w?: number;
+                /**
+                 * @description `webp`: with `w`, the WebP copy of that width (much smaller; the variant's
+                 *     `webp_url`). Until it is made, the JPEG or PNG copy is sent instead, so the address
+                 *     always shows an image. Ignored without `w`.
+                 * @example webp
+                 */
+                format?: string;
             };
             header?: {
                 /** @description One byte range, e.g. `bytes=0-1023`, `bytes=1024-` or `bytes=-500`. Several ranges are answered with the whole content. */
@@ -22587,6 +22657,15 @@ export interface operations {
             };
             /** @description The range is outside the content; code `media.range_not_satisfiable`. `Content-Range: bytes *\/<size>` gives the size. */
             416: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `format` is not `webp`; see `errors`. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22754,6 +22833,13 @@ export interface operations {
                  *     when the image is narrower, the original is sent.
                  */
                 w?: number;
+                /**
+                 * @description `webp`: with `w`, the WebP copy of that width (much smaller; the variant's
+                 *     `webp_url`). Until it is made, the JPEG or PNG copy is sent instead, so the address
+                 *     always shows an image. Ignored without `w`.
+                 * @example webp
+                 */
+                format?: string;
             };
             header?: {
                 /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
@@ -22783,6 +22869,13 @@ export interface operations {
             };
             /** @description No media item has this id that you may load. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `format` is not `webp`. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26041,7 +26134,7 @@ export interface operations {
                     "application/json": components["schemas"]["Data_Health"];
                 };
             };
-            /** @description A dependency is unavailable; code `not_ready`. */
+            /** @description Not ready: code `not_ready` when the database does not answer, `shutting_down` while the process is shutting down. */
             503: {
                 headers: {
                     [name: string]: unknown;

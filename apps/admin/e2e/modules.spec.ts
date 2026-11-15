@@ -114,6 +114,7 @@ test("đăng nhập hai bước", async ({ page }) => {
 test("thiếu permission thì báo rõ permission cần có", async ({ page }) => {
   await page.goto("/login");
   await signIn(page, "viewer@example.com", "viewer password");
+  await expect(page).toHaveURL(/:\d+\/$/);
 
   // Không có quyền xem sổ module: menu không bày ra màn Module, mở thẳng thì báo rõ.
   await expect(

@@ -162,3 +162,30 @@ export function AreasGrid({ groups }: { groups: ShellGroup[] }) {
     </div>
   );
 }
+
+/** Mục là link trong menu tài khoản: bấm thì đóng menu (menu nằm ở khung, không tự đóng khi đổi trang). */
+export function MenuLink({
+  href,
+  label,
+  icon,
+  menu,
+}: {
+  href: string;
+  label: string;
+  icon: IconName;
+  menu: string;
+}) {
+  const pathname = usePathname();
+  const on = pathname === href || pathname.startsWith(`${href}/`);
+  return (
+    <Link
+      href={href}
+      className="menu-item"
+      aria-current={on ? "page" : undefined}
+      onClick={() => document.getElementById(menu)?.hidePopover()}
+    >
+      <Icon name={icon} />
+      {label}
+    </Link>
+  );
+}

@@ -18,8 +18,12 @@ Các màn đã có:
 - **Cài đặt › Module**: các module đã cài trên máy chủ core và những gì mỗi module khai:
   permission, event, job, lịch chạy, tool MCP, endpoint deprecated và trạng thái migration. Màn
   hình chỉ xem: module được biên dịch cùng core, nên cài hay gỡ một module nghĩa là build lại core.
+- **Tài khoản của tôi** (menu tài khoản, hoặc Ctrl K): hồ sơ và xác minh email, đổi email hay
+  mật khẩu, xác thực hai bước bằng ứng dụng xác thực và mã khôi phục, passkey, các thiết bị đang
+  đăng nhập, tải dữ liệu của bạn và xoá tài khoản. Mọi tài khoản đã đăng nhập đều mở được, không
+  cần permission.
 
-Chạy với core Autoxide **v0.5.0** trở lên.
+Chạy với core Autoxide **v0.12.0** trở lên.
 
 ## Cần có
 
@@ -80,6 +84,13 @@ dùng được một lần, và các bản ứng dụng không chia sẻ lượt
   vào mọi lời gọi core. Khi access token hết hạn, proxy (`src/proxy.ts`) đổi refresh token lấy
   cặp mới trước khi render trang.
 - **Đăng nhập hai bước.** Tài khoản có ứng dụng xác thực sẽ có thêm bước nhập mã.
+- **Thiết bị.** Máy chủ của ứng dụng chuyển `User-Agent` của trình duyệt cho core, nên danh sách
+  phiên trong Tài khoản của tôi ghi tên từng thiết bị. Id của phiên cũng được giữ trong cookie
+  `httpOnly`, để đánh dấu "phiên này" và giữ nó lại khi đăng xuất mọi thiết bị khác.
+- **Passkey.** Thêm passkey chạy WebAuthn ở trình duyệt; options và kết quả đi qua máy chủ của
+  ứng dụng. Passkey chỉ dùng được khi core đặt `AUTOXIDE_AUTH_PASSKEY_RP_ID` là tên miền của ứng
+  dụng này và `AUTOXIDE_AUTH_PASSKEY_ORIGINS` có địa chỉ của nó (ví dụ
+  `https://admin.example.com`).
 - **SDK.** `packages/sdk` chứa kiểu TypeScript sinh từ `openapi.json` của core và một client
   nhỏ. Nâng core: tăng `CORE_VERSION` trong `packages/sdk/scripts/generate.mjs` rồi chạy
   `pnpm sdk:generate`. Trình biên dịch sẽ chỉ ra mọi chỗ gọi không còn khớp.

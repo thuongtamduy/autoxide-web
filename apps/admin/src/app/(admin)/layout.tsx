@@ -8,6 +8,7 @@ import { Icon } from "@/components/shell/icon";
 import {
   AreasGrid,
   BottomBar,
+  MenuLink,
   Rail,
   type ShellGroup,
   type ShellPage,
@@ -151,6 +152,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             {me.email}
           </span>
         </div>
+        <MenuLink href={account.href} label={account.label} icon="user" menu="usermenu" />
         <ThemeForm label={t("shell.theme")} names={themes} />
         <div style={{ padding: "6px 10px" }}>
           <LanguageSwitch />

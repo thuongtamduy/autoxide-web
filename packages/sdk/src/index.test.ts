@@ -51,6 +51,15 @@ describe("createAutoxideClient", () => {
     expect(request?.headers.has("idempotency-key")).toBe(false);
   });
 
+  it("chuyển tiếp User-Agent của người dùng khi được đưa", async () => {
+    const client = createAutoxideClient({ baseUrl: BASE, userAgent: `Firefox/${"x".repeat(300)}` });
+
+    await client.GET("/api/v1/kernel/modules");
+
+    expect(seen[0]?.headers.get("user-agent")).toHaveLength(255);
+    expect(seen[0]?.headers.get("user-agent")?.startsWith("Firefox/")).toBe(true);
+  });
+
   it("lệnh ghi mang Idempotency-Key mới mỗi lần", async () => {
     const client = createAutoxideClient({ baseUrl: BASE });
 

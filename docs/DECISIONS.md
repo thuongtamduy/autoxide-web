@@ -100,3 +100,34 @@ soát bản thiết kế (R4): mỗi màn tự khai menu thì các màn trong c�
 Đã cân nhắc: chép nguyên CSS của bản thiết kế — bản thiết kế có cả màn mẫu và lớp thử nghiệm,
 nên chỉ chép phần khung đang dùng. Dùng Radix cho popover và menu — HTML `popover` đã đủ
 (Esc, bấm ra ngoài để đóng, lớp trên cùng), không thêm thư viện.
+
+## W-005 · Màn "Tài khoản của tôi"; SDK theo core v0.12.0; thêm `uqr` cho mã QR — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Màn `/account`, bốn tab là bốn đường dẫn con: Hồ sơ (`/account`), Đăng nhập và bảo mật
+  (`/account/security`), Phiên đăng nhập (`/account/sessions`), Dữ liệu của tôi (`/account/data`).
+  Mở từ menu tài khoản (avatar) và bảng lệnh; không lên thanh bên. Tab "Thông báo" của bản thiết
+  kế chưa dựng vì core chưa có API.
+- Nâng `CORE_VERSION` của SDK từ v0.5.0 lên v0.12.0 (bản core đang chạy): bật xác thực hai bước
+  và thêm passkey nay cần mật khẩu hiện tại (`StartTotpRequest`, `StartPasskeyRegistrationRequest`).
+- Thêm `uqr` (0.1.3, không phụ thuộc gì) để vẽ địa chỉ `otpauth://` thành mã QR. Mã sinh ở máy
+  chủ trong Server Action, trình duyệt chỉ nhận một path SVG, không tải thư viện.
+- Cookie `ax_session` (`httpOnly`) giữ `session_id` của phiên, đặt cùng cookie token lúc đăng
+  nhập, làm mới token và đổi mật khẩu. Dùng để đánh dấu "phiên này" và làm `keep` khi đăng xuất
+  mọi phiên khác; thiếu cookie thì không gửi lệnh đó (thiếu `keep`, core đăng xuất cả phiên này).
+- Client của SDK nhận `userAgent`; máy chủ của ứng dụng chuyển `User-Agent` của trình duyệt cho
+  core ở mọi lời gọi, để phiên tạo ra (đăng nhập, đổi mật khẩu) mang đúng tên thiết bị.
+- Passkey: id của nghi thức nằm trong cookie `httpOnly` `ax_passkey` (5 phút) giữa hai bước;
+  trình duyệt chỉ nhận options và chạy `navigator.credentials.create()`.
+- Tải dữ liệu qua route handler `GET /account/export` (máy chủ gọi core rồi trả file JSON).
+- Hộp thoại dùng `<dialog>` của HTML (`showModal`); thông báo sau thao tác là một vùng
+  `role="status"`. Thời điểm hiện theo múi giờ của máy người xem (`Time`): máy chủ render giờ UTC
+  kèm chữ "UTC", trình duyệt đổi sang giờ địa phương sau khi tải.
+
+Lý do: làm đúng hợp đồng `openapi.json` của core mà token không xuống trình duyệt. Mã QR tự viết
+cần bộ mã hoá Reed–Solomon và chọn mặt nạ — vài trăm dòng, dễ sai; `uqr` nhỏ và không kéo thêm gì.
+
+Đã cân nhắc: `qrcode` (kéo theo `pngjs`, `yargs`…); vẽ QR ở trình duyệt (thêm JavaScript tải
+xuống). Đọc `session_id` từ access token — token là chuỗi mờ theo hợp đồng của core, không dựa
+vào nội dung bên trong. Hộp thoại bằng Radix — `<dialog>` đã có Esc, giữ con trỏ, lớp trên cùng.

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isLocale, LOCALE_COOKIE } from "@/i18n/locales";
 import { anonymousClient } from "@/lib/core";
-import { ACCESS_COOKIE, MFA_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+import { REFRESH_COOKIE, SESSION_COOKIES } from "@/lib/session";
 import { isTheme, THEME_COOKIE } from "@/lib/theme";
 
 /** Đăng xuất: kết thúc phiên ở core rồi xoá cookie. */
@@ -19,7 +19,7 @@ export async function signOut(): Promise<void> {
       // Core không trả lời: vẫn xoá cookie; refresh token tự hết hạn ở core.
     }
   }
-  for (const name of [ACCESS_COOKIE, REFRESH_COOKIE, MFA_COOKIE]) {
+  for (const name of SESSION_COOKIES) {
     store.delete(name);
   }
   redirect("/login");

@@ -7,7 +7,8 @@ import { LoginForm } from "./login-form";
 
 export default async function LoginPage(props: PageProps<"/login">) {
   const app = await getTranslations("app");
-  const { next } = await props.searchParams;
+  const t = await getTranslations("login");
+  const { next, deleted } = await props.searchParams;
   // Đang dở bước nhập mã (vd tải lại trang): mở thẳng bước đó.
   const step = (await cookies()).has(MFA_COOKIE) ? "mfa" : "password";
   return (
@@ -15,6 +16,11 @@ export default async function LoginPage(props: PageProps<"/login">) {
       <p className="text-sm font-semibold tracking-wide text-muted-foreground">
         {app("name")} · {app("admin")}
       </p>
+      {deleted ? (
+        <p role="status" className="w-full max-w-sm text-sm text-muted-foreground">
+          {t("deleted")}
+        </p>
+      ) : null}
       <Card className="w-full max-w-sm">
         <LoginForm next={safeNext(next)} initialStep={step} />
       </Card>

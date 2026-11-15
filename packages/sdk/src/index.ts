@@ -24,6 +24,11 @@ export interface ClientOptions {
   accessToken?: string | undefined;
   /** Ngôn ngữ của thông báo lỗi (`Accept-Language`), vd `vi`. */
   language?: string | undefined;
+  /**
+   * `User-Agent` của người dùng thật khi gọi thay mặt họ từ máy chủ: core lưu nó cho phiên tạo
+   * ra (đăng nhập, đổi mật khẩu) để người dùng nhận ra thiết bị trong danh sách phiên.
+   */
+  userAgent?: string | undefined;
   /** `fetch` thay thế (test). */
   fetch?: (request: Request) => Promise<Response>;
 }
@@ -40,6 +45,10 @@ export function headersMiddleware(options: ClientOptions): Middleware {
       }
       if (options.language) {
         request.headers.set("Accept-Language", options.language);
+      }
+      if (options.userAgent) {
+        // Core chỉ giữ 255 ký tự đầu.
+        request.headers.set("User-Agent", options.userAgent.slice(0, 255));
       }
       // Mỗi lệnh ghi một khoá mới: core trả lại kết quả lần đầu nếu cùng request bị gửi
       // lại (mạng chập chờn, proxy retry), không làm hai lần.

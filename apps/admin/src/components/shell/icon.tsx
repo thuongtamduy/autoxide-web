@@ -27,6 +27,12 @@ const ICONS = {
   logout: "M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h10",
   globe:
     "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
+  check: "M5 12.5l4.5 4.5L19 7.5",
+  key: "M14 10a4 4 0 1 0-3.5 4L9 15.5V18H6.5v2H4v-2.5L10.5 11A4 4 0 0 0 14 10zM15 7h.01",
+  mail: "M4 6h16v12H4zM4 7l8 6 8-6",
+  down: "M12 4v12M7 11l5 5 5-5M4 20h16",
+  warn: "M12 3l9.5 17h-19zM12 10v4M12 17h.01",
+  plus: "M12 5v14M5 12h14",
 } as const;
 
 export type IconName = keyof typeof ICONS;
