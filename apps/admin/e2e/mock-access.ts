@@ -15,13 +15,13 @@ export const ADMIN_ROLE = "01a1e000-0000-7000-8000-00000000ad01";
 const EDITOR_ROLE = "01a1e000-0000-7000-8000-00000000ed01";
 
 const CATALOG: Schemas["PermissionResponse"][] = [
-  { name: "auth.roles.manage", description: "Create, change and delete roles." },
-  { name: "auth.roles.read", description: "See roles." },
-  { name: "auth.users.manage", description: "Create and change user accounts." },
-  { name: "auth.users.read", description: "See user accounts." },
-  { name: "kernel.modules.read", description: "See the installed modules." },
-  { name: "notes.read", description: "Read notes." },
-  { name: "notes.write", description: "Write notes." },
+  { name: "auth.roles.manage", description: "Create, change and delete roles.", risk: "write" },
+  { name: "auth.roles.read", description: "See roles.", risk: "read" },
+  { name: "auth.users.manage", description: "Create and change user accounts.", risk: "write" },
+  { name: "auth.users.read", description: "See user accounts.", risk: "read" },
+  { name: "kernel.modules.read", description: "See the installed modules.", risk: "read" },
+  { name: "notes.read", description: "Read notes.", risk: "read" },
+  { name: "notes.write", description: "Write notes.", risk: "write" },
 ];
 
 type Role = Schemas["RoleResponse"];
@@ -67,6 +67,8 @@ function userView(account: Account): Schemas["UserResponse"] {
     name: account.name,
     disabled_at: account.disabledAt,
     email_verified_at: account.verified ? "2026-11-13T08:00:00Z" : null,
+    has_password: account.hasPassword,
+    mfa_enabled: account.mfa,
     created_at: account.createdAt,
     updated_at: account.updatedAt,
   };

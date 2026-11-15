@@ -12,6 +12,7 @@ function entry(change: Partial<Entry> = {}): Entry {
   return {
     id: "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11",
     kind: "post",
+    version: '"1"',
     locale: "vi",
     translation_group_id: "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11",
     parent_id: null,

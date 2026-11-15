@@ -196,7 +196,15 @@ export function resetEngage() {
       advertising: false,
       locale: "vi",
       status: "draft",
-      progress: { total: 0, sent: 0, failed: 0, skipped: 0, pending: 0 },
+      progress: {
+        total: 0,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        pending: 0,
+        bounced: 0,
+        unsubscribed: 0,
+      },
       created_at: ct,
       updated_at: ct,
     } satisfies Campaign,
@@ -582,7 +590,15 @@ export async function engageRoutes(
       advertising: body.advertising === true,
       locale: body.locale === "en" ? "en" : "vi",
       status: "draft",
-      progress: { total: 0, sent: 0, failed: 0, skipped: 0, pending: 0 },
+      progress: {
+        total: 0,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        pending: 0,
+        bounced: 0,
+        unsubscribed: 0,
+      },
       created_at: t,
       updated_at: t,
     };
@@ -643,7 +659,15 @@ export async function engageRoutes(
     } else if (verb === "send") {
       c.status = "sending";
       c.started_at = now();
-      c.progress = { total: recipients, sent: 0, failed: 0, skipped: 0, pending: recipients };
+      c.progress = {
+        total: recipients,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        pending: recipients,
+        bounced: 0,
+        unsubscribed: 0,
+      };
     } else if (verb === "pause") c.status = "paused";
     else if (verb === "resume") c.status = "sending";
     else if (verb === "cancel") {

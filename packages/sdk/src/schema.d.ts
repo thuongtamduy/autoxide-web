@@ -59,7 +59,7 @@ export interface paths {
         /**
          * List the audit log.
          * @description Requires `audit.read`. Newest first unless `order=asc`. Changes appear a moment
-         *     after they happen.
+         *     after they happen. With `include=actor`, each entry carries the name of who made it.
          */
         get: operations["audit_list_entries"];
         put?: never;
@@ -90,6 +90,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/all-api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the API keys of every user.
+         * @description Requires `auth.api_keys.manage`. Newest first unless `order=asc`, with the owner's name and
+         *     email; secrets are never listed. Revoke one with `DELETE /api/v1/auth/all-api-keys/{id}`.
+         */
+        get: operations["auth_list_all_api_keys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/all-api-keys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an API key of any user.
+         * @description Requires `auth.api_keys.manage`. The key stops working at once; the audit log records who
+         *     revoked it.
+         */
+        delete: operations["auth_revoke_any_api_key"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/api-keys": {
         parameters: {
             query?: never;
@@ -106,8 +148,9 @@ export interface paths {
         /**
          * Create an API key for a program or an AI agent.
          * @description Signed in with a password session only: an API key cannot create keys. The key
-         *     acts as you, limited to the permissions listed. The response carries the key
-         *     itself, shown only once.
+         *     acts as you, limited to the permissions listed. Confirm it is you with your current
+         *     password, a code from your authenticator app (`totp_code`) or one of your passkeys
+         *     (`passkey_ceremony_id`, `passkey_credential`). The response carries the key itself, shown only once.
          */
         post: operations["auth_create_api_key"];
         delete?: never;
@@ -306,7 +349,8 @@ export interface paths {
         /**
          * Delete your own account and everything it owns.
          * @description Signed in with a password session only, and needs your current password (an account
-         *     without a password must set one first). The account, its sessions, keys and passkeys
+         *     without a password — `has_password: false` in `GET /api/v1/auth/me` — sets one first with
+         *     `POST /api/v1/auth/password-reset`: the mail to its own address sets a first password too). The account, its sessions, keys and passkeys
          *     go at once; data kept by other modules (notes, files…) is deleted shortly after.
          *     This cannot be undone: download your data first with `GET /api/v1/auth/me/export`.
          */
@@ -336,7 +380,13 @@ export interface paths {
          *     (`POST /api/v1/auth/email-change/report`, valid 7 days).
          */
         post: operations["auth_change_email"];
-        delete?: never;
+        /**
+         * Cancel a pending email change.
+         * @description Any signed-in user, for their own account. The link sent to the new address stops working
+         *     (as does any other verification link of the account; ask for a new one if needed) and the
+         *     email stays as it is. See the pending change in `pending_email` of `GET /api/v1/auth/me`.
+         */
+        delete: operations["auth_cancel_email_change"];
         options?: never;
         head?: never;
         patch?: never;
@@ -684,7 +734,8 @@ export interface paths {
         /**
          * List every permission that roles can grant.
          * @description Requires `auth.roles.read`. Each module declares its own permissions; the list
-         *     grows when modules are added.
+         *     grows when modules are added. Descriptions follow `Accept-Language`. Without
+         *     `auth.roles.read`, read your own permissions with `GET /api/v1/me/permissions`.
          */
         get: operations["auth_list_permissions"];
         put?: never;
@@ -801,7 +852,8 @@ export interface paths {
         /**
          * List or search user accounts.
          * @description Requires `auth.users.read`. Newest first unless `order=asc`. Add `search` to find
-         *     users by email or name.
+         *     users by email or name, `status` to keep active or disabled ones, `include=roles` to get
+         *     each user's roles in the same answer.
          */
         get: operations["auth_list_users"];
         put?: never;
@@ -1354,6 +1406,29 @@ export interface paths {
          *     when that comment receives a shown reply.
          */
         post: operations["comments_verify_comment_email"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comments/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the targets that have comments.
+         * @description Requires `comments.read`. Each target (a post, a product…) that got a comment or had its state
+         *     set, newest first, with its counts and — when public — its title and path. Filter by kind,
+         *     state, or targets waiting for moderation (`pending=true`). Follow `pagination.next_cursor` with
+         *     the same filters for more.
+         */
+        get: operations["comments_list_comment_targets"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2247,6 +2322,28 @@ export interface paths {
         patch: operations["content_update_content_redirect"];
         trace?: never;
     };
+    "/api/v1/content/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the schedules of every entry.
+         * @description Requires `content.read`. Sorted by `run_at`, latest first unless `order=asc` (soonest
+         *     first — what is about to be published or taken down). Filter with `status=scheduled` for the
+         *     ones still waiting.
+         */
+        get: operations["content_list_all_content_schedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/content/schedules/{id}": {
         parameters: {
             query?: never;
@@ -2717,6 +2814,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/kernel/client-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the settings an interface needs.
+         * @description No sign-in needed. Values the server's operator set (or the defaults), by module: languages,
+         *     path prefixes, upload limits, the public address… — so an interface does not guess the
+         *     server's defaults. They change only when the server restarts with new settings.
+         */
+        get: operations["kernel_get_client_config"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/kernel/modules": {
         parameters: {
             query?: never;
@@ -2759,6 +2878,149 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/placements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the placements.
+         * @description Requires `kernel.placements.read` and an account of the platform tenant. Where tenants' data
+         *     is kept; connection URLs are never shown (placements are added with `autoxide placement add`).
+         */
+        get: operations["kernel_list_placements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List this tenant's settings.
+         * @description Requires `kernel.settings.manage`. Every setting the installed modules take per tenant, with
+         *     whether this tenant has set it; unset ones use the server-wide configuration. Values of
+         *     secret settings are never returned.
+         */
+        get: operations["kernel_list_tenant_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/settings/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set one of this tenant's settings.
+         * @description Requires `kernel.settings.manage`. Creates or replaces the value; sending it again is safe.
+         *     A secret value is stored encrypted and the answer does not contain it.
+         */
+        put: operations["kernel_set_tenant_setting"];
+        post?: never;
+        /**
+         * Remove one of this tenant's settings.
+         * @description Requires `kernel.settings.manage`. The server-wide configuration applies again. Removing a
+         *     setting this tenant never set changes nothing.
+         */
+        delete: operations["kernel_delete_tenant_setting"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my tenant.
+         * @description Requires signing in, no permission. The tenant the request is for — the one of the caller, or
+         *     the one entered with `Autoxide-Tenant` by platform staff — and the mode of the installation.
+         */
+        get: operations["kernel_get_current_tenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tenants of the platform.
+         * @description Requires `kernel.tenants.read` and an account of the platform tenant (not one entered with
+         *     `Autoxide-Tenant`). Newest first unless `order=asc`.
+         */
+        get: operations["kernel_list_tenants"];
+        put?: never;
+        /**
+         * Create a tenant.
+         * @description Requires `kernel.tenants.manage` and an account of the platform tenant. Creates the tenant and
+         *     prepares it (every module sets up what a new tenant needs) before answering. Retry safely with
+         *     an `Idempotency-Key` header.
+         */
+        post: operations["kernel_create_tenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a tenant.
+         * @description Requires `kernel.tenants.read` and an account of the platform tenant.
+         */
+        get: operations["kernel_get_tenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename, suspend or resume a tenant.
+         * @description Requires `kernel.tenants.manage` and an account of the platform tenant. A suspended tenant
+         *     answers every request with `403 tenant_suspended` (other servers see the change within
+         *     `AUTOXIDE_TENANCY_CACHE_SECONDS`). The platform tenant cannot be suspended.
+         */
+        patch: operations["kernel_update_tenant"];
         trace?: never;
     };
     "/api/v1/me/flags": {
@@ -2807,6 +3069,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your own permissions.
+         * @description Any signed-in user. Every permission the caller holds (through roles, or the permissions of
+         *     the API key used), with its description and risk, sorted by name. Use it to offer the
+         *     permissions a new API key may get: a key cannot have a permission its owner lacks.
+         */
+        get: operations["me_list_my_permissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media": {
         parameters: {
             query?: never;
@@ -2816,8 +3100,9 @@ export interface paths {
         };
         /**
          * List media items.
-         * @description Requires `media.read`. Filter by folder, type, visibility, trash and name; sort by
-         *     upload time, name or size. Keep the same filters, `sort` and `order` while following
+         * @description Requires `media.read`. Filter by folder, type, visibility, trash, name, tag and missing
+         *     text alternative; sort by upload time, name or size. With `include=uploader`, each item
+         *     carries the name of who uploaded it. Keep the same filters, `sort` and `order` while following
          *     `next_cursor`.
          */
         get: operations["media_list_media_items"];
@@ -2889,6 +3174,27 @@ export interface paths {
          * @description Requires `media.write`. `If-Match` is required.
          */
         patch: operations["media_update_media_folder"];
+        trace?: never;
+    };
+    "/api/v1/media/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the totals of the media library.
+         * @description Requires `media.read`. Number of items and their total size, images missing a text
+         *     alternative, items in the trash — for a library overview without paging through every item.
+         */
+        get: operations["media_get_media_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/media/tags": {
@@ -3307,6 +3613,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/newsletter/campaigns/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview a campaign mail.
+         * @description Requires `newsletter.read`. The mail as it will be sent — subject label, footer, HTML
+         *     wrapping — with a placeholder token in its links (they do nothing). Needs the same settings
+         *     as sending; see `GET /api/v1/newsletter/settings`.
+         */
+        get: operations["newsletter_preview_newsletter_campaign"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/newsletter/campaigns/{id}/resume": {
         parameters: {
             query?: never;
@@ -3608,6 +3936,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/newsletter/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the newsletter settings in use.
+         * @description Requires `newsletter.read`. The advertising label and daily limit, the sender's postal
+         *     address, and whether the addresses campaign mails need are set — so an interface can say
+         *     what to set before sending. The operator changes them in the server's environment.
+         */
+        get: operations["newsletter_get_newsletter_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/newsletter/subscribers": {
         parameters: {
             query?: never;
@@ -3737,7 +4087,8 @@ export interface paths {
         };
         /**
          * List webhook endpoints.
-         * @description Requires `webhooks.manage`. Newest first unless `order=asc`.
+         * @description Requires `webhooks.manage`. Newest first unless `order=asc`. Each endpoint carries its
+         *     newest delivery (`last_delivery`); `status` keeps only active or disabled endpoints.
          */
         get: operations["webhooks_list_webhook_endpoints"];
         put?: never;
@@ -3766,7 +4117,7 @@ export interface paths {
         };
         /**
          * List the kinds of events endpoints can receive.
-         * @description Requires `webhooks.manage`. Sorted by name.
+         * @description Requires `webhooks.manage`. Sorted by name; descriptions follow `Accept-Language`.
          */
         get: operations["webhooks_list_webhook_event_types"];
         put?: never;
@@ -3972,15 +4323,18 @@ export interface components {
         };
         /** @description One answer, with the field as it was when the submission was sent. */
         AnswerResponse: {
+            /**
+             * @description For `select`, `radio` and `checkbox`: the chosen options with their labels in the form
+             *     version the submission was sent with (in the order of `value`). A value no longer among
+             *     that version's options comes with an empty label. Absent for other types.
+             */
+            choices?: components["schemas"]["FieldOption"][] | null;
             key: string;
             /** @description The field's label in the form version the submission was sent with. */
             label: components["schemas"]["Localized"];
             type: components["schemas"]["FieldType"];
-            /**
-             * @description A string; a number for `number`; an array of values for `checkbox`; `true` for
-             *     `consent`.
-             */
-            value: unknown;
+            /** @description A string; a number for `number`; an array of values for `checkbox`; `true` for `consent`. */
+            value: string | number | string[] | boolean;
         };
         /** @description An API key, without its secret. */
         ApiKeyResponse: {
@@ -4035,6 +4389,11 @@ export interface components {
              * @example user
              */
             actor_kind: string;
+            /**
+             * @description Display name of `actor_user_id`, with `include=actor`: `null` when the account no longer
+             *     exists; absent when no user made the change.
+             */
+            actor_name?: string | null;
             /**
              * Format: uuid
              * @description User who made the change; `null` for the system (command line, background jobs,
@@ -4106,6 +4465,11 @@ export interface components {
             created_at: string;
             /** @example Ada Lovelace */
             display_name: string;
+            /**
+             * Format: int64
+             * @description How many entries (in any status) list this author. Only in the list.
+             */
+            entry_count?: number | null;
             /** Format: uuid */
             id: string;
             /** @description Unique. */
@@ -4191,6 +4555,18 @@ export interface components {
             reason?: string | null;
             type: components["schemas"]["BounceKind"];
         };
+        /** @description A campaign mail exactly as subscribers get it. */
+        CampaignPreviewResponse: {
+            /**
+             * @description The HTML body with the preheader and the footer; `null` for a text-only campaign. Show it
+             *     only inside a sandboxed `<iframe sandbox>`, like `body_html`.
+             */
+            body_html?: string | null;
+            /** @description The plain-text body with the footer (list name, preferences link, postal address). */
+            body_text: string;
+            /** @description The subject, with the advertising label when the campaign is advertising. */
+            subject: string;
+        };
         /** @description A campaign: one mail sent to the confirmed subscribers of a list. */
         CampaignResponse: {
             /**
@@ -4266,6 +4642,128 @@ export interface components {
             current_password: string;
             /** @description 12 to 128 characters. */
             new_password: string;
+        };
+        /** @description Settings of the server an interface needs, by module: only values safe to show anyone. A module without such settings is absent. */
+        ClientConfigResponse: {
+            /** @description Content settings an interface needs. */
+            content: {
+                /**
+                 * @description Language of a new entry when none is given.
+                 * @example en
+                 */
+                default_locale: string;
+                /**
+                 * @description Hosts whose videos and posts may be embedded in an entry (`AUTOXIDE_CONTENT_EMBED_HOSTS`).
+                 * @example [
+                 *       "www.youtube.com",
+                 *       "player.vimeo.com"
+                 *     ]
+                 */
+                embed_hosts: string[];
+                /**
+                 * @description Languages entries may be written in (`AUTOXIDE_CONTENT_LOCALES`), the default first.
+                 * @example [
+                 *       "en",
+                 *       "vi"
+                 *     ]
+                 */
+                locales: string[];
+                /**
+                 * Format: int64
+                 * @description Largest entry body accepted, in bytes.
+                 */
+                max_body_bytes: number;
+                /**
+                 * @description Path prefix of posts on the website (`AUTOXIDE_CONTENT_POST_PATH_PREFIX`), e.g. `/blog/`.
+                 * @example /blog/
+                 */
+                post_path_prefix: string;
+            };
+            /** @description Kernel's own section. */
+            kernel: {
+                /**
+                 * @description The public address of the API (`AUTOXIDE_HTTP_PUBLIC_URL`), used in links of mails and by
+                 *     MCP clients (`<public_url>/mcp`); `null` when the operator did not set it.
+                 * @example https://api.example.com
+                 */
+                public_url?: string | null;
+                /**
+                 * @description Version of the server.
+                 * @example 0.15.0
+                 */
+                version: string;
+            };
+            /** @description Mail settings an interface needs. */
+            mail: {
+                /**
+                 * @description Sender of every mail (`AUTOXIDE_MAIL_FROM`).
+                 * @example Example <no-reply@example.com>
+                 */
+                from: string;
+                /**
+                 * @description `true` when mail goes out through an SMTP server; `false` when it is only written to
+                 *     files on the server (`AUTOXIDE_MAIL_SMTP_URL` not set) — nobody receives it.
+                 */
+                sends: boolean;
+            };
+            /** @description Media library settings an interface needs. */
+            media: {
+                /**
+                 * @description Media types accepted at upload (`AUTOXIDE_MEDIA_ALLOWED_TYPES`): `type/subtype` or
+                 *     `type/*`.
+                 * @example [
+                 *       "image/*",
+                 *       "application/pdf"
+                 *     ]
+                 */
+                allowed_types: string[];
+                /**
+                 * @description Languages of `alt` translations (`AUTOXIDE_MEDIA_ALT_LOCALES`): show one alt field per
+                 *     language.
+                 * @example [
+                 *       "en",
+                 *       "vi"
+                 *     ]
+                 */
+                alt_locales: string[];
+                /**
+                 * @description Widths of the smaller copies made of images, in pixels.
+                 * @example [
+                 *       320,
+                 *       640,
+                 *       1280
+                 *     ]
+                 */
+                image_widths: number[];
+                /**
+                 * Format: int64
+                 * @description Largest upload, in bytes (`AUTOXIDE_MEDIA_MAX_BYTES`).
+                 * @example 52428800
+                 */
+                max_bytes: number;
+                /**
+                 * Format: int32
+                 * @description Days an item stays in the trash before it is deleted for good.
+                 * @example 30
+                 */
+                trash_days: number;
+            };
+            /** @description Menu settings an interface needs. */
+            menus: {
+                /**
+                 * @description Language of a menu when none is given.
+                 * @example en
+                 */
+                default_locale: string;
+                /**
+                 * @description Languages menus may be written in (`AUTOXIDE_MENUS_LOCALES`), the default first.
+                 * @example [
+                 *       "en",
+                 *       "vi"
+                 *     ]
+                 */
+                locales: string[];
+            };
         };
         /** @description A code from the authenticator app, or (where stated) a recovery code. */
         CodeRequest: {
@@ -4373,7 +4871,17 @@ export interface components {
             root_id: string;
             status: components["schemas"]["CommentStatus"];
             target_id: string;
+            /**
+             * @description Title of the target (e.g. the post's title), from the module that owns it; absent when
+             *     that kind has no lookup or the target is not public now.
+             */
+            target_title?: string | null;
             target_type: string;
+            /**
+             * @description Public path of the target (without the domain), e.g. `/blog/hello`; absent like
+             *     `target_title`.
+             */
+            target_url?: string | null;
             /** Format: date-time */
             updated_at: string;
             /**
@@ -4501,6 +5009,13 @@ export interface components {
              * @description Shown top-level comments, e.g. questions on a product (0 when hidden).
              */
             thread_count: number;
+            /**
+             * @description Title of the target, from the module that owns it (only in the admin list, and only for a
+             *     target that is public now); absent otherwise.
+             */
+            title?: string | null;
+            /** @description Public path of the target (without the domain), like `title`. */
+            url?: string | null;
         };
         /**
          * @description Whether a target takes comments.
@@ -4562,9 +5077,10 @@ export interface components {
         CreateApiKeyRequest: {
             /**
              * @description Your current password: a stolen access token alone must not create a key that
-             *     outlives it.
+             *     outlives it. Or confirm with `totp_code` or a passkey (`passkey_ceremony_id` and
+             *     `passkey_credential`) instead — exactly one of the three.
              */
-            current_password: string;
+            current_password?: string;
             /**
              * Format: date-time
              * @description When the key stops working (RFC 3339, in the future). Omit for a key that does
@@ -4577,6 +5093,18 @@ export interface components {
              */
             name: string;
             /**
+             * Format: uuid
+             * @description One of your passkeys, instead of the password: start with
+             *     `POST /api/v1/auth/login/passkey/options`, let the browser sign its `options`, and send the
+             *     `ceremony_id` here with the browser's answer in `passkey_credential`.
+             */
+            passkey_ceremony_id?: string | null;
+            /**
+             * @description The browser's `AuthenticationResponseJSON` (from `navigator.credentials.get`) for
+             *     `passkey_ceremony_id`.
+             */
+            passkey_credential?: Record<string, never> | null;
+            /**
              * @description Permissions the key may use: at least one, each one you have yourself (see
              *     `GET /api/v1/auth/me`). Give a key only what its job needs.
              * @example [
@@ -4584,6 +5112,12 @@ export interface components {
              *     ]
              */
             permissions: string[];
+            /**
+             * @description A code from your authenticator app, instead of the password (two-step sign-in must be
+             *     on). Wrong codes count towards the same limit as at sign-in.
+             * @example 123456
+             */
+            totp_code?: string | null;
         };
         /** @description A new draft campaign. */
         CreateCampaignRequest: {
@@ -4812,6 +5346,21 @@ export interface components {
              */
             secret: string;
         };
+        /** @description The tenant of the caller. */
+        CurrentTenant: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description `single` (one tenant) or `multi` (many tenants on one installation).
+             * @example single
+             */
+            mode: string;
+            name: string;
+            /** @description Whether this is the platform tenant (the operator's own). */
+            platform: boolean;
+            slug: string;
+            status: string;
+        };
         /** @description Envelope of a single result. */
         Data_AiStatus: {
             /** @description What the AI features of this server can do now. */
@@ -4884,6 +5433,11 @@ export interface components {
                  */
                 actor_kind: string;
                 /**
+                 * @description Display name of `actor_user_id`, with `include=actor`: `null` when the account no longer
+                 *     exists; absent when no user made the change.
+                 */
+                actor_name?: string | null;
+                /**
                  * Format: uuid
                  * @description User who made the change; `null` for the system (command line, background jobs,
                  *     self-registration).
@@ -4936,6 +5490,11 @@ export interface components {
                 created_at: string;
                 /** @example Ada Lovelace */
                 display_name: string;
+                /**
+                 * Format: int64
+                 * @description How many entries (in any status) list this author. Only in the list.
+                 */
+                entry_count?: number | null;
                 /** Format: uuid */
                 id: string;
                 /** @description Unique. */
@@ -4956,6 +5515,21 @@ export interface components {
             data: {
                 /** @description The address is (now or already) suppressed. */
                 suppressed: boolean;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_CampaignPreviewResponse: {
+            /** @description A campaign mail exactly as subscribers get it. */
+            data: {
+                /**
+                 * @description The HTML body with the preheader and the footer; `null` for a text-only campaign. Show it
+                 *     only inside a sandboxed `<iframe sandbox>`, like `body_html`.
+                 */
+                body_html?: string | null;
+                /** @description The plain-text body with the footer (list name, preferences link, postal address). */
+                body_text: string;
+                /** @description The subject, with the advertising label when the campaign is advertising. */
+                subject: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -5018,6 +5592,16 @@ export interface components {
                  *     `navigator.credentials.create()` / `.get()`.
                  */
                 options: Record<string, never>;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_ClientConfigResponse: {
+            /**
+             * @description Settings of the server an interface needs, by module (`kernel`, `content`, `media`…): only
+             *     values safe to show anyone. A module without such settings is absent.
+             */
+            data: {
+                [key: string]: unknown;
             };
         };
         /** @description Envelope of a single result. */
@@ -5100,7 +5684,17 @@ export interface components {
                 root_id: string;
                 status: components["schemas"]["CommentStatus"];
                 target_id: string;
+                /**
+                 * @description Title of the target (e.g. the post's title), from the module that owns it; absent when
+                 *     that kind has no lookup or the target is not public now.
+                 */
+                target_title?: string | null;
                 target_type: string;
+                /**
+                 * @description Public path of the target (without the domain), e.g. `/blog/hello`; absent like
+                 *     `target_title`.
+                 */
+                target_url?: string | null;
                 /** Format: date-time */
                 updated_at: string;
                 /**
@@ -5201,6 +5795,13 @@ export interface components {
                  * @description Shown top-level comments, e.g. questions on a product (0 when hidden).
                  */
                 thread_count: number;
+                /**
+                 * @description Title of the target, from the module that owns it (only in the admin list, and only for a
+                 *     target that is public now); absent otherwise.
+                 */
+                title?: string | null;
+                /** @description Public path of the target (without the domain), like `title`. */
+                url?: string | null;
             };
         };
         /** @description Envelope of a single result. */
@@ -5279,6 +5880,24 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_CurrentTenant: {
+            /** @description The tenant of the caller. */
+            data: {
+                /** Format: uuid */
+                id: string;
+                /**
+                 * @description `single` (one tenant) or `multi` (many tenants on one installation).
+                 * @example single
+                 */
+                mode: string;
+                name: string;
+                /** @description Whether this is the platform tenant (the operator's own). */
+                platform: boolean;
+                slug: string;
+                status: string;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_EditedComment: {
             /** @description A comment just changed, for its author. */
             data: components["schemas"]["PublicComment"] & {
@@ -5330,6 +5949,7 @@ export interface components {
                 events: string[];
                 /** Format: uuid */
                 id: string;
+                last_delivery?: components["schemas"]["LastDelivery"] | null;
                 /** Format: date-time */
                 updated_at: string;
                 /** @example https://example.com/hooks/autoxide */
@@ -5408,6 +6028,18 @@ export interface components {
                  * @description The parent page (pages only); `null` at the root.
                  */
                 parent_id?: string | null;
+                /**
+                 * @description Address of the public version, e.g. `/blog/duong-den-da-lat` or `/about/team` (a page
+                 *     carries the path of its parents); `null` while the entry is not public. It does not hold
+                 *     the language: the website decides how `locale` shows in its addresses.
+                 * @example /blog/duong-den-da-lat
+                 */
+                path?: string | null;
+                /**
+                 * Format: date-time
+                 * @description When the public version was last published; `null` while the entry is not public.
+                 */
+                published_at?: string | null;
                 /** Format: int32 */
                 reading_time_minutes: number;
                 /**
@@ -5452,6 +6084,12 @@ export interface components {
                 translation_outdated: boolean;
                 /** Format: date-time */
                 updated_at: string;
+                /**
+                 * @description The entry's `ETag` (as `GET /entries/{id}` sends it): send it in `If-Match` to change the
+                 *     entry straight from a list.
+                 * @example "1731628800000000"
+                 */
+                version: string;
                 /**
                  * Format: int32
                  * @description Words in the body (for Vietnamese: syllables).
@@ -5560,6 +6198,12 @@ export interface components {
                 created_at: string;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: int64
+                 * @description Items directly in this folder (not in its subfolders), not counting the trash.
+                 * @example 12
+                 */
+                item_count: number;
                 /** @example Products */
                 name: string;
                 /**
@@ -5618,6 +6262,7 @@ export interface components {
                  */
                 retention_days?: number | null;
                 status: components["schemas"]["FormStatus"];
+                submissions?: components["schemas"]["SubmissionCounts"] | null;
                 /** @description Shown to the sender after sending. */
                 success_message: components["schemas"]["Localized"];
                 /**
@@ -5693,6 +6338,38 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_LibrarySummaryResponse: {
+            /** @description Totals of the media library. */
+            data: {
+                /**
+                 * Format: int64
+                 * @description Total size in bytes of the items not in the trash (their current content, without the
+                 *     smaller copies of images).
+                 * @example 734003200
+                 */
+                bytes: number;
+                /**
+                 * Format: int64
+                 * @description Images not in the trash with no text alternative and not marked `decorative`: the items
+                 *     `GET /api/v1/media?alt_missing=true` lists.
+                 * @example 9
+                 */
+                images_missing_alt: number;
+                /**
+                 * Format: int64
+                 * @description Items not in the trash.
+                 * @example 214
+                 */
+                items: number;
+                /**
+                 * Format: int64
+                 * @description Items in the trash.
+                 * @example 3
+                 */
+                trashed_items: number;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_ListResponse: {
             /** @description A newsletter list, as admins see it. */
             data: {
@@ -5742,6 +6419,11 @@ export interface components {
                  *     not verified (ask for a new mail with `POST /api/v1/auth/me/email/verification`).
                  */
                 email_verified_at?: string | null;
+                /**
+                 * @description Whether the account has a password. Without one (signed in with a passkey), set a first
+                 *     password through `POST /api/v1/auth/password-reset`.
+                 */
+                has_password: boolean;
                 /** Format: uuid */
                 id: string;
                 /**
@@ -5749,6 +6431,7 @@ export interface components {
                  * @example Ada Lovelace
                  */
                 name: string;
+                pending_email?: components["schemas"]["PendingEmail"] | null;
                 /**
                  * @description Permissions granted by the user's roles, sorted by name.
                  * @example [
@@ -5786,6 +6469,11 @@ export interface components {
                 content_type: string;
                 /** Format: date-time */
                 created_at: string;
+                /**
+                 * @description `true` for a purely decorative image: its empty `alt` is on purpose (render `alt=""`), so
+                 *     it does not count as missing one.
+                 */
+                decorative: boolean;
                 /**
                  * Format: uuid
                  * @description The folder holding the item; `null` for the root.
@@ -5834,6 +6522,11 @@ export interface components {
                  * @description The user who uploaded the item; `null` once that account is deleted.
                  */
                 uploaded_by?: string | null;
+                /**
+                 * @description Display name of `uploaded_by`, with `include=uploader` on the list: `null` when the
+                 *     account no longer exists; absent otherwise.
+                 */
+                uploaded_by_name?: string | null;
                 /**
                  * @description Where to load the content, with its version: the address changes when the content
                  *     does, so it may be cached for a long time. Public items load without signing in.
@@ -5970,9 +6663,77 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_NewsletterSettingsResponse: {
+            /** @description The newsletter settings in use (set by the server's operator; no secrets). */
+            data: {
+                /**
+                 * @description Put at the start of the subject of advertising campaigns
+                 *     (`AUTOXIDE_NEWSLETTER_ADVERTISING_LABEL`); empty: no label.
+                 * @example [QC]
+                 */
+                advertising_label: string;
+                /**
+                 * Format: int32
+                 * @description Advertising mails one address gets at most per day
+                 *     (`AUTOXIDE_NEWSLETTER_ADVERTISING_MAX_PER_DAY`); `0`: no limit.
+                 * @example 3
+                 */
+                advertising_max_per_day: number;
+                /**
+                 * @description The website's confirmation page is set (`AUTOXIDE_NEWSLETTER_CONFIRM_URL`); needed by
+                 *     lists with double opt-in.
+                 */
+                confirm_url_set: boolean;
+                /**
+                 * @description Settings still to set before campaigns can be sent: names of environment variables,
+                 *     empty when everything needed is set (`AUTOXIDE_NEWSLETTER_POSTAL_ADDRESS` is listed:
+                 *     only advertising campaigns need it).
+                 * @example [
+                 *       "AUTOXIDE_NEWSLETTER_PREFERENCES_URL"
+                 *     ]
+                 */
+                missing: string[];
+                /**
+                 * @description The sender's postal address shown in every mail footer
+                 *     (`AUTOXIDE_NEWSLETTER_POSTAL_ADDRESS`); `null`: not set — advertising campaigns cannot
+                 *     be sent until it is.
+                 */
+                postal_address?: string | null;
+                /**
+                 * @description The website's preferences page is set (`AUTOXIDE_NEWSLETTER_PREFERENCES_URL`); needed to
+                 *     send any campaign (the footer link).
+                 */
+                preferences_url_set: boolean;
+                /**
+                 * @description The server's public address is set (`AUTOXIDE_HTTP_PUBLIC_URL`); needed to send any
+                 *     campaign (the one-click unsubscribe link).
+                 */
+                public_url_set: boolean;
+                /**
+                 * Format: int32
+                 * @description Campaign mails handed to the mail queue per minute
+                 *     (`AUTOXIDE_NEWSLETTER_SEND_RATE_PER_MINUTE`).
+                 * @example 300
+                 */
+                send_rate_per_minute: number;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_PasskeyResponse: {
             /** @description A passkey of the signed-in user. Holds no secret. */
             data: {
+                /**
+                 * Format: uuid
+                 * @description Kind of authenticator, as it identified itself when registered (its AAGUID); `null` when
+                 *     it did not say (or registered before this was kept).
+                 */
+                aaguid?: string | null;
+                /**
+                 * @description Name of that kind of authenticator, e.g. `Windows Hello`, `Apple Passwords`,
+                 *     `Google Password Manager`; `null` when the kind is not known to the server.
+                 * @example Windows Hello
+                 */
+                authenticator?: string | null;
                 /** Format: date-time */
                 created_at: string;
                 /** Format: uuid */
@@ -6050,10 +6811,16 @@ export interface components {
                 /** @description Authors, in order (the first is the main one). */
                 author_ids: string[];
                 body: components["schemas"]["BodyNode"];
+                /**
+                 * @description The public images used in `body`, in order of appearance (find one by the `mediaId` of
+                 *     its node). Images that are not public yet are left out.
+                 */
+                body_media: components["schemas"]["PublicMedia"][];
                 /** Format: int32 */
                 body_schema_version: number;
                 canonical_url: string;
                 excerpt: string;
+                featured_media?: components["schemas"]["PublicMedia"] | null;
                 featured_media_alt: string;
                 /**
                  * Format: uuid
@@ -6385,6 +7152,8 @@ export interface components {
             /** @description A scheduled publish or take-down. */
             data: {
                 action: components["schemas"]["Action"];
+                /** @description `true` when whoever scheduled it confirmed that the AI-generated content was reviewed. */
+                ai_reviewed: boolean;
                 /** Format: date-time */
                 created_at: string;
                 /** Format: uuid */
@@ -6602,11 +7371,69 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_Tenant: {
+            /** @description A customer (tenant) of the platform. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /**
+                 * Format: uuid
+                 * @description Parent tenant, when the tenant belongs to a chain.
+                 */
+                parent_id?: string | null;
+                /**
+                 * @description Name of the placement (database) that keeps its data.
+                 * @example main
+                 */
+                placement: string;
+                /**
+                 * @description Short name: lower-case letters, digits and `-`; unique on the platform.
+                 * @example acme
+                 */
+                slug: string;
+                /**
+                 * @description `provisioning`, `active`, `suspended`, `maintenance` or `moving`.
+                 * @example active
+                 */
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TenantSettingState: {
+            /** @description A setting the installed modules take per tenant, and its state in the current tenant. */
+            data: {
+                description: string;
+                /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
+                is_set: boolean;
+                /**
+                 * @description `<module>.<key>`, e.g. `mail.smtp_url`.
+                 * @example kernel.public_url
+                 */
+                name: string;
+                /** @description Secret settings are stored encrypted and never returned: `value` is always `null`. */
+                secret: boolean;
+                /** Format: date-time */
+                updated_at?: string | null;
+                /** @description The value, for settings that are not secret and are set. */
+                value?: string | null;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_TermResponse: {
             /** @description A category or tag, with its names in every language. */
             data: {
                 /** Format: date-time */
                 created_at: string;
+                /**
+                 * Format: int64
+                 * @description How many entries (in any status) have this term. Only in the list.
+                 */
+                entry_count?: number | null;
                 /** Format: uuid */
                 id: string;
                 names: components["schemas"]["TermName"][];
@@ -6778,13 +7605,29 @@ export interface components {
                  *     is not verified.
                  */
                 email_verified_at?: string | null;
+                /**
+                 * @description Whether the account has a password. Without one it signs in with a passkey; its owner
+                 *     sets a first password through `POST /api/v1/auth/password-reset`, an administrator
+                 *     with `POST /api/v1/auth/users/{id}/password`.
+                 */
+                has_password: boolean;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: date-time
+                 * @description When the user last started a session (sign-in, password change); `null` if not since
+                 *     this field exists.
+                 */
+                last_sign_in_at?: string | null;
+                /** @description Whether two-step sign-in (an authenticator app) is on. */
+                mfa_enabled: boolean;
                 /**
                  * @description Display name.
                  * @example Ada Lovelace
                  */
                 name: string;
+                /** @description The user's roles, by name. Only with `include=roles` on the user list. */
+                roles?: components["schemas"]["UserRole"][] | null;
                 /** Format: date-time */
                 updated_at: string;
             };
@@ -6861,15 +7704,52 @@ export interface components {
             }[];
         };
         /** @description Envelope of a single result. */
+        Data_Vec_MyPermission: {
+            data: {
+                /** @description What it allows, in the language of `Accept-Language`. */
+                description: string;
+                /** @example notes.write */
+                name: string;
+                /**
+                 * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or `money`.
+                 * @example write
+                 */
+                risk: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
         Data_Vec_PermissionResponse: {
             data: {
-                /** @description What the permission allows. */
+                /** @description What the permission allows, in the language of `Accept-Language`. */
                 description: string;
                 /**
                  * @description `<module>.<action>`.
                  * @example auth.roles.read
                  */
                 name: string;
+                /**
+                 * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or
+                 *     `money`.
+                 * @example read
+                 */
+                risk: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_Placement: {
+            data: {
+                /** @description `sqlite` or `postgres`. */
+                backend: string;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                id: string;
+                /** @description `shared` (many tenants) or `dedicated` (one tenant). */
+                kind: string;
+                /** @example main */
+                name: string;
+                /** @description `ready`, `behind` (migrations pending: its tenants answer `503`) or `migrating`. */
+                schema_state: string;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -6970,6 +7850,8 @@ export interface components {
         Data_Vec_ScheduleResponse: {
             data: {
                 action: components["schemas"]["Action"];
+                /** @description `true` when whoever scheduled it confirmed that the AI-generated content was reviewed. */
+                ai_reviewed: boolean;
                 /** Format: date-time */
                 created_at: string;
                 /** Format: uuid */
@@ -6991,6 +7873,25 @@ export interface components {
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_TenantSettingState: {
+            data: {
+                description: string;
+                /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
+                is_set: boolean;
+                /**
+                 * @description `<module>.<key>`, e.g. `mail.smtp_url`.
+                 * @example kernel.public_url
+                 */
+                name: string;
+                /** @description Secret settings are stored encrypted and never returned: `value` is always `null`. */
+                secret: boolean;
+                /** Format: date-time */
+                updated_at?: string | null;
+                /** @description The value, for settings that are not secret and are set. */
+                value?: string | null;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -7032,6 +7933,11 @@ export interface components {
         DeliveryCounts: {
             /**
              * Format: int64
+             * @description Sent mails the receiving server bounced for good (counted in `failed` too).
+             */
+            bounced: number;
+            /**
+             * Format: int64
              * @description Refused for good by the receiving server, or the outcome is unknown.
              */
             failed: number;
@@ -7056,6 +7962,12 @@ export interface components {
              * @description Recipients taken so far (every confirmed subscriber of the list when sending started).
              */
             total: number;
+            /**
+             * Format: int64
+             * @description Recipients who unsubscribed with the link of this campaign's mail (one-click or the
+             *     preferences page).
+             */
+            unsubscribed: number;
         };
         /** @description One attempt to deliver one event to one endpoint, with its retries. */
         DeliveryResponse: {
@@ -7158,6 +8070,7 @@ export interface components {
             events: string[];
             /** Format: uuid */
             id: string;
+            last_delivery?: components["schemas"]["LastDelivery"] | null;
             /** Format: date-time */
             updated_at: string;
             /** @example https://example.com/hooks/autoxide */
@@ -7269,6 +8182,18 @@ export interface components {
              * @description The parent page (pages only); `null` at the root.
              */
             parent_id?: string | null;
+            /**
+             * @description Address of the public version, e.g. `/blog/duong-den-da-lat` or `/about/team` (a page
+             *     carries the path of its parents); `null` while the entry is not public. It does not hold
+             *     the language: the website decides how `locale` shows in its addresses.
+             * @example /blog/duong-den-da-lat
+             */
+            path?: string | null;
+            /**
+             * Format: date-time
+             * @description When the public version was last published; `null` while the entry is not public.
+             */
+            published_at?: string | null;
             /** Format: int32 */
             reading_time_minutes: number;
             /**
@@ -7313,6 +8238,12 @@ export interface components {
             translation_outdated: boolean;
             /** Format: date-time */
             updated_at: string;
+            /**
+             * @description The entry's `ETag` (as `GET /entries/{id}` sends it): send it in `If-Match` to change the
+             *     entry straight from a list.
+             * @example "1731628800000000"
+             */
+            version: string;
             /**
              * Format: int32
              * @description Words in the body (for Vietnamese: syllables).
@@ -7477,6 +8408,12 @@ export interface components {
             created_at: string;
             /** Format: uuid */
             id: string;
+            /**
+             * Format: int64
+             * @description Items directly in this folder (not in its subfolders), not counting the trash.
+             * @example 12
+             */
+            item_count: number;
             /** @example Products */
             name: string;
             /**
@@ -7532,6 +8469,7 @@ export interface components {
              */
             retention_days?: number | null;
             status: components["schemas"]["FormStatus"];
+            submissions?: components["schemas"]["SubmissionCounts"] | null;
             /** @description Shown to the sender after sending. */
             success_message: components["schemas"]["Localized"];
             /**
@@ -7638,6 +8576,59 @@ export interface components {
          * @enum {string}
          */
         Kind: "post" | "page";
+        /** @description The newest delivery to an endpoint. */
+        LastDelivery: {
+            /** Format: date-time */
+            created_at: string;
+            /** @example auth.user_created */
+            event_name: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When it was last tried; `null` while it waits for its first attempt.
+             */
+            last_attempt_at?: string | null;
+            /**
+             * Format: int32
+             * @description HTTP status the endpoint answered with, on the last attempt; `null` when it did not answer.
+             */
+            response_status?: number | null;
+            /**
+             * @description `pending`, `delivered` or `failed`.
+             * @example delivered
+             */
+            status: string;
+        };
+        /** @description Totals of the media library. */
+        LibrarySummaryResponse: {
+            /**
+             * Format: int64
+             * @description Total size in bytes of the items not in the trash (their current content, without the
+             *     smaller copies of images).
+             * @example 734003200
+             */
+            bytes: number;
+            /**
+             * Format: int64
+             * @description Images not in the trash with no text alternative and not marked `decorative`: the items
+             *     `GET /api/v1/media?alt_missing=true` lists.
+             * @example 9
+             */
+            images_missing_alt: number;
+            /**
+             * Format: int64
+             * @description Items not in the trash.
+             * @example 214
+             */
+            items: number;
+            /**
+             * Format: int64
+             * @description Items in the trash.
+             * @example 3
+             */
+            trashed_items: number;
+        };
         /** @description One list choice. */
         ListChoice: {
             key: string;
@@ -7702,6 +8693,24 @@ export interface components {
             /** @example correct horse battery staple */
             password: string;
         };
+        /** @description An API key of any user, for administrators. */
+        ManagedApiKeyResponse: components["schemas"]["ApiKeyResponse"] & {
+            /**
+             * @description Email of that user; `null` like `user_name`.
+             * @example ada@example.com
+             */
+            user_email?: string | null;
+            /**
+             * Format: uuid
+             * @description The user the key acts as.
+             */
+            user_id: string;
+            /**
+             * @description Display name of that user; `null` when the account no longer exists.
+             * @example Ada Lovelace
+             */
+            user_name?: string | null;
+        };
         /**
          * @description How a result matched.
          * @enum {string}
@@ -7727,6 +8736,11 @@ export interface components {
              *     not verified (ask for a new mail with `POST /api/v1/auth/me/email/verification`).
              */
             email_verified_at?: string | null;
+            /**
+             * @description Whether the account has a password. Without one (signed in with a passkey), set a first
+             *     password through `POST /api/v1/auth/password-reset`.
+             */
+            has_password: boolean;
             /** Format: uuid */
             id: string;
             /**
@@ -7734,6 +8748,7 @@ export interface components {
              * @example Ada Lovelace
              */
             name: string;
+            pending_email?: components["schemas"]["PendingEmail"] | null;
             /**
              * @description Permissions granted by the user's roles, sorted by name.
              * @example [
@@ -7776,6 +8791,11 @@ export interface components {
             content_type: string;
             /** Format: date-time */
             created_at: string;
+            /**
+             * @description `true` for a purely decorative image: its empty `alt` is on purpose (render `alt=""`), so
+             *     it does not count as missing one.
+             */
+            decorative: boolean;
             /**
              * Format: uuid
              * @description The folder holding the item; `null` for the root.
@@ -7824,6 +8844,11 @@ export interface components {
              * @description The user who uploaded the item; `null` once that account is deleted.
              */
             uploaded_by?: string | null;
+            /**
+             * @description Display name of `uploaded_by`, with `include=uploader` on the list: `null` when the
+             *     account no longer exists; absent otherwise.
+             */
+            uploaded_by_name?: string | null;
             /**
              * @description Where to load the content, with its version: the address changes when the content
              *     does, so it may be cached for a long time. Public items load without signing in.
@@ -8085,11 +9110,43 @@ export interface components {
              */
             parent_id?: string | null;
         };
+        /** @description A permission the caller holds. */
+        MyPermission: {
+            /** @description What it allows, in the language of `Accept-Language`. */
+            description: string;
+            /** @example notes.write */
+            name: string;
+            /**
+             * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or `money`.
+             * @example write
+             */
+            risk: string;
+        };
         /**
          * @description What happens when a post is published (by the `content` module).
          * @enum {string}
          */
         NewPosts: "off" | "draft" | "send";
+        /** @description A new tenant. */
+        NewTenant: {
+            /**
+             * @description 1 to 200 characters.
+             * @example Acme Ltd
+             */
+            name: string;
+            /**
+             * Format: uuid
+             * @description Parent tenant, for chains.
+             */
+            parent_id?: string | null;
+            /** @description Name of the placement for its data; `main` (the platform's database) when omitted. */
+            placement?: string | null;
+            /**
+             * @description 1 to 63 lower-case letters, digits and `-`, not starting or ending with `-`.
+             * @example acme
+             */
+            slug: string;
+        };
         /** @description One mail of a campaign to the person. */
         NewsletterDelivery: {
             /** Format: uuid */
@@ -8127,6 +9184,59 @@ export interface components {
              * @description A time in the future (at most 366 days ahead), with a time zone.
              */
             at: string;
+        };
+        /** @description The newsletter settings in use (set by the server's operator; no secrets). */
+        NewsletterSettingsResponse: {
+            /**
+             * @description Put at the start of the subject of advertising campaigns
+             *     (`AUTOXIDE_NEWSLETTER_ADVERTISING_LABEL`); empty: no label.
+             * @example [QC]
+             */
+            advertising_label: string;
+            /**
+             * Format: int32
+             * @description Advertising mails one address gets at most per day
+             *     (`AUTOXIDE_NEWSLETTER_ADVERTISING_MAX_PER_DAY`); `0`: no limit.
+             * @example 3
+             */
+            advertising_max_per_day: number;
+            /**
+             * @description The website's confirmation page is set (`AUTOXIDE_NEWSLETTER_CONFIRM_URL`); needed by
+             *     lists with double opt-in.
+             */
+            confirm_url_set: boolean;
+            /**
+             * @description Settings still to set before campaigns can be sent: names of environment variables,
+             *     empty when everything needed is set (`AUTOXIDE_NEWSLETTER_POSTAL_ADDRESS` is listed:
+             *     only advertising campaigns need it).
+             * @example [
+             *       "AUTOXIDE_NEWSLETTER_PREFERENCES_URL"
+             *     ]
+             */
+            missing: string[];
+            /**
+             * @description The sender's postal address shown in every mail footer
+             *     (`AUTOXIDE_NEWSLETTER_POSTAL_ADDRESS`); `null`: not set — advertising campaigns cannot
+             *     be sent until it is.
+             */
+            postal_address?: string | null;
+            /**
+             * @description The website's preferences page is set (`AUTOXIDE_NEWSLETTER_PREFERENCES_URL`); needed to
+             *     send any campaign (the footer link).
+             */
+            preferences_url_set: boolean;
+            /**
+             * @description The server's public address is set (`AUTOXIDE_HTTP_PUBLIC_URL`); needed to send any
+             *     campaign (the one-click unsubscribe link).
+             */
+            public_url_set: boolean;
+            /**
+             * Format: int32
+             * @description Campaign mails handed to the mail queue per minute
+             *     (`AUTOXIDE_NEWSLETTER_SEND_RATE_PER_MINUTE`).
+             * @example 300
+             */
+            send_rate_per_minute: number;
         };
         /** @description A text in English and Vietnamese; a missing language falls back to the other one. */
         NewsletterText: {
@@ -8193,6 +9303,11 @@ export interface components {
                  */
                 actor_kind: string;
                 /**
+                 * @description Display name of `actor_user_id`, with `include=actor`: `null` when the account no longer
+                 *     exists; absent when no user made the change.
+                 */
+                actor_name?: string | null;
+                /**
                  * Format: uuid
                  * @description User who made the change; `null` for the system (command line, background jobs,
                  *     self-registration).
@@ -8246,6 +9361,11 @@ export interface components {
                 created_at: string;
                 /** @example Ada Lovelace */
                 display_name: string;
+                /**
+                 * Format: int64
+                 * @description How many entries (in any status) list this author. Only in the list.
+                 */
+                entry_count?: number | null;
                 /** Format: uuid */
                 id: string;
                 /** @description Unique. */
@@ -8380,7 +9500,17 @@ export interface components {
                 root_id: string;
                 status: components["schemas"]["CommentStatus"];
                 target_id: string;
+                /**
+                 * @description Title of the target (e.g. the post's title), from the module that owns it; absent when
+                 *     that kind has no lookup or the target is not public now.
+                 */
+                target_title?: string | null;
                 target_type: string;
+                /**
+                 * @description Public path of the target (without the domain), e.g. `/blog/hello`; absent like
+                 *     `target_title`.
+                 */
+                target_url?: string | null;
                 /** Format: date-time */
                 updated_at: string;
                 /**
@@ -8409,6 +9539,51 @@ export interface components {
                  * @description The reporting account, when signed in.
                  */
                 reporter_user_id?: string | null;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
+        Page_CommentTarget: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /**
+                 * Format: date-time
+                 * @description When it closes by itself, if set.
+                 */
+                closes_at?: string | null;
+                /**
+                 * Format: int32
+                 * @description Shown comments (0 when hidden).
+                 */
+                comment_count: number;
+                /** @description The comments are hidden from everyone (e.g. the target was deleted). */
+                hidden: boolean;
+                /**
+                 * Format: int32
+                 * @description Comments waiting for approval (`null` in the public answer).
+                 */
+                pending_count?: number | null;
+                /**
+                 * Format: int32
+                 * @description Top-level comments waiting for approval (`null` in the public answer).
+                 */
+                pending_thread_count?: number | null;
+                /** @description What applies now. */
+                state: components["schemas"]["CommentTargetState"];
+                target_id: string;
+                target_type: string;
+                /**
+                 * Format: int32
+                 * @description Shown top-level comments, e.g. questions on a product (0 when hidden).
+                 */
+                thread_count: number;
+                /**
+                 * @description Title of the target, from the module that owns it (only in the admin list, and only for a
+                 *     target that is public now); absent otherwise.
+                 */
+                title?: string | null;
+                /** @description Public path of the target (without the domain), like `title`. */
+                url?: string | null;
             }[];
             pagination: components["schemas"]["Pagination"];
         };
@@ -8475,6 +9650,7 @@ export interface components {
                 events: string[];
                 /** Format: uuid */
                 id: string;
+                last_delivery?: components["schemas"]["LastDelivery"] | null;
                 /** Format: date-time */
                 updated_at: string;
                 /** @example https://example.com/hooks/autoxide */
@@ -8546,6 +9722,18 @@ export interface components {
                  * @description The parent page (pages only); `null` at the root.
                  */
                 parent_id?: string | null;
+                /**
+                 * @description Address of the public version, e.g. `/blog/duong-den-da-lat` or `/about/team` (a page
+                 *     carries the path of its parents); `null` while the entry is not public. It does not hold
+                 *     the language: the website decides how `locale` shows in its addresses.
+                 * @example /blog/duong-den-da-lat
+                 */
+                path?: string | null;
+                /**
+                 * Format: date-time
+                 * @description When the public version was last published; `null` while the entry is not public.
+                 */
+                published_at?: string | null;
                 /** Format: int32 */
                 reading_time_minutes: number;
                 /**
@@ -8590,6 +9778,12 @@ export interface components {
                 translation_outdated: boolean;
                 /** Format: date-time */
                 updated_at: string;
+                /**
+                 * @description The entry's `ETag` (as `GET /entries/{id}` sends it): send it in `If-Match` to change the
+                 *     entry straight from a list.
+                 * @example "1731628800000000"
+                 */
+                version: string;
                 /**
                  * Format: int32
                  * @description Words in the body (for Vietnamese: syllables).
@@ -8640,6 +9834,12 @@ export interface components {
                 created_at: string;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: int64
+                 * @description Items directly in this folder (not in its subfolders), not counting the trash.
+                 * @example 12
+                 */
+                item_count: number;
                 /** @example Products */
                 name: string;
                 /**
@@ -8699,6 +9899,7 @@ export interface components {
                  */
                 retention_days?: number | null;
                 status: components["schemas"]["FormStatus"];
+                submissions?: components["schemas"]["SubmissionCounts"] | null;
                 /** @description Shown to the sender after sending. */
                 success_message: components["schemas"]["Localized"];
                 /**
@@ -8747,6 +9948,28 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_ManagedApiKeyResponse: {
+            /** @description The items of this page, in the requested order. */
+            data: (components["schemas"]["ApiKeyResponse"] & {
+                /**
+                 * @description Email of that user; `null` like `user_name`.
+                 * @example ada@example.com
+                 */
+                user_email?: string | null;
+                /**
+                 * Format: uuid
+                 * @description The user the key acts as.
+                 */
+                user_id: string;
+                /**
+                 * @description Display name of that user; `null` when the account no longer exists.
+                 * @example Ada Lovelace
+                 */
+                user_name?: string | null;
+            })[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_MediaItemResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
@@ -8774,6 +9997,11 @@ export interface components {
                 content_type: string;
                 /** Format: date-time */
                 created_at: string;
+                /**
+                 * @description `true` for a purely decorative image: its empty `alt` is on purpose (render `alt=""`), so
+                 *     it does not count as missing one.
+                 */
+                decorative: boolean;
                 /**
                  * Format: uuid
                  * @description The folder holding the item; `null` for the root.
@@ -8823,6 +10051,11 @@ export interface components {
                  */
                 uploaded_by?: string | null;
                 /**
+                 * @description Display name of `uploaded_by`, with `include=uploader` on the list: `null` when the
+                 *     account no longer exists; absent otherwise.
+                 */
+                uploaded_by_name?: string | null;
+                /**
                  * @description Where to load the content, with its version: the address changes when the content
                  *     does, so it may be cached for a long time. Public items load without signing in.
                  * @example /api/v1/media/0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a81/content?v=0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a82
@@ -8853,6 +10086,18 @@ export interface components {
         Page_PasskeyResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
+                /**
+                 * Format: uuid
+                 * @description Kind of authenticator, as it identified itself when registered (its AAGUID); `null` when
+                 *     it did not say (or registered before this was kept).
+                 */
+                aaguid?: string | null;
+                /**
+                 * @description Name of that kind of authenticator, e.g. `Windows Hello`, `Apple Passwords`,
+                 *     `Google Password Manager`; `null` when the kind is not known to the server.
+                 * @example Windows Hello
+                 */
+                authenticator?: string | null;
                 /** Format: date-time */
                 created_at: string;
                 /** Format: uuid */
@@ -9091,6 +10336,37 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_ScheduleResponse: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                action: components["schemas"]["Action"];
+                /** @description `true` when whoever scheduled it confirmed that the AI-generated content was reviewed. */
+                ai_reviewed: boolean;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                created_by?: string | null;
+                /** Format: uuid */
+                entry_id: string;
+                /** @description Why it failed, an error code such as `content.schedule_outdated`. */
+                error_code?: string | null;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: uuid
+                 * @description The revision that will be published (for `publish`).
+                 */
+                revision_id?: string | null;
+                /** Format: date-time */
+                run_at: string;
+                /** @description `scheduled`, `succeeded`, `failed` or `canceled`. */
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_SearchHit: {
             /** @description The items of this page, in the requested order. */
             data: {
@@ -9126,6 +10402,13 @@ export interface components {
             /** @description The items of this page, in the requested order. */
             data: {
                 /**
+                 * @description Approximate country of the sign-in (ISO 3166-1 two-letter code), from the server's
+                 *     reverse proxy when it is set up for it (`AUTOXIDE_AUTH_COUNTRY_HEADER`); `null` when not
+                 *     known. The IP address is never kept.
+                 * @example VN
+                 */
+                country?: string | null;
+                /**
                  * Format: date-time
                  * @description When the session ends unless refreshed before.
                  */
@@ -9140,6 +10423,13 @@ export interface components {
                  * @description Last time the session got tokens (sign-in or refresh).
                  */
                 last_active_at: string;
+                /**
+                 * @description How the session was signed in: `password`, `password_and_mfa` (password and a code),
+                 *     `passkey`, or `password_change` (a new session after changing the password); `null` for
+                 *     sessions older than this information.
+                 * @example password_and_mfa
+                 */
+                sign_in_method?: string | null;
                 /**
                  * Format: date-time
                  * @description When the session was signed in.
@@ -9162,12 +10452,24 @@ export interface components {
                 created_at: string;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: int64
+                 * @description How many items the menu holds, at every level.
+                 * @example 12
+                 */
+                item_count: number;
                 /** @example main */
                 key: string;
                 /** @example vi */
                 locale: string;
                 /** Format: date-time */
                 updated_at: string;
+                /**
+                 * Format: uuid
+                 * @description Who created the menu or last replaced its items; `null` when unknown (menus saved
+                 *     before this field existed, or changed by the system).
+                 */
+                updated_by?: string | null;
             }[];
             pagination: components["schemas"]["Pagination"];
         };
@@ -9320,11 +10622,50 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_Tenant: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /**
+                 * Format: uuid
+                 * @description Parent tenant, when the tenant belongs to a chain.
+                 */
+                parent_id?: string | null;
+                /**
+                 * @description Name of the placement (database) that keeps its data.
+                 * @example main
+                 */
+                placement: string;
+                /**
+                 * @description Short name: lower-case letters, digits and `-`; unique on the platform.
+                 * @example acme
+                 */
+                slug: string;
+                /**
+                 * @description `provisioning`, `active`, `suspended`, `maintenance` or `moving`.
+                 * @example active
+                 */
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_TermResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
                 /** Format: date-time */
                 created_at: string;
+                /**
+                 * Format: int64
+                 * @description How many entries (in any status) have this term. Only in the list.
+                 */
+                entry_count?: number | null;
                 /** Format: uuid */
                 id: string;
                 names: components["schemas"]["TermName"][];
@@ -9420,13 +10761,29 @@ export interface components {
                  *     is not verified.
                  */
                 email_verified_at?: string | null;
+                /**
+                 * @description Whether the account has a password. Without one it signs in with a passkey; its owner
+                 *     sets a first password through `POST /api/v1/auth/password-reset`, an administrator
+                 *     with `POST /api/v1/auth/users/{id}/password`.
+                 */
+                has_password: boolean;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: date-time
+                 * @description When the user last started a session (sign-in, password change); `null` if not since
+                 *     this field exists.
+                 */
+                last_sign_in_at?: string | null;
+                /** @description Whether two-step sign-in (an authenticator app) is on. */
+                mfa_enabled: boolean;
                 /**
                  * @description Display name.
                  * @example Ada Lovelace
                  */
                 name: string;
+                /** @description The user's roles, by name. Only with `include=roles` on the user list. */
+                roles?: components["schemas"]["UserRole"][] | null;
                 /** Format: date-time */
                 updated_at: string;
             }[];
@@ -9458,6 +10815,18 @@ export interface components {
         };
         /** @description A passkey of the signed-in user. Holds no secret. */
         PasskeyResponse: {
+            /**
+             * Format: uuid
+             * @description Kind of authenticator, as it identified itself when registered (its AAGUID); `null` when
+             *     it did not say (or registered before this was kept).
+             */
+            aaguid?: string | null;
+            /**
+             * @description Name of that kind of authenticator, e.g. `Windows Hello`, `Apple Passwords`,
+             *     `Google Password Manager`; `null` when the kind is not known to the server.
+             * @example Windows Hello
+             */
+            authenticator?: string | null;
             /** Format: date-time */
             created_at: string;
             /** Format: uuid */
@@ -9473,15 +10842,31 @@ export interface components {
              */
             name: string;
         };
+        /** @description An email change waiting for its confirmation link. */
+        PendingEmail: {
+            /** @example ada@new.example */
+            email: string;
+            /**
+             * Format: date-time
+             * @description When the confirmation link stops working.
+             */
+            expires_at: string;
+        };
         /** @description A permission that roles can grant. */
         PermissionResponse: {
-            /** @description What the permission allows. */
+            /** @description What the permission allows, in the language of `Accept-Language`. */
             description: string;
             /**
              * @description `<module>.<action>`.
              * @example auth.roles.read
              */
             name: string;
+            /**
+             * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or
+             *     `money`.
+             * @example read
+             */
+            risk: string;
         };
         /**
          * @description Everything the server keeps about you: one entry per module that keeps personal
@@ -9498,6 +10883,21 @@ export interface components {
         PersonalDataResponse: Record<string, never> & {
             /** @description Your profile, roles, sessions, API keys, passkeys and two-step sign-in status. */
             auth: Record<string, never>;
+        };
+        /** @description Where tenants' data is kept: one database. Connection URLs are never shown. */
+        Placement: {
+            /** @description `sqlite` or `postgres`. */
+            backend: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            /** @description `shared` (many tenants) or `dedicated` (one tenant). */
+            kind: string;
+            /** @example main */
+            name: string;
+            /** @description `ready`, `behind` (migrations pending: its tenants answer `503`) or `migrating`. */
+            schema_state: string;
         };
         /** @description A comment just posted, for its author. */
         PostedComment: components["schemas"]["PublicComment"] & {
@@ -9554,10 +10954,16 @@ export interface components {
             /** @description Authors, in order (the first is the main one). */
             author_ids: string[];
             body: components["schemas"]["BodyNode"];
+            /**
+             * @description The public images used in `body`, in order of appearance (find one by the `mediaId` of
+             *     its node). Images that are not public yet are left out.
+             */
+            body_media: components["schemas"]["PublicMedia"][];
             /** Format: int32 */
             body_schema_version: number;
             canonical_url: string;
             excerpt: string;
+            featured_media?: components["schemas"]["PublicMedia"] | null;
             featured_media_alt: string;
             /**
              * Format: uuid
@@ -9618,6 +11024,12 @@ export interface components {
             detail: string;
             /** @description One entry per invalid input field. Present only for validation problems. */
             errors?: components["schemas"]["ProblemField"][];
+            /**
+             * @description Finer, stable reason for some codes, documented with the code — e.g. for a refused link
+             *     token: `expired`, `used` or `unknown`.
+             * @example expired
+             */
+            reason?: string | null;
             /**
              * Format: int32
              * @description The HTTP status code, repeated in the body.
@@ -10250,6 +11662,11 @@ export interface components {
         ScheduleRequest: {
             action: components["schemas"]["Action"];
             /**
+             * @description For a `publish` of AI-generated content: you confirm a person reviewed it, as with
+             *     `ai_reviewed` when publishing at once. Only a signed-in person may send `true`.
+             */
+            ai_reviewed?: boolean;
+            /**
              * Format: date-time
              * @description When to run; must be in the future.
              */
@@ -10258,6 +11675,8 @@ export interface components {
         /** @description A scheduled publish or take-down. */
         ScheduleResponse: {
             action: components["schemas"]["Action"];
+            /** @description `true` when whoever scheduled it confirmed that the AI-generated content was reviewed. */
+            ai_reviewed: boolean;
             /** Format: date-time */
             created_at: string;
             /** Format: uuid */
@@ -10326,7 +11745,7 @@ export interface components {
              */
             field: string;
             level: components["schemas"]["FindingLevel"];
-            /** @description What to fix, in English. */
+            /** @description What to fix, in the language of `Accept-Language`. */
             message: string;
         };
         /** @description The SEO findings of a draft. */
@@ -10353,6 +11772,13 @@ export interface components {
          */
         SessionResponse: {
             /**
+             * @description Approximate country of the sign-in (ISO 3166-1 two-letter code), from the server's
+             *     reverse proxy when it is set up for it (`AUTOXIDE_AUTH_COUNTRY_HEADER`); `null` when not
+             *     known. The IP address is never kept.
+             * @example VN
+             */
+            country?: string | null;
+            /**
              * Format: date-time
              * @description When the session ends unless refreshed before.
              */
@@ -10367,6 +11793,13 @@ export interface components {
              * @description Last time the session got tokens (sign-in or refresh).
              */
             last_active_at: string;
+            /**
+             * @description How the session was signed in: `password`, `password_and_mfa` (password and a code),
+             *     `passkey`, or `password_change` (a new session after changing the password); `null` for
+             *     sessions older than this information.
+             * @example password_and_mfa
+             */
+            sign_in_method?: string | null;
             /**
              * Format: date-time
              * @description When the session was signed in.
@@ -10443,6 +11876,12 @@ export interface components {
              */
             icon?: string | null;
             /**
+             * Format: uuid
+             * @description The item's id from the menu as read, to keep it across this save (the response of
+             *     `PUT` shows the same id). Leave it out for a new item, and when creating a menu.
+             */
+            id?: string | null;
+            /**
              * @description Up to 200 characters. Needed unless `ref` is given; empty with `ref` shows the title of
              *     the object, in the menu's language.
              */
@@ -10457,12 +11896,24 @@ export interface components {
             created_at: string;
             /** Format: uuid */
             id: string;
+            /**
+             * Format: int64
+             * @description How many items the menu holds, at every level.
+             * @example 12
+             */
+            item_count: number;
             /** @example main */
             key: string;
             /** @example vi */
             locale: string;
             /** Format: date-time */
             updated_at: string;
+            /**
+             * Format: uuid
+             * @description Who created the menu or last replaced its items; `null` when unknown (menus saved
+             *     before this field existed, or changed by the system).
+             */
+            updated_by?: string | null;
         };
         /** @description One address of the sitemap. */
         SitemapItem: {
@@ -10496,6 +11947,17 @@ export interface components {
          * @enum {string}
          */
         Status: "draft" | "published" | "archived";
+        /** @description Submissions of a form by status. */
+        SubmissionCounts: {
+            /** Format: int64 */
+            archived: number;
+            /** Format: int64 */
+            new: number;
+            /** Format: int64 */
+            read: number;
+            /** Format: int64 */
+            spam: number;
+        };
         /** @description A submission. */
         SubmissionResponse: {
             /** @description The answers in the order of the form version, with their labels. */
@@ -10738,6 +12200,70 @@ export interface components {
          * @enum {string}
          */
         Taxonomy: "category" | "tag";
+        /** @description A customer (tenant) of the platform. */
+        Tenant: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /**
+             * Format: uuid
+             * @description Parent tenant, when the tenant belongs to a chain.
+             */
+            parent_id?: string | null;
+            /**
+             * @description Name of the placement (database) that keeps its data.
+             * @example main
+             */
+            placement: string;
+            /**
+             * @description Short name: lower-case letters, digits and `-`; unique on the platform.
+             * @example acme
+             */
+            slug: string;
+            /**
+             * @description `provisioning`, `active`, `suspended`, `maintenance` or `moving`.
+             * @example active
+             */
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Changes to a tenant; omitted fields stay as they are. */
+        TenantChanges: {
+            name?: string | null;
+            /**
+             * @description `active` or `suspended`.
+             * @example suspended
+             */
+            status?: string | null;
+        };
+        /** @description A setting the installed modules take per tenant, and its state in the current tenant. */
+        TenantSettingState: {
+            description: string;
+            /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
+            is_set: boolean;
+            /**
+             * @description `<module>.<key>`, e.g. `mail.smtp_url`.
+             * @example kernel.public_url
+             */
+            name: string;
+            /** @description Secret settings are stored encrypted and never returned: `value` is always `null`. */
+            secret: boolean;
+            /** Format: date-time */
+            updated_at?: string | null;
+            /** @description The value, for settings that are not secret and are set. */
+            value?: string | null;
+        };
+        /** @description The new value of a setting. */
+        TenantSettingValue: {
+            /**
+             * @description 1 to 4000 characters. Secret values are stored encrypted and never returned.
+             * @example https://shop.example
+             */
+            value: string;
+        };
         /** @description The name of a term in one language, and its parent. Omitted fields stay as they are. */
         TermFields: {
             description?: string | null;
@@ -10773,6 +12299,11 @@ export interface components {
         TermResponse: {
             /** Format: date-time */
             created_at: string;
+            /**
+             * Format: int64
+             * @description How many entries (in any status) have this term. Only in the list.
+             */
+            entry_count?: number | null;
             /** Format: uuid */
             id: string;
             names: components["schemas"]["TermName"][];
@@ -10995,6 +12526,8 @@ export interface components {
             alt?: string | null;
             /** @description Caption, up to 2000 characters; `""` clears it. */
             caption?: string | null;
+            /** @description `true` marks a purely decorative image, whose empty `alt` is on purpose. */
+            decorative?: boolean | null;
             /**
              * Format: uuid
              * @description Move to this folder; `null` moves to the root.
@@ -11105,15 +12638,38 @@ export interface components {
              *     is not verified.
              */
             email_verified_at?: string | null;
+            /**
+             * @description Whether the account has a password. Without one it signs in with a passkey; its owner
+             *     sets a first password through `POST /api/v1/auth/password-reset`, an administrator
+             *     with `POST /api/v1/auth/users/{id}/password`.
+             */
+            has_password: boolean;
             /** Format: uuid */
             id: string;
+            /**
+             * Format: date-time
+             * @description When the user last started a session (sign-in, password change); `null` if not since
+             *     this field exists.
+             */
+            last_sign_in_at?: string | null;
+            /** @description Whether two-step sign-in (an authenticator app) is on. */
+            mfa_enabled: boolean;
             /**
              * @description Display name.
              * @example Ada Lovelace
              */
             name: string;
+            /** @description The user's roles, by name. Only with `include=roles` on the user list. */
+            roles?: components["schemas"]["UserRole"][] | null;
             /** Format: date-time */
             updated_at: string;
+        };
+        /** @description A role a user holds. */
+        UserRole: {
+            /** Format: uuid */
+            id: string;
+            /** @example editor */
+            name: string;
         };
         /** @description The complete list of roles a user should have. */
         UserRolesRequest: {
@@ -11289,6 +12845,8 @@ export interface operations {
                 action?: string;
                 /** @description Only changes in this module, e.g. `auth`. */
                 module?: string;
+                /** @description `actor`: add `actor_name`, the display name of who made each change, in the same answer. */
+                include?: "actor";
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -11432,6 +12990,154 @@ export interface operations {
             };
         };
     };
+    auth_list_all_api_keys: {
+        parameters: {
+            query?: {
+                /** @description Only the keys of this user. */
+                user_id?: string;
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of keys. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ManagedApiKeyResponse"];
+                };
+            };
+            /** @description `user_id` is not a UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.api_keys.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A paging parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_revoke_any_api_key: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the key. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The key was revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.api_keys.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No key has this id; code `auth.api_key_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     auth_list_api_keys: {
         parameters: {
             query?: {
@@ -11527,7 +13233,16 @@ export interface operations {
                     "application/json": components["schemas"]["Data_CreatedApiKeyResponse"];
                 };
             };
-            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            /** @description The current password is wrong; code `auth.wrong_password`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The passkey is not one of yours or its answer is not valid; code `auth.passkey_sign_in_failed`. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -11545,7 +13260,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description You have too many keys; code `auth.api_key_limit`. */
+            /** @description You have too many keys (code `auth.api_key_limit`), or sent `totp_code` without two-step sign-in on (code `auth.mfa_not_enabled`). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11554,8 +13269,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A value is invalid, e.g. a permission you do not have (`not_granted`); see `errors`. */
+            /** @description A value is invalid, e.g. a permission you do not have (`not_granted`), a wrong `totp_code`, or both a password and a second factor; see `errors`. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too many wrong passwords or codes; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11650,7 +13374,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The token is unknown, expired or used; code `auth.invalid_email_change_report_token`. */
+            /** @description The token is unknown, expired or used; code `auth.invalid_email_change_report_token`, with `reason` (`expired`, `used` or `unknown`). */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -11704,7 +13428,7 @@ export interface operations {
                     "application/json": components["schemas"]["Data_UserResponse"];
                 };
             };
-            /** @description The token is unknown, expired or used; code `auth.invalid_verification_token`. */
+            /** @description The token is unknown, expired or used; code `auth.invalid_verification_token`, with `reason` (`expired`, `used` or `unknown`). Ask for a new mail with `POST /api/v1/auth/me/email/verification`. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12072,7 +13796,7 @@ export interface operations {
                     "application/json": components["schemas"]["Data_MeResponse"];
                 };
             };
-            /** @description The access token is missing (code `auth.missing_token`), invalid (`auth.invalid_token`) or expired (`auth.token_expired`). */
+            /** @description The access token is missing (code `auth.missing_token`), invalid (`auth.invalid_token`) or expired (`auth.token_expired`; get a new one with `POST /api/v1/auth/refresh`). Without a usable refresh token, sign in with `POST /api/v1/auth/login`. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -12126,7 +13850,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12144,7 +13868,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12216,7 +13940,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12263,6 +13987,56 @@ export interface operations {
             };
             /** @description Too many wrong passwords for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_cancel_email_change: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The change was cancelled. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No change is waiting; code `auth.no_pending_email_change`. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12361,7 +14135,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12458,7 +14232,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12523,7 +14297,7 @@ export interface operations {
                     "application/json": components["schemas"]["Data_TotpSetupResponse"];
                 };
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12541,7 +14315,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12606,7 +14380,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12615,7 +14389,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description No setup was started (`auth.mfa_setup_not_started`), or it is already on (`auth.mfa_already_enabled`). */
+            /** @description No setup was started (`auth.mfa_setup_not_started`; start one with `POST /api/v1/auth/me/mfa/totp`), or it is already on (`auth.mfa_already_enabled`). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12680,7 +14454,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12896,7 +14670,7 @@ export interface operations {
                     "application/json": components["schemas"]["Data_CeremonyResponse"];
                 };
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13032,7 +14806,7 @@ export interface operations {
                     "application/json": components["schemas"]["Data_TokenResponse"];
                 };
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13134,7 +14908,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13201,7 +14975,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13263,7 +15037,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -13358,7 +15132,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The token is unknown, expired or used; code `auth.invalid_reset_token`. */
+            /** @description The token is unknown, expired or used; code `auth.invalid_reset_token`, with `reason` (`expired`, `used` or `unknown`). Ask for a new mail with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13462,7 +15236,7 @@ export interface operations {
                     "application/json": components["schemas"]["Data_TokenResponse"];
                 };
             };
-            /** @description The refresh token is unknown, expired or revoked (code `auth.invalid_refresh_token`), or was already used (code `auth.refresh_token_reused`); sign in again. */
+            /** @description The refresh token is unknown, expired or revoked (code `auth.invalid_refresh_token`), or was already used (code `auth.refresh_token_reused`); sign in again with `POST /api/v1/auth/login`. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -13958,6 +15732,10 @@ export interface operations {
                  *     `Ada Lovelace` and `ada@example.com`). Up to 200 characters.
                  */
                 search?: string;
+                /** @description Only `active` or only `disabled` accounts. */
+                status?: "active" | "disabled";
+                /** @description `roles`: add each user's roles (`roles` in each item), in the same request. */
+                include?: "roles";
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -14670,7 +16448,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The account already has a password; code `auth.password_already_set`. */
+            /** @description The account already has a password; code `auth.password_already_set`. Its owner changes it with `POST /api/v1/auth/me/password` or resets it with `POST /api/v1/auth/password-reset`. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -15522,7 +17300,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The target is closed (`comments.target_closed`), or a signed-in user has no display name yet (`comments.profile_required`). */
+            /** @description The target is closed (`comments.target_closed`), or a signed-in user has no display name yet (`comments.profile_required`; set one with `PUT /api/v1/comments/profile`). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16207,6 +17985,90 @@ export interface operations {
             };
         };
     };
+    comments_list_comment_targets: {
+        parameters: {
+            query?: {
+                /** @description Only targets of this kind, e.g. `content.entry`. */
+                target_type?: string;
+                /**
+                 * @description `open` or `closed`: the state that applies now (hidden targets and those past `closes_at`
+                 *     are `closed`).
+                 */
+                state?: "open" | "closed";
+                /** @description `true`: only targets with comments waiting for approval; `false`: only those without. */
+                pending?: boolean;
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of targets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CommentTarget"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `comments.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     comments_get_comment_target: {
         parameters: {
             query?: never;
@@ -16700,6 +18562,8 @@ export interface operations {
     content_list_content_authors: {
         parameters: {
             query?: {
+                /** @description Only profiles whose display name contains this text, ignoring case and accents. */
+                q?: string;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -17107,6 +18971,25 @@ export interface operations {
                 translation_group_id?: string;
                 /** @description `created_at` (the default) or `updated_at`; the direction is `order`. */
                 sort?: "created_at" | "updated_at";
+                /**
+                 * @description `true`: only entries waiting for a review (`review_requested_at` set); `false`: only the
+                 *     others.
+                 */
+                review_requested?: boolean;
+                /**
+                 * @description `true`: only entries with a scheduled publish or unpublish waiting; `false`: only the
+                 *     others.
+                 */
+                scheduled?: boolean;
+                /** @description Only entries created by this user: a user id, or `me` for the caller. */
+                created_by?: string;
+                /** @description `true`: only entries marked as generated by AI; `false`: only the others. */
+                ai_generated?: boolean;
+                /**
+                 * @description Only entries with no translation into this language yet (a BCP 47 code).
+                 * @example en
+                 */
+                missing_locale?: string;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -18844,7 +20727,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A translation into this language is already queued or running (code `content.translation_in_progress`), or the parent page has no translation yet (code `content.parent_not_translated`). */
+            /** @description A translation into this language is already queued or running (code `content.translation_in_progress`; follow it with `GET /api/v1/content/entries/{id}/translation-requests`), or the parent page has no translation yet (code `content.parent_not_translated`). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -20257,6 +22140,86 @@ export interface operations {
             };
         };
     };
+    content_list_all_content_schedules: {
+        parameters: {
+            query?: {
+                /**
+                 * @description `scheduled` (waiting), `succeeded`, `failed` or `canceled`.
+                 * @example scheduled
+                 */
+                status?: string;
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of schedules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ScheduleResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `content.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     content_cancel_content_schedule: {
         parameters: {
             query?: never;
@@ -20410,6 +22373,8 @@ export interface operations {
             query?: {
                 /** @description `category` or `tag`. */
                 taxonomy?: "category" | "tag";
+                /** @description Only terms whose name (in any language) contains this text, ignoring case and accents. */
+                q?: string;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -22523,7 +24488,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The form already has an export that is not finished; code `forms.export_in_progress` (its id is in the message). */
+            /** @description The form already has an export that is not finished; code `forms.export_in_progress` (its id is in the message; follow it with `GET /api/v1/forms/exports/{export_id}`). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -22534,6 +24499,47 @@ export interface operations {
             };
             /** @description `status` is invalid; see `errors`. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_client_config: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings, by module. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ClientConfigResponse"];
+                };
+            };
+            /** @description Unexpected server error. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22646,6 +24652,595 @@ export interface operations {
             };
             /** @description No such module; code `kernel.module_not_found`. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_placements: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every placement, sorted by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_Placement"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.placements.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_tenant_settings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every setting, sorted by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TenantSettingState"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.settings.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_set_tenant_setting: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Name of the setting, `<module>.<key>`, e.g. `kernel.public_url`. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantSettingValue"];
+            };
+        };
+        responses: {
+            /** @description The setting as stored (without a secret value). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantSettingState"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.settings.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No module takes this setting (code `tenant_setting_unknown`) or the value is empty or too long; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_delete_tenant_setting: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Name of the setting. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The setting is unset (or never was). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.settings.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No module takes this setting; code `tenant_setting_unknown`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_current_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant of the request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_CurrentTenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_tenants: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+                /** @description Only tenants in this state. */
+                status?: string;
+                /** @description Only children of this tenant. */
+                parent_id?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of tenants. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_Tenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A filter or paging parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_create_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTenant"];
+            };
+        };
+        responses: {
+            /** @description The tenant, ready to use. */
+            201: {
+                headers: {
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Tenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such placement or parent; code `tenant_placement_not_found` or `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The slug is taken (`tenant_slug_taken`), the installation runs one tenant (`tenant_single_mode`), or the placement has migrations to apply (`tenant_placement_behind`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant. */
+            200: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Tenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_update_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The `ETag` you read. When given, the change is made only if nobody changed the record since; otherwise `412`. */
+                "If-Match"?: string | null;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantChanges"];
+            };
+        };
+        responses: {
+            /** @description The tenant after the change. */
+            200: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Tenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` does not match: the record changed since you read it; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; see `errors`. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22841,6 +25436,47 @@ export interface operations {
             };
         };
     };
+    me_list_my_permissions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's permissions, by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_MyPermission"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     media_list_media_items: {
         parameters: {
             query?: {
@@ -22869,6 +25505,13 @@ export interface operations {
                  * @example brand
                  */
                 tag?: string;
+                /**
+                 * @description `true`: only images missing a text alternative (an image whose default `alt` is empty and
+                 *     that is not marked `decorative`). `false`: every other item.
+                 */
+                alt_missing?: boolean;
+                /** @description `uploader`: add `uploaded_by_name`, the display name of who uploaded each item. */
+                include?: "uploader";
                 /** @description `created_at` (the default), `name` or `size`; the direction is `order`. */
                 sort?: "created_at" | "name" | "size";
                 /**
@@ -23453,6 +26096,56 @@ export interface operations {
             };
         };
     };
+    media_get_media_summary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The totals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_LibrarySummaryResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `media.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     media_list_media_tags: {
         parameters: {
             query?: {
@@ -23964,7 +26657,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The item is in the trash; code `media.item_in_trash`. */
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -24068,7 +26761,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The item is in the trash; code `media.item_in_trash`. */
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -24178,7 +26871,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The item is in the trash; code `media.item_in_trash`. */
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -24284,7 +26977,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The item is in the trash; code `media.item_in_trash`. */
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -24519,7 +27212,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The item is in the trash; code `media.item_in_trash`. */
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -24896,6 +27589,8 @@ export interface operations {
             /** @description Created; `Location` is the new menu. */
             201: {
                 headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
                     /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
                     Location?: string;
                     [name: string]: unknown;
@@ -25873,6 +28568,77 @@ export interface operations {
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    newsletter_preview_newsletter_campaign: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the campaign. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mail. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_CampaignPreviewResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `newsletter.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A setting campaign mails need is missing: code `public_url_missing`, `newsletter.preferences_url_missing`, or `newsletter.postal_address_missing` (advertising campaigns); the message names the variable to set. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27156,6 +29922,56 @@ export interface operations {
             };
         };
     };
+    newsletter_get_newsletter_settings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings in use. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_NewsletterSettingsResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `newsletter.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     newsletter_list_newsletter_subscribers: {
         parameters: {
             query?: {
@@ -27165,6 +29981,8 @@ export interface operations {
                 list_id?: string;
                 /** @description Only subscriptions in this status (in `list_id`, or in any list). */
                 status?: "unconfirmed" | "confirmed" | "unsubscribed";
+                /** @description `true`: only blocked subscribers (they get no mail); `false`: only the others. */
+                blocked?: boolean;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -27736,6 +30554,8 @@ export interface operations {
     webhooks_list_webhook_endpoints: {
         parameters: {
             query?: {
+                /** @description `active`: only endpoints that receive events; `disabled`: only turned-off ones. */
+                status?: "active" | "disabled";
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50

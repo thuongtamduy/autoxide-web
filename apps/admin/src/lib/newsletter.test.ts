@@ -8,7 +8,15 @@ import {
   sumSubscriptions,
 } from "./newsletter";
 
-const progress = { total: 10, sent: 0, failed: 0, skipped: 0, pending: 10 };
+const progress = {
+  total: 10,
+  sent: 0,
+  failed: 0,
+  skipped: 0,
+  pending: 10,
+  bounced: 0,
+  unsubscribed: 0,
+};
 
 describe("thao tác theo trạng thái chiến dịch", () => {
   it("theo mô tả của từng endpoint trong openapi.json", () => {
@@ -33,8 +41,28 @@ describe("thao tác theo trạng thái chiến dịch", () => {
 
   it("phần trăm đã xử lý", () => {
     expect(progressPercent(progress)).toBe(0);
-    expect(progressPercent({ total: 3, sent: 1, failed: 0, skipped: 1, pending: 1 })).toBe(67);
-    expect(progressPercent({ total: 0, sent: 0, failed: 0, skipped: 0, pending: 0 })).toBe(0);
+    expect(
+      progressPercent({
+        total: 3,
+        sent: 1,
+        failed: 0,
+        skipped: 1,
+        pending: 1,
+        bounced: 0,
+        unsubscribed: 0,
+      }),
+    ).toBe(67);
+    expect(
+      progressPercent({
+        total: 0,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        pending: 0,
+        bounced: 0,
+        unsubscribed: 0,
+      }),
+    ).toBe(0);
   });
 
   it("cộng số đăng ký của các danh sách", () => {

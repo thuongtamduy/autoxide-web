@@ -12,7 +12,7 @@ import { resetStructure, structureRoutes } from "./mock-structure.ts";
 // (`{"enabled": true}`) bật để thử "Hỏi bằng lời" của màn Đơn hàng.
 // `POST /__content/bump` (`{"id"}`) sửa một bài như có người khác sửa, để thử xung đột 412.
 
-type MockEntry = Schemas["EntryResponse"] & { version: number };
+type MockEntry = Omit<Schemas["EntryResponse"], "version"> & { version: number };
 
 export const CONTENT_MODULE: ModuleInfo = {
   name: "content",
@@ -183,8 +183,9 @@ export function resetContent() {
 resetContent();
 
 function view(entry: MockEntry): Schemas["EntryResponse"] {
-  const { version: _version, ...rest } = entry;
-  return rest;
+  const { version, ...rest } = entry;
+  // `version` của bản ghi là ETag (chuỗi có ngoặc kép), như core trả trong danh sách.
+  return { ...rest, version: `"${version}"` };
 }
 
 function sendEntry(response: ServerResponse, status: number, entry: MockEntry) {
@@ -339,7 +340,8 @@ export function contentPreview(response: ServerResponse, url: URL) {
   const { created_by, created_via, review_requested_at, review_requested_by, ...rest } =
     view(entry);
   void [created_by, created_via, review_requested_at, review_requested_by];
-  return send(response, 200, { data: rest satisfies Schemas["PreviewEntryResponse"] });
+  const preview: Schemas["PreviewEntryResponse"] = { ...rest, body_media: [] };
+  return send(response, 200, { data: preview });
 }
 
 export async function contentRoutes(
@@ -501,6 +503,7 @@ export async function contentRoutes(
         run_at: runAt,
         status: "scheduled",
         error_code: null,
+        ai_reviewed: false,
         created_by: null,
         created_at: contentNow(),
         updated_at: contentNow(),

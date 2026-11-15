@@ -341,6 +341,7 @@ const server = createServer(async (request, response) => {
         email_verified_at: account.verified ? "2026-11-13T08:00:00Z" : null,
         all_permissions: account.canReadModules,
         permissions: [],
+        has_password: account.hasPassword,
         created_at: "2026-11-12T00:00:00Z",
       } satisfies Me,
     });

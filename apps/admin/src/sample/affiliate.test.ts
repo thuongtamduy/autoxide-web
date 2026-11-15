@@ -206,7 +206,14 @@ describe("hoa hồng từ đơn mẫu", () => {
       const tax = line?.taxes.reduce((s, t) => s + Number(t.amount.amount), 0) ?? 0;
       expect(Number(c.base.amount)).toBe(Number(line?.net.amount) - tax);
     }
-    const pending = data.find((c) => c.status === "pending" && c.order_status !== "shipping");
+    // Chọn đơn còn huỷ được theo bảng chuyển trạng thái (đơn đã giao không huỷ được nữa).
+    const pending = data.find(
+      (c) =>
+        c.status === "pending" &&
+        (["pending_payment", "awaiting_acceptance", "confirmed", "preparing"] as const).some(
+          (s) => s === c.order_status,
+        ),
+    );
     if (pending) {
       expect((await transitionOrder(pending.order_id, "cancelled")).ok).toBe(true);
       const after = (await listCommissions()).data.filter((c) => c.order_id === pending.order_id);

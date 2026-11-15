@@ -5,7 +5,8 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { problem, type Schemas, send, text } from "./mock-http.ts";
 
-type Entry = Schemas["EntryResponse"];
+// Bản ghi trong kho của core giả: `version` là bộ đếm (số), ETag dựng từ nó khi trả về (`mock-content.ts`).
+type Entry = Omit<Schemas["EntryResponse"], "version"> & { version: number };
 
 export interface Store {
   entries: () => Entry[];

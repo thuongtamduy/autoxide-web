@@ -18,6 +18,7 @@ function item(change: Partial<MediaItem> = {}): MediaItem {
     sha256: "0".repeat(64),
     alt: "",
     alts: {},
+    decorative: false,
     title: "",
     caption: "",
     visibility: "private",

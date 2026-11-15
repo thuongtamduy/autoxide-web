@@ -171,8 +171,10 @@ async function seedShifts(orders: readonly Order[]): Promise<Shift[]> {
     const opened = Date.parse(`${day}T08:00:00+07:00`);
     shifts.push(blank(id, org, name(org), register.cashier, opened, register.opening));
   }
-  // Hôm nay: ba ca vừa mở, chưa bán (bán tại quầy ở màn Đơn hàng ghi vào đây).
+  // Hôm nay: ba ca vừa mở, chưa bán (bán tại quầy ở màn Đơn hàng ghi vào đây). Giờ mở ca không lùi quá
+  // đầu ngày (giờ Việt Nam): mở màn ngay sau nửa đêm thì ca vẫn là của hôm nay, không thành ca hôm qua.
   const now = Date.now();
+  const dayStart = Date.parse(`${vietnamDay(now)}T00:00:00+07:00`);
   for (const org of [ORG.Q3, ORG.TD, ORG.CG]) {
     const register = REGISTERS[org];
     if (!register) continue;
@@ -184,7 +186,7 @@ async function seedShifts(orders: readonly Order[]): Promise<Shift[]> {
           org,
           name(org),
           register.cashier,
-          now - (org === ORG.CG ? 90 : 120) * MINUTE,
+          Math.max(now - (org === ORG.CG ? 90 : 120) * MINUTE, dayStart + MINUTE),
           register.opening,
         ),
       );

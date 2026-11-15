@@ -152,7 +152,9 @@ function view({ version: _version, ...menu }: Menu): Schemas["SiteMenu"] {
 
 function summary(menu: Menu): Schemas["SiteMenuSummary"] {
   const { id, key, locale, created_at, updated_at } = menu;
-  return { id, key, locale, created_at, updated_at };
+  const count = (items: readonly { children: readonly unknown[] }[]): number =>
+    items.reduce((n, item) => n + 1 + count(item.children as { children: unknown[] }[]), 0);
+  return { id, key, locale, created_at, updated_at, item_count: count(menu.items) };
 }
 
 function etag(menu: Menu): string {
