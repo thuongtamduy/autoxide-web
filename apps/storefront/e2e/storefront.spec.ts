@@ -256,6 +256,14 @@ for (const width of [360, 390, 430, 768, 820, 1024, 1280, 1440]) {
       "/san-pham/khan-lau-bep-cotton-bo-3",
       "/khuyen-mai",
       "/livestream",
+      // Trang người mua và sàn (W-030); bố cục khi có giỏ, đã đăng nhập: `buyer.spec.ts`.
+      "/gio-hang",
+      "/thanh-toan",
+      "/tai-khoan",
+      "/tra-cuu-don-hang",
+      "/nguoi-ban",
+      "/nguoi-ban/gom-su-bat-trang-xua",
+      "/ban-tren-cho",
     ]) {
       await page.goto(path);
       await expectNoHorizontalScroll(page);

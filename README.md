@@ -147,7 +147,17 @@ four looks (`AUTOXIDE_STOREFRONT_THEME`).
   and footer menus (`main`, `footer`), the blog with categories, tags, authors and paging, articles
   and static pages at any address the core knows (redirects included), comments under articles
   (guests can write when the core allows it), search in articles and pages, the newsletter sign-up
-  and the pages its mails link to, draft previews, `sitemap.xml`, `robots.txt` and an RSS feed.
+  and the pages its mails link to, draft previews, `sitemap.xml`, `robots.txt` and an RSS feed. The
+  "Sell on our marketplace" page (`/ban-tren-cho`) uses the core's public form with the key
+  `ban-tren-cho` when the shop has created it, and a sample form otherwise.
+- **Buyer and marketplace pages** (sample, see decision W-030): cart split per seller (`/gio-hang`),
+  checkout with delivery, store pickup, points, QR transfer / card / cash on delivery and company
+  invoices (`/thanh-toan`), the order-placed page, order lookup by number and phone without an
+  account (`/tra-cuu-don-hang`), the buyer account with orders, returns, saved items, points,
+  addresses and privacy rights (`/tai-khoan`, phone code sign-in, no passwords), the marketplace
+  and its seller shops with the legally required seller details (`/nguoi-ban`, `/nguoi-ban/<slug>`).
+  Nothing is charged or shipped; the core never holds buyers' money (payments go through a licensed
+  partner).
 - **On sample data** (marked with a small "sample" tag and a notice bar), until the core has the
   APIs: products, prices, discount codes, stock per store, stores, the cart, sellers. Pages built on
   it: all products and product categories (`/danh-muc`, `/danh-muc/<slug>`: filters for material,

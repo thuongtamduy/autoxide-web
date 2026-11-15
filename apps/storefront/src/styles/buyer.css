@@ -1,0 +1,1742 @@
+/* Trang của người mua và của sàn (W-030): giỏ hàng, đặt hàng, đặt hàng thành công, tài khoản, tra cứu
+   đơn, gian hàng người bán, trang sàn, mời bán hàng. Lớp có tiền tố theo trang (`co-` đặt hàng, `pl-`
+   đặt xong, `ac-`/`acx-` tài khoản, `lk-` tra cứu, `sl-` gian hàng, `mk-` sàn, `so-` mời bán, `by-`
+   phần dùng chung). Chỉ dùng biến của `tokens.css`. Nạp sau `site.css`, trước `shop.css` (luật theo khổ
+   màn của bản thiết kế cho `.co-sum`, `.co-nav`, `.steps`, `.segtabs` ở `shop.css` ghi đè lên đây). */
+
+/* ---------------------------------------------------------------- Dùng chung */
+.sp .by-alert {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bad-bg);
+  color: var(--bad);
+  font-weight: 500;
+}
+.sp .by-ok {
+  color: var(--ok);
+  font-size: 14px;
+  font-weight: 500;
+}
+.sp .by-note {
+  font-size: 13px;
+  text-wrap: pretty;
+}
+.sp .dr-s {
+  display: none;
+}
+@media (max-width: 720px) {
+  .sp .dr-l {
+    display: none;
+  }
+  .sp .dr-s {
+    display: inline;
+  }
+}
+.sp .co-req,
+.sp .co-opt {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.sp .co-req {
+  color: var(--brand-ink);
+}
+.sp .co-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.sp .co-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 16px;
+}
+.sp textarea.inp {
+  height: auto;
+  min-height: 88px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  resize: vertical;
+  font: inherit;
+}
+.sp .sel.err {
+  border-color: var(--bad);
+}
+.sp .co-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+.sp .co-check .chk {
+  margin-top: 1px;
+}
+.sp .acx-radio {
+  border-radius: 50%;
+}
+.sp .acx-radio:checked::after {
+  width: 8px;
+  height: 8px;
+  margin: 4.5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--on-brand);
+  transform: none;
+}
+.sp .opt:has(input:focus-visible),
+.sp .acx-switch:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.sp .opt.off {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.sp .by-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.sp .by-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp .by-steps li.cur,
+.sp .by-steps li.done {
+  color: var(--ink);
+}
+.sp .by-step-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--wash);
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.sp .by-steps li.cur .by-step-n,
+.sp .by-steps li.done .by-step-n {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.sp .by-step-sep {
+  width: 28px;
+  height: 1.5px;
+  background: var(--line-2);
+}
+
+/* Tóm tắt tiền */
+.sp .by-sums {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.sp .by-sums > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sp .by-sums dt {
+  min-width: 0;
+  color: var(--ink-2);
+}
+.sp .by-sums dd {
+  margin: 0;
+  text-align: right;
+}
+.sp .by-sums .sale {
+  color: var(--sale);
+}
+.sp .by-sum-total {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+}
+.sp .by-sum-total dt {
+  color: var(--ink);
+}
+.sp .by-sum-total .dsp {
+  font-size: 22px;
+}
+.sp .by-free {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.sp .by-free-bar {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--wash);
+  overflow: hidden;
+}
+.sp .by-free-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+
+/* Một đơn hàng (tài khoản, tra cứu, đặt xong) */
+.sp .by-order {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sp .by-order-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.sp .by-order-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sp .by-order-no {
+  font-size: 20px;
+  font-weight: 700;
+}
+.sp .by-order-eta {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--wash);
+  font-size: 14px;
+}
+.sp .by-order-eta .ic {
+  flex: none;
+  margin-top: 2px;
+}
+.sp .by-tl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 10px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp .by-tl li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.sp .by-tl-bar {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+}
+.sp .by-tl li.done {
+  color: var(--ink);
+}
+.sp .by-tl li.done .by-tl-bar {
+  background: var(--brand);
+}
+.sp .by-tl li[aria-current] .by-tl-label {
+  font-weight: 700;
+}
+.sp .by-tl-at {
+  font-size: 12.5px;
+}
+.sp .by-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp .by-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sp .by-line .thumb {
+  flex: none;
+  width: 52px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+}
+.sp .by-line svg {
+  width: 26px;
+  height: 26px;
+}
+.sp .by-line-name {
+  flex: 1;
+  min-width: 0;
+}
+.sp .by-order-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 12px;
+  font-size: 14px;
+}
+.sp .by-order-facts > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp .by-order-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* Lưới sản phẩm số thẻ thay đổi theo bộ lọc (gian hàng): cột tự co, hàng cuối được phép lẻ. */
+.sp .by-pgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 24px 18px;
+}
+@media (max-width: 720px) {
+  .sp .by-pgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 12px;
+  }
+}
+
+/* ---------------------------------------------------------------- Giỏ hàng và đặt hàng */
+.sp .co-pg {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 28px;
+  padding-bottom: 88px;
+}
+.sp .co-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.sp .co-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 32px;
+}
+.sp .co-h1 {
+  flex: 1 1 300px;
+  margin: 0;
+  font-size: clamp(30px, 3.4vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.sp .co-nextlab {
+  flex: 1 1 100%;
+  font-size: 14px;
+}
+.sp .co-sample {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 -12px;
+  font-size: 13.5px;
+}
+.sp .co-cols {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px 40px;
+}
+.sp .co-main {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.sp .co-sum,
+.sp .by-sum {
+  flex: 1 1 320px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+@media (min-width: 1024px) {
+  .sp .co-sum,
+  .sp .by-sum {
+    position: sticky;
+    top: 24px;
+  }
+}
+@media (max-width: 1023px) {
+  .sp .by-sum {
+    max-width: none;
+  }
+}
+.sp .co-sum h2,
+.sp .by-sum h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.sp .co-group {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 20px;
+}
+.sp .co-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.sp .co-group-head a {
+  color: inherit;
+}
+.sp .co-group-note {
+  flex: 1 1 100%;
+  font-size: 13px;
+}
+.sp .co-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.sp .co-line:last-child {
+  border-bottom: 0;
+}
+.sp .co-line > .thumb {
+  flex: none;
+  width: 76px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+}
+.sp .co-line-text {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp .co-line-name {
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+.sp a.co-line-name:hover {
+  text-decoration: underline;
+}
+.sp .co-line-text .muted {
+  font-size: 13.5px;
+}
+.sp .co-line-promo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sale);
+}
+.sp .co-line-total {
+  min-width: 104px;
+  text-align: right;
+  font-weight: 700;
+}
+.sp .co-qty {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+}
+.sp .co-qty output {
+  min-width: 26px;
+  text-align: center;
+  font-weight: 700;
+}
+.sp .co-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 40px;
+  border-radius: 18px;
+}
+.sp .co-empty .dsp,
+.sp .co-empty h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+.sp .co-codes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+}
+.sp .co-codes-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp .co-codes-head b {
+  flex: 1;
+}
+.sp .co-codes-head .lnk,
+.sp .co-codes .lnk {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.sp .co-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--line-2);
+}
+.sp .co-offer.on {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+}
+.sp .co-offer-text {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+.sp .co-offer-text .muted,
+.sp .co-offer-why {
+  font-size: 13px;
+}
+.sp .co-offer-why {
+  color: var(--warn);
+}
+.sp .co-code-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sp .co-code-row {
+  display: flex;
+  gap: 8px;
+}
+.sp .co-code-row .inp {
+  flex: 1;
+  min-width: 0;
+  text-transform: uppercase;
+}
+.sp .co-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sp .co-nav .btn.pri {
+  margin-left: auto;
+}
+.sp .co-nav-total {
+  flex-direction: column;
+  line-height: 1.2;
+  font-size: 13px;
+}
+.sp .co-nav-total .price {
+  font-size: 16px;
+  font-weight: 700;
+}
+.sp .co-donestep-card {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 20px;
+}
+.sp .co-donestep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+.sp .co-donestep + .co-donestep {
+  border-top: 1px solid var(--line);
+}
+.sp .co-donestep > .ic {
+  flex: none;
+  color: var(--ok);
+}
+.sp .co-dtext {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+.sp .co-dtext > span {
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.sp .co-step {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+}
+.sp .co-step h2,
+.sp .co-legend {
+  margin: 0;
+  padding: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.sp .co-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+  font-size: 14px;
+}
+.sp .co-who > span {
+  flex: 1 1 240px;
+}
+.sp .co-set {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.sp .co-set > legend {
+  margin-bottom: 14px;
+}
+.sp .co-opts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 10px;
+}
+.sp .co-opts-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+.sp .co-opt-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sp .co-opt-name {
+  font-weight: 600;
+}
+.sp .co-opt-text .muted {
+  font-size: 13px;
+}
+.sp .co-points {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.sp .co-points legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+.sp .co-points-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+.sp .co-points-row > .errtxt,
+.sp .co-points-row > .by-ok {
+  flex: 1 1 100%;
+}
+.sp .co-paynote {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.sp .co-paynote .ic {
+  flex: none;
+  color: var(--ok);
+}
+.sp .co-invoice {
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--wash);
+}
+.sp .co-consents {
+  gap: 10px;
+}
+
+/* ---------------------------------------------------------------- Đặt hàng thành công */
+.sp .pl-done {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+}
+.sp .pl-done h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 26px;
+}
+.sp .pl-done p {
+  margin: 0;
+}
+.sp .pl-ok {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.sp .pl-pay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.sp .pl-pay > .ic {
+  width: 28px;
+  height: 28px;
+}
+.sp .pl-qr {
+  flex: none;
+  width: 120px;
+  height: 120px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #fff;
+  fill: #17201b;
+}
+.sp .pl-pay-body {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+.sp .pl-pay-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 16px;
+}
+.sp .pl-acct {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.sp .pl-acct > .muted {
+  min-width: 96px;
+}
+.sp .pl-btns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.sp .pl-orders-h {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+.sp .pl-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sp .pl-order {
+  padding: 18px;
+}
+.sp .pl-save,
+.sp .lk-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--brand-tint);
+}
+.sp .pl-save > span,
+.sp .lk-save > span {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ---------------------------------------------------------------- Tra cứu đơn */
+.sp .lk-page,
+.sp .ac-page,
+.sp .acx,
+.sp .sl-page,
+.sp .mk-page,
+.sp .so-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 20px;
+  padding-bottom: 64px;
+}
+.sp .lk-head h1,
+.sp .mk-head h1,
+.sp .so-hero h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: clamp(30px, 3.4vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.sp .lk-head p,
+.sp .mk-head p {
+  max-width: 680px;
+  margin: 0;
+}
+.sp .lk-cols {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px 40px;
+}
+.sp .lk-form,
+.sp .lk-result {
+  flex: 999 1 520px;
+  min-width: 0;
+}
+.sp .lk-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 620px;
+  padding: 24px;
+}
+.sp .lk-form p {
+  margin: 0;
+}
+.sp .lk-otp {
+  max-width: 200px;
+  letter-spacing: 0.3em;
+}
+.sp .lk-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.sp .lk-try {
+  font-size: 13.5px;
+}
+.sp .lk-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sp .lk-card {
+  padding: 22px;
+}
+.sp .lk-privacy {
+  margin: 0;
+  font-size: 13.5px;
+}
+.sp .lk-aside,
+.sp .ac-why {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.sp .lk-aside h2,
+.sp .ac-why h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.sp .lk-aside ul,
+.sp .ac-why ul,
+.sp .sl-protect ul,
+.sp .so-req ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.sp .lk-aside li,
+.sp .ac-why li,
+.sp .sl-protect li,
+.sp .so-req li {
+  display: flex;
+  gap: 10px;
+}
+.sp .lk-aside .ic,
+.sp .ac-why .ic,
+.sp .sl-protect .ic,
+.sp .so-req .ic {
+  flex: none;
+  margin-top: 2px;
+  color: var(--brand);
+}
+
+/* ---------------------------------------------------------------- Tài khoản */
+.sp .ac-gate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px 40px;
+}
+.sp .ac-gate-card {
+  flex: 999 1 460px;
+  min-width: 0;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+}
+.sp .ac-tabs {
+  display: flex;
+  gap: 8px;
+}
+.sp .ac-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sp .ac-form p {
+  margin: 0;
+}
+.sp .ac-title {
+  margin: 0;
+  font-size: 26px;
+}
+.sp .ac-try,
+.sp .ac-sample {
+  font-size: 13.5px;
+}
+.sp .acx-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+.sp .acx-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 20px;
+  font-weight: 700;
+}
+.sp .acx-hello {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp .acx-h1 {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 34px);
+}
+.sp .acx-cols {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px 32px;
+}
+.sp .acx-nav {
+  flex: 1 1 220px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+}
+.sp .acx-nav-a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.sp .acx-nav-a:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+.sp .acx-nav-a.on {
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+  font-weight: 600;
+}
+.sp .acx-main {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sp .acx-sec-h {
+  margin: 0;
+  font-size: 24px;
+}
+.sp .acx-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sp .acx-order {
+  padding: 0 18px;
+}
+.sp .acx-order[open] {
+  padding-bottom: 18px;
+}
+.sp .acx-ohead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 16px 0;
+  cursor: pointer;
+  list-style: none;
+}
+.sp .acx-ohead::-webkit-details-marker {
+  display: none;
+}
+.sp .acx-oinfo {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp .acx-oinfo .num {
+  font-weight: 700;
+}
+.sp .acx-oinfo .muted {
+  font-size: 13.5px;
+}
+.sp .acx-ohead .price {
+  font-weight: 700;
+}
+.sp .acx-chev {
+  transition: transform 0.2s var(--ease);
+}
+.sp .acx-order[open] .acx-chev {
+  transform: rotate(180deg);
+}
+.sp .acx-retl {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--ok);
+}
+.sp .acx-retl.wait {
+  color: var(--warn);
+}
+.sp .acx-retl.off {
+  color: var(--ink-3);
+}
+.sp .acx-retl .ic {
+  flex: none;
+  margin-top: 2px;
+}
+.sp .acx-held {
+  flex: 1 1 100%;
+  font-size: 13px;
+}
+.sp .acx-return {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--wash);
+}
+.sp .acx-return fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.sp .acx-ret-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sp .acx-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 20px;
+}
+.sp .acx-card > h3 {
+  margin: 12px 0 4px;
+  font-size: 18px;
+}
+.sp .acx-card > p {
+  margin: 8px 0 12px;
+  font-size: 13.5px;
+}
+.sp .acx-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.sp .acx-row:last-of-type {
+  border-bottom: 0;
+}
+.sp .acx-rbody {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp .acx-rbody .muted {
+  font-size: 13.5px;
+}
+.sp .acx-rside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sp .acx-thumb {
+  flex: none;
+  width: 56px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+}
+.sp .acx-thumb svg {
+  width: 28px;
+  height: 28px;
+}
+.sp .acx-points {
+  gap: 10px;
+  padding: 20px;
+}
+.sp .acx-points-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.sp .acx-points-head b {
+  font-size: 28px;
+}
+.sp .acx-addr {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 12px;
+}
+.sp .acx-addr-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  font-size: 14px;
+}
+.sp .acx-addr-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp .acx-addr-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 120px;
+  border-style: dashed;
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sp .acx-switch {
+  flex: none;
+  position: relative;
+  width: 46px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line-2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sp .acx-switch > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--sheet);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s var(--ease);
+}
+.sp .acx-switch.on {
+  background: var(--brand);
+}
+.sp .acx-switch.on > span {
+  transform: translateX(20px);
+}
+.sp .acx-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--warn-bg);
+  font-size: 14px;
+}
+.sp .acx-legal {
+  font-size: 12.5px;
+}
+@media (max-width: 720px) {
+  .sp .acx-nav {
+    max-width: none;
+  }
+  .sp .acx-nav-a {
+    min-height: 40px;
+  }
+}
+
+/* ---------------------------------------------------------------- Gian hàng, sàn, mời bán */
+.sp .sl-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.sp .sl-banner {
+  height: 140px;
+  border-radius: 18px;
+}
+.sp .sl-banner svg {
+  width: 64px;
+  height: 64px;
+}
+.sp .sl-id {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+  margin-top: -36px;
+  padding: 0 20px;
+}
+.sp .sl-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border: 4px solid var(--bg);
+  border-radius: 20px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 28px;
+  font-weight: 800;
+}
+.sp .sl-text {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sp .sl-text h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: clamp(26px, 3vw, 36px);
+  font-weight: 800;
+}
+.sp .sl-text p {
+  margin: 0;
+}
+.sp .sl-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 14px;
+}
+.sp .sl-paused {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--warn-bg);
+  font-size: 14.5px;
+}
+.sp .sl-paused .ic {
+  flex: none;
+  color: var(--warn);
+}
+.sp .sl-cols {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px 40px;
+}
+.sp .sl-main {
+  flex: 999 1 600px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.sp .sl-tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.sp .sl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sp .sl-chips .chip {
+  text-decoration: none;
+}
+.sp .sl-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scroll-margin-top: 96px;
+}
+.sp .sl-cell:target .pcard {
+  outline: 2px solid var(--brand);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+.sp .sl-sold {
+  font-size: 13px;
+}
+.sp .sl-more {
+  margin: 0;
+  font-size: 13.5px;
+}
+.sp .sl-rev {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px 32px;
+}
+.sp .sl-score {
+  flex: 1 1 240px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+}
+.sp .sl-score-n {
+  font-size: 40px;
+}
+.sp .sl-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.sp .sl-bars li {
+  display: grid;
+  grid-template-columns: 48px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+}
+.sp .sl-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--wash);
+  overflow: hidden;
+}
+.sp .sl-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--star);
+}
+.sp .sl-list {
+  flex: 999 1 380px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sp .sl-list > p {
+  margin: 0;
+  font-size: 13.5px;
+}
+.sp .sl-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  font-size: 14.5px;
+}
+.sp .sl-item p {
+  margin: 0;
+}
+.sp .sl-rhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.sp .sl-dim {
+  opacity: 0.25;
+}
+.sp .sl-reply {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--wash);
+  color: var(--ink-2);
+}
+.sp .sl-policies {
+  gap: 14px;
+}
+.sp .sl-policy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  font-size: 14px;
+}
+.sp .sl-policy-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp .sl-aside {
+  flex: 1 1 300px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.sp .sl-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+}
+.sp .sl-info h2,
+.sp .sl-protect h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.sp .sl-info dl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+}
+.sp .sl-info dl > * {
+  display: grid;
+  grid-template-columns: minmax(110px, 40%) 1fr;
+  gap: 8px;
+}
+.sp .sl-info dt {
+  color: var(--ink-3);
+}
+.sp .sl-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.sp .sl-info p {
+  margin: 0;
+  font-size: 12.5px;
+}
+.sp .sl-protect {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (max-width: 1023px) {
+  .sp .sl-aside {
+    max-width: none;
+  }
+}
+.sp .mk-head .btn {
+  margin-top: 14px;
+}
+.sp .so-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px 40px;
+}
+.sp .so-hero-text {
+  flex: 999 1 460px;
+  min-width: 0;
+}
+.sp .so-hero-text p {
+  max-width: 640px;
+  margin: 0;
+  font-size: 16px;
+}
+.sp .so-fees {
+  flex: 1 1 300px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 20px;
+}
+.sp .so-fees > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.sp .so-fees dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-3);
+}
+.sp .so-fees dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+.sp .so-fees p {
+  margin: 0;
+  font-size: 12.5px;
+}
+.sp .so-h2 {
+  margin: 0 0 16px;
+  font-size: 24px;
+}
+.sp .so-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+.sp .so-steps > li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  font-size: 14px;
+}
+.sp .so-step-n {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--brand);
+}
+@media (max-width: 1023px) {
+  .sp .so-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sp .so-steps > li {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    column-gap: 12px;
+  }
+  .sp .so-step-n {
+    grid-row: span 2;
+  }
+}
+.sp .so-req {
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--wash);
+}
+.sp .so-req h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.sp .so-req p {
+  margin: 14px 0 0;
+  font-size: 13px;
+}
+.sp .so-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px 40px;
+}
+.sp .so-faq {
+  flex: 999 1 420px;
+  min-width: 0;
+}
+.sp .so-q {
+  border-bottom: 1px solid var(--line);
+}
+.sp .so-q summary {
+  padding: 14px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sp .so-q p {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+}
+.sp .so-form {
+  flex: 1 1 340px;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+.sp .so-form-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+}
+.sp .so-set {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+@media (max-width: 1023px) {
+  .sp .so-fees,
+  .sp .so-form {
+    max-width: none;
+  }
+}
+.sp .co-saved,
+.sp .ac-tabs {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.sp .co-line-text .price {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.sp .sl-id {
+  position: relative;
+  align-items: flex-start;
+}
+.sp .sl-text {
+  padding-top: 44px;
+}
+@media (max-width: 720px) {
+  .sp .by-line {
+    flex-wrap: wrap;
+  }
+  .sp .by-line-name {
+    flex: 1 1 150px;
+  }
+  .sp .by-line > .price {
+    margin-left: auto;
+  }
+  .sp .pl-done,
+  .sp .co-step {
+    padding: 18px;
+  }
+  .sp .pl-order,
+  .sp .lk-card {
+    padding: 14px;
+  }
+  .sp .acx-order {
+    padding: 0 14px;
+  }
+  .sp .sl-text {
+    flex-basis: 100%;
+    padding-top: 0;
+  }
+  .sp .co-line-total {
+    min-width: 0;
+    margin-left: auto;
+  }
+}

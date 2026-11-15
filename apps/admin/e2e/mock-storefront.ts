@@ -10,6 +10,8 @@
 // - `/blog/bai-cu` chuyển (308) tới bài đầu; `/blog/da-go` đã gỡ hẳn (410); trang tĩnh `/ve-chung-toi`;
 // - bản tin: danh sách công khai `weekly` (xác nhận qua thư); token xác nhận hợp lệ: `ok-token`;
 // - `POST /__storefront/search` (`{"enabled": false}`) tắt tìm theo nghĩa cho khách, như core mặc định;
+// - biểu mẫu công khai `ban-tren-cho` (trang "Bán trên sàn" của website, W-030): mặc định chưa có (404
+//   như core khi khách chưa tạo); `POST /__storefront/sell-form` (`{"enabled": true}`) tạo nó;
 // - `POST /__storefront/reset` đưa mọi thứ về ban đầu.
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -112,6 +114,8 @@ const FIRST_BODY: Schemas["BodyNode"] = {
 let entries: Entry[] = [];
 /** Tìm theo nghĩa cho khách (`AUTOXIDE_CONTENT_PUBLIC_SEMANTIC_SEARCH` của core); `POST /__storefront/search`. */
 let semanticSearch = true;
+/** Khách đã tạo biểu mẫu `ban-tren-cho` chưa; `POST /__storefront/sell-form`. */
+let sellForm = false;
 let comments: Comment[] = [];
 const confirmed = new Set<string>();
 
@@ -213,6 +217,7 @@ export function resetStorefront() {
   ];
   confirmed.clear();
   semanticSearch = true;
+  sellForm = false;
 }
 resetStorefront();
 
@@ -354,6 +359,76 @@ export async function storefrontRoutes(
         avatar: null,
       },
     } satisfies Schemas["Data_PublicAuthorPage"]);
+    return true;
+  }
+  if (route === "POST /__storefront/sell-form") {
+    sellForm = (await json(request)).enabled === true;
+    send(response, 204);
+    return true;
+  }
+  if (path === "/api/v1/forms/public/ban-tren-cho" && request.method === "GET") {
+    if (!sellForm) {
+      problem(response, 404, "forms.not_found", "No form has this id or key.");
+      return true;
+    }
+    const vi = url.searchParams.get("locale") !== "en";
+    send(response, 200, {
+      data: {
+        key: "ban-tren-cho",
+        name: vi ? "Đăng ký bán trên Chợ Bếp Mộc" : "Apply to sell on Bếp Mộc Market",
+        status: "open",
+        version: 1,
+        locale: vi ? "vi" : "en",
+        token_scope: "forms:ban-tren-cho",
+        success_message: vi
+          ? "Đã nhận đăng ký. Chúng tôi trả lời qua email trong 2 ngày làm việc."
+          : "Application received. We reply by email within 2 working days.",
+        fields: [
+          { key: "email", type: "email", label: "Email", required: true },
+          {
+            key: "seller_type",
+            type: "radio",
+            label: vi ? "Bạn là" : "You are",
+            required: true,
+            options: [
+              { value: "enterprise", label: vi ? "Doanh nghiệp" : "Company" },
+              { value: "household", label: vi ? "Hộ kinh doanh" : "Household business" },
+            ],
+          },
+          { key: "category", type: "text", label: vi ? "Ngành hàng" : "Category", required: true },
+          {
+            key: "consent",
+            type: "consent",
+            label: vi
+              ? "Tôi đồng ý cho sàn dùng thông tin này."
+              : "I agree to this use of my data.",
+            required: true,
+          },
+        ],
+      },
+    } satisfies Schemas["Data_PublicFormResponse"]);
+    return true;
+  }
+  if (route === "POST /api/v1/forms/public/ban-tren-cho/submissions" && sellForm) {
+    const body = await json(request);
+    const data = (body.data ?? {}) as Record<string, unknown>;
+    const errors: Schemas["ProblemField"][] = [];
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(data.email ?? "")))
+      errors.push({ field: "data.email", code: "email", detail: "Nhập một địa chỉ email." });
+    if (!data.category)
+      errors.push({ field: "data.category", code: "required", detail: "Bắt buộc." });
+    if (data.consent !== true)
+      errors.push({ field: "data.consent", code: "required", detail: "Bắt buộc." });
+    if (errors.length > 0) {
+      problem(response, 422, "validation_failed", "Một số trường chưa hợp lệ.", errors);
+      return true;
+    }
+    send(response, 201, {
+      data: {
+        id: randomUUID(),
+        message: "Đã nhận đăng ký. Chúng tôi trả lời qua email trong 2 ngày làm việc.",
+      },
+    } satisfies Schemas["Data_SubmitResponse"]);
     return true;
   }
   if (route === "POST /__storefront/search") {
