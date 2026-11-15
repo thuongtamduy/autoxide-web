@@ -28,9 +28,12 @@ test("thanh bên có Tiếp thị; bài nộp đổi trạng thái có Hoàn tá
     .getByRole("navigation", { name: "Areas" })
     .getByRole("link", { name: "Marketing" })
     .click();
+  // Khuyến mại (dữ liệu mẫu, W-015) đứng đầu nhóm: thanh bên mở nó; sang Biểu mẫu bằng menu con.
+  await expect(page).toHaveURL(/\/marketing\/promotions$/);
+  const subnav = page.getByRole("navigation", { name: /Marketing/ });
+  await subnav.getByRole("link", { name: "Forms" }).click();
   await expect(page).toHaveURL(/\/marketing\/forms$/);
   await expect(page.getByRole("heading", { level: 1, name: "Forms" })).toBeVisible();
-  const subnav = page.getByRole("navigation", { name: /Marketing/ });
   await expect(subnav.getByRole("link", { name: "Newsletter" })).toBeVisible();
   await expect(subnav.getByRole("link", { name: "Comments" })).toBeVisible();
   await expect(rows(page).first()).toContainText("Liên hệ");

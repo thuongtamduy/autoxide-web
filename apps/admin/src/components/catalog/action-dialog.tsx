@@ -89,18 +89,24 @@ function DialogForm<S extends FormState>({
 }) {
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
+  // Báo xong ngay khi Server Action trả về, không đợi effect: nút mở hộp thoại có thể nằm trên một
+  // dòng biến mất sau thao tác (vd hồ sơ chuyển từ "chờ nộp" sang "đã nộp"), effect sẽ không kịp chạy.
+  const report = async (previous: S, formData: FormData): Promise<S> => {
+    const next = await action(previous, formData);
+    if (next.done && next.done !== previous.done) {
+      close();
+      toast(typeof done === "string" ? done : done(next));
+    }
+    return next;
+  };
   const [current, run, pending] = useActionState(
-    action as unknown as (state: Awaited<S>, formData: FormData) => Promise<Awaited<S>>,
+    report as unknown as (state: Awaited<S>, formData: FormData) => Promise<Awaited<S>>,
     {} as Awaited<S>,
   );
   // `S` là kiểu trạng thái của từng form (không phải Promise): `Awaited<S>` chính là `S`.
   const state = current as S;
   const round = useRound(state);
   useFocusInvalid(form, state);
-  useOnDone(state.done, () => {
-    close();
-    toast(typeof done === "string" ? done : done(state));
-  });
   return (
     <form ref={form} action={run} noValidate className="dlg-form">
       {Object.entries(hidden).map(([name, value]) => (

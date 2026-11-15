@@ -432,3 +432,56 @@ Lý do: chủ dự án muốn thấy và thử đủ phân hệ thương mại t
 Đã cân nhắc: khung chi tiết bên phải như bản thiết kế — cần JavaScript và khó dùng trên điện thoại;
 dòng mở rộng bằng `?open=` mở thẳng được và nút quay lại chạy đúng. Gộp Tồn kho vào màn Sản phẩm như
 một tab — hai nhóm người dùng khác nhau (danh mục và giá / kho và thu mua), mỗi bên nhiều tab.
+
+## W-015 · Khuyến mại và Vận chuyển (dữ liệu mẫu); mã đơn mẫu dùng chung — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Màn "Khuyến mại" `/marketing/promotions` đứng **đầu** nhóm Tiếp thị (`mkt`) như bản thiết kế
+  (`sample: { step: "43" }`, permission `promotions.read`). Nhóm mới "Bán hàng" (`sales`, biểu tượng
+  `cart`) đứng sau Tổng quan theo `RAIL_TENANT`, hiện có một màn "Vận chuyển" `/sales/shipping`
+  (`sample: { step: "44" }`, hiện khi có một trong các permission của các tab). Màn "Đơn hàng" (bước 45)
+  sẽ đứng đầu nhóm, trước Vận chuyển; Cửa hàng, Kênh bán theo sau. Cả hai màn dựng hoàn toàn bằng dữ
+  liệu mẫu (W-006): tắt dữ liệu mẫu thì 404 (`commerceGate` của W-013).
+- Mỗi tab một đường dẫn con. Khuyến mại: chương trình (kèm trần pháp luật đang hiệu lực và "Thử giỏ
+  hàng"), `codes`, `flash`, `notice`, `versions`. Vận chuyển: vận đơn, `rates`, `calendar`, `cod`,
+  `carriers`; tab theo permission dự kiến của đặc tả 44; người không xem được vận đơn vào thẳng tab đầu
+  tiên mình xem được. Chi tiết một dòng mở bằng `?open=<id>` (như W-013).
+- Dữ liệu mẫu: `src/sample/promotions.ts` (chương trình, mã, flash sale, phiên bản chỉ thêm, dữ liệu luật
+  `legal_limits` / `notice_rules` có ngày hiệu lực và cờ `needs_review`, hàm tính `evaluateWith` theo thứ
+  tự của đặc tả 43), `src/sample/shipping.ts` (vận đơn, kiện, hành trình, phương thức kế thừa theo cây,
+  vùng, bậc phí, điểm nhận, lịch giao có ngày hiệu lực, ngày nghỉ, hãng, bảng kê và dòng lệch COD). Sản
+  phẩm, biến thể, giá lấy từ `sample/catalog.ts` (`variants`, `variantByCode`, `pricesAt`; thêm
+  `CATEGORY_ID`), cửa hàng từ `sample/org.ts`.
+- Mã đơn mẫu dùng chung ở `src/sample/order-refs.ts` (`ORDER_REFS`, `orderByNumber`, mã
+  `BM-2611-0xxx` như bản thiết kế): vận đơn và dòng bảng kê trỏ tới đây; bộ dữ liệu đơn hàng (bước 45)
+  dựng sau phải dùng đúng các mã và ID này.
+- Luật (D-186 của core): trần mức giảm và quy tắc thông báo là dữ liệu có ngày hiệu lực, hiện kèm căn
+  cứ và "cần đối chiếu văn bản gốc"; không có dòng luật hiệu lực, hay thiếu giá ngay trước khuyến mại,
+  thì chặn (không tự cho qua). Chưa ghi nhận đã nộp thông báo thì **chặn** bật (khuyến nghị của đặc tả
+  43). Hồ sơ thông báo chỉ xuất dữ liệu (CSV chặn công thức, JSON) qua route của giao diện; người nộp là
+  con người. COD: hệ thống chỉ ghi nghĩa vụ và đối soát, nêu rõ tiền về đâu (D-187).
+- "Thử giỏ hàng" trả thêm `skipped` (dự kiến): chương trình không áp và vì sao, cùng `rejected_codes`;
+  lý do là `code` + `params`, giao diện dịch ở `promotions.why.*`. Ngày giao dự kiến là khoảng
+  `eta_from` / `eta_to` (ngày theo giờ Việt Nam), tính bằng hàm thuần `etaFor` (`src/lib/shipping.ts`)
+  từ giờ chốt, ngày làm việc, ngày nghỉ. Khung giờ khuyến mại nhập và hiện theo giờ Việt Nam (giờ của cửa
+  hàng, đặc tả 43).
+- Thao tác đảo được (tạm dừng / chạy lại chương trình, bật / tắt phương thức giao, bật / tắt hãng) có
+  Hoàn tác (`ChangeButtons`). Thao tác về tiền hay không đảo được (bật chương trình, kết thúc sớm, huỷ,
+  đặt hãng, huỷ vận đơn, giao lại, hoàn hàng, nhận hàng hoàn, bàn giao, khớp dòng lệch) hỏi lại và nêu
+  hệ quả; sửa giá sốc là hộp thoại nêu giá trước khuyến mại và giá thấp nhất được phép. Khoá API của
+  hãng không bao giờ được lưu ở dữ liệu mẫu hay điền lại vào form (chỉ ghi lúc đặt khoá).
+- `ActionDialog` (`components/catalog/action-dialog.tsx`) báo xong ngay khi Server Action trả về thay vì
+  đợi effect: nút mở hộp thoại có thể nằm trên dòng biến mất sau thao tác (hồ sơ "chờ nộp" → "đã nộp",
+  dòng lệch "chưa xử lý" → "đã xử lý"), effect không kịp chạy nên mất câu báo. Cách gọi không đổi.
+- Chữ dưới `promotions.*`, `shipping.*` (mã lỗi ở `<ns>.codes.*`, lỗi theo ô ở `<ns>.fields.*` qua
+  `lib/commerce-action.ts`), cộng `nav.groups.sales`, `nav.pages.{promotions,shipping}`,
+  `nav.about.{promotions,shipping}`.
+
+Lý do: chủ dự án muốn thấy và thử đủ phân hệ thương mại theo bản thiết kế trong lúc team API làm bước
+43–44 (W-006); một bộ mã đơn chung để màn Đơn hàng sau này khớp với vận đơn và đối soát.
+
+Đã cân nhắc: đặt "Thử giỏ hàng" thành tab riêng — bản thiết kế đặt nó ở tab Chương trình và ở nút đầu
+trang; giữ vậy, nút đầu trang nhảy tới khối đó. Dựng nhóm Bán hàng chờ có Đơn hàng — Vận chuyển dùng
+được độc lập (đặc tả 44: `shipping` không phụ thuộc `orders`). Thêm nút "Chợ Bếp Mộc" vào cây tổ chức
+mẫu cho phương thức "Sàn giao" — sàn là bước 46; bỏ phương thức đó, giữ ghi chú COD trên sàn.
