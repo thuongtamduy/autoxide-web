@@ -383,3 +383,52 @@ của core); giữ một cách làm cho mỗi việc với các màn đã có.
 người đăng ký, bình luận), một màn sẽ quá sâu. Tiptap cho bản tin rồi đổi sang HTML — mất HTML
 email có sẵn (bảng, style nội dòng) khi mở lại, và core không nhận JSON. Gửi `If-Match` bằng `ETag`
 đọc lúc render từng dòng — phải gọi chi tiết cho mọi dòng của bảng mỗi lần mở trang.
+
+## W-013 · Phân hệ Sản phẩm: Sản phẩm và giá, Tồn kho (dữ liệu mẫu) — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Phân hệ Sản phẩm (`catalog`, biểu tượng `box`) vào sổ điều hướng, đứng ngay sau Tổng quan theo
+  thứ tự `RAIL_TENANT` của bản thiết kế. Hai màn, cả hai dựng hoàn toàn bằng dữ liệu mẫu (W-006) vì
+  core chưa có module `catalog` (bước 41) và `inventory` (bước 42): "Sản phẩm và giá" `/catalog`
+  (`sample: { step: "41" }`, permission `catalog.products.read`) và "Tồn kho" `/catalog/inventory`
+  (`sample: { step: "42" }`, `inventory.read`). Permission dự kiến của hai đặc tả khai ở
+  `src/lib/catalog.ts`. Tắt dữ liệu mẫu thì hai màn trả 404 (`catalog/gate.tsx`).
+- Mỗi tab một đường dẫn con. Sản phẩm và giá: `/catalog` (sản phẩm), `categories`, `prices`, `tax`,
+  `imports` trong route group `(products)`; chi tiết sản phẩm `/catalog/products/{id}` ngoài nhóm
+  tab. Tồn kho: `/catalog/inventory` (tồn), `moves`, `transfers`, `counts`, `lots`, `purchasing`,
+  `suppliers`. Chi tiết một dòng của bảng mở bằng `?open=<id>` thành một dòng mở rộng ngay dưới
+  (Server Component, không cần JavaScript), như khung chi tiết của bản thiết kế.
+- Dữ liệu mẫu: `src/sample/catalog.ts` (sản phẩm, biến thể, danh mục, thuộc tính, quy tắc hàng cấm /
+  có điều kiện, giấy tờ, bảng giá, dòng giá, nhập / xuất, bản nháp AI), `src/sample/inventory.ts`
+  (tồn, sổ biến động, chỗ giữ, chuyển kho, kiểm kê, lô, serial, nhà cung cấp, đơn đặt mua, phiếu
+  nhập, trả hàng), `src/sample/tax.ts` (nhóm thuế và thuế suất có ngày hiệu lực của bước 36). ID cố
+  định (`PRODUCT_ID`, `VARIANT_ID`, `PRICE_LIST_ID`, `SUPPLIER_ID`) và hàm đọc theo `catalog::api`
+  (`variants`, `variantByCode`, `allVariants`, `pricesAt`, `resolvePrice`) để khuyến mại, đơn hàng,
+  sàn làm sau dùng chung. Kho và cửa hàng lấy từ `listUnits()` của `sample/org.ts`.
+- Mô hình theo đặc tả: dòng giá chỉ thêm, giải giá theo nút gần nhất → nhóm khách → ưu tiên, bảng
+  không có dòng thì cửa hàng kế thừa bảng kế tiếp; `on_hand` luôn bằng tổng sổ biến động (mọi đổi số
+  tồn đi qua một hàm, có test `verifyLevels`); kiểm kê lệch theo số lúc đếm, cộng vào tồn hiện tại;
+  giá vốn bình quân gia quyền làm tròn nửa lên. Lệnh ghi nhạy với bấm lại (dòng giá, điều chỉnh tồn,
+  phiếu nhập) nhận mã tham chiếu và trả bản cũ khi gửi lại.
+- Tiền là `Money` như JSON của core (D-180 của core: `amount` là chuỗi). `formatMoney` nhận cả chuỗi
+  và luôn viết đồng Việt Nam là số, khoảng trắng không ngắt (U+00A0) rồi "₫" ở mọi ngôn ngữ ("590,000
+  ₫" bằng tiếng Anh), để giá không ngắt dòng giữa số và ký hiệu.
+- Ảnh sản phẩm chọn từ thư viện media THẬT của core bằng bộ chọn ảnh dùng chung
+  (`components/media/media-picker.tsx`); tệp hướng dẫn (PDF) của thuộc tính đồ bếp chọn từ
+  `GET /api/v1/media?type=application/pdf` thật. Danh sách ảnh của sản phẩm lưu ở dữ liệu mẫu. Nút
+  "Gợi ý mô tả bằng AI" chỉ bật khi `GET /ai/status` thật báo AI bật; bản nháp chỉ là gợi ý, áp dụng
+  mới bật dấu `ai_assisted`.
+- Nhập CSV hai bước: chạy thử (kiểm mọi dòng, không ghi) rồi nhập đúng nội dung vừa kiểm (giữ trong
+  trạng thái của form). Xuất CSV qua route `/catalog/export.csv` của giao diện, chặn ô bắt đầu bằng
+  `=` `+` `-` `@`.
+- Chữ trên giao diện dưới `catalog.*` và `inventory.*`; mã lỗi của module dịch ở `<ns>.codes.*`, lỗi
+  theo ô ở `<ns>.fields.*` (`src/lib/commerce-action.ts`), khi có API thì core tự dịch `detail`.
+  Hộp thoại có form dùng chung `ActionDialog` / `ActionForm` (`components/catalog/action-dialog.tsx`).
+
+Lý do: chủ dự án muốn thấy và thử đủ phân hệ thương mại theo bản thiết kế trong lúc team API làm bước
+41–42 (W-006); một bộ dữ liệu có ID cố định để các phân hệ sau trỏ đúng sản phẩm.
+
+Đã cân nhắc: khung chi tiết bên phải như bản thiết kế — cần JavaScript và khó dùng trên điện thoại;
+dòng mở rộng bằng `?open=` mở thẳng được và nút quay lại chạy đúng. Gộp Tồn kho vào màn Sản phẩm như
+một tab — hai nhóm người dùng khác nhau (danh mục và giá / kho và thu mua), mỗi bên nhiều tab.

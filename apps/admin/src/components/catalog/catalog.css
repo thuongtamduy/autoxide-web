@@ -1,0 +1,326 @@
+/* Hai màn Sản phẩm và giá, Tồn kho (bản thiết kế Catalog, Inventory). Lớp `cat-`, đặt dưới `.ax`. */
+
+.ax .cat-sample {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* Dòng sản phẩm: ảnh nhỏ (hay biểu tượng nhóm hàng) cạnh tên */
+.ax .cat-prod {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.ax .cat-thumb {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel);
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* Dòng mở rộng của bảng (chi tiết một bản ghi), như khung chi tiết của bản thiết kế */
+.ax .cat-detail-row > td {
+  padding: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.ax .cat-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+.ax .cat-kv {
+  display: grid;
+  grid-template-columns: minmax(150px, max-content) 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+.ax .cat-kv dt {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.ax .cat-kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ax .cat-lines,
+.ax .cat-reqs,
+.ax .cat-rowerrs,
+.ax .cat-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ax .cat-lines > li,
+.ax .cat-reqs > li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--sheet);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ax .cat-rowerrs > li {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--bad-bg);
+  color: var(--ink);
+}
+
+/* Số tăng / giảm trong sổ biến động */
+.ax .cat-neg {
+  color: var(--bad);
+}
+.ax .cat-pos {
+  color: var(--ok);
+}
+
+/* Form trên trang: nhóm ô không viền mặc định của trình duyệt */
+.ax .cat-fs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.ax .cat-fs[disabled] {
+  opacity: 0.8;
+}
+.ax .cat-attrs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px 16px;
+}
+.ax .cat-multi {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  grid-column: 1 / -1;
+}
+.ax .cat-multi > legend {
+  margin-bottom: 4px;
+}
+.ax .cat-serves {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px 16px;
+}
+.ax .cat-serves > legend,
+.ax .cat-serves > .fhint {
+  grid-column: 1 / -1;
+}
+.ax .cat-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ax .cat-range > .inp {
+  width: 64px;
+  min-width: 0;
+}
+
+/* Xem trước kết quả tìm kiếm (tiêu đề và mô tả SEO) */
+.ax .cat-serp {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow-wrap: anywhere;
+}
+.ax .cat-serp-path {
+  font-size: 12.5px;
+  color: var(--ok);
+}
+.ax .cat-serp > b {
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.ax .cat-ai {
+  align-self: flex-start;
+}
+.ax .cat-draft {
+  white-space: pre-wrap;
+}
+.ax .cat-locales {
+  margin-left: auto;
+}
+.ax .cat-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+.ax .cat-suggest > .fhint,
+.ax .cat-suggest > .falert {
+  flex-basis: 100%;
+}
+
+/* Ảnh của sản phẩm */
+.ax .cat-images {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.ax .cat-image {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  min-width: 0;
+}
+.ax .cat-image > img {
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--panel);
+}
+.ax .cat-image-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Giá giải ra vì sao: từng bảng ứng viên và lý do thắng / bị bỏ qua */
+.ax .cat-resolve {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+.ax .cat-resolve p {
+  margin: 0;
+}
+.ax .cat-price {
+  font-size: 18px;
+}
+.ax .cat-steps > li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ax .cat-steps > li[data-outcome="winner"] {
+  background: var(--ok-bg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
+}
+.ax .cat-steps .sub {
+  flex-basis: 100%;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.ax .cat-pick {
+  margin-left: auto;
+}
+.ax .cat-pick > select {
+  max-width: 320px;
+}
+
+/* Nhập CSV: kết quả chạy thử */
+.ax .cat-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ax .cat-preview > p {
+  margin: 0;
+}
+
+/* Kiểm kê: mỗi dòng một biến thể, số đếm và lý do */
+.ax .cat-count {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ax .cat-count-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ax .cat-count-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(90px, 0.6fr) minmax(140px, 1fr);
+  align-items: end;
+  gap: 8px 14px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--sheet);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+@media (max-width: 720px) {
+  .ax .cat-locales,
+  .ax .cat-pick {
+    margin-left: 0;
+  }
+  .ax .cat-pick > select {
+    max-width: 100%;
+  }
+  .ax .cat-kv {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .ax .cat-kv dd {
+    margin-bottom: 6px;
+  }
+  .ax .cat-count-line {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ax .cat-count-line > .cell2 {
+    grid-column: 1 / -1;
+  }
+  .ax .cat-detail-row > td {
+    display: block;
+    grid-column: 1 / -1;
+  }
+  .ax .cat-image {
+    flex-direction: column;
+  }
+  .ax .cat-image > img {
+    width: 100%;
+    height: 160px;
+  }
+}
+
+.ax .cat-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

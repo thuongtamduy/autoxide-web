@@ -194,9 +194,9 @@ describe("phân hệ Nội dung trong sổ thật", () => {
 });
 
 describe("nhóm Tiếp thị", () => {
-  it("đứng sau Tổng quan; mỗi màn theo module và permission của nó", async () => {
+  it("đứng sau Tổng quan và Sản phẩm; mỗi màn theo module và permission của nó", async () => {
     const { NAV: real } = await import("./nav");
-    expect(real.map((g) => g.id).slice(0, 2)).toEqual(["home", "mkt"]);
+    expect(real.map((g) => g.id).slice(0, 3)).toEqual(["home", "catalog", "mkt"]);
     const nav = visibleNav(
       {
         allPermissions: false,
@@ -208,5 +208,24 @@ describe("nhóm Tiếp thị", () => {
     expect(nav.find((g) => g.id === "mkt")?.pages.map((p) => p.id)).toEqual(["forms", "comments"]);
     const missing = visibleNav({ allPermissions: true, permissions: [], modules: ["forms"] }, real);
     expect(missing.find((g) => g.id === "mkt")?.pages.map((p) => p.id)).toEqual(["forms"]);
+  });
+});
+
+describe("nhóm Sản phẩm (dữ liệu mẫu, bước 41–42)", () => {
+  it("đứng ngay sau Tổng quan; hai màn chỉ hiện khi bật dữ liệu mẫu, theo permission dự kiến", async () => {
+    const { NAV: real } = await import("./nav");
+    const group = real.find((g) => g.id === "catalog");
+    expect(group?.icon).toBe("box");
+    expect(group?.pages.map((p) => p.href)).toEqual(["/catalog", "/catalog/inventory"]);
+    const off = visibleNav({ allPermissions: true, permissions: [], modules: [] }, real);
+    expect(off.some((g) => g.id === "catalog")).toBe(false);
+    const clerk = visibleNav(
+      { allPermissions: false, permissions: ["inventory.read"], modules: [], sample: true },
+      real,
+    );
+    expect(clerk.find((g) => g.id === "catalog")?.pages.map((p) => p.id)).toEqual(["inventory"]);
+    // Đường dẫn dài hơn thắng: /catalog/inventory/moves thuộc Tồn kho, /catalog/prices thuộc Sản phẩm và giá.
+    expect(activePage(real, "/catalog/inventory/moves")?.page.id).toBe("inventory");
+    expect(activePage(real, "/catalog/prices")?.page.id).toBe("catalog");
   });
 });

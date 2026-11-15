@@ -119,15 +119,15 @@ test("thư mục mới, tải vào thư mục, lọc theo loại", async ({ page
   await page.getByRole("button", { name: "New folder" }).click();
   await dialog(page).getByRole("button", { name: "Create" }).click();
   await expect(dialog(page).getByText("Enter a name for the folder.")).toBeVisible();
-  await dialog(page).getByLabel("Name").fill("Products");
+  await dialog(page).getByLabel("Name").fill("Kitchen photos");
   await dialog(page).getByRole("button", { name: "Create" }).click();
   await expect(toast(page)).toContainText("Folder created");
-  await page.getByRole("link", { name: "Products" }).click();
+  await page.getByRole("link", { name: "Kitchen photos" }).click();
   await expect(page).toHaveURL(/folder=[0-9a-f-]{36}/);
-  await expect(page.getByText("Into the folder Products.")).toBeVisible();
+  await expect(page.getByText("Into the folder Kitchen photos.")).toBeVisible();
   await upload(page, "noi-inox.png", PNG);
   await expect(page).toHaveURL(/item=/);
-  await expect(pane(page)).toContainText("Products");
+  await expect(pane(page)).toContainText("Kitchen photos");
 
   await page.locator("summary", { hasText: "Filter: any type" }).click();
   await page.getByRole("menuitemradio", { name: "Videos" }).click();
