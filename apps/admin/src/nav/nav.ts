@@ -7,6 +7,7 @@
 // không bày ra màn mà người dùng mở vào chỉ thấy lỗi. Khi core có sổ điều hướng (bước 51,
 // `Module::navigation`) thì lấy danh sách này từ core thay cho file này.
 import type { IconName } from "@/components/shell/icon";
+import { CATALOG_PRODUCTS_READ, INVENTORY_READ } from "@/lib/catalog";
 import {
   COMMENTS_EXPORT,
   COMMENTS_MANAGE,
@@ -72,6 +73,26 @@ export interface NavGroup {
 /** Thứ tự cố định, theo 12 phân hệ của bản thiết kế. Chỉ ghi màn đã có trong ứng dụng này. */
 export const NAV: NavGroup[] = [
   { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
+  {
+    // Sản phẩm: module `catalog` và `inventory` của core chưa có (bước 41, 42), nên hai màn dựng
+    // bằng dữ liệu mẫu (W-006, W-013); vẫn lọc theo permission dự kiến của đặc tả.
+    id: "catalog",
+    icon: "box",
+    pages: [
+      {
+        id: "catalog",
+        href: "/catalog",
+        permission: CATALOG_PRODUCTS_READ,
+        sample: { step: "41" },
+      },
+      {
+        id: "inventory",
+        href: "/catalog/inventory",
+        permission: INVENTORY_READ,
+        sample: { step: "42" },
+      },
+    ],
+  },
   {
     // Tiếp thị: biểu mẫu, bản tin, bình luận (module `forms`, `newsletter`, `comments`). Khuyến
     // mại và tiếp thị liên kết (bước 43, 49) vào nhóm này khi dựng.
