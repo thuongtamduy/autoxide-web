@@ -1,0 +1,75 @@
+/* Kiểu giao diện "market" (W-029, bảng StyleMarket: kiểu sàn — thẻ đóng khung, giá đỏ đậm, nhãn giảm ruy-băng vàng, nút bo 8px): nạp sau `shop.css`, chỉ có hiệu lực khi
+   `<html data-variant="market">` (`AUTOXIDE_STOREFRONT_THEME`). Màu và phông ở `tokens.css`; ở đây đổi hình
+   khối của thẻ, nút, khối giá cho trang chủ, danh mục, sản phẩm. Bố cục và số cột không đổi. */
+
+html[data-variant="market"] .sp {
+  --radius-btn: 8px;
+  --sun: #ffd54a;
+}
+html[data-variant="market"] .sp .btn {
+  border-radius: var(--radius-btn);
+}
+html[data-variant="market"] .sp .pgrid {
+  gap: 14px 10px;
+}
+html[data-variant="market"] .sp .pgrid .pcard {
+  gap: 8px;
+  padding-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sheet);
+  overflow: hidden;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+html[data-variant="market"] .sp .pgrid .pcard:hover {
+  border-color: var(--brand);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+html[data-variant="market"] .sp .pgrid .pcard > .thumb {
+  border-radius: 0;
+}
+html[data-variant="market"] .sp .pgrid .pc-body {
+  padding: 0 10px;
+}
+html[data-variant="market"] .sp .pgrid .pc-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+html[data-variant="market"] .sp .pgrid .pc-price .price,
+html[data-variant="market"] .sp .pp-big {
+  color: var(--brand-ink);
+  font-weight: 800;
+}
+html[data-variant="market"] .sp .badge {
+  border-radius: 4px;
+}
+html[data-variant="market"] .sp .pcard .flag .badge {
+  height: auto;
+  padding: 4px 6px 8px;
+  border-radius: 0;
+  background: var(--sun);
+  color: #7a1e10;
+  font-weight: 800;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
+}
+html[data-variant="market"] .sp .pcard .flag {
+  top: 0;
+  right: 8px;
+  left: auto;
+}
+html[data-variant="market"] .sp .pp-price {
+  background: var(--sale-bg);
+}
+html[data-variant="market"] .sp .sec-head h2,
+html[data-variant="market"] .sp .pp-h2 {
+  font-weight: 900;
+}
+html[data-variant="market"] .sp .chip.on,
+html[data-variant="market"] .sp .cat-radio:has(input:checked) {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-brand);
+}

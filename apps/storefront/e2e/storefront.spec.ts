@@ -159,7 +159,7 @@ test("địa chỉ do core quyết: chuyển hướng, trang tĩnh, 404", async 
 
 test("tìm kiếm: bài viết của core và sản phẩm mẫu, gõ không dấu", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("searchbox", { name: "Tìm sản phẩm, bài viết, cửa hàng" }).fill("chao gang");
+  await page.getByRole("combobox", { name: "Tìm sản phẩm, bài viết, cửa hàng" }).fill("chao gang");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/search\?q=chao\+gang/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Kết quả cho “chao gang”");
@@ -250,6 +250,12 @@ for (const width of [360, 390, 430, 768, 820, 1024, 1280, 1440]) {
       "/blog",
       "/blog/chao-gang-chao-inox",
       "/search?q=th%E1%BB%9Bt",
+      "/danh-muc",
+      "/danh-muc/bep",
+      "/san-pham/chao-gang",
+      "/san-pham/khan-lau-bep-cotton-bo-3",
+      "/khuyen-mai",
+      "/livestream",
     ]) {
       await page.goto(path);
       await expectNoHorizontalScroll(page);
@@ -258,5 +264,11 @@ for (const width of [360, 390, 430, 768, 820, 1024, 1280, 1440]) {
     await page.goto("/");
     await expectNoOrphanCard(page, ".home-cats");
     await expectNoOrphanCard(page, ".best-grid");
+    await page.goto("/danh-muc");
+    await expectNoOrphanCard(page, ".cat-grid");
+    await page.goto("/san-pham/chao-gang");
+    await expectNoOrphanCard(page, ".pp-together");
+    await page.goto("/khuyen-mai");
+    await expectNoOrphanCard(page, ".dl-grid");
   });
 }

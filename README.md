@@ -149,9 +149,16 @@ four looks (`AUTOXIDE_STOREFRONT_THEME`).
   (guests can write when the core allows it), search in articles and pages, the newsletter sign-up
   and the pages its mails link to, draft previews, `sitemap.xml`, `robots.txt` and an RSS feed.
 - **On sample data** (marked with a small "sample" tag and a notice bar), until the core has the
-  APIs: products, prices, discount codes, stock per store, stores, the cart, sellers. When sample
-  data is off these sections are hidden and the site shows only what the core serves. A menu the
-  core does not have yet is replaced by a sample menu while sample data is on.
+  APIs: products, prices, discount codes, stock per store, stores, the cart, sellers. Pages built on
+  it: all products and product categories (`/danh-muc`, `/danh-muc/<slug>`: filters for material,
+  hob type, price, rating, seller and "in stock at my store", six sort orders, paging), product
+  pages (`/san-pham/<slug>`: gallery, options, list price with the code price and the reference
+  price of a flash sale, delivery date and stock per store, reviews with filters, questions and
+  answers, seller and legal information, JSON-LD), deals (`/khuyen-mai`: flash sale countdown,
+  codes, automatic offers, promotion notices) and livestream (`/livestream`: live show, pinned
+  products, schedule). The header search suggests keywords, categories, products, articles and
+  stores. When sample data is off these sections are hidden and the site shows only what the core
+  serves. A menu the core does not have yet is replaced by a sample menu while sample data is on.
 - **Languages in the address**: Vietnamese at `/`, English under `/en`, with `hreflang` links.
 
 Run it next to the admin:

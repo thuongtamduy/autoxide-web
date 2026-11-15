@@ -41,5 +41,19 @@ export default defineConfig({
       },
       reuseExistingServer: false,
     },
+    // Ba kiểu giao diện còn lại (`e2e/themes.spec.ts`): cùng bản build, khác `AUTOXIDE_STOREFRONT_THEME`.
+    ...(["market", "minimal", "luxe"] as const).map((theme, index) => ({
+      command: "node scripts/start-standalone.mjs",
+      url: `http://localhost:${APP_PORT + 1 + index}/robots.txt`,
+      env: {
+        AUTOXIDE_API_URL: `http://127.0.0.1:${CORE_PORT}`,
+        AUTOXIDE_STOREFRONT_URL: `http://localhost:${APP_PORT + 1 + index}`,
+        AUTOXIDE_WEB_SAMPLE_DATA: "true",
+        AUTOXIDE_STOREFRONT_THEME: theme,
+        PORT: String(APP_PORT + 1 + index),
+        HOSTNAME: "localhost",
+      },
+      reuseExistingServer: false,
+    })),
   ],
 });

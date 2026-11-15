@@ -142,8 +142,15 @@ diện (`AUTOXIDE_STOREFRONT_THEME`).
   phép), tìm trong bài viết và trang, đăng ký bản tin và các trang mà thư của nó trỏ tới, xem trước
   bản nháp, `sitemap.xml`, `robots.txt` và RSS.
 - **Dùng dữ liệu mẫu** (có dấu "mẫu" nhỏ và một dải thông báo) tới khi core có API: sản phẩm, giá,
-  mã giảm giá, tồn theo cửa hàng, cửa hàng, giỏ hàng, người bán. Tắt dữ liệu mẫu thì các khối này
-  ẩn, website chỉ còn phần core phục vụ. Menu core chưa có thì dùng menu mẫu khi bật dữ liệu mẫu.
+  mã giảm giá, tồn theo cửa hàng, cửa hàng, giỏ hàng, người bán. Các trang dựng trên đó: tất cả sản
+  phẩm và danh mục sản phẩm (`/danh-muc`, `/danh-muc/<slug>`: lọc chất liệu, loại bếp, giá, đánh giá,
+  nơi bán, "có sẵn ở cửa hàng của tôi", sáu cách sắp, chia trang), trang sản phẩm (`/san-pham/<slug>`:
+  bộ ảnh, lựa chọn, giá niêm yết kèm giá với mã và giá tham chiếu của flash sale, ngày giao và tồn theo
+  cửa hàng, đánh giá có bộ lọc, hỏi đáp, thông tin người bán và pháp lý, JSON-LD), khuyến mại
+  (`/khuyen-mai`: đếm ngược flash sale, mã giảm giá, chương trình tự áp, thông báo khuyến mại) và
+  livestream (`/livestream`: phiên đang phát, sản phẩm đang ghim, lịch phát). Ô tìm ở đầu trang gợi ý
+  từ khoá, danh mục, sản phẩm, bài viết và cửa hàng. Tắt dữ liệu mẫu thì các khối này ẩn, website chỉ
+  còn phần core phục vụ. Menu core chưa có thì dùng menu mẫu khi bật dữ liệu mẫu.
 - **Ngôn ngữ trên địa chỉ**: tiếng Việt ở `/`, tiếng Anh dưới `/en`, có link `hreflang`.
 
 Chạy cạnh trang quản trị:

@@ -1,0 +1,48 @@
+/* Kiểu giao diện "minimal" (W-029, bảng StyleMinimal: không viền, ô ảnh bo lớn, nút chính màu chữ, nhiều khoảng trống): nạp sau `shop.css`, chỉ có hiệu lực khi
+   `<html data-variant="minimal">` (`AUTOXIDE_STOREFRONT_THEME`). Màu và phông ở `tokens.css`; ở đây đổi hình
+   khối của thẻ, nút, khối giá cho trang chủ, danh mục, sản phẩm. Bố cục và số cột không đổi. */
+
+html[data-variant="minimal"] .sp .dsp {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+html[data-variant="minimal"] .sp .thumb {
+  border-radius: 24px;
+}
+html[data-variant="minimal"] .sp .pcard {
+  gap: 14px;
+}
+html[data-variant="minimal"] .sp .pc-name {
+  font-weight: 500;
+}
+html[data-variant="minimal"] .sp .pc-price .price,
+html[data-variant="minimal"] .sp .pp-big {
+  font-weight: 600;
+}
+html[data-variant="minimal"] .sp .btn.pri {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+html[data-variant="minimal"] .sp .card,
+html[data-variant="minimal"] .sp .pp-alt,
+html[data-variant="minimal"] .sp .pp-addon {
+  border-radius: 22px;
+}
+html[data-variant="minimal"] .sp .pp-price,
+html[data-variant="minimal"] .sp .pp-hl {
+  border-radius: 22px;
+}
+html[data-variant="minimal"] .sp .pgrid {
+  gap: 48px 24px;
+}
+html[data-variant="minimal"] .sp .pp,
+html[data-variant="minimal"] .sp .home {
+  row-gap: 80px;
+}
+html[data-variant="minimal"] .sp .kick {
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 14px;
+}

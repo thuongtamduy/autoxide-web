@@ -1,0 +1,87 @@
+/* Kiểu giao diện "luxe" (W-029, bảng StyleLuxe: góc vuông, tiêu đề chữ có chân, nhãn và nút chữ hoa giãn cách, ảnh 4:5): nạp sau `shop.css`, chỉ có hiệu lực khi
+   `<html data-variant="luxe">` (`AUTOXIDE_STOREFRONT_THEME`). Màu và phông ở `tokens.css`; ở đây đổi hình
+   khối của thẻ, nút, khối giá cho trang chủ, danh mục, sản phẩm. Bố cục và số cột không đổi. */
+
+html[data-variant="luxe"] .sp h1.dsp,
+html[data-variant="luxe"] .sp .cat-title,
+html[data-variant="luxe"] .sp .pp-title {
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+html[data-variant="luxe"] .sp .thumb,
+html[data-variant="luxe"] .sp .card,
+html[data-variant="luxe"] .sp .chip,
+html[data-variant="luxe"] .sp .badge,
+html[data-variant="luxe"] .sp .opt,
+html[data-variant="luxe"] .sp .inp,
+html[data-variant="luxe"] .sp .sel,
+html[data-variant="luxe"] .sp .chk,
+html[data-variant="luxe"] .sp .pp-size,
+html[data-variant="luxe"] .sp .pp-price,
+html[data-variant="luxe"] .sp .pp-sub,
+html[data-variant="luxe"] .sp .pp-hl,
+html[data-variant="luxe"] .sp .pp-addon,
+html[data-variant="luxe"] .sp .pp-perks > li,
+html[data-variant="luxe"] .sp .pp-terms > li,
+html[data-variant="luxe"] .sp .pp-alt,
+html[data-variant="luxe"] .sp .pp-qty,
+html[data-variant="luxe"] .sp .cat-instore,
+html[data-variant="luxe"] .sp .coupon {
+  border-radius: 0;
+}
+html[data-variant="luxe"] .sp .btn {
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+html[data-variant="luxe"] .sp .btn.pri {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+html[data-variant="luxe"] .sp .kick,
+html[data-variant="luxe"] .sp .lab {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+html[data-variant="luxe"] .sp .pgrid .pcard > .thumb {
+  aspect-ratio: 4 / 5;
+  background: linear-gradient(160deg, var(--t1), var(--wash));
+}
+html[data-variant="luxe"] .sp .thumb svg {
+  stroke-width: 1;
+}
+html[data-variant="luxe"] .sp .pc-name {
+  font-weight: 400;
+}
+html[data-variant="luxe"] .sp .pc-price .price,
+html[data-variant="luxe"] .sp .pp-big {
+  font-weight: 500;
+}
+html[data-variant="luxe"] .sp .pgrid {
+  gap: 56px 32px;
+}
+/* Nút chữ hoa giãn cách dài hơn: hàng nút xuống dòng thay vì tràn khung ở màn hẹp. */
+html[data-variant="luxe"] .sp .hero-actions {
+  flex-wrap: wrap;
+}
+html[data-variant="luxe"] .sp .home-hero .hero-actions > .btn {
+  flex: 1 1 auto;
+  max-width: 100%;
+  height: auto;
+  min-height: 46px;
+  white-space: normal;
+  text-align: center;
+}
+html[data-variant="luxe"] .sp .pp-big {
+  font-family: var(--font-body);
+}
+@media (max-width: 720px) {
+  html[data-variant="luxe"] .sp .btn {
+    letter-spacing: 0.1em;
+  }
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ALL_PRODUCTS,
   availability,
   CATEGORIES,
   CATEGORY_ID,
@@ -53,6 +54,13 @@ describe("catalog mẫu", () => {
     ]);
     expect(searchProducts("", "vi")).toEqual([]);
     expect(searchProducts("board", "en")).toHaveLength(3);
+  });
+
+  it("hàng của người bán trên sàn: có slug người bán, tìm được theo slug và SKU", () => {
+    const market = ALL_PRODUCTS.filter((p) => p.seller !== null);
+    expect(market.map((p) => p.seller)).toEqual(["khan-bong-ha-long"]);
+    expect(PRODUCTS.every((p) => p.seller === null)).toBe(true);
+    expect(productBySku("KBHL-KL3")?.key).toBe("marketTowels");
   });
 
   it("tồn theo cửa hàng", () => {
