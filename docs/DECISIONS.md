@@ -928,3 +928,55 @@ của core để thay bằng API dễ, và để số đếm menu, hộp việc,
 Đã cân nhắc: một bảng việc riêng trong dữ liệu mẫu — sai thiết kế của core (việc tính từ dữ liệu, tự biến
 mất); đếm trên menu bằng một lời gọi riêng mỗi màn — nhiều lời gọi, số menu và hộp việc lệch nhau; lấy
 hoạt động gần đây từ dữ liệu mẫu — core đã có nhật ký audit thật, không thay API có sẵn bằng mẫu (W-006).
+
+## W-022 · Màn Menu gọi module `menus` thật của core v0.14.0; chỉ sổ đối tượng thương mại còn là dữ liệu mẫu — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- **Màn Menu (`/content/menus`) gọi API thật** của module `menus` (D-238 của core): danh sách
+  (`GET /api/v1/menus`, đọc hết theo `cursor`), đọc kèm `ETag`, tạo (`POST`, 201), lưu cả cây (`PUT`,
+  `If-Match` bắt buộc), xoá, và menu công khai (`GET /api/v1/menus/public/{key}?locale`, gọi như khách).
+  Sổ điều hướng: màn theo module `menus` và `menus.read`, không còn `sample`. Thay phần "menu dựng bằng
+  dữ liệu mẫu" của W-010.
+- Bản nháp của trình sửa (`src/lib/menu-tree.ts`) theo đúng hình dạng `SiteMenuItemInput`: `ref` /
+  `feature` là `{ kind, id }`, `badge` là `{ text, tone, from, until }` (thời điểm RFC 3339), bộ
+  biểu tượng 27 tên và kiểu nổi bật `accent | brand | sale | muted` của core; bỏ các trường đoán trước
+  (`ref_kind`, `badge_text`, `version`, `website`, người sửa). Đổi qua lại và gửi lên ở `src/lib/menus.ts`
+  (hàm thuần, có test): `auto_children_limit` chỉ gửi khi bật, trường trống không gửi. Kiểm trước khi
+  gửi đúng như `items.rs` của core (đường dẫn như `is_link`, nhận cả `http://`).
+- **Lỗi 422 của core** (`errors[]` theo vị trí `items[0].children[1].ref.id`) được đưa về đúng mục
+  bằng cây vừa gửi; câu đầu là `detail` của core (đã dịch), từng dòng có mã; ba mã của `menus`
+  (`ref_unknown_kind`, `ref_not_found`, `children_unsupported`) và `too_deep` có câu riêng, còn lại hiện
+  `detail` của core. 412 → "người khác vừa lưu", bản nháp còn nguyên, nút tải bản mới. Bỏ nút "Thử:
+  người khác vừa lưu" (412 nay là của core thật; e2e dùng `POST /__menus/bump` của core giả).
+- Core cấp **id mới cho mọi mục sau mỗi lần lưu**, nên trình sửa giữ mục đang chọn và bảng xổ đang mở
+  theo vị trí, không theo id (trình sửa vẫn không dựng lại khi `router.refresh()`).
+- Ngày của nhãn nổi bật nhập theo giờ Việt Nam: "hiện từ" là 0:00 của ngày đó, "hiện tới (hết ngày)"
+  gửi 0:00 ngày hôm sau (core ẩn từ `until`). Không sửa ô ngày thì gửi lại đúng giá trị đã đọc.
+- **Đích của mục**: hai loại core đã có ghi ở `CORE_REF_KINDS` (`content.entry`, `content.term` có cây;
+  core chưa có API liệt kê loại); bài, trang, danh mục, thẻ đọc THẬT qua API của `content` (200 bài mới
+  sửa nhất, 200 danh mục / thẻ; bài công khai khi `status = published`), có ô tìm trong danh sách đã đọc.
+  Loại thương mại (danh mục sản phẩm 41, khuyến mại 43, gian hàng 46, cửa hàng 34) và đối tượng của chúng
+  là **dữ liệu mẫu** (`src/sample/menus.ts`, nhãn `SampleBadge`, chữ "Mẫu" trên mục): chọn được để thấy
+  trình sửa theo thiết kế, nhưng lưu thì core trả `menus.ref_unknown_kind` và giao diện hiện đúng lỗi đó.
+- Xem trước mặt tiền có hai nguồn: "Bản nháp" (dựng từ bản chưa lưu theo luật của menu công khai: bỏ
+  đối tượng không công khai kèm mục con, bỏ nhóm rỗng, nhãn ngoài hạn ẩn) và "Đang hiện trên website"
+  (câu trả lời thật của menu công khai). Chung một cách vẽ (`PreviewItem`).
+- **Menu cũ của `content`**: core đã gửi `Deprecation`, `Sunset`, `Link` trên `/content/menus…`; ngày
+  ngừng hiện từ header `Sunset` thật. Lệnh nhập chỉ có ở máy chủ (`autoxide task
+  menus.import_content_menus`), chưa có API: màn hiện xem trước tính từ menu cũ thật và danh sách menu
+  thật (chưa có cùng khoá và ngôn ngữ thì tạo, có rồi thì giữ) kèm câu lệnh; không có nút chạy, không giả
+  lưu được. Bỏ khối nhập dữ liệu mẫu của W-010.
+- Thêm 13 biểu tượng nét vào `Icon` cho bộ biểu tượng của core (`bag`, `bolt`, `calendar`, `category`,
+  `chat`, `fire`, `heart`, `help`, `percent`, `phone`, `shop`, `star`, `truck`); `news`, `map_pin`,
+  `sparkles` vẽ bằng `posts`, `pin`, `spark` có sẵn.
+- Core giả có `e2e/mock-menus.ts` (đúng hình dạng `openapi.json`, kiểm và mã lỗi như core, 201 +
+  `Location`, `ETag` / `If-Match` / 412 / 428, menu công khai không cần đăng nhập) và module `menus` trong
+  sổ module.
+
+Lý do: core v0.14.0 đã có module `menus`; W-006 không cho thay API có sẵn bằng dữ liệu mẫu. Phần core còn
+thiếu (sổ đối tượng, API nhập menu cũ) giữ mẫu hoặc chỉ xem trước, nói rõ trên màn.
+
+Đã cân nhắc: chạy nhập menu cũ từ giao diện bằng `POST /api/v1/menus` cho từng menu — chép logic của lệnh
+trên máy chủ vào giao diện, và `POST` kiểm đích còn lệnh nhập thì không; giữ kho mẫu cho phần nhập — tạo
+menu giả lẫn với menu thật; liệt kê loại thương mại chỉ khi core có — mất phần thiết kế cần thử.

@@ -93,6 +93,16 @@ function slugOf(value: string): string {
 }
 
 /** Xử lý route của màn cấu trúc; `false` khi không phải route của nó. */
+/**
+ * Như core (D-238, D-059): endpoint menu cũ của `content` trả kèm `Deprecation` (RFC 9745),
+ * `Sunset` (RFC 8594) và link tới endpoint thay thế.
+ */
+function deprecated(response: ServerResponse) {
+  response.setHeader("Deprecation", "@1794614400");
+  response.setHeader("Sunset", "Fri, 14 May 2027 00:00:00 GMT");
+  response.setHeader("Link", '</api/v1/menus>; rel="successor-version"');
+}
+
 export async function structureRoutes(
   request: IncomingMessage,
   response: ServerResponse,
@@ -325,6 +335,7 @@ export async function structureRoutes(
 
   // ---------------------------------------------------------------- Menu cũ (chỉ đọc)
   if (route === `GET ${P}/menus`) {
+    deprecated(response);
     send(response, 200, {
       data: menus.map(({ id, key, locale, updated_at }) => ({ id, key, locale, updated_at })),
     } satisfies Schemas["Data_Vec_MenuSummary"]);
@@ -332,6 +343,7 @@ export async function structureRoutes(
   }
   const menu = path.match(/^\/api\/v1\/content\/menus\/([^/]+)$/);
   if (menu && request.method === "GET") {
+    deprecated(response);
     const found = menus.find(
       (m) => m.key === menu[1] && m.locale === (url.searchParams.get("locale") ?? m.locale),
     );

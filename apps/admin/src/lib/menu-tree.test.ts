@@ -73,21 +73,34 @@ describe("cây menu dạng phẳng", () => {
     expect(pathOf(base, 2, (r) => r.label)).toBe("a › a2");
   });
 
-  it("đường dẫn như service sẽ kiểm (D-149: không nhận //host)", () => {
+  it("đường dẫn đúng như service của menus kiểm (is_link; D-149: không nhận //host)", () => {
     expect(urlProblem("/khuyen-mai")).toBeNull();
+    expect(urlProblem("/sale?q=1#top")).toBeNull();
     expect(urlProblem("https://cho.example.com")).toBeNull();
+    expect(urlProblem("HTTP://example.com")).toBeNull();
     expect(urlProblem("mailto:hotro@example.com")).toBeNull();
     expect(urlProblem("//evil.example.com")).toBe("protocolRelative");
-    expect(urlProblem("http://example.com")).toBe("insecure");
+    expect(urlProblem("/\\evil.example.com")).toBe("invalidChar");
+    expect(urlProblem("/a b")).toBe("invalidChar");
+    expect(urlProblem(`/${"a".repeat(2048)}`)).toBe("tooLong");
     expect(urlProblem("javascript:alert(1)")).toBe("unsupported");
+    expect(urlProblem("sale")).toBe("unsupported");
     expect(urlProblem(" ")).toBe("empty");
   });
 
-  it("nhãn có hạn tự ẩn ngoài khoảng ngày", () => {
-    const badge = { badge_text: "−10%", badge_from: "2026-11-01", badge_until: "2026-11-30" };
-    expect(badgeShown(badge, "2026-11-15")).toBe(true);
-    expect(badgeShown(badge, "2026-12-01")).toBe(false);
-    expect(badgeShown(badge, "2026-10-31")).toBe(false);
-    expect(badgeShown({ ...badge, badge_text: " " }, "2026-11-15")).toBe(false);
+  it("nhãn nổi bật chỉ hiện trong [from, until)", () => {
+    const badge = {
+      text: "−10%",
+      tone: "sale" as const,
+      from: "2026-11-01T00:00:00Z",
+      until: "2026-12-01T00:00:00Z",
+    };
+    expect(badgeShown(badge, "2026-11-15T00:00:00Z")).toBe(true);
+    expect(badgeShown(badge, "2026-11-01T00:00:00Z")).toBe(true);
+    expect(badgeShown(badge, "2026-12-01T00:00:00Z")).toBe(false);
+    expect(badgeShown(badge, "2026-10-31T23:59:59Z")).toBe(false);
+    expect(badgeShown({ ...badge, from: null, until: null }, "2030-01-01T00:00:00Z")).toBe(true);
+    expect(badgeShown({ ...badge, text: " " }, "2026-11-15T00:00:00Z")).toBe(false);
+    expect(badgeShown(null, "2026-11-15T00:00:00Z")).toBe(false);
   });
 });
