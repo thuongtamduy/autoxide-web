@@ -47,8 +47,9 @@ test("danh sách module, chi tiết, module không có, đăng xuất", async ({
   await page.getByRole("link", { name: "Modules", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/modules$/);
 
+  // kernel, notes và content (core giả có module content cho màn Nội dung).
   const rows = page.locator("tbody tr");
-  await expect(rows).toHaveCount(2);
+  await expect(rows).toHaveCount(3);
   await expect(rows.nth(0)).toContainText("kernel");
   await expect(rows.nth(0)).toContainText("Built-in");
 
@@ -89,7 +90,7 @@ test("access token hết hạn thì tự làm mới, mỗi refresh token chỉ d
   // Cookie access hết sau 1 giây.
   await page.waitForTimeout(1_500);
   await page.reload();
-  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await expect(page.locator("tbody tr")).toHaveCount(3);
   await page.waitForTimeout(1_500);
   await page.getByRole("link", { name: "notes" }).click();
   await expect(page.getByRole("heading", { name: "notes" })).toBeVisible();

@@ -47,6 +47,11 @@ export interface NavGroup {
 export const NAV: NavGroup[] = [
   { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
   {
+    id: "content",
+    icon: "posts",
+    pages: [{ id: "entries", href: "/content", module: "content", permission: "content.read" }],
+  },
+  {
     id: "org",
     icon: "org",
     pages: [

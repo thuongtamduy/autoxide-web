@@ -11,6 +11,7 @@ describe("matcher của proxy", () => {
     "/verify-email?token=abc",
     "/forgot-password",
     "/reset-password?token=abc",
+    "/preview?token=abc",
     "/_next/static/chunk.js",
   ])("trang không cần đăng nhập không qua proxy: %s", (url) => {
     expect(runs(url)).toBe(false);
@@ -24,6 +25,8 @@ describe("matcher của proxy", () => {
     "/login-help",
     "/verify-emails",
     "/reset-password-x",
+    "/previews",
+    "/content",
   ])("trang cần đăng nhập qua proxy: %s", (url) => {
     expect(runs(url)).toBe(true);
   });

@@ -4,6 +4,11 @@
   "type": "module",
   "dependencies": {
     "@autoxide/sdk": "workspace:*",
+    "@tiptap/core": "3.32.2",
+    "@tiptap/extension-table": "3.32.2",
+    "@tiptap/pm": "3.32.2",
+    "@tiptap/react": "3.32.2",
+    "@tiptap/starter-kit": "3.32.2",
     "next": "16.4.6",
     "next-intl": "^4.15.1",
     "react": "19.3.1",

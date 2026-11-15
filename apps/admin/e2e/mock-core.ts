@@ -8,6 +8,7 @@
 //
 // Quản trị người dùng, role và trang công khai của link trong thư: `mock-access.ts`.
 // Webhook, API key, audit, trạng thái AI, OpenAPI: `mock-settings.ts`.
+// Màn Nội dung (bài viết, trình soạn, xem trước): `mock-content.ts`.
 //
 // Mã của app xác thực luôn là 123456. Access token chỉ sống 31 giây (cookie của trang quản trị
 // hết sau 1 giây), để test đi qua đường làm mới token. `GET /__stats` trả số lần làm mới;
@@ -19,6 +20,13 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import type { Me } from "@autoxide/sdk";
 import { KERNEL, NOTES } from "../src/test/fixtures.ts";
 import { ADMIN_ROLE, accessRoutes, publicRoutes, resetAccess } from "./mock-access.ts";
+import {
+  CONTENT_MODULE,
+  contentBump,
+  contentPreview,
+  contentRoutes,
+  resetContent,
+} from "./mock-content.ts";
 import {
   type Account,
   empty,
@@ -187,6 +195,7 @@ const server = createServer(async (request, response) => {
     refreshes = 0;
     resetAccess();
     resetSettings();
+    resetContent();
     return send(response, 204);
   }
   if (route === "POST /__webhooks/fire") {
@@ -199,6 +208,8 @@ const server = createServer(async (request, response) => {
     const session = startSession(account, text(body, "user_agent") || null);
     return send(response, 201, { id: session.id });
   }
+  if (route === "POST /__content/bump") return contentBump(request, response);
+  if (route === "GET /api/v1/content/public/preview") return contentPreview(response, url);
   if (route === "POST /api/v1/auth/login") {
     const body = await json(request);
     const account = accounts.find(
@@ -313,18 +324,21 @@ const server = createServer(async (request, response) => {
       );
     }
     if (url.pathname === "/api/v1/kernel/modules") {
-      const listed = [KERNEL, NOTES].map((module) => ({
+      const listed = [KERNEL, NOTES, CONTENT_MODULE].map((module) => ({
         ...module,
         migrations: module.migrations.map((m) => ({ ...m, applied: null })),
       }));
       return send(response, 200, { data: listed });
     }
     const name = decodeURIComponent(url.pathname.slice("/api/v1/kernel/modules/".length));
-    const module = [KERNEL, NOTES].find((m) => m.name === name);
+    const module = [KERNEL, NOTES, CONTENT_MODULE].find((m) => m.name === name);
     if (!module) {
       return problem(response, 404, "kernel.module_not_found", `No module named \`${name}\`.`);
     }
     return send(response, 200, { data: module });
+  }
+  if (url.pathname.startsWith("/api/v1/content/") || route === "GET /api/v1/ai/status") {
+    return contentRoutes(request, response, url, route);
   }
   return problem(response, 404, "not_found", "No such route in the mock core.");
 });
