@@ -240,6 +240,39 @@ export async function mediaRoutes(
   if (!match || !item) {
     return problem(response, 404, "media.item_not_found", "No media item has this id.");
   }
+  // Alt theo ngôn ngữ (core v0.14.0): ngôn ngữ theo `AUTOXIDE_MEDIA_ALT_LOCALES` (mặc định en, vi).
+  const alt = (match[2] ?? "").match(/^\/alts\/([^/]+)$/);
+  if (alt && (request.method === "PUT" || request.method === "DELETE")) {
+    if (!versionOk(request, response, item)) return;
+    if (item.trashed_at)
+      return problem(response, 409, "media.item_in_trash", "The item is in the trash.");
+    const locale = decodeURIComponent(alt[1] ?? "");
+    if (!["en", "vi"].includes(locale)) {
+      return problem(response, 422, "validation_failed", "The request has invalid fields.", [
+        {
+          field: "locale",
+          code: "media.unsupported_locale",
+          detail: "This server keeps alt text in: en, vi.",
+        },
+      ]);
+    }
+    if (request.method === "PUT") {
+      const body = await json(request);
+      const value = text(body, "alt");
+      if (value.length > 1000) {
+        return problem(response, 422, "validation_failed", "The request has invalid fields.", [
+          { field: "alt", code: "too_long", detail: "must be at most 1000 characters" },
+        ]);
+      }
+      item.alts = { ...item.alts, [locale]: value };
+    } else {
+      const { [locale]: _gone, ...rest } = item.alts;
+      item.alts = rest;
+    }
+    item.version += 1;
+    item.updated_at = now();
+    return sendItem(response, 200, item);
+  }
   const tail = `${request.method} ${match[2] ?? ""}`;
   switch (tail) {
     case "GET ":

@@ -12,8 +12,8 @@ import { type Outcome, send } from "@/lib/action";
 import { defined } from "@/lib/content";
 import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
 import type { AltSuggestion, MediaItem } from "@/lib/media";
-import { sampleGuard, translateSample } from "@/lib/sample-action";
-import { type LocalizedAlt, putMediaAlts } from "@/sample/media";
+import { sampleGuard } from "@/lib/sample-action";
+import { putMediaDecorative } from "@/sample/media";
 
 const id = z.uuid();
 const version = z.string().min(1).max(200);
@@ -104,11 +104,49 @@ export async function suggestAlt(
   return { ok: true, data: result.data.data };
 }
 
-/** Alt của các ngôn ngữ khác (dữ liệu mẫu, W-006: core chỉ có một `alt` cho mỗi tệp). */
-export async function saveLocalizedAlts(
+const locale = z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/);
+
+/**
+ * Alt của tệp ở một ngôn ngữ khác ngôn ngữ mặc định (`PUT /media/{id}/alts/{locale}`; ô trống thì
+ * `DELETE`, người đọc ngôn ngữ đó lại thấy `alt` mặc định). Cần `If-Match`; trả tệp và phiên bản mới
+ * để lần ghi kế tiếp dùng tiếp. Ngôn ngữ máy chủ không mở thì core trả 422 `media.unsupported_locale`.
+ */
+export async function setMediaAlt(
   itemId: string,
-  alts: LocalizedAlt[],
-): Promise<Outcome<LocalizedAlt[]>> {
+  ifMatch: string,
+  language: string,
+  alt: string,
+): Promise<ItemOutcome> {
+  if (
+    !id.safeParse(itemId).success ||
+    !version.safeParse(ifMatch).success ||
+    !locale.safeParse(language).success ||
+    alt.length > 1000
+  ) {
+    return invalid();
+  }
+  const text = alt.trim();
+  let etag = "";
+  const params = {
+    path: { id: itemId, locale: language },
+    header: { "If-Match": ifMatch },
+  };
+  const result = await send(async (client) => {
+    const answer = text
+      ? await client.PUT("/api/v1/media/{id}/alts/{locale}", { params, body: { alt: text } })
+      : await client.DELETE("/api/v1/media/{id}/alts/{locale}", { params });
+    etag = answer.response.headers.get("etag") ?? "";
+    return answer;
+  });
+  if (!result.ok) return result;
+  return { ok: true, item: result.data.data, version: etag };
+}
+
+/** Cờ "ảnh chỉ để trang trí" (dữ liệu mẫu, W-006: core chưa có trường này). */
+export async function setMediaDecorative(
+  itemId: string,
+  decorative: boolean,
+): Promise<Outcome<boolean>> {
   const off = await sampleGuard();
   if (off) {
     return {
@@ -122,11 +160,9 @@ export async function saveLocalizedAlts(
       },
     };
   }
-  if (!id.safeParse(itemId).success || alts.length > 20) return invalid();
-  const result = await putMediaAlts(itemId, alts);
-  if (!result.ok) return { ok: false, problem: await translateSample(result.problem) };
-  refresh();
-  return { ok: true, data: result.data.alts };
+  if (!id.safeParse(itemId).success) return invalid();
+  const result = await putMediaDecorative(itemId, decorative);
+  return { ok: true, data: result.data };
 }
 
 // ---------------------------------------------------------------- Thùng rác (hộp thoại xác nhận)

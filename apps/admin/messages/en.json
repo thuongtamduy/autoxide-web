@@ -871,6 +871,14 @@
       "allow": "Platform staff may enter when you report a problem",
       "allowHint": "Off: only requests from a competent authority (with a document number) can be granted, and those are still recorded here.",
       "save": "Save"
+    },
+    "risk": {
+      "destructive": "Deletes",
+      "destructiveHint": "Can delete or erase data that cannot be brought back.",
+      "sensitive_data": "Personal data",
+      "sensitive_dataHint": "Can read or export personal data of other people.",
+      "money": "Money",
+      "moneyHint": "Can move money or change prices, payouts or accounts."
     }
   },
   "public": {
@@ -1886,6 +1894,7 @@
       "altHint": "Describes the image for screen readers and search engines, one sentence per language. Leave it empty only for a decorative image.",
       "altDefault": "default",
       "altPlaceholder": "What the image shows",
+      "altFallback": "Empty: readers in this language see the default text",
       "suggest": "Suggest with AI",
       "aiFresh": "Suggested by AI · edit if needed; saved only when you press Save alt text",
       "aiDecorative": "AI thinks the image is decorative: leave its alt text empty.",
@@ -1946,7 +1955,7 @@
       "noAlt": "No alt",
       "other": "Choose another image",
       "alt": "Alt text ({locale})",
-      "altHint": "In the language of this post. Starts from the alt text of the file.",
+      "altHint": "In the language of this post. Starts from the file's alt text in this language, or its default alt text.",
       "suggest": "Suggest with AI",
       "aiOff": "AI suggestions are off.",
       "aiFresh": "Suggested by AI: check it before you use it.",

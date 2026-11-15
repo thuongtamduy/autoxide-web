@@ -6,6 +6,33 @@ import { fold } from "./fold";
 export interface PermissionInfo {
   name: string;
   description: string;
+  /**
+   * Mức cẩn thận khi cấp (core v0.14.0, `ModulePermission.risk` của `GET /kernel/modules`): `read`,
+   * `write`, `destructive`, `sensitive_data`, `money`. Không đọc được sổ module thì bỏ trống.
+   */
+  risk?: string;
+}
+
+/** Mức rủi ro cần nêu cạnh permission (đọc và ghi thường thì không). */
+export const NOTABLE_RISKS = ["destructive", "sensitive_data", "money"] as const;
+export type NotableRisk = (typeof NOTABLE_RISKS)[number];
+
+export function notableRisk(permission: PermissionInfo): NotableRisk | null {
+  return (NOTABLE_RISKS as readonly string[]).includes(permission.risk ?? "")
+    ? (permission.risk as NotableRisk)
+    : null;
+}
+
+/** Gắn mức rủi ro từ sổ module vào sổ permission (theo tên); permission không có trong sổ module giữ nguyên. */
+export function withRisk(
+  catalog: readonly PermissionInfo[],
+  modules: readonly { permissions: readonly { name: string; risk: string }[] }[],
+): PermissionInfo[] {
+  const risks = new Map(modules.flatMap((m) => m.permissions.map((p) => [p.name, p.risk])));
+  return catalog.map((p) => {
+    const risk = risks.get(p.name);
+    return risk ? { ...p, risk } : p;
+  });
 }
 
 export interface PermissionGroup {

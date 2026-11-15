@@ -2,7 +2,12 @@
 
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import { groupPermissions, matchesPermission, type PermissionInfo } from "@/lib/permission-groups";
+import {
+  groupPermissions,
+  matchesPermission,
+  notableRisk,
+  type PermissionInfo,
+} from "@/lib/permission-groups";
 
 /**
  * Bộ chọn permission nhóm theo module, có ô tìm (không cần dấu). Dùng chung cho role và API key.
@@ -26,6 +31,7 @@ export function PermissionPicker({
   error?: string | undefined;
 }) {
   const t = useTranslations("access.role");
+  const risks = useTranslations("access.risk");
   const [query, setQuery] = useState("");
   const groups = useMemo(() => groupPermissions(catalog, extra), [catalog, extra]);
 
@@ -108,7 +114,17 @@ export function PermissionPicker({
                     disabled={!editable}
                   />
                   <span className="check-main">
-                    <span className="mono check-name">{permission.name}</span>
+                    <span className="mono check-name">
+                      {permission.name}
+                      {notableRisk(permission) ? (
+                        <span
+                          className={`badge ${notableRisk(permission) === "destructive" ? "b-bad" : "b-warn"} perm-risk`}
+                          title={risks(`${notableRisk(permission)}Hint`)}
+                        >
+                          {risks(notableRisk(permission) ?? "money")}
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="check-desc">{permission.description || t("unknown")}</span>
                   </span>
                 </label>

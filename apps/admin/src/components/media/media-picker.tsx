@@ -89,7 +89,8 @@ export function MediaPicker({
 
   function choose(item: MediaItem) {
     setChosen(item);
-    setAlt(item.alt);
+    // Alt theo ngôn ngữ của bài nếu tệp có (`alts`), không thì alt mặc định của tệp.
+    setAlt(item.alts[locale] ?? item.alt);
     setCaption(item.caption);
     setPublish(item.visibility === "private");
     setAiNote("");

@@ -9,7 +9,8 @@ import {
   type MediaChanges,
   purgeMedia,
   restoreMedia,
-  saveLocalizedAlts,
+  setMediaAlt,
+  setMediaDecorative,
   suggestAlt,
   trashMedia,
   updateMedia,
@@ -30,7 +31,6 @@ import {
   type MediaItem,
   mediaSrc,
 } from "@/lib/media";
-import type { LocalizedAlt } from "@/sample/media";
 import { folderPath } from "./folders";
 import { sendFile } from "./uploader";
 
@@ -59,7 +59,7 @@ export function MediaDetail({
   can,
   ai,
   locales,
-  alts,
+  decorative,
 }: {
   item: MediaItem;
   version: string;
@@ -68,8 +68,8 @@ export function MediaDetail({
   can: { write: boolean; purge: boolean };
   ai: MediaAi;
   locales: string[];
-  /** Alt của các ngôn ngữ khác (dữ liệu mẫu); `null` khi tắt dữ liệu mẫu. */
-  alts: LocalizedAlt[] | null;
+  /** Cờ "ảnh chỉ để trang trí" (dữ liệu mẫu); `null` khi tắt dữ liệu mẫu. */
+  decorative: boolean | null;
 }) {
   const t = useTranslations("media.detail");
   const uiLocale = useLocale();
@@ -190,22 +190,37 @@ export function MediaDetail({
 
       {isImage(item.content_type) ? (
         <AltSection
-          key={`${item.id}:${item.alt}`}
+          key={item.id}
           item={item}
           locales={locales}
-          alts={alts}
+          decorative={decorative}
           ai={ai}
           readOnly={readOnly}
           pending={pending}
-          saveDefault={async (alt) => {
-            if (alt === item.alt) return true;
-            const result = await updateMedia(item.id, version, { alt });
-            if (!result.ok) {
-              setProblem(result.problem);
+          saveAlts={async (main, translations) => {
+            // Ghi lần lượt, mỗi lần dùng phiên bản lần trước trả về (`If-Match`): alt mặc định
+            // bằng `PATCH`, mỗi ngôn ngữ đổi bằng `PUT` / `DELETE` của `/alts/{locale}`.
+            let current = item;
+            let tag = version;
+            const apply = (result: Awaited<ReturnType<typeof updateMedia>>) => {
+              if (!result.ok) {
+                setProblem(result.problem);
+                return false;
+              }
+              current = result.item;
+              tag = result.version;
+              setItem(result.item);
+              setVersion(result.version);
+              return true;
+            };
+            if (main !== current.alt && !apply(await updateMedia(item.id, tag, { alt: main }))) {
               return false;
             }
-            setItem(result.item);
-            setVersion(result.version);
+            for (const [language, text] of Object.entries(translations)) {
+              if (text.trim() === (current.alts[language] ?? "")) continue;
+              if (!apply(await setMediaAlt(item.id, tag, language, text))) return false;
+            }
+            router.refresh();
             return true;
           }}
           onProblem={setProblem}
@@ -477,46 +492,43 @@ interface AltRow {
 }
 
 /**
- * Alt theo ngôn ngữ. Ngôn ngữ đầu (mặc định của nội dung) là `alt` thật của tệp trên core; các
- * ngôn ngữ khác là dữ liệu mẫu (core chỉ có một `alt` mỗi tệp; alt theo ngôn ngữ thật nằm trong khối
- * ảnh của thân bài). Gợi ý của AI chỉ điền vào ô; bấm "Lưu alt" mới ghi.
+ * Alt theo ngôn ngữ. Ngôn ngữ đầu (mặc định của nội dung) là `alt` của tệp; các ngôn ngữ khác là
+ * `alts[ngôn ngữ]` của core (người đọc ngôn ngữ đó thấy bản này, chưa có thì thấy `alt`). Gợi ý của
+ * AI chỉ điền vào ô; bấm "Lưu alt" mới ghi. Cờ "ảnh trang trí" là dữ liệu mẫu (core chưa có).
  */
 function AltSection({
   item,
   locales,
-  alts,
+  decorative: initialDecorative,
   ai,
   readOnly,
   pending,
-  saveDefault,
+  saveAlts,
   onProblem,
 }: {
   item: MediaItem;
   locales: string[];
-  alts: LocalizedAlt[] | null;
+  decorative: boolean | null;
   ai: MediaAi;
   readOnly: boolean;
   pending: boolean;
-  saveDefault: (alt: string) => Promise<boolean>;
+  saveAlts: (main: string, translations: Record<string, string>) => Promise<boolean>;
   onProblem: (problem: Problem) => void;
 }) {
   const t = useTranslations("media.detail");
   const names = useTranslations("content.locales");
   const toast = useToast();
   const [busy, startTransition] = useTransition();
-  const [first, ...rest] = locales;
-  const shown = alts === null ? [first ?? "en"] : locales;
+  const [first] = locales;
   const [rows, setRows] = useState<AltRow[]>(() =>
-    shown.map((locale) => ({
+    locales.map((locale) => ({
       locale,
-      text: locale === first ? item.alt : (alts?.find((a) => a.locale === locale)?.alt ?? ""),
+      text: locale === first ? item.alt : (item.alts[locale] ?? ""),
       fresh: false,
       busy: false,
     })),
   );
-  const [decorative, setDecorative] = useState(
-    () => alts !== null && alts.length > 0 && alts.every((a) => a.decorative),
-  );
+  const [decorative, setDecorative] = useState(initialDecorative ?? false);
   const [aiNote, setAiNote] = useState("");
   const set = (locale: string, change: Partial<AltRow>) =>
     setRows((list) => list.map((row) => (row.locale === locale ? { ...row, ...change } : row)));
@@ -533,9 +545,6 @@ function AltSection({
         <h3 id={`alt-${item.id}`} className="cap">
           {t("alt")}
         </h3>
-        {alts !== null && rest.length > 0 ? (
-          <SampleBadge step="mới" endpoint="GET/PUT /api/v1/media/{id}/alts" />
-        ) : null}
       </span>
       <p className="fhint">{t("altHint")}</p>
       {rows.map((row) => (
@@ -578,7 +587,7 @@ function AltSection({
             maxLength={1000}
             value={decorative ? "" : row.text}
             disabled={readOnly || decorative}
-            placeholder={t("altPlaceholder")}
+            placeholder={row.locale === first ? t("altPlaceholder") : t("altFallback")}
             onChange={(event) => set(row.locale, { text: event.target.value, fresh: false })}
           />
           {row.fresh ? <span className="fhint md-fresh">{t("aiFresh")}</span> : null}
@@ -586,19 +595,22 @@ function AltSection({
       ))}
       {why && !readOnly ? <p className="fhint">{why}</p> : null}
       {aiNote ? <p className="fhint">{aiNote}</p> : null}
-      {alts !== null ? (
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={decorative}
-            disabled={readOnly}
-            onChange={(event) => setDecorative(event.target.checked)}
-          />
-          <span className="check-main">
-            <span className="check-name">{t("decorative")}</span>
-            <span className="check-desc">{t("decorativeHint")}</span>
-          </span>
-        </label>
+      {initialDecorative !== null ? (
+        <div className="md-deco">
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={decorative}
+              disabled={readOnly}
+              onChange={(event) => setDecorative(event.target.checked)}
+            />
+            <span className="check-main">
+              <span className="check-name">{t("decorative")}</span>
+              <span className="check-desc">{t("decorativeHint")}</span>
+            </span>
+          </label>
+          <SampleBadge step="mới" endpoint="PATCH /api/v1/media/{id} (decorative)" />
+        </div>
       ) : null}
       {readOnly ? null : (
         <div className="ce-acts">
@@ -608,16 +620,17 @@ function AltSection({
             disabled={pending || busy}
             onClick={() =>
               startTransition(async () => {
-                const main = rows.find((row) => row.locale === first);
-                const ok = await saveDefault(decorative ? "" : (main?.text.trim() ?? ""));
+                const text = (locale: string) =>
+                  decorative ? "" : (rows.find((row) => row.locale === locale)?.text.trim() ?? "");
+                const translations = Object.fromEntries(
+                  locales
+                    .filter((locale) => locale !== first)
+                    .map((locale) => [locale, text(locale)]),
+                );
+                const ok = await saveAlts(text(first ?? ""), translations);
                 if (!ok) return;
-                if (alts !== null) {
-                  const result = await saveLocalizedAlts(
-                    item.id,
-                    rows
-                      .filter((row) => row.locale !== first)
-                      .map((row) => ({ locale: row.locale, alt: row.text, decorative })),
-                  );
+                if (initialDecorative !== null && decorative !== initialDecorative) {
+                  const result = await setMediaDecorative(item.id, decorative);
                   if (!result.ok) {
                     onProblem(result.problem);
                     return;

@@ -383,6 +383,15 @@
 .ax .md-altlab > .lab {
   flex: 1 1 auto;
 }
+.ax .md-deco {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ax .md-deco > .check {
+  flex: 1 1 220px;
+}
 .ax .md-fresh {
   color: var(--accent-ink);
 }

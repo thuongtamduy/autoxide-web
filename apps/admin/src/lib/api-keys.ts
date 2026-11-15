@@ -23,6 +23,9 @@ export function grantable(
   me: { all_permissions: boolean; permissions: readonly string[] },
 ): PermissionInfo[] {
   if (me.all_permissions && catalog) return [...catalog];
-  const described = new Map((catalog ?? []).map((p) => [p.name, p.description]));
-  return me.permissions.map((name) => ({ name, description: described.get(name) ?? "" }));
+  const described = new Map((catalog ?? []).map((p) => [p.name, p]));
+  return me.permissions.map((name) => {
+    const known = described.get(name);
+    return known ? { ...known } : { name, description: "" };
+  });
 }

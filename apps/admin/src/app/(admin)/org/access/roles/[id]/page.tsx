@@ -5,7 +5,9 @@ import { DeleteRoleDialog } from "@/components/access/delete-role";
 import { RoleEditor } from "@/components/access/role-editor";
 import { MessagePanel } from "@/components/message-panel";
 import { Flash } from "@/components/ui/flash";
-import { isForbidden, isNotFound, load, loadTagged } from "@/lib/core";
+import { isForbidden, isNotFound, loadTagged } from "@/lib/core";
+import { permissionCatalog } from "@/lib/permission-catalog";
+import type { PermissionInfo } from "@/lib/permission-groups";
 import { ROLES_MANAGE, ROLES_READ } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
 
@@ -19,17 +21,17 @@ export default async function RolePage(props: PageProps<"/org/access/roles/[id]"
   const { created } = await props.searchParams;
   let role: Role;
   let etag: string | null;
-  let catalog: components["schemas"]["PermissionResponse"][];
+  let catalog: PermissionInfo[];
   try {
     [
       {
         data: { data: role },
         etag,
       },
-      { data: catalog },
+      catalog,
     ] = await Promise.all([
       loadTagged((client) => client.GET("/api/v1/auth/roles/{id}", { params: { path: { id } } })),
-      load((client) => client.GET("/api/v1/auth/permissions")),
+      permissionCatalog(),
     ]);
   } catch (error) {
     if (isForbidden(error)) {

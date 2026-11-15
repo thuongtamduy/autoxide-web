@@ -63,7 +63,7 @@ test("tải lên, lỗi theo code, alt, thẻ, công khai, thùng rác, xoá h�
   await expect(pane(page).getByRole("button", { name: "Suggest with AI" }).first()).toBeDisabled();
   await expect(pane(page).getByText("AI suggestions are off on this server.")).toBeVisible();
 
-  // Alt theo ngôn ngữ: ngôn ngữ mặc định lưu ở core, ngôn ngữ khác là dữ liệu mẫu.
+  // Alt theo ngôn ngữ: ngôn ngữ mặc định là `alt` của tệp, ngôn ngữ khác là `alts` (PUT/DELETE).
   await pane(page).getByLabel("English · default").fill("Cast iron skillet seen from above");
   await pane(page).getByLabel("Vietnamese").fill("Chảo gang nhìn từ trên");
   await pane(page).getByRole("button", { name: "Save alt text" }).click();
@@ -74,6 +74,16 @@ test("tải lên, lỗi theo code, alt, thẻ, công khai, thùng rác, xoá h�
   );
   await expect(pane(page).getByLabel("Vietnamese")).toHaveValue("Chảo gang nhìn từ trên");
   await expect(page.locator(".md-tile").first()).not.toContainText("No alt");
+  // Xoá bản tiếng Việt: người đọc tiếng Việt lại thấy alt mặc định.
+  await pane(page).getByLabel("Vietnamese").fill("");
+  await pane(page).getByRole("button", { name: "Save alt text" }).click();
+  await expect(toast(page)).toContainText("Alt text saved");
+  await page.reload();
+  await expect(pane(page).getByLabel("Vietnamese")).toHaveValue("");
+  await expect(pane(page).getByLabel("Vietnamese")).toHaveAttribute(
+    "placeholder",
+    "Empty: readers in this language see the default text",
+  );
 
   // Thẻ, rồi lọc theo thẻ.
   await pane(page).getByLabel("Tags").fill("brand, logo");

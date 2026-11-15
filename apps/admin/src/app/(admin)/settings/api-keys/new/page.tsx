@@ -2,8 +2,9 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ApiKeyCreator } from "@/components/settings/api-key-form";
 import { grantable } from "@/lib/api-keys";
-import { isForbidden, load } from "@/lib/core";
+import { isForbidden } from "@/lib/core";
 import { coreUrl } from "@/lib/env";
+import { permissionCatalog } from "@/lib/permission-catalog";
 import type { PermissionInfo } from "@/lib/permission-groups";
 import { getMe } from "@/lib/viewer";
 
@@ -13,7 +14,7 @@ import { getMe } from "@/lib/viewer";
  */
 async function catalog(): Promise<PermissionInfo[] | null> {
   try {
-    return (await load((client) => client.GET("/api/v1/auth/permissions"))).data;
+    return await permissionCatalog();
   } catch (error) {
     if (isForbidden(error)) return null;
     throw error;

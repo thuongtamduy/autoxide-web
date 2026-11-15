@@ -34,7 +34,7 @@ function Picker() {
     <form>
       <PermissionPicker
         catalog={[
-          { name: "auth.users.read", description: "See accounts" },
+          { name: "auth.users.read", description: "See accounts", risk: "sensitive_data" },
           { name: "webhooks.manage", description: "Manage webhooks" },
         ]}
         chosen={chosen}
@@ -55,5 +55,14 @@ describe("PermissionPicker (dùng chung cho role và API key)", () => {
     expect(screen.getByTestId("chosen-count").textContent).toBe("1 of 2 chosen");
     fireEvent.click(screen.getByRole("button", { name: "Choose all of webhooks" }));
     expect(screen.getByTestId("chosen-count").textContent).toBe("2 of 2 chosen");
+  });
+
+  it("nêu mức rủi ro đáng chú ý cạnh tên permission", () => {
+    renderIntl(<Picker />);
+    const badge = screen.getByText("Personal data");
+    expect(badge.getAttribute("title")).toBe("Can read or export personal data of other people.");
+    expect(screen.getByLabelText(/webhooks\.manage/).closest("label")?.textContent).not.toMatch(
+      /Personal data|Money|Deletes/,
+    );
   });
 });

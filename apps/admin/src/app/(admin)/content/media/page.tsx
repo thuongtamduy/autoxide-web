@@ -21,7 +21,7 @@ import {
 import { MEDIA_PURGE, MEDIA_READ, MEDIA_WRITE } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
-import { getMediaAlts } from "@/sample/media";
+import { getMediaDecorative } from "@/sample/media";
 
 // Màn "Thư viện media" (module `media`): lưới hay bảng tệp, lọc theo loại, thư mục, thẻ, thiếu alt,
 // riêng tư, thùng rác; khung chi tiết của tệp đang mở (`?item=`). Bộ lọc nằm trên địa chỉ nên mở
@@ -68,7 +68,7 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
     can(MEDIA_PURGE),
   ]);
   const sample = sampleDataEnabled();
-  const alts = selected && sample ? (await getMediaAlts(selected.item.id)).data.alts : null;
+  const decorative = selected && sample ? (await getMediaDecorative(selected.item.id)).data : null;
 
   // "Thiếu alt": core chưa có tham số lọc này, nên lọc trên trang đang xem.
   const items = filters.noAlt ? page.data.filter(missingAlt) : page.data;
@@ -299,7 +299,7 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
               reason: ai ? (ai.data.enabled ? "images" : "off") : "forbidden",
             }}
             locales={[...CONTENT_LOCALES]}
-            alts={alts}
+            decorative={decorative}
           />
         ) : null}
       </div>

@@ -871,6 +871,14 @@
       "allow": "Nhân sự nền tảng được vào khi bạn báo lỗi",
       "allowHint": "Tắt thì chỉ yêu cầu của cơ quan có thẩm quyền (có số văn bản) mới được cấp, và vẫn được ghi ở đây.",
       "save": "Lưu"
+    },
+    "risk": {
+      "destructive": "Xoá",
+      "destructiveHint": "Có thể xoá dữ liệu không lấy lại được.",
+      "sensitive_data": "Dữ liệu cá nhân",
+      "sensitive_dataHint": "Có thể đọc hay xuất dữ liệu cá nhân của người khác.",
+      "money": "Tiền",
+      "moneyHint": "Có thể chuyển tiền hay đổi giá, chi trả, tài khoản."
     }
   },
   "public": {
@@ -1886,6 +1894,7 @@
       "altHint": "Câu mô tả ảnh cho trình đọc màn hình và máy tìm kiếm, mỗi ngôn ngữ một câu. Chỉ để trống khi ảnh chỉ để trang trí.",
       "altDefault": "mặc định",
       "altPlaceholder": "Ảnh cho thấy gì",
+      "altFallback": "Để trống: người đọc ngôn ngữ này thấy alt mặc định",
       "suggest": "Gợi ý bằng AI",
       "aiFresh": "Gợi ý của AI · sửa nếu cần; chỉ lưu khi bạn bấm Lưu alt",
       "aiDecorative": "AI cho rằng ảnh chỉ để trang trí: để alt trống.",
@@ -1946,7 +1955,7 @@
       "noAlt": "Thiếu alt",
       "other": "Chọn ảnh khác",
       "alt": "Alt ({locale})",
-      "altHint": "Viết bằng ngôn ngữ của bài. Điền sẵn từ alt của tệp.",
+      "altHint": "Viết bằng ngôn ngữ của bài. Điền sẵn từ alt của tệp ở ngôn ngữ này, chưa có thì alt mặc định.",
       "suggest": "Gợi ý bằng AI",
       "aiOff": "Gợi ý bằng AI đang tắt.",
       "aiFresh": "Gợi ý của AI: xem lại trước khi dùng.",

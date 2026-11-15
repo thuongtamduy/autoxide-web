@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { RoleEditor } from "@/components/access/role-editor";
 import { MessagePanel } from "@/components/message-panel";
-import { load } from "@/lib/core";
+import { permissionCatalog } from "@/lib/permission-catalog";
 import { ROLES_MANAGE } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
 
@@ -17,7 +17,7 @@ export default async function NewRolePage() {
       />
     );
   }
-  const { data: catalog } = await load((client) => client.GET("/api/v1/auth/permissions"));
+  const catalog = await permissionCatalog();
   return (
     <div className="blocks">
       <nav className="back" aria-label={t("access.role.breadcrumb")}>
