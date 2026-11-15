@@ -831,3 +831,55 @@ export function usagePercent(limit: Pick<LimitUsage, "used" | "max">): number {
   if (limit.max <= 0) return 0;
   return Math.min(100, Math.floor((limit.used / limit.max) * 100));
 }
+
+// ---------------------------------------------------------------- Phía nhân sự nền tảng (W-014)
+
+/**
+ * Id của gói và giá mẫu: mặt điều khiển nền tảng (`src/sample/platform-plans.ts`) dùng chung bộ
+ * gói này, để gói khách thấy ở Cài đặt và gói nhà vận hành bán là một.
+ */
+export const SAMPLE_PLAN_IDS = {
+  starter: PLAN_STARTER,
+  business: PLAN_BUSINESS,
+  storage: PLAN_STORAGE,
+  prices: PRICE,
+} as const;
+
+/**
+ * Nhân sự nền tảng đổi thuê bao của khách mẫu (Bếp Mộc) từ mặt điều khiển: trạng thái, gói, giá.
+ * Thay bằng PUT /api/v1/plans/tenants/{tenant_id}/subscription (bước 35) khi core có.
+ */
+export async function operatorSetSubscription(change: {
+  status?: SubscriptionStatus;
+  plan?: { id: string; name: string; modules: number };
+  price?: Price;
+}): Promise<Subscription> {
+  const s = store();
+  if (change.status) s.subscription.status = change.status;
+  if (change.plan) {
+    s.subscription.plan = { ...change.plan };
+    s.subscription.scheduled_plan = null;
+  }
+  if (change.price) s.subscription.price = { ...change.price };
+  s.subscription.updated_at = new Date().toISOString();
+  return structuredClone(s.subscription);
+}
+
+/**
+ * Nhân sự nền tảng ghi đã thu một kỳ của khách mẫu (chuyển khoản đối soát tay). Thay bằng
+ * POST /api/v1/plans/billing-periods/{id}/mark-paid (bước 35) khi core có.
+ */
+export async function operatorMarkPaid(
+  periodId: string,
+  paidAt: string,
+): Promise<SampleOutcome<BillingPeriod>> {
+  const period = store().periods.find((p) => p.id === periodId);
+  if (!period)
+    return failed(404, "plans.billing_period_not_found", `No billing period ${periodId}.`);
+  if (period.status !== "open") {
+    return failed(409, "plans.billing_period_not_payable", "This period is already paid or void.");
+  }
+  period.status = "paid";
+  period.paid_at = paidAt;
+  return { ok: true, data: { ...period } };
+}

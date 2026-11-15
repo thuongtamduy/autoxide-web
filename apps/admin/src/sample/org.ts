@@ -856,3 +856,16 @@ export async function revokeSupportGrant(id: string): Promise<SampleOutcome<unde
   grant.revoked_at = at(0);
   return { ok: true, data: undefined };
 }
+
+/**
+ * Nhân sự nền tảng vừa được cấp quyền vào khách mẫu (Bếp Mộc) từ mặt điều khiển (W-014): ghi vào
+ * cùng sổ mà khách xem ở Phân quyền › Quyền vào hỗ trợ, để khách thấy mọi lần cấp. Thay bằng
+ * POST /api/v1/auth/support-grants (bước 34) khi core có.
+ */
+export async function recordSupportGrant(
+  grant: Omit<SupportGrant, "visits">,
+): Promise<SupportGrant> {
+  const entry: SupportGrant = { ...grant, visits: [] };
+  store().support.grants.unshift(entry);
+  return structuredClone(entry);
+}

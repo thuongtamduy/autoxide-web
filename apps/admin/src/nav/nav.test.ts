@@ -242,3 +242,40 @@ describe("Cây tổ chức và phân hệ Tuân thủ (dữ liệu mẫu, W-012)
     expect(legal.find((g) => g.id === "org")).toBeUndefined();
   });
 });
+
+describe("hai không gian: khách và mặt điều khiển nền tảng (W-014)", () => {
+  it("đường dẫn dưới /platform là mặt điều khiển, còn lại là không gian khách", async () => {
+    const { workspaceOf, navOf, NAV_PLATFORM } = await import("./nav");
+    expect(workspaceOf("/platform")).toBe("platform");
+    expect(workspaceOf("/platform/tenants/1")).toBe("platform");
+    expect(workspaceOf("/platformx")).toBe("tenant");
+    expect(workspaceOf("/")).toBe("tenant");
+    expect(navOf("platform")).toBe(NAV_PLATFORM);
+    expect(navOf("tenant")).toBe(REAL_NAV);
+  });
+
+  it("sổ nền tảng: bảy mục theo bản thiết kế, theo permission của nhân sự vận hành, chỉ khi bật mẫu", async () => {
+    const { NAV_PLATFORM } = await import("./nav");
+    const ids = (viewer: Partial<Viewer>) =>
+      visibleNav(
+        { allPermissions: false, permissions: [], modules: [], ...viewer },
+        NAV_PLATFORM,
+      ).map((g) => g.id);
+    expect(ids({ allPermissions: true, sample: true })).toEqual([
+      "platformTenants",
+      "platformPlans",
+      "platformSubscriptions",
+      "platformProvisioning",
+      "platformFleet",
+      "platformHealth",
+      "platformSupport",
+    ]);
+    expect(ids({ allPermissions: true, sample: false })).toEqual([]);
+    expect(ids({ permissions: ["kernel.ops.read", "auth.support.grant"], sample: true })).toEqual([
+      "platformHealth",
+      "platformSupport",
+    ]);
+    expect(activePage(NAV_PLATFORM, "/platform/tenants/abc")?.page.id).toBe("platformTenants");
+    expect(activePage(NAV_PLATFORM, "/platform/plans/overrides")?.page.id).toBe("platformPlans");
+  });
+});

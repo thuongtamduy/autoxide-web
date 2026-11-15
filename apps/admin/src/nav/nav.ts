@@ -27,9 +27,16 @@ import {
   MEDIA_READ,
   MENUS_READ,
   MODULES_READ,
+  OPS_READ,
+  PLACEMENTS_READ,
+  PLANS_READ,
   POLICIES_MANAGE,
   PRIVACY_READ,
+  PROVISION,
   ROLES_READ,
+  SUBSCRIPTIONS_READ,
+  SUPPORT_GRANT,
+  TENANTS_READ,
   UNITS_READ,
   USERS_READ,
   WEBHOOKS_MANAGE,
@@ -155,6 +162,120 @@ export const NAV: NavGroup[] = [
 
 /** Màn của riêng người đang đăng nhập; không thuộc phân hệ nào nên không lên thanh bên. */
 export const ACCOUNT_PAGE: NavPage = { id: "account", href: "/account" };
+
+/**
+ * Không gian của khung (W-014). `tenant` (mặc định): không gian của một khách, sổ `NAV`. `platform`:
+ * mặt điều khiển của nhân sự vận hành nền tảng (mọi đường dẫn dưới `/platform`), sổ `NAV_PLATFORM`,
+ * thanh bên, đầu trang và thanh đáy riêng. Hai không gian không trộn mục của nhau.
+ */
+export type Workspace = "tenant" | "platform";
+
+/** Trang đầu của mặt điều khiển nền tảng. */
+export const PLATFORM_HOME = "/platform";
+
+/**
+ * Sổ của mặt điều khiển nền tảng: mỗi nhóm một mục thanh bên, theo thứ tự của bản thiết kế
+ * (`RAIL_PLATFORM`). Cả mặt điều khiển chờ API của bước 33, 34, 35, 39 của core: dựng bằng dữ liệu
+ * mẫu (W-006); permission là tên dự kiến trong đặc tả bước (admin có sẵn mọi permission).
+ */
+export const NAV_PLATFORM: NavGroup[] = [
+  {
+    id: "platformTenants",
+    icon: "users",
+    pages: [
+      {
+        id: "platformTenants",
+        href: PLATFORM_HOME,
+        permission: TENANTS_READ,
+        sample: { step: "33" },
+      },
+    ],
+  },
+  {
+    id: "platformPlans",
+    icon: "tag",
+    pages: [
+      {
+        id: "platformPlans",
+        href: "/platform/plans",
+        permission: PLANS_READ,
+        sample: { step: "35" },
+      },
+    ],
+  },
+  {
+    id: "platformSubscriptions",
+    icon: "card",
+    pages: [
+      {
+        id: "platformSubscriptions",
+        href: "/platform/subscriptions",
+        permission: SUBSCRIPTIONS_READ,
+        sample: { step: "35" },
+      },
+    ],
+  },
+  {
+    id: "platformProvisioning",
+    icon: "rocket",
+    pages: [
+      {
+        id: "platformProvisioning",
+        href: "/platform/provisioning",
+        permission: PROVISION,
+        sample: { step: "35" },
+      },
+    ],
+  },
+  {
+    id: "platformFleet",
+    icon: "db",
+    pages: [
+      {
+        id: "platformFleet",
+        href: "/platform/fleet",
+        permission: PLACEMENTS_READ,
+        sample: { step: "33" },
+      },
+    ],
+  },
+  {
+    id: "platformHealth",
+    icon: "pulse",
+    pages: [
+      {
+        id: "platformHealth",
+        href: "/platform/health",
+        permission: OPS_READ,
+        sample: { step: "39" },
+      },
+    ],
+  },
+  {
+    id: "platformSupport",
+    icon: "key",
+    pages: [
+      {
+        id: "platformSupport",
+        href: "/platform/support",
+        permission: SUPPORT_GRANT,
+        sample: { step: "34" },
+      },
+    ],
+  },
+];
+
+/** Sổ điều hướng của một không gian. */
+export function navOf(workspace: Workspace): NavGroup[] {
+  return workspace === "platform" ? NAV_PLATFORM : NAV;
+}
+
+/** Không gian của một đường dẫn: `/platform` và mọi trang con là mặt điều khiển nền tảng. */
+export function workspaceOf(pathname: string): Workspace {
+  return pathname === PLATFORM_HOME || pathname.startsWith(`${PLATFORM_HOME}/`)
+    ? "platform"
+    : "tenant";
+}
 
 export interface Viewer {
   /** `true` khi một role cấp mọi permission (role `admin` của core). */

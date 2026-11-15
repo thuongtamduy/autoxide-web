@@ -93,3 +93,29 @@ export const CASES_HANDLE = "compliance.cases.handle";
 export const POLICIES_MANAGE = "compliance.policies.manage";
 /** Bỏ nhãn AI của nội dung đã đăng (module `content`). */
 export const CONTENT_PUBLISH = "content.publish";
+
+// Permission của nhân sự vận hành nền tảng (bước 33, 34, 35, 39 của core, chưa có): mặt điều khiển
+// nền tảng dùng dữ liệu mẫu (W-014). Core còn đòi người gọi thuộc khách nền tảng
+// (`tenant_platform_only`), vì admin của một khách thường có mọi permission.
+/** Xem sổ khách hàng (`GET /api/v1/kernel/tenants`). */
+export const TENANTS_READ = "kernel.tenants.read";
+/** Tạo khách, đổi tên, tạm khoá / mở lại khách (`POST`, `PATCH /kernel/tenants…`). */
+export const TENANTS_MANAGE = "kernel.tenants.manage";
+/** Vào ngữ cảnh một khách bằng header `Autoxide-Tenant` (bước 33). */
+export const TENANTS_OPERATE = "kernel.tenants.operate";
+/** Xem các nơi lưu dữ liệu (placement) và trạng thái migration của chúng. */
+export const PLACEMENTS_READ = "kernel.placements.read";
+/** Xem gói, giá và quyền dùng của gói (bước 35). */
+export const PLANS_READ = "plans.plans.read";
+/** Tạo, sửa, ngừng bán gói; thêm, tắt giá (bước 35). */
+export const PLANS_MANAGE = "plans.plans.manage";
+/** Xem thuê bao, mức dùng của mọi khách (bước 35). */
+export const SUBSCRIPTIONS_READ = "plans.subscriptions.read";
+/** Gán gói, huỷ thuê bao, ghi đè, đánh dấu đã thu (bước 35). */
+export const SUBSCRIPTIONS_MANAGE = "plans.subscriptions.manage";
+/** Cấp phát khách mới và chạy lại lượt cấp phát (bước 35). */
+export const PROVISION = "plans.provision";
+/** Xem tồn đọng job, event, kết nối database và backup (bước 39). */
+export const OPS_READ = "kernel.ops.read";
+/** Cấp và thu hồi quyền vào dữ liệu khách để hỗ trợ (bước 34). */
+export const SUPPORT_GRANT = "auth.support.grant";

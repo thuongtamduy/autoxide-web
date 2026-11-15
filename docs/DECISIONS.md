@@ -441,3 +441,59 @@ luật số hai của core đòi điểm luật hay đổi là dữ liệu có n
 tách hai màn. Điện thoại dùng JavaScript để đổi cây / chi tiết — `?unit=` đã đủ, nút quay lại của
 trình duyệt chạy đúng. Viết một component form cho mỗi hộp thoại như các màn trước — hơn hai mươi
 hộp thoại mới, cùng một khuôn.
+
+## W-014 · Mặt điều khiển nền tảng: không gian riêng của nhân sự vận hành (dữ liệu mẫu) — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Khung có hai **không gian** (`Workspace` ở `src/nav/nav.ts`): `tenant` (mặc định, sổ `NAV`) và
+  `platform` (sổ `NAV_PLATFORM`, mọi đường dẫn dưới `/platform`). Không gian chọn bằng **route group**:
+  `(admin)` cho không gian khách, `(platform)` cho mặt điều khiển, mỗi group một layout gọi chung
+  `AdminShell` (`src/components/shell/admin-shell.tsx`, phần thân cũ của layout `(admin)`) với
+  `workspace`. Không trộn mục của hai sổ; `workspaceOf(pathname)` và `navOf(workspace)` có test.
+- Mặt điều khiển khác hẳn không gian khách: thanh bên bảy mục theo `RAIL_PLATFORM` của bản thiết kế
+  (Khách hàng, Gói và giá, Thuê bao, Cấp phát, Đội database, Sức khoẻ, Vào dữ liệu khách), mỗi mục
+  một nhóm một màn nên không có menu con; nhãn "Nền tảng" cạnh tên trên thanh bên; đầu trang có ô
+  "Nền tảng Autoxide · Mặt điều khiển · nhân sự vận hành" và nút khiên mở lời nhắc "Bạn không thấy
+  dữ liệu nghiệp vụ của khách…"; thanh đáy điện thoại riêng (Khách hàng · Vận hành · Tìm · Phân hệ).
+  Menu tài khoản và bảng lệnh có lối "Mặt điều khiển nền tảng" / "Về không gian của khách"; lối sang
+  mặt điều khiển chỉ hiện khi người xem thấy ít nhất một màn của nó.
+- Ai thấy: mỗi màn theo permission dự kiến của nhân sự vận hành trong đặc tả — `kernel.tenants.read`
+  (33), `plans.plans.read`, `plans.subscriptions.read`, `plans.provision` (35), `kernel.placements.read`
+  (33), `kernel.ops.read` (39), `auth.support.grant` (34); admin thấy hết. Core còn đòi người gọi thuộc
+  khách nền tảng (`tenant_platform_only`); giao diện chưa biết khách của người đăng nhập (chờ
+  `GET /kernel/tenant` của bước 33) nên chỉ lọc theo permission.
+- Cả không gian là dữ liệu mẫu (W-006): `src/sample/platform-data.ts` (kiểu, kho), `platform.ts`
+  (khách, placement, cấp phát, xuất dữ liệu, quyền vào hỗ trợ, sức khoẻ), `platform-plans.ts` (gói,
+  giá, ghi đè, thuê bao, kỳ thanh toán, mức dùng). Một bộ dữ liệu: khách "Bếp Mộc" là khách của không
+  gian khách — thuê bao, kỳ thanh toán, hạn mức đọc và đổi thẳng ở `settings.ts`; quyền vào hỗ trợ
+  đọc và ghi vào sổ của `org.ts` (khách thấy ngay ở Phân quyền › Quyền vào hỗ trợ, và tắt hỗ trợ ở
+  phía khách thì nền tảng chỉ cấp được theo yêu cầu của cơ quan); gói Khởi đầu, Doanh nghiệp, Thêm
+  100 GB dùng đúng id và giá của `settings.ts` (thêm `SAMPLE_PLAN_IDS`, `operatorSetSubscription`,
+  `operatorMarkPaid`, `recordSupportGrant` — chỉ thêm). Gói "Cơ bản" của bản thiết kế là "Khởi đầu"
+  ở đây cho khớp màn Cài đặt; tên miền mẫu dùng đuôi `.example`.
+- Việc core làm bằng job (cấp phát từng bước, migrate, dời khách, xuất dữ liệu) tiến theo thời gian
+  thật mỗi lần đọc (`syncPlatform`, mỗi bước 3 giây). Cấp phát database riêng dừng ở bước chuẩn bị
+  database ở lần chạy đầu (URL kết nối chỉ khai bằng CLI) để thấy được "Thử lại".
+- **Luôn chạy thử trước**: migrate (một placement hay cả đội) và dời khách chỉ chạy thật sau một lần
+  chạy thử còn hiệu lực (30 phút); kết quả chạy thử hiện trên trang (kho ghi lại, như kết quả của job),
+  nút chạy thật hỏi lại và nêu hệ quả; migrate cả đội còn phải gõ "migrate". Thao tác không đảo được
+  (tạm khoá hẳn, xuất dữ liệu, huỷ thuê bao, đặt chỉ đọc, ngừng bán gói, tắt giá, migrate, dời khách)
+  có hộp xác nhận nêu từng hệ quả; tạm khoá hẳn cần lý do và ô "tôi hiểu". Bật / tắt module cho một
+  khách là ghi đè `module` (bắt buộc lý do), báo kèm Hoàn tác; bỏ ghi đè cũng có Hoàn tác.
+- Chi tiết khách là trang riêng `/platform/tenants/{id}` (thay khung trượt của bản thiết kế): mở thẳng
+  được, chạy đúng trên điện thoại. Thao tác thuê bao (`SubscriptionActions`) dùng chung cho màn Thuê
+  bao và trang chi tiết khách. Gói và giá có hai tab (`/platform/plans`, `/platform/plans/overrides`),
+  chi tiết gói ở `/platform/plans/{id}`.
+- Khoá kho mẫu trên `globalThis` mang số phiên bản (`autoxide.sample.platform.2`): đổi dữ liệu ban đầu
+  thì tăng số, máy chủ dev đang chạy không giữ kho cũ.
+
+Lý do: chủ dự án giao dựng mặt điều khiển cho nhân sự vận hành theo bản thiết kế `Platform` và
+`PlatformOps`, khác hẳn không gian của khách. Route group là cách đơn giản nhất để mỗi không gian có
+layout riêng mà không lặp code khung; luật "chạy thử trước" và "gõ lại để xác nhận" theo đặc tả bước 33
+(đề xuất migrate bằng job) và bước 35.
+
+Đã cân nhắc: một layout chọn sổ theo đường dẫn ở trình duyệt (`usePathname`) — layout của Server
+Component không biết đường dẫn, phải đẩy cả đầu trang xuống client; khung trượt chi tiết khách như
+bản thiết kế — không mở thẳng được và chật trên điện thoại; một màn "Vận hành nền tảng" sáu tab như
+bản thiết kế — thanh bên đã có bảy mục, tab lặp lại thanh bên.

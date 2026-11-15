@@ -31,14 +31,20 @@ function useActive(groups: ShellGroup[]) {
 export function Rail({
   groups,
   labels,
+  home = "/",
+  tag,
 }: {
   groups: ShellGroup[];
   labels: { home: string; collapse: string; expand: string; collapseLabel: string };
+  /** Trang đầu của không gian (W-014): `/` cho không gian của khách, `/platform` cho nền tảng. */
+  home?: string;
+  /** Nhãn nhỏ cạnh tên (vd "Nền tảng") để biết đang ở mặt điều khiển, không phải của khách. */
+  tag?: string;
 }) {
   const active = useActive(groups);
   return (
     <nav className="rail" aria-label={labels.home}>
-      <Link href="/" className="rail-logo" aria-label="Autoxide">
+      <Link href={home} className="rail-logo" aria-label="Autoxide">
         <span className="rail-mark">
           <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: 22, height: 22 }}>
             <circle
@@ -51,6 +57,7 @@ export function Rail({
           </svg>
         </span>
         <span className="rail-name">Autoxide</span>
+        {tag ? <span className="rail-tag">{tag}</span> : null}
       </Link>
       <div className="rail-mid">
         {groups.map((group) => {
@@ -131,6 +138,52 @@ export function BottomBar({
         {labels.search}
       </button>
       <button type="button" popoverTarget="mods" className={atHome ? undefined : "on"}>
+        <Icon name="grid" />
+        {labels.areas}
+      </button>
+    </nav>
+  );
+}
+
+/**
+ * Thanh đáy điện thoại của mặt điều khiển nền tảng (W-014): Khách hàng, Vận hành (các màn còn
+ * lại), Tìm, Phân hệ — như bản thiết kế, khác thanh đáy của không gian khách.
+ */
+export function PlatformBottomBar({
+  groups,
+  labels,
+}: {
+  groups: ShellGroup[];
+  labels: { tenants: string; ops: string; search: string; areas: string; nav: string };
+}) {
+  const active = useActive(groups);
+  const tenants = groups.find((group) => group.id === "platformTenants")?.pages[0];
+  const ops = groups.find((group) => group.id !== "platformTenants")?.pages[0];
+  const atTenants = active?.group.id === "platformTenants";
+  const atOps = active !== null && !atTenants;
+  return (
+    <nav className="bottombar" aria-label={labels.nav}>
+      {tenants ? (
+        <Link
+          href={tenants.href}
+          className={atTenants ? "on" : undefined}
+          aria-current={atTenants ? "page" : undefined}
+        >
+          <Icon name="users" />
+          {labels.tenants}
+        </Link>
+      ) : null}
+      {ops ? (
+        <Link href={ops.href} className={atOps ? "on" : undefined}>
+          <Icon name="pulse" />
+          {labels.ops}
+        </Link>
+      ) : null}
+      <button type="button" popoverTarget="qs">
+        <Icon name="search" />
+        {labels.search}
+      </button>
+      <button type="button" popoverTarget="mods">
         <Icon name="grid" />
         {labels.areas}
       </button>
