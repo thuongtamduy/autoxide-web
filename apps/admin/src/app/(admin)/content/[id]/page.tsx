@@ -6,7 +6,8 @@ import { MessagePanel } from "@/components/message-panel";
 import { abilities } from "@/lib/content";
 import { loadAi, loadAuthors, loadEntry, loadTerms, optional } from "@/lib/content-server";
 import { isForbidden, load } from "@/lib/core";
-import { getMe } from "@/lib/viewer";
+import { MEDIA_READ, MEDIA_WRITE } from "@/lib/permissions";
+import { can, getMe } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 import { entryWebsite, listWebsites } from "@/sample/content";
 
@@ -66,6 +67,21 @@ export default async function EntryPage(props: PageProps<"/content/[id]">) {
       ),
     ]);
 
+  // Ảnh đang gắn với bài (tên, công khai hay chưa), quyền dùng thư viện media, AI đọc ảnh.
+  const mediaIds = [entry.featured_media_id, entry.og_media_id].filter(
+    (value): value is string => typeof value === "string",
+  );
+  const [mediaItems, canMedia, canUpload] = await Promise.all([
+    Promise.all(
+      [...new Set(mediaIds)].map((mediaId) =>
+        optional(load((c) => c.GET("/api/v1/media/{id}", { params: { path: { id: mediaId } } }))),
+      ),
+    ),
+    can(MEDIA_READ),
+    can(MEDIA_WRITE),
+  ]);
+  const aiStatus = canMedia ? await optional(load((c) => c.GET("/api/v1/ai/status"))) : null;
+
   // Bài thuộc website nào: dữ liệu mẫu (W-006), core chưa có API.
   const sample = sampleDataEnabled()
     ? {
@@ -93,6 +109,12 @@ export default async function EntryPage(props: PageProps<"/content/[id]">) {
       // chưa có API đọc nó: dùng giá trị mặc định.
       pathPrefix="/blog/"
       sample={sample}
+      media={{
+        available: canMedia,
+        canUpload,
+        aiAlt: Boolean(aiStatus?.data.enabled && aiStatus.data.images),
+        items: mediaItems.flatMap((answer) => (answer ? [answer.data] : [])),
+      }}
     />
   );
 }

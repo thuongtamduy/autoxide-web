@@ -758,3 +758,34 @@
 .ax .ce-nowrap {
   white-space: nowrap;
 }
+
+/* Ảnh thật trong thân bài (trình soạn, xem trước) qua route `/media/{id}/content`. */
+.ax .ce-media img {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: var(--hover);
+}
+.ax .ce-media-alt {
+  font-size: 12.5px;
+}
+.ax .ce-media-alt.miss {
+  color: var(--warn);
+}
+.ax .ce-media-read {
+  padding: 0;
+  border: 0;
+  background: none;
+  gap: 6px;
+}
+.ax .ce-media-read figcaption {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.ax .ce-featured img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+}

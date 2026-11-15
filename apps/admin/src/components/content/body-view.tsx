@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
 import { type BodyMark, type BodyNode, isSafeHref } from "@/lib/content";
+import { isUuid, mediaIdSrc } from "@/lib/media";
 
 // Hiện thân bài (JSON của core) thành React, cho trang xem trước. Core không lưu HTML; ở đây
 // mỗi node của danh sách cho phép thành đúng một thẻ, node lạ bị bỏ, link không an toàn thành
-// chữ thường. Ảnh chỉ có id media (bản xem trước của core không kèm địa chỉ ảnh) nên hiện ô giữ chỗ.
+// chữ thường. Bản xem trước của core chỉ có id media (chưa kèm địa chỉ ảnh), nên ảnh tải qua route
+// `/media/{id}/content` của giao diện: ảnh công khai ai cũng xem được, ảnh riêng tư chỉ người đã
+// đăng nhập và có `media.read`.
 
 function marked(text: string, marks: readonly BodyMark[], key: string): ReactNode {
   let node: ReactNode = text;
@@ -101,14 +104,18 @@ function render(node: BodyNode, key: string): ReactNode {
         </Tag>
       );
     }
-    case "image":
+    case "image": {
+      const id = typeof attrs.mediaId === "string" && isUuid(attrs.mediaId) ? attrs.mediaId : "";
       return (
-        <figure key={key} className="ce-media">
-          <span className="mono">media {String(attrs.mediaId ?? "")}</span>
-          {typeof attrs.alt === "string" ? <span>{attrs.alt}</span> : null}
+        <figure key={key} className="ce-media ce-media-read">
+          {id ? (
+            // biome-ignore lint/performance/noImgElement: ảnh đi qua route `/media/…` của giao diện
+            <img src={mediaIdSrc(id)} alt={typeof attrs.alt === "string" ? attrs.alt : ""} />
+          ) : null}
           {typeof attrs.caption === "string" ? <figcaption>{attrs.caption}</figcaption> : null}
         </figure>
       );
+    }
     case "embed": {
       const url =
         typeof attrs.url === "string" && attrs.url.startsWith("https://") ? attrs.url : "";

@@ -9,7 +9,10 @@
 import type { IconName } from "@/components/shell/icon";
 import {
   AUDIT_READ,
+  CONTENT_READ,
   DEVTOOLS_READ,
+  MEDIA_READ,
+  MENUS_READ,
   MODULES_READ,
   ROLES_READ,
   USERS_READ,
@@ -49,7 +52,13 @@ export const NAV: NavGroup[] = [
   {
     id: "content",
     icon: "posts",
-    pages: [{ id: "entries", href: "/content", module: "content", permission: "content.read" }],
+    pages: [
+      { id: "entries", href: "/content", module: "content", permission: CONTENT_READ },
+      { id: "structure", href: "/content/structure", module: "content", permission: CONTENT_READ },
+      // Menu của website là module `menus` riêng (chưa có trong core): dữ liệu mẫu (W-006).
+      { id: "menus", href: "/content/menus", permission: MENUS_READ, sample: { step: "menus" } },
+      { id: "media", href: "/content/media", module: "media", permission: MEDIA_READ },
+    ],
   },
   {
     id: "org",

@@ -274,3 +274,56 @@ Lý do: làm đúng bản thiết kế và hợp đồng `openapi.json`; phần 
 Đã cân nhắc: tạo API key trong hộp thoại — bộ chọn permission dài, nên dùng trang riêng như tạo
 role. Tự gọi `/mcp` để kiểm kết nối — tab chỉ cần hướng dẫn, không cần API. Lọc endpoint theo
 trạng thái ở core — chưa có tham số, nên lọc trên trang đang xem (tối đa 200 endpoint).
+
+## W-010 · Phần còn lại của phân hệ Nội dung: Thư viện media, Trang và cấu trúc, Menu — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Nhóm `content` của sổ điều hướng có thêm, theo thứ tự sau "Bài viết": "Trang và cấu trúc"
+  (`/content/structure`), "Menu" (`/content/menus`, dữ liệu mẫu, `sample: { step: "menus" }`),
+  "Thư viện media" (`/content/media`, module `media`, permission `media.read`).
+- **Ảnh và tải lên đi qua máy chủ của giao diện**, token không xuống trình duyệt:
+  - `GET /media/{id}/content` (route của giao diện) gọi `GET /api/v1/media/{id}/content` của core
+    với token trong cookie, chuyển nguyên `Range`, `If-None-Match`, `ETag`, `Cache-Control`,
+    `Content-Disposition`, CSP; `?download=1` để tải về. Chưa đăng nhập thì gọi như khách: chỉ tệp
+    công khai tải được, đúng như core. Trang xem trước công khai và trình soạn dùng route này;
+  - `POST /media/upload`, `PUT /media/{id}/replace` chuyển nguyên dòng dữ liệu của tệp sang core
+    (`duplex: "half"`, không chép cả tệp vào bộ nhớ), kiểm `Origin` như Server Action. Trình duyệt
+    gửi bằng XMLHttpRequest vì chỉ nó báo được tiến độ gửi lên;
+  - `media/…` nằm ngoài `matcher` của proxy: proxy chép thân request và cắt ở 10 MB
+    (`proxyClientMaxBodySize`). Route tự làm việc của proxy (`src/lib/route-session.ts`): access
+    token hết thì đổi refresh token qua `refreshTokens` và đặt lại cookie.
+- Thư viện media: bộ lọc nằm trên địa chỉ (`?folder=&kind=&tag=&alt=missing&visibility=&trash=1&
+  view=table&item=`); khung chi tiết là `?item=`. "Thiếu alt" lọc trên trang đang xem (core chưa có
+  tham số). Alt của ngôn ngữ mặc định (`CONTENT_LOCALES[0]`) là `alt` thật của tệp; alt các ngôn
+  ngữ khác và cờ "ảnh trang trí" là dữ liệu mẫu (`src/sample/media.ts`), vì core chỉ có một `alt`.
+  Gợi ý alt bằng AI chỉ bật khi `GET /ai/status` báo `enabled` và `images`; chỉ điền vào ô.
+- Bộ chọn ảnh (`components/media/media-picker.tsx`) dùng lại ở trình soạn: ảnh đại diện (kèm
+  `featured_media_alt` theo ngôn ngữ của bài), ảnh chia sẻ (`og_media_id`), nút "Ảnh" chèn node
+  `image` (`mediaId`, `alt`, `caption`) và "Sửa ảnh" đổi alt / chú thích của ảnh đang chọn. Bài
+  đăng chỉ nhận ảnh công khai (`content.media_not_public`), nên ảnh riêng tư có ô "chuyển công khai"
+  bật sẵn (`PATCH` với `If-Match: *`, chỉ đổi `visibility`).
+- Lưu danh mục, thẻ, tác giả trong trình soạn không còn đặt lại bản nháp đang sửa
+  (`accept(…, { keepDraft: true })`): trước đây lưu danh mục làm mất chữ và ảnh chưa lưu.
+- Trang và cấu trúc: tab là đường dẫn con (`terms`, `authors`, `menus`, `redirects`, `history`).
+  Danh sách của core không kèm `ETag` từng dòng, nên trước khi sửa (chuyển trang cha, danh mục, tác
+  giả, chuyển hướng) Server Action đọc lại bản ghi lấy `ETag` và so `updated_at` với giá trị trang
+  đã hiện: khác thì báo "người khác vừa sửa" thay vì ghi đè.
+- So hai phiên bản: `src/lib/revision-diff.ts` (hàm thuần, có test) so ô của `snapshot` và thân bài
+  theo từng khối (LCS); `RevisionDiffView` dùng chung cho tab Lịch sử phiên bản và nút "Xem khác
+  biệt" của trình soạn (phiên bản so với phiên bản ngay sau, mới nhất so với bản nháp đã lưu).
+- Menu của website là module `menus` riêng (đề bài `docs/prompts/menus-module.md` của core), chưa
+  có: cả màn dựng bằng dữ liệu mẫu (`src/sample/menus.ts`) theo hình dạng API trong đề bài, nhãn
+  "Dữ liệu mẫu · chờ module menus". Cây sửa ở dạng phẳng (`src/lib/menu-tree.ts`: lên, xuống, thụt
+  vào, kéo ra, tối đa 4 cấp, 200 mục); lưu cả cây với `If-Match`; nút "Thử: người khác vừa lưu" chỉ
+  có ở dữ liệu mẫu để thấy 412. API menu cũ của `content` không dùng để sửa; chỉ đọc làm nguồn
+  "Nhập menu cũ" (tab Menu của Trang và cấu trúc, và khối nhập ở màn Menu).
+- `SampleBadge` nhận `step="mới"` ("chờ API mới") và `module` ("chờ module …").
+
+Lý do: làm đúng bản thiết kế và hợp đồng `openapi.json`; ảnh riêng tư cần token mà token không được
+xuống trình duyệt, nên mọi byte của tệp đi qua máy chủ của giao diện.
+
+Đã cân nhắc: tải lên bằng Server Action — giới hạn thân 1 MB và không có tiến độ; nâng
+`proxyClientMaxBodySize` lên 100 MB — proxy giữ cả tệp trong bộ nhớ cho mỗi lần tải; trỏ `<img>`
+thẳng vào core — lộ địa chỉ nội bộ của core và không tải được ảnh riêng tư; tự dựng trình sửa menu
+trên API cũ của `content` — sắp ngừng, sai chỗ theo quyết định của chủ dự án.

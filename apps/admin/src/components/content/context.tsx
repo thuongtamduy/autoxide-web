@@ -20,8 +20,15 @@ export interface EditorApi {
   unsaved: () => EntryFields | null;
   /** Chạy một lệnh (khoá các nút trong lúc chờ). */
   run: (task: () => Promise<void>) => void;
-  /** Nhận bài mới từ core. `reset`: thay cả thân bài trong trình soạn (khôi phục phiên bản). */
-  accept: (entry: Entry, version: string, options?: { reset?: boolean }) => void;
+  /**
+   * Nhận bài mới từ core. `reset`: thay cả thân bài trong trình soạn (khôi phục phiên bản);
+   * `keepDraft`: chỉ đổi phần lưu riêng (danh mục, tác giả), giữ bản nháp đang sửa.
+   */
+  accept: (
+    entry: Entry,
+    version: string,
+    options?: { reset?: boolean; keepDraft?: boolean },
+  ) => void;
   /** Báo lỗi của core trên trình soạn. */
   fail: (problem: Problem) => void;
   /** Áp gợi ý của AI vào bản nháp (chưa lưu; lưu thì bài mang dấu có AI hỗ trợ). */

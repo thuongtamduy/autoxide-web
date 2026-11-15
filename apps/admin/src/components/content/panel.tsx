@@ -21,6 +21,8 @@ import { useEditorApi } from "./context";
 import type { Draft, EditorData } from "./editor";
 import { ConfirmDialog, ScheduleDialog } from "./entry-dialogs";
 import { TextField } from "./fields";
+import { ImageField } from "./media-fields";
+import { RevisionDiffButton } from "./revision-diff-button";
 import { EntryWebsitePicker } from "./sample-sites";
 import { EntryStatusBadges } from "./status";
 
@@ -215,6 +217,24 @@ function SettingsPane({
         />
       </section>
 
+      <ImageField
+        id="ce-featured"
+        label={t("featured")}
+        hint={t("featuredHint")}
+        mediaId={draft.featured_media_id}
+        alt={draft.featured_media_alt}
+        altError={errors?.fields.featured_media_alt}
+        error={errors?.fields.featured_media_id}
+        media={data.media}
+        locale={entry.locale}
+        context={draft.title}
+        disabled={!api.can.write}
+        onChange={(mediaId, alt) => {
+          edit("featured_media_id", mediaId);
+          if (alt !== undefined) edit("featured_media_alt", alt);
+        }}
+      />
+
       {data.sample ? (
         <EntryWebsitePicker
           entryId={entry.id}
@@ -388,7 +408,7 @@ function AuthorsSection({ data }: { data: EditorData }) {
           api.fail(result.problem);
           return false;
         }
-        api.accept({ ...api.entry, author_ids: result.data }, api.version);
+        api.accept({ ...api.entry, author_ids: result.data }, api.version, { keepDraft: true });
         toast(t("authorsSaved"));
         return true;
       }}
@@ -427,7 +447,7 @@ function TermsSection({ data }: { data: EditorData }) {
           api.fail(result.problem);
           return false;
         }
-        api.accept({ ...api.entry, term_ids: result.data }, api.version);
+        api.accept({ ...api.entry, term_ids: result.data }, api.version, { keepDraft: true });
         toast(t("termsSaved"));
         return true;
       }}
@@ -521,6 +541,18 @@ function SeoPane({
         hint={t("canonicalHint")}
         mono
         disabled={!api.can.write}
+      />
+      <ImageField
+        id="ce-og"
+        label={t("shareImage")}
+        hint={t("shareImageHint")}
+        mediaId={draft.og_media_id}
+        error={errors?.fields.og_media_id}
+        media={data.media}
+        locale={api.entry.locale}
+        context={draft.title}
+        disabled={!api.can.write}
+        onChange={(mediaId) => edit("og_media_id", mediaId)}
       />
       <CheckField
         label={t("noindex")}
@@ -735,6 +767,12 @@ function HistoryPane({ data }: { data: EditorData }) {
                 {index === 0 ? ` · ${t("latest")}` : ""}
               </span>
             </span>
+            <RevisionDiffButton
+              entryId={api.entry.id}
+              beforeId={revision.id}
+              afterId={data.revisions[index - 1]?.id ?? null}
+              title={t("diffTitle")}
+            />
             {api.can.write ? (
               <ConfirmDialog
                 label={t("restore")}
@@ -759,6 +797,11 @@ function HistoryPane({ data }: { data: EditorData }) {
         ))}
       </ol>
       <p className="fhint">{t("note")}</p>
+      {data.revisions.length > 1 ? (
+        <Link className="btn sm" href={`/content/structure/history?entry=${api.entry.id}`}>
+          {t("compareAny")}
+        </Link>
+      ) : null}
     </div>
   );
 }

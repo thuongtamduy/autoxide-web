@@ -3,7 +3,7 @@ import { destinations, filterDestinations } from "@/components/shell/command-pal
 import { fold } from "@/lib/fold";
 import { initialsOf } from "@/lib/initials";
 import { isTheme, themeClass } from "@/lib/theme";
-import { activePage, type NavGroup, type Viewer, visibleNav } from "./nav";
+import { activePage, type NavGroup, NAV as REAL_NAV, type Viewer, visibleNav } from "./nav";
 
 const NAV: NavGroup[] = [
   { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
@@ -161,5 +161,34 @@ describe("tiện ích nhỏ", () => {
     expect(themeClass("light")).toBe("light");
     expect(themeClass("system")).toBeUndefined();
     expect(themeClass(undefined)).toBeUndefined();
+  });
+});
+
+describe("phân hệ Nội dung trong sổ thật", () => {
+  it("Bài viết, Trang và cấu trúc, Menu (dữ liệu mẫu), Thư viện media theo thứ tự", () => {
+    const admin: Viewer = {
+      allPermissions: true,
+      permissions: [],
+      modules: ["content", "media"],
+      sample: true,
+    };
+    const content = visibleNav(admin, REAL_NAV).find((g) => g.id === "content");
+    expect(content?.pages.map((p) => p.href)).toEqual([
+      "/content",
+      "/content/structure",
+      "/content/menus",
+      "/content/media",
+    ]);
+    // Tắt dữ liệu mẫu thì không có Menu; thiếu module `media` thì không có Thư viện media.
+    const plain = visibleNav({ ...admin, sample: false, modules: ["content"] }, REAL_NAV);
+    expect(plain.find((g) => g.id === "content")?.pages.map((p) => p.id)).toEqual([
+      "entries",
+      "structure",
+    ]);
+    expect(activePage(REAL_NAV, "/content/media")?.page.id).toBe("media");
+    expect(activePage(REAL_NAV, "/content/structure/terms")?.page.id).toBe("structure");
+    expect(activePage(REAL_NAV, "/content/0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a81")?.page.id).toBe(
+      "entries",
+    );
   });
 });

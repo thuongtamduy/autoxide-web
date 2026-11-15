@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ModuleInfo } from "@autoxide/sdk";
 import { json, problem, type Schemas, send, text } from "./mock-http.ts";
+import { resetStructure, structureRoutes } from "./mock-structure.ts";
 
 // Khối của màn Nội dung: bài viết và trang, phiên bản (ETag / If-Match), đăng, gỡ, lưu trữ,
 // gửi duyệt, lịch, phiên bản cũ, danh mục, tác giả, bản dịch, kiểm SEO, link xem trước. AI tắt
@@ -31,7 +32,7 @@ export const CONTENT_MODULE: ModuleInfo = {
   migrations: [{ name: "m0001_create_entries", applied: true }],
 };
 
-const CONTENT_AUTHORS: Schemas["AuthorResponse"][] = [
+const SEED_AUTHORS: Schemas["AuthorResponse"][] = [
   {
     id: "01a1dd85-f609-701b-9e7f-d6e1e13e56d9",
     user_id: null,
@@ -45,7 +46,7 @@ const CONTENT_AUTHORS: Schemas["AuthorResponse"][] = [
   },
 ];
 
-const CONTENT_TERMS: Schemas["TermResponse"][] = [
+const SEED_TERMS: Schemas["TermResponse"][] = [
   {
     id: "01a1dd85-f5c7-77d6-b517-807884ba3e01",
     taxonomy: "category",
@@ -65,6 +66,8 @@ const CONTENT_TERMS: Schemas["TermResponse"][] = [
   },
 ];
 
+let CONTENT_AUTHORS: Schemas["AuthorResponse"][] = [];
+let CONTENT_TERMS: Schemas["TermResponse"][] = [];
 let contentEntries: MockEntry[] = [];
 let contentRevisions: Schemas["RevisionResponse"][] = [];
 let contentSchedules: Schemas["ScheduleResponse"][] = [];
@@ -147,6 +150,9 @@ function keepRevision(entry: MockEntry, reason: string) {
 
 export function resetContent() {
   contentClock = Date.parse("2026-11-15T00:00:00Z");
+  CONTENT_AUTHORS = structuredClone(SEED_AUTHORS);
+  CONTENT_TERMS = structuredClone(SEED_TERMS);
+  resetStructure();
   contentRevisions = [];
   contentSchedules = [];
   previewTokens.clear();
@@ -246,8 +252,17 @@ function applyFields(
   }
   entry.title = title;
   entry.slug = slug;
-  for (const key of ["excerpt", "meta_title", "meta_description", "canonical_url"] as const) {
+  for (const key of [
+    "excerpt",
+    "meta_title",
+    "meta_description",
+    "canonical_url",
+    "featured_media_alt",
+  ] as const) {
     if (typeof body[key] === "string") entry[key] = body[key];
+  }
+  for (const key of ["featured_media_id", "og_media_id"] as const) {
+    if (key in body) entry[key] = (body[key] as string | null) ?? null;
   }
   if (typeof body.noindex === "boolean") entry.noindex = body.noindex;
   if (typeof body.ai_generated === "boolean") entry.ai_generated = body.ai_generated;
@@ -342,6 +357,19 @@ export async function contentRoutes(
     contentEntries.push(entry);
     keepRevision(entry, "initial");
     return sendEntry(response, 201, entry);
+  }
+  if (
+    await structureRoutes(request, response, url, route, body, {
+      entries: () => contentEntries,
+      terms: () => CONTENT_TERMS,
+      authors: () => CONTENT_AUTHORS,
+      revisions: () => contentRevisions,
+      now: contentNow,
+      sendEntry: (status, entry) => sendEntry(response, status, entry as MockEntry),
+      versionOk: (entry) => versionOk(request, response, entry as MockEntry),
+    })
+  ) {
+    return;
   }
   const schedule = url.pathname.match(/^\/api\/v1\/content\/schedules\/([^/]+)$/);
   if (schedule && request.method === "DELETE") {
@@ -520,4 +548,21 @@ export async function contentBump(request: IncomingMessage, response: ServerResp
   entry.excerpt = "Changed elsewhere.";
   touch(entry);
   return send(response, 200, { data: view(entry) });
+}
+
+/**
+ * `POST /__content/pages`: thêm hai trang (Về chúng tôi, Chính sách đổi trả) để thử cây trang và
+ * chuyển trang cha. Không có trong dữ liệu ban đầu để danh sách bài của `content.spec.ts` giữ nguyên.
+ */
+export function seedPages(response: ServerResponse) {
+  for (const [title, slug] of [
+    ["Về chúng tôi", "ve-chung-toi"],
+    ["Chính sách đổi trả", "chinh-sach-doi-tra"],
+  ] as const) {
+    const page = newEntry({ title, kind: "page" });
+    page.slug = slug;
+    contentEntries.push(page);
+    keepRevision(page, "initial");
+  }
+  return send(response, 204);
 }

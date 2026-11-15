@@ -10,8 +10,11 @@ import { type Editor, EditorContent, useEditor, useEditorState } from "@tiptap/r
 import StarterKit from "@tiptap/starter-kit";
 import { useTranslations } from "next-intl";
 import { type Ref, useId, useImperativeHandle, useRef, useState } from "react";
+import { MediaPicker } from "@/components/media/media-picker";
 import { Field } from "@/components/ui/form";
 import { type BodyNode, isSafeHref, toCoreBody } from "@/lib/content";
+import { mediaIdSrc } from "@/lib/media";
+import type { MediaContext } from "./editor";
 
 /** Ảnh trong thân bài: chỉ giữ id của media (core không nhận `src`). */
 const MediaImage = Node.create({
@@ -41,16 +44,23 @@ const MediaImage = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     const caption = typeof node.attrs.caption === "string" ? node.attrs.caption : "";
     const alt = typeof node.attrs.alt === "string" ? node.attrs.alt : "";
+    const id = String(node.attrs.mediaId ?? "");
+    // Ảnh thật qua route `/media/{id}/content` của giao diện (máy chủ gắn token); alt và chú thích
+    // hiện dưới ảnh để người soạn thấy ảnh nào còn thiếu alt.
     return [
       "figure",
       mergeAttributes(HTMLAttributes, {
         class: "ce-media",
-        "data-media-id": String(node.attrs.mediaId ?? ""),
+        "data-media-id": id,
         "data-alt": alt,
         "data-caption": caption,
       }),
-      ["span", { class: "mono" }, `media ${String(node.attrs.mediaId ?? "")}`],
-      ["span", {}, alt ? `alt: ${alt}` : "alt: —"],
+      ["img", { src: /^[0-9a-f-]{36}$/.test(id) ? mediaIdSrc(id) : "", alt, loading: "lazy" }],
+      [
+        "span",
+        { class: alt ? "ce-media-alt" : "ce-media-alt miss" },
+        alt ? `alt: ${alt}` : "alt: —",
+      ],
       ...(caption ? [["figcaption", {}, caption]] : []),
     ];
   },
@@ -102,6 +112,9 @@ export function BodyEditor({
   invalid = false,
   describedBy,
   onChange,
+  media,
+  locale,
+  context,
 }: {
   ref: Ref<BodyEditorHandle>;
   initial: BodyNode;
@@ -109,6 +122,11 @@ export function BodyEditor({
   invalid?: boolean;
   describedBy?: string | undefined;
   onChange: () => void;
+  /** Thư viện media cho nút "Ảnh"; `null`: không chèn ảnh được (thiếu quyền, chưa có module). */
+  media?: MediaContext | null;
+  /** Ngôn ngữ của bài: alt của ảnh trong thân bài viết bằng ngôn ngữ này. */
+  locale?: string;
+  context?: string;
 }) {
   const t = useTranslations("content.editor");
   const changed = useRef(onChange);
@@ -155,7 +173,16 @@ export function BodyEditor({
 
   return (
     <div className="ce-body">
-      {editor ? <Toolbar editor={editor} /> : <div className="ce-toolbar" aria-hidden="true" />}
+      {editor ? (
+        <Toolbar
+          editor={editor}
+          media={media ?? null}
+          locale={locale ?? "en"}
+          context={context ?? ""}
+        />
+      ) : (
+        <div className="ce-toolbar" aria-hidden="true" />
+      )}
       {editor ? (
         <EditorContent editor={editor} />
       ) : (
@@ -167,9 +194,19 @@ export function BodyEditor({
 
 type Block = "paragraph" | "h2" | "h3" | "h4";
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({
+  editor,
+  media,
+  locale,
+  context,
+}: {
+  editor: Editor;
+  media: MediaContext | null;
+  locale: string;
+  context: string;
+}) {
   const t = useTranslations("content.editor");
-  const [dialog, setDialog] = useState<"link" | "embed" | null>(null);
+  const [dialog, setDialog] = useState<"link" | "embed" | "image" | "imageEdit" | null>(null);
   const state = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -191,6 +228,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       blockquote: e.isActive("blockquote"),
       codeBlock: e.isActive("codeBlock"),
       table: e.isActive("table"),
+      image: e.isActive("image"),
       undo: e.can().undo(),
       redo: e.can().redo(),
     }),
@@ -290,11 +328,47 @@ function Toolbar({ editor }: { editor: Editor }) {
           editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
         )
       )}
+      {media ? tool("image", () => setDialog("image")) : null}
+      {state.image ? tool("imageEdit", () => setDialog("imageEdit")) : null}
       {tool("embed", () => setDialog("embed"))}
       <span className="ce-sep" aria-hidden="true" />
       {tool("undo", () => editor.chain().focus().undo().run(), { disabled: !state.undo })}
       {tool("redo", () => editor.chain().focus().redo().run(), { disabled: !state.redo })}
-      {dialog ? (
+      {dialog === "image" && media ? (
+        <MediaPicker
+          title={t("imageTitle")}
+          locale={locale}
+          context={context}
+          withCaption
+          aiEnabled={media.aiAlt}
+          canUpload={media.canUpload}
+          onClose={() => setDialog(null)}
+          onPick={(picked) => {
+            editor
+              .chain()
+              .focus()
+              .insertContent({
+                type: "image",
+                attrs: { mediaId: picked.item.id, alt: picked.alt, caption: picked.caption },
+              })
+              .run();
+          }}
+        />
+      ) : null}
+      {dialog === "imageEdit" ? (
+        <ImageAttrsDialog
+          initial={{
+            alt: String(editor.getAttributes("image").alt ?? ""),
+            caption: String(editor.getAttributes("image").caption ?? ""),
+          }}
+          close={() => setDialog(null)}
+          submit={(attrs) => {
+            editor.chain().focus().updateAttributes("image", attrs).run();
+            setDialog(null);
+          }}
+        />
+      ) : null}
+      {dialog === "link" || dialog === "embed" ? (
         <UrlDialog
           kind={dialog}
           close={() => setDialog(null)}
@@ -373,6 +447,73 @@ function UrlDialog({
           </button>
           <button type="submit" className="btn pri">
             {t("insert")}
+          </button>
+        </div>
+      </form>
+    </dialog>
+  );
+}
+
+/** Sửa alt (theo ngôn ngữ của bài) và chú thích của ảnh đang chọn trong thân bài. */
+function ImageAttrsDialog({
+  initial,
+  close,
+  submit,
+}: {
+  initial: { alt: string; caption: string };
+  close: () => void;
+  submit: (attrs: { alt: string; caption: string }) => void;
+}) {
+  const t = useTranslations("content.editor");
+  const form = useTranslations("form");
+  const id = useId();
+  const ref = useRef<HTMLDialogElement>(null);
+  return (
+    <dialog
+      ref={(node) => {
+        ref.current = node;
+        if (node && !node.open) node.showModal();
+      }}
+      className="axdlg"
+      aria-labelledby={`${id}-t`}
+      onClose={close}
+    >
+      <div className="dlg-head">
+        <h2 id={`${id}-t`} className="h2">
+          {t("imageEditTitle")}
+        </h2>
+      </div>
+      <form
+        className="dlg-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          submit({
+            alt: String(data.get("alt") ?? "").trim(),
+            caption: String(data.get("caption") ?? "").trim(),
+          });
+        }}
+      >
+        <Field
+          label={t("imageAlt")}
+          name="alt"
+          defaultValue={initial.alt}
+          hint={t("imageAltHint")}
+          maxLength={1000}
+          autoFocus
+        />
+        <Field
+          label={t("imageCaption")}
+          name="caption"
+          defaultValue={initial.caption}
+          maxLength={2000}
+        />
+        <div className="dlg-acts">
+          <button type="button" className="btn" onClick={() => ref.current?.close()}>
+            {form("cancel")}
+          </button>
+          <button type="submit" className="btn pri">
+            {t("imageApply")}
           </button>
         </div>
       </form>

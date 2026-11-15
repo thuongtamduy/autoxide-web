@@ -13,6 +13,7 @@ import { z } from "zod";
 import { type Outcome, send } from "@/lib/action";
 import {
   CONTENT_LOCALES,
+  defined,
   type Entry,
   type SeoSuggestion,
   type TranslationRequest,
@@ -53,6 +54,9 @@ const Fields = z.object({
   meta_description: z.string().max(4000),
   canonical_url: z.string().max(4000),
   noindex: z.boolean(),
+  featured_media_id: z.uuid().nullable().optional(),
+  featured_media_alt: z.string().max(4000).optional(),
+  og_media_id: z.uuid().nullable().optional(),
   ai_generated: z.boolean().optional(),
 });
 export type EntryFields = z.input<typeof Fields>;
@@ -75,7 +79,7 @@ function body<T extends z.output<typeof Fields>>(fields: T) {
   // `ai_generated` chỉ gửi khi có giá trị (core coi thiếu là "giữ nguyên").
   const { ai_generated, ...rest } = fields;
   return {
-    ...rest,
+    ...defined(rest),
     body: toCoreBody(fields.body),
     ...(ai_generated === undefined ? {} : { ai_generated }),
   };

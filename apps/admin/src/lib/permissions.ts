@@ -47,3 +47,19 @@ export const DOMAINS_MANAGE = "kernel.domains.manage";
 export const TENANT_SETTINGS_MANAGE = "kernel.settings.manage";
 /** Bàn kỹ thuật: nhật ký request, event theo bản ghi, job (bước 52). */
 export const DEVTOOLS_READ = "kernel.devtools.read";
+
+// Nội dung: thư viện media (module `media`) và cấu trúc nội dung (module `content`).
+/** Xem tệp, thư mục, thẻ và thùng rác của thư viện media. */
+export const MEDIA_READ = "media.read";
+/** Tải lên, sửa, thay nội dung, chuyển thư mục, công khai, cho vào thùng rác; thư mục. */
+export const MEDIA_WRITE = "media.write";
+/** Xoá hẳn tệp trong thùng rác. */
+export const MEDIA_PURGE = "media.purge";
+/** Đọc bài viết, trang, danh mục, thẻ, tác giả, menu cũ. */
+export const CONTENT_READ = "content.read";
+/** Danh mục, thẻ, tác giả, chuyển hướng (`content.manage`). */
+export const CONTENT_MANAGE = "content.manage";
+/** Menu của website (module `menus`, chưa có trong core: màn dùng dữ liệu mẫu). */
+export const MENUS_READ = "menus.read";
+/** Sửa menu của website (module `menus`, chưa có). */
+export const MENUS_MANAGE = "menus.manage";

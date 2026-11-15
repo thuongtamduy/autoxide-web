@@ -26,6 +26,7 @@ import {
   contentPreview,
   contentRoutes,
   resetContent,
+  seedPages,
 } from "./mock-content.ts";
 import {
   type Account,
@@ -38,6 +39,7 @@ import {
   wrongCode,
   wrongPassword,
 } from "./mock-http.ts";
+import { mediaContent, mediaRoutes, resetMedia } from "./mock-media.ts";
 import { fireEvent, resetSettings, settingsRoutes } from "./mock-settings.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
@@ -196,6 +198,7 @@ const server = createServer(async (request, response) => {
     resetAccess();
     resetSettings();
     resetContent();
+    resetMedia();
     return send(response, 204);
   }
   if (route === "POST /__webhooks/fire") {
@@ -209,6 +212,10 @@ const server = createServer(async (request, response) => {
     return send(response, 201, { id: session.id });
   }
   if (route === "POST /__content/bump") return contentBump(request, response);
+  if (route === "POST /__content/pages") return seedPages(response);
+  // Nội dung tệp media: khách tải được tệp công khai (trang xem trước), như core.
+  if (request.method === "GET" && mediaContent(response, url, caller(request) !== undefined))
+    return;
   if (route === "GET /api/v1/content/public/preview") return contentPreview(response, url);
   if (route === "POST /api/v1/auth/login") {
     const body = await json(request);
@@ -336,6 +343,9 @@ const server = createServer(async (request, response) => {
       return problem(response, 404, "kernel.module_not_found", `No module named \`${name}\`.`);
     }
     return send(response, 200, { data: module });
+  }
+  if (url.pathname === "/api/v1/media" || url.pathname.startsWith("/api/v1/media/")) {
+    return mediaRoutes(request, response, url, route);
   }
   if (url.pathname.startsWith("/api/v1/content/") || route === "GET /api/v1/ai/status") {
     return contentRoutes(request, response, url, route);

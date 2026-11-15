@@ -307,7 +307,9 @@ export const ENTRY_FIELDS = [
   "meta_title",
   "meta_description",
   "canonical_url",
+  "featured_media_id",
   "featured_media_alt",
+  "og_media_id",
 ] as const;
 
 /** Tách Problem của core thành lỗi dưới ô, lỗi của thân bài và câu báo chung. */
@@ -330,4 +332,14 @@ export function entryErrors(problem: Problem): EntryErrors {
     result.message = problem.detail;
   }
   return result;
+}
+
+/**
+ * Bỏ các khoá có giá trị `undefined`: core coi thiếu ô là "giữ nguyên", và kiểu sinh từ
+ * `openapi.json` không nhận `undefined` (`exactOptionalPropertyTypes`).
+ */
+export function defined<T extends object>(value: T): { [K in keyof T]: Exclude<T[K], undefined> } {
+  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as {
+    [K in keyof T]: Exclude<T[K], undefined>;
+  };
 }

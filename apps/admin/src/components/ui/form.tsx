@@ -57,8 +57,11 @@ export function Field({
   );
 }
 
-/** Nhãn, gợi ý và lỗi quanh một ô (input, select, textarea): cùng cách gắn `aria-describedby`. */
-function Labelled({
+/**
+ * Nhãn, gợi ý và lỗi quanh một ô (input, select, textarea): cùng cách gắn `aria-describedby`.
+ * Dùng khi ô không phải `<input>` thường (ô số, ô ngày, select có state).
+ */
+export function Labelled({
   label,
   error,
   hint,

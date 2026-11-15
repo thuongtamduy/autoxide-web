@@ -21,6 +21,7 @@ import {
   type Term,
   type TranslationRequest,
 } from "@/lib/content";
+import type { MediaItem } from "@/lib/media";
 import type { Website } from "@/sample/content";
 import { BodyEditor, type BodyEditorHandle } from "./body-editor";
 import { type EditorApi, EditorContext } from "./context";
@@ -38,6 +39,10 @@ export interface Draft {
   meta_description: string;
   canonical_url: string;
   noindex: boolean;
+  /** Ảnh đại diện và alt của nó (theo ngôn ngữ của bài), ảnh chia sẻ: id media. */
+  featured_media_id: string | null;
+  featured_media_alt: string;
+  og_media_id: string | null;
 }
 
 function draftOf(entry: Entry): Draft {
@@ -49,6 +54,9 @@ function draftOf(entry: Entry): Draft {
     meta_description: entry.meta_description,
     canonical_url: entry.canonical_url,
     noindex: entry.noindex,
+    featured_media_id: entry.featured_media_id ?? null,
+    featured_media_alt: entry.featured_media_alt,
+    og_media_id: entry.og_media_id ?? null,
   };
 }
 
@@ -68,6 +76,17 @@ export interface EditorData {
   pathPrefix: string;
   /** Website của bài (dữ liệu mẫu, W-006); `null` khi tắt dữ liệu mẫu. */
   sample: { websites: Website[]; current: string } | null;
+  /** Thư viện media: ảnh đang gắn với bài, quyền tải lên, AI đọc được ảnh (gợi ý alt). */
+  media: MediaContext;
+}
+
+export interface MediaContext {
+  /** Có module `media` và người này xem được thư viện. */
+  available: boolean;
+  canUpload: boolean;
+  aiAlt: boolean;
+  /** Tệp của ảnh đại diện và ảnh chia sẻ lúc mở bài (để hiện tên, công khai hay chưa). */
+  items: MediaItem[];
 }
 
 /** Trình soạn một bài: bản nháp ở giữa, thiết lập ở thanh bên, lệnh đăng ở đầu trang. */
@@ -101,9 +120,14 @@ export function EntryEditor(data: EditorData) {
   );
 
   const accept = useCallback(
-    (next: Entry, nextVersion: string, options: { reset?: boolean } = {}) => {
+    (next: Entry, nextVersion: string, options: { reset?: boolean; keepDraft?: boolean } = {}) => {
       setEntry(next);
       setVersion(nextVersion);
+      // Danh mục, thẻ, tác giả lưu riêng: giữ chữ và ảnh đang sửa dở của bản nháp.
+      if (options.keepDraft) {
+        setErrors(null);
+        return;
+      }
       setDraft(draftOf(next));
       setDirty(false);
       setAiUsed(false);
@@ -305,6 +329,9 @@ export function EntryEditor(data: EditorData) {
                 invalid={(errors?.body.length ?? 0) > 0}
                 describedBy={(errors?.body.length ?? 0) > 0 ? bodyErrId : undefined}
                 onChange={() => setDirty(true)}
+                media={data.can.write && data.media.available ? data.media : null}
+                locale={entry.locale}
+                context={draft.title}
               />
               <span className="fhint">{t("bodyHint")}</span>
               {errors && errors.body.length > 0 ? (

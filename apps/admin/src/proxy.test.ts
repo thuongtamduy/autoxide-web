@@ -12,6 +12,8 @@ describe("matcher của proxy", () => {
     "/forgot-password",
     "/reset-password?token=abc",
     "/preview?token=abc",
+    "/media/0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a81/content?v=1",
+    "/media/upload?name=a.jpg",
     "/_next/static/chunk.js",
   ])("trang không cần đăng nhập không qua proxy: %s", (url) => {
     expect(runs(url)).toBe(false);
@@ -27,6 +29,8 @@ describe("matcher của proxy", () => {
     "/reset-password-x",
     "/previews",
     "/content",
+    "/content/media",
+    "/medias",
   ])("trang cần đăng nhập qua proxy: %s", (url) => {
     expect(runs(url)).toBe(true);
   });

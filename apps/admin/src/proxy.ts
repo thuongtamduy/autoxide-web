@@ -51,8 +51,11 @@ export const config = {
   // Mọi trang trừ trang không cần đăng nhập (đăng nhập; xác minh email, quên và đặt lại mật khẩu
   // mở từ link trong thư; xem trước bản nháp theo token), tài nguyên tĩnh và file của Next.js.
   // Mỗi tên kết thúc bằng `$` hoặc `/`, để `/login-x` hay `/verify-emails` vẫn qua proxy.
+  // `media/…` (ảnh qua máy chủ, tải lên) tự lo phiên trong route (`src/lib/route-session.ts`):
+  // proxy chép thân request vào bộ nhớ và cắt ở 10 MB, nên tệp tải lên không được đi qua nó; ảnh
+  // trong trang xem trước công khai cũng phải tải được khi người xem chưa đăng nhập.
   // `proxy.test.ts` kiểm danh sách này.
   matcher: [
-    "/((?!(?:login|verify-email|forgot-password|reset-password|preview)(?:/|$)|_next/static|_next/image|favicon.ico|robots.txt).*)",
+    "/((?!(?:login|verify-email|forgot-password|reset-password|preview|media)(?:/|$)|_next/static|_next/image|favicon.ico|robots.txt).*)",
   ],
 };
