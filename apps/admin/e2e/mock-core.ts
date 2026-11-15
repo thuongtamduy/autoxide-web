@@ -55,6 +55,38 @@ const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
 const CODE = "123456";
 const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 
+/** Như giá trị mặc định của core (`GET /api/v1/kernel/client-config`). */
+const CLIENT_CONFIG: Schemas["ClientConfigResponse"] = {
+  kernel: { version: "0.15.0", public_url: null },
+  mail: { from: "Autoxide <noreply@localhost>", sends: false },
+  media: {
+    max_bytes: 104_857_600,
+    allowed_types: [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/avif",
+      "image/svg+xml",
+      "video/mp4",
+      "video/webm",
+      "audio/*",
+      "application/pdf",
+    ],
+    alt_locales: ["en", "vi"],
+    image_widths: [320, 640, 1280, 1920],
+    trash_days: 30,
+  },
+  content: {
+    locales: ["en", "vi"],
+    default_locale: "en",
+    post_path_prefix: "/blog/",
+    embed_hosts: ["youtube.com", "youtu.be", "youtube-nocookie.com", "vimeo.com"],
+    max_body_bytes: 524_288,
+  },
+  menus: { locales: ["en", "vi"], default_locale: "en" },
+};
+
 function seed(): Account[] {
   const make = (
     email: string,
@@ -312,6 +344,10 @@ const server = createServer(async (request, response) => {
   }
 
   if (await publicRoutes(request, response, route, () => accounts)) return;
+  // Cấu hình cho giao diện: công khai, như core.
+  if (route === "GET /api/v1/kernel/client-config") {
+    return send(response, 200, { data: CLIENT_CONFIG });
+  }
   // Tài liệu OpenAPI là công khai, như core.
   if (route === "GET /api/v1/openapi.json") {
     return send(response, 200, {
