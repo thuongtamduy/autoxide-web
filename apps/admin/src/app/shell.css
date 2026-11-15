@@ -65,6 +65,13 @@
   line-height: 18px;
   text-align: center;
 }
+/* Khung cuộn ngang giữ cả phần tử `position: absolute` bên trong (như `.vh`): không có `position`, phần tử đó
+   lấy khung chứa ở ngoài khung cuộn và kéo dài cả trang (tràn ngang ở khổ 768). */
+.ax .overflow-x-auto,
+.ax .ptabs,
+.ax .subnav {
+  position: relative;
+}
 .ax .vh {
   position: absolute;
   width: 1px;
