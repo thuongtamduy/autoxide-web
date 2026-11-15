@@ -3,11 +3,11 @@
 import { useTranslations } from "next-intl";
 import { type FormEvent, useRef, useState, useTransition } from "react";
 import { finishPasskey, removePasskey, startPasskey } from "@/app/(admin)/account/actions";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogButtons, Field, FormAlert, useFocusInvalid, useSubmit } from "@/components/ui/form";
+import { useToast } from "@/components/ui/toast";
 import type { FormState } from "@/lib/form";
 import { ceremonyErrorKey, creationOptionsJson, passkeysSupported } from "@/lib/webauthn";
-import { Dialog } from "./dialog";
-import { DialogButtons, Field, FormAlert, useFocusInvalid, useSubmit } from "./form";
-import { useToast } from "./toast";
 
 export function AddPasskeyDialog() {
   const t = useTranslations("account.passkeys");

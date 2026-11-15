@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
 import { changeEmail, resendVerification } from "@/app/(admin)/account/actions";
-import { Dialog } from "./dialog";
-import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "./form";
-import { useToast } from "./toast";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "@/components/ui/form";
+import { useToast } from "@/components/ui/toast";
 
 /** Nút gửi lại thư xác minh; lỗi (vd gửi quá nhanh) hiện ngay dưới nút. */
 export function ResendVerification({ email }: { email: string }) {

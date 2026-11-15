@@ -80,10 +80,7 @@ test("trên điện thoại bảng thành thẻ có nhãn cột, nút chính đ�
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test("tạo bài, sửa, đăng, rồi mở link xem trước không cần đăng nhập", async ({
-  page,
-  browser,
-}) => {
+test("tạo bài, sửa, đăng, rồi mở link xem trước không cần đăng nhập", async ({ page, browser }) => {
   await signIn(page, "/content");
   await page.getByRole("link", { name: "New post" }).click();
   await expect(page).toHaveURL(/\/content\/new$/);
@@ -163,9 +160,7 @@ test("link không an toàn bị chặn ngay ở hộp thoại; lỗi tiêu đề
   await expect(dialog(page).getByLabel("Address")).toHaveAttribute("aria-invalid", "true");
   await dialog(page).getByLabel("Address").fill("https://example.com/dao");
   await dialog(page).getByRole("button", { name: "Insert" }).click();
-  await expect(page.locator(".ce-prose a[href='https://example.com/dao']")).toHaveText(
-    "Đọc thêm",
-  );
+  await expect(page.locator(".ce-prose a[href='https://example.com/dao']")).toHaveText("Đọc thêm");
 
   await page.getByLabel("Title").fill(" ");
   await page.getByRole("button", { name: "Save draft" }).click();

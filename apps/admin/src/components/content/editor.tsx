@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { changeState, type EntryFields, saveEntry } from "@/app/(admin)/content/actions";
-import { useToast } from "@/components/account/toast";
 import { Icon } from "@/components/shell/icon";
 import { Time } from "@/components/ui/time";
+import { useToast } from "@/components/ui/toast";
 import {
   type AiState,
   type Author,

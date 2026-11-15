@@ -22,6 +22,20 @@ Các màn đã có:
   mật khẩu, xác thực hai bước bằng ứng dụng xác thực và mã khôi phục, passkey, các thiết bị đang
   đăng nhập, tải dữ liệu của bạn và xoá tài khoản. Mọi tài khoản đã đăng nhập đều mở được, không
   cần permission.
+- **Tổ chức › Người dùng và role**: tìm và lật trang danh sách tài khoản kèm role và trạng thái;
+  tạo tài khoản, đổi tên, khoá hay mở khoá, gán role, đặt mật khẩu đầu tiên, gửi thư đặt lại mật
+  khẩu, đăng xuất ở mọi thiết bị, tắt xác thực hai bước hay xoá (mỗi thao tác rủi ro đều hỏi lại
+  và nêu hệ quả). Role: tạo và sửa bằng bộ chọn permission nhóm theo module, có ô tìm; role dựng
+  sẵn `admin` chỉ xem. Cần `auth.users.read` hoặc `auth.roles.read`; sửa cần
+  `auth.users.manage` / `auth.roles.manage`.
+- **Trang mở từ thư** (không cần đăng nhập): `/verify-email` xác minh email, `/forgot-password`
+  xin thư đặt lại mật khẩu và `/reset-password` chọn mật khẩu mới. Trỏ link trong thư của core
+  về đây (xem [Link trong thư](#link-trong-thư)).
+
+Phần của bản thiết kế mà core chưa có API (lời mời, uỷ quyền, hồ sơ công khai của cửa hàng,
+quyền vào hỗ trợ) hiện bằng **dữ liệu mẫu**, có nhãn "Dữ liệu mẫu · chờ API bước N". Chúng chỉ
+hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật khi không chạy production); thay đổi ở đó chỉ
+giữ trong bộ nhớ của ứng dụng, mất khi khởi động lại.
 
 Chạy với core Autoxide **v0.12.0** trở lên.
 
@@ -48,10 +62,26 @@ Mở <http://localhost:3000> và đăng nhập bằng tài khoản core.
 
 ### Cấu hình
 
-| Biến                          | Mặc định                   | Ý nghĩa                                                                                                    |
-| ----------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080`    | Địa chỉ của core, không có `/api/v1`. Chỉ máy chủ của ứng dụng này gọi tới; trình duyệt không bao giờ gọi. |
-| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` khi chạy production | Chỉ gửi cookie phiên qua HTTPS. Chỉ tắt khi phục vụ qua HTTP thường.                                       |
+| Biến                          | Mặc định                    | Ý nghĩa                                                                                                    |
+| ----------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080`     | Địa chỉ của core, không có `/api/v1`. Chỉ máy chủ của ứng dụng này gọi tới; trình duyệt không bao giờ gọi. |
+| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` khi chạy production  | Chỉ gửi cookie phiên qua HTTPS. Chỉ tắt khi phục vụ qua HTTP thường.                                       |
+| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false` khi chạy production | Hiện các màn và tab dùng dữ liệu mẫu trong lúc core chưa có API cho chúng.                                 |
+
+### Link trong thư
+
+Core gửi thư xác minh email và thư đặt lại mật khẩu. Đặt hai biến này **ở core** để link trong
+thư mở ứng dụng này (thay địa chỉ bằng nơi ứng dụng chạy):
+
+```bash
+AUTOXIDE_AUTH_EMAIL_VERIFICATION_URL=https://admin.example.com/verify-email?token={token}
+AUTOXIDE_AUTH_PASSWORD_RESET_URL=https://admin.example.com/reset-password?token={token}
+```
+
+Core đặt token vào chỗ `{token}`. Không đặt thì thư chứa token và bảo người đọc gọi API. Khi chạy
+thử, core chưa có máy chủ SMTP thì ghi thư thành file `.eml` vào `AUTOXIDE_MAIL_FILE_DIR` (mặc
+định `data/mail`); mở link từ đó. Mở link xác minh chưa làm gì cho tới khi người dùng bấm "Xác
+minh email của tôi", để trình quét link của hộp thư (mở thử mọi link) không dùng mất token.
 
 ### Chạy thật
 

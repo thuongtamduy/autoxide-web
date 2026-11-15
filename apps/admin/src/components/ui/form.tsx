@@ -3,7 +3,10 @@
 import { useTranslations } from "next-intl";
 import {
   type InputHTMLAttributes,
+  type ReactNode,
   type RefObject,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
   useEffect,
   useId,
   useRef,
@@ -54,9 +57,111 @@ export function Field({
   );
 }
 
+/** Nhãn, gợi ý và lỗi quanh một ô (input, select, textarea): cùng cách gắn `aria-describedby`. */
+function Labelled({
+  label,
+  error,
+  hint,
+  children,
+}: {
+  label: string;
+  error?: string | undefined;
+  hint?: string | undefined;
+  children: (id: string, aria: { "aria-invalid"?: true; "aria-describedby"?: string }) => ReactNode;
+}) {
+  const id = useId();
+  const described = [hint ? `${id}-hint` : "", error ? `${id}-err` : ""].filter(Boolean).join(" ");
+  return (
+    <div className="fld">
+      <label className="lab" htmlFor={id}>
+        {label}
+      </label>
+      {children(id, {
+        ...(error ? { "aria-invalid": true as const } : {}),
+        ...(described ? { "aria-describedby": described } : {}),
+      })}
+      {hint ? (
+        <span id={`${id}-hint`} className="fhint">
+          {hint}
+        </span>
+      ) : null}
+      {error ? (
+        <span id={`${id}-err`} className="ferr">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/** Ô chọn một trong danh sách, cùng cách báo lỗi như `Field`. */
+export function SelectField({
+  label,
+  error,
+  hint,
+  options,
+  ...select
+}: SelectHTMLAttributes<HTMLSelectElement> & {
+  label: string;
+  name: string;
+  options: readonly { value: string; label: string }[];
+  error?: string | undefined;
+  hint?: string | undefined;
+}) {
+  return (
+    <Labelled label={label} error={error} hint={hint}>
+      {(id, aria) => (
+        <select id={id} className="inp" {...aria} {...select}>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      )}
+    </Labelled>
+  );
+}
+
+/** Ô nhập nhiều dòng, cùng cách báo lỗi như `Field`. */
+export function TextareaField({
+  label,
+  error,
+  hint,
+  ...area
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  label: string;
+  name: string;
+  error?: string | undefined;
+  hint?: string | undefined;
+}) {
+  return (
+    <Labelled label={label} error={error} hint={hint}>
+      {(id, aria) => <textarea id={id} className="inp area" rows={3} {...aria} {...area} />}
+    </Labelled>
+  );
+}
+
+/** Một ô bật / tắt có nhãn và câu giải thích (checkbox; gửi `on` khi bật). */
+export function CheckField({
+  label,
+  hint,
+  ...input
+}: InputHTMLAttributes<HTMLInputElement> & { label: string; name: string; hint?: string }) {
+  return (
+    <label className="check">
+      <input type="checkbox" {...input} />
+      <span className="check-main">
+        <span className="check-name">{label}</span>
+        {hint ? <span className="check-desc">{hint}</span> : null}
+      </span>
+    </label>
+  );
+}
+
 /** Câu báo chung của form: lỗi của core, hoặc "còn N ô cần sửa" khi lỗi nằm ở các ô. */
 export function FormAlert({ state }: { state: FormState }) {
-  const t = useTranslations("account.form");
+  const t = useTranslations("form");
   const count = Object.keys(state.fields ?? {}).length;
   if (!state.error && count === 0) return null;
   return (
@@ -100,7 +205,7 @@ export function DialogButtons({
   close: () => void;
   danger?: boolean;
 }) {
-  const t = useTranslations("account.form");
+  const t = useTranslations("form");
   return (
     <div className="dlg-acts">
       <button type="button" className="btn" onClick={close}>

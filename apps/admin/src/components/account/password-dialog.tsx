@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
 import { changePassword } from "@/app/(admin)/account/actions";
-import { Dialog } from "./dialog";
-import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "./form";
-import { useToast } from "./toast";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "@/components/ui/form";
+import { useToast } from "@/components/ui/toast";
 
 /** Nút "Đổi mật khẩu" và hộp thoại của nó. */
 export function PasswordDialog({ triggerClass }: { triggerClass?: string }) {

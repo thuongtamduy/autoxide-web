@@ -3,10 +3,10 @@
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId, useState } from "react";
 import { makePreview, publishEntry, scheduleEntry } from "@/app/(admin)/content/actions";
-import { Dialog } from "@/components/account/dialog";
-import { DialogButtons } from "@/components/account/form";
-import { useToast } from "@/components/account/toast";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogButtons } from "@/components/ui/form";
 import { Time } from "@/components/ui/time";
+import { useToast } from "@/components/ui/toast";
 import { localToIso, type SeoFinding } from "@/lib/content";
 import { useEditorApi } from "./context";
 
@@ -302,7 +302,7 @@ export function PreviewDialog() {
 
 function PreviewForm({ close }: { close: () => void }) {
   const t = useTranslations("content.preview");
-  const form = useTranslations("account.form");
+  const form = useTranslations("form");
   const api = useEditorApi();
   const [link, setLink] = useState<{ url: string; expires: string } | null>(null);
   const [error, setError] = useState("");

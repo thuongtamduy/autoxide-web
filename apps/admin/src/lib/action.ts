@@ -3,7 +3,7 @@ import "server-only";
 import { type AutoxideClient, type Problem, toApiError } from "@autoxide/sdk";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { coreClient } from "./core";
+import { anonymousClient, coreClient } from "./core";
 
 // Gọi core từ một Server Action thay mặt người đang đăng nhập. Khác `load` (dùng cho trang):
 // lỗi không ném ra mà trả về, để form hiện `detail` dưới đúng ô; core không trả lời thì thành
@@ -15,10 +15,13 @@ export type Outcome<T> = { ok: true; data: T } | { ok: false; problem: Problem }
 
 export async function send<T>(
   call: (client: AutoxideClient) => Promise<Result<T>>,
+  { guest = false }: { guest?: boolean } = {},
 ): Promise<Outcome<T>> {
   let result: Result<T>;
   try {
-    result = await call(await coreClient());
+    // `guest`: endpoint công khai (link trong thư). Gọi như khách, vì một access token cũ còn
+    // trong cookie sẽ làm core trả 401 dù endpoint không cần đăng nhập.
+    result = await call(await (guest ? anonymousClient() : coreClient()));
   } catch {
     const t = await getTranslations("login");
     return {
@@ -37,7 +40,7 @@ export async function send<T>(
     // 202 / 204 không có thân: `data` là undefined, đúng như kiểu của endpoint đó.
     return { ok: true, data: data as T };
   }
-  if (response.status === 401) {
+  if (response.status === 401 && !guest) {
     redirect("/login");
   }
   return { ok: false, problem: toApiError(response, error).problem };

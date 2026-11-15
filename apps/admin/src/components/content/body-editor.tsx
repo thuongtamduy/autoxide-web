@@ -322,7 +322,7 @@ function UrlDialog({
   submit: (url: string) => void;
 }) {
   const t = useTranslations("content.editor");
-  const form = useTranslations("account.form");
+  const form = useTranslations("form");
   const id = useId();
   const [error, setError] = useState("");
   const ref = useRef<HTMLDialogElement>(null);

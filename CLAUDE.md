@@ -10,6 +10,8 @@ và CON TRỎ.
 
 - Chỉ dùng **REST API công khai** của core, qua `@autoxide/sdk`. Không đọc database của core,
   không gọi endpoint ngoài `openapi.json`.
+- Phần core chưa có API thì dựng bằng **dữ liệu mẫu**, chỉ theo cơ chế của W-006 (`src/sample/`,
+  nhãn `SampleBadge`, biến `AUTOXIDE_WEB_SAMPLE_DATA`). Không thay API có sẵn bằng dữ liệu mẫu.
 - Core là nguồn sự thật: kiểm quyền, kiểm dữ liệu, thông báo lỗi đều do core làm. Giao diện chỉ
   hiện. Thiếu API thì thêm ở core (theo luật của core) trước, rồi sinh lại SDK.
 - Repo công khai: viết mọi thứ với giả định người lạ sẽ đọc. Secret không bao giờ vào git.

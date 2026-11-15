@@ -52,6 +52,27 @@ export async function load<T>(call: (client: AutoxideClient) => Promise<Result<T
   throw toApiError(response, error);
 }
 
+/**
+ * Như `load`, kèm `ETag` của bản ghi: gửi lại trong `If-Match` khi sửa, để core từ chối (412)
+ * thay vì ghi đè thay đổi của người khác vừa lưu giữa chừng.
+ */
+export async function loadTagged<T>(
+  call: (client: AutoxideClient) => Promise<Result<T>>,
+): Promise<{ data: T; etag: string | null }> {
+  const { data, error, response } = await call(await coreClient());
+  if (data !== undefined) {
+    return { data, etag: response.headers.get("etag") };
+  }
+  if (response.status === 401) {
+    redirect("/login");
+  }
+  throw toApiError(response, error);
+}
+
+export function isNotFound(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 404;
+}
+
 export function isForbidden(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 403;
 }

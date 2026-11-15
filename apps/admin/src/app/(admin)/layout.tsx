@@ -17,6 +17,7 @@ import {
 import { initialsOf } from "@/lib/initials";
 import { getMe, getModules } from "@/lib/viewer";
 import { ACCOUNT_PAGE, visibleNav } from "@/nav/nav";
+import { sampleDataEnabled } from "@/sample";
 
 // Khung chung của các trang cần đăng nhập (thiết kế quản trị 2): thanh bên, đầu trang, menu con,
 // thanh đáy điện thoại, bảng lệnh. Người dùng và sổ module lấy từ core; phiên không còn hợp lệ
@@ -29,6 +30,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     allPermissions: me.all_permissions,
     permissions: me.permissions,
     modules: modules?.map((m) => m.name) ?? null,
+    sample: sampleDataEnabled(),
   });
   const groups: ShellGroup[] = nav.map((group) => ({
     id: group.id,

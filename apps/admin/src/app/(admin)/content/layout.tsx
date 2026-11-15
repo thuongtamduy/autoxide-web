@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ToastProvider } from "@/components/account/toast";
+import { ToastProvider } from "@/components/ui/toast";
 import "@/components/content/content.css";
 
 // Phân hệ Nội dung: danh sách bài viết và trình soạn. Thông báo nổi sau thao tác dùng chung.

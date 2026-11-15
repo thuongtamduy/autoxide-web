@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { destinations, filterDestinations, fold } from "@/components/shell/command-palette";
+import { destinations, filterDestinations } from "@/components/shell/command-palette";
+import { fold } from "@/lib/fold";
 import { initialsOf } from "@/lib/initials";
 import { isTheme, themeClass } from "@/lib/theme";
-import { activePage, type NavGroup, visibleNav } from "./nav";
+import { activePage, type NavGroup, type Viewer, visibleNav } from "./nav";
 
 const NAV: NavGroup[] = [
   { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
@@ -39,6 +40,45 @@ describe("visibleNav", () => {
     );
     expect(nav.map((g) => g.id)).toEqual(["home", "content"]);
     expect(nav[1]?.pages.map((p) => p.id)).toEqual(["entries"]);
+  });
+
+  it("permission là danh sách: có một trong số đó là đủ", () => {
+    const nav: NavGroup[] = [
+      {
+        id: "org",
+        icon: "org",
+        pages: [{ id: "access", href: "/org/access", permission: ["a.read", "b.read"] }],
+      },
+    ];
+    const see = (permissions: string[]) =>
+      visibleNav({ allPermissions: false, permissions, modules: null }, nav).length;
+    expect(see(["b.read"])).toBe(1);
+    expect(see(["c.read"])).toBe(0);
+  });
+
+  it("màn dữ liệu mẫu: chỉ hiện khi bật mẫu, không đòi module, vẫn theo permission", () => {
+    const nav: NavGroup[] = [
+      {
+        id: "sales",
+        icon: "cart",
+        pages: [
+          {
+            id: "orders",
+            href: "/sales/orders",
+            module: "orders",
+            permission: "orders.read",
+            sample: { step: "45" },
+          },
+        ],
+      },
+    ];
+    const see = (viewer: Partial<Viewer>) =>
+      visibleNav({ allPermissions: false, permissions: [], modules: [], ...viewer }, nav).length;
+    expect(see({ allPermissions: true, sample: true })).toBe(1);
+    expect(see({ allPermissions: true, sample: false })).toBe(0);
+    expect(see({ allPermissions: true })).toBe(0);
+    expect(see({ permissions: ["orders.read"], sample: true })).toBe(1);
+    expect(see({ permissions: [], sample: true })).toBe(0);
   });
 
   it("không xem được sổ module thì chỉ lọc theo permission", () => {

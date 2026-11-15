@@ -5,13 +5,9 @@
 // cần API tìm chung của core (bước 52).
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { fold } from "@/lib/fold";
 import { Icon } from "./icon";
 import type { ShellGroup, ShellPage } from "./nav-client";
-
-/** Chữ thường, bỏ dấu tiếng Việt, để "don hang" tìm được "Đơn hàng". */
-export function fold(text: string): string {
-  return text.toLowerCase().normalize("NFD").replace(/đ/g, "d").replace(/[̀-ͯ]/g, "").trim();
-}
 
 interface Destination {
   key: string;

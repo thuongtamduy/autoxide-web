@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Field, FormAlert } from "@/components/ui/form";
+import { PageTabs } from "@/components/ui/page-tabs";
 import { Time } from "@/components/ui/time";
 import { renderIntl } from "@/test/render";
-import { Field, FormAlert } from "./form";
 import { RecoveryCodes } from "./recovery-codes";
-import { AccountTabs } from "./tabs";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/account/security" }));
 
@@ -69,10 +69,10 @@ describe("RecoveryCodes", () => {
   });
 });
 
-describe("AccountTabs", () => {
+describe("PageTabs", () => {
   it("tab của đường dẫn đang mở được đánh dấu", () => {
     renderIntl(
-      <AccountTabs
+      <PageTabs
         label="Sections"
         tabs={[
           { href: "/account", label: "Profile" },

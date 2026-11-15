@@ -13,8 +13,8 @@ import {
   suggestSeo,
   translateWithAi,
 } from "@/app/(admin)/content/actions";
-import { useToast } from "@/components/account/toast";
 import { Time } from "@/components/ui/time";
+import { useToast } from "@/components/ui/toast";
 import { CONTENT_LOCALES, type EntryErrors, type SeoSuggestion, type Term } from "@/lib/content";
 import { useEditorApi } from "./context";
 import type { Draft, EditorData } from "./editor";

@@ -1153,6 +1153,263 @@
   color: #4ade80;
 }
 
+/* Màn Người dùng và role: tìm, chip lọc, thẻ role, nhãn dữ liệu mẫu */
+.ax .b-arch {
+  background: transparent;
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.ax .b-arch .dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+/* Dữ liệu mẫu (W-006): viền gạch, màu cảnh báo, để không lẫn với dữ liệu thật */
+.ax .b-sample {
+  background: transparent;
+  color: var(--warn);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 55%, transparent);
+  border: 1px dashed transparent;
+  cursor: help;
+}
+.ax .searchrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ax .searchrow > .inp {
+  flex: 1 1 240px;
+  max-width: 420px;
+}
+.ax a.open {
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+.ax a.open:hover {
+  text-decoration-color: var(--accent);
+}
+.ax .muted {
+  color: var(--ink-3);
+}
+.ax .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ax .tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--hover);
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.ax .back {
+  flex: 1 1 100%;
+}
+.ax .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ax .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px dashed var(--line-2);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.ax .chip:hover {
+  border-style: solid;
+  background: var(--hover);
+  color: var(--ink);
+}
+.ax .chip.on {
+  border: 1px solid transparent;
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .cell2 > .badge {
+  align-self: flex-start;
+}
+.ax tr[data-current] > td {
+  background: var(--hover);
+}
+.ax .row-acts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ax .card.padded {
+  padding: 16px 18px;
+}
+.ax .fld-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ax .fld-row > .fld {
+  flex: 1 1 140px;
+}
+.ax .inp.area {
+  height: auto;
+  min-height: 80px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.ax select.inp {
+  appearance: auto;
+}
+.ax .visits {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.ax .visits summary {
+  cursor: pointer;
+  color: var(--accent-ink);
+}
+.ax .visits ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+/* Danh sách ô chọn (role của người dùng, permission của role) */
+.ax .checks {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+}
+.ax .checks.plain {
+  padding: 0;
+  border: 0;
+  gap: 2px;
+}
+.ax .checks fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ax .checks-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 10px 4px;
+  float: left;
+  width: 100%;
+}
+.ax .checks-head + * {
+  clear: both;
+}
+.ax .check-group {
+  font-weight: 600;
+}
+.ax .picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+  align-items: start;
+  gap: 12px;
+}
+.ax .picker > .checks {
+  position: relative;
+}
+.ax .picker .checks-head {
+  padding-right: 150px;
+}
+.ax .checks-all {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+}
+.ax .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.ax .check:hover {
+  background: var(--hover);
+}
+.ax .check[hidden] {
+  display: none;
+}
+.ax .check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+.ax .check-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ax .check-name {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ax .check-desc {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+.ax .checks-foot,
+.ax .role-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px;
+}
+.ax .checks-foot > .falert,
+.ax .role-foot > .falert {
+  flex: 1 1 240px;
+}
+.ax .role-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ax .role-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 16px 18px;
+}
+.ax .role-meta > .fld {
+  flex: 1 1 280px;
+}
+.ax .picker-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+.ax .picker-head > .h2 {
+  flex: 1 1 auto;
+}
+
 @media (max-width: 720px) {
   .ax .headacts {
     width: 100%;
@@ -1192,5 +1449,15 @@
   }
   .rtable td > .badge {
     align-self: flex-start;
+  }
+  .ax .searchrow > .inp {
+    max-width: none;
+  }
+  .ax .searchrow > .btn,
+  .ax .chip {
+    min-height: 44px;
+  }
+  .ax .row-acts {
+    justify-content: flex-start;
   }
 }

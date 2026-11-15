@@ -131,3 +131,72 @@ cần bộ mã hoá Reed–Solomon và chọn mặt nạ — vài trăm dòng, d
 Đã cân nhắc: `qrcode` (kéo theo `pngjs`, `yargs`…); vẽ QR ở trình duyệt (thêm JavaScript tải
 xuống). Đọc `session_id` từ access token — token là chuỗi mờ theo hợp đồng của core, không dựa
 vào nội dung bên trong. Hộp thoại bằng Radix — `<dialog>` đã có Esc, giữ con trỏ, lớp trên cùng.
+
+## W-006 · Dữ liệu mẫu cho phần core chưa có API — 2026-11-15 — chủ dự án quyết
+
+Quyết định:
+
+- Chỗ nào core chưa có API thì giao diện dựng đủ màn theo bản thiết kế bằng **dữ liệu mẫu**; khi
+  core có API thì thay bằng API thật. Thay phần "chỉ dựng màn có API trong `openapi.json`; màn của
+  phân hệ chưa có module chờ core" của W-004. Luật "chỉ gọi REST API công khai của core" vẫn giữ
+  cho mọi thứ core đã có: không thay API có sẵn bằng dữ liệu mẫu.
+- Một cách duy nhất:
+  - mọi dữ liệu mẫu và hàm giả nằm ở `apps/admin/src/sample/`, mỗi phân hệ một file (vd
+    `sample/org.ts`). Kiểu theo hình dạng dự kiến của API trong đặc tả bước của core, có envelope
+    `{ data }` / `{ data, pagination }`. Mỗi hàm `async`, cùng chữ ký như sẽ gọi API, kèm comment
+    "Thay bằng `<endpoint>` (bước N) khi core có";
+  - lệnh ghi đổi một kho trong bộ nhớ của tiến trình máy chủ (Server Action gọi hàm mẫu); khởi
+    động lại thì về ban đầu. Không ghi file, không gọi mạng;
+  - `sampleDataEnabled()` (`src/sample/index.ts`) đọc `AUTOXIDE_WEB_SAMPLE_DATA` qua
+    `src/lib/env.ts`: mặc định bật khi `NODE_ENV !== "production"`, tắt ở production;
+    `true` / `false` để ép. Playwright bật nó để luồng dùng dữ liệu mẫu cũng được thử;
+  - nhãn `SampleBadge` ("Dữ liệu mẫu · chờ API bước N", `title` ghi endpoint còn thiếu) cạnh tiêu
+    đề của khối, tab hay màn dùng dữ liệu mẫu; tab dùng dữ liệu mẫu có chữ nhỏ "mẫu";
+  - sổ điều hướng: `NavPage.sample = { step }` — màn chỉ hiện khi bật dữ liệu mẫu (`Viewer.sample`),
+    không đòi module đã cài, vẫn theo permission;
+  - dữ liệu mẫu không chứa thông tin cá nhân thật: email miền `example.com`, số điện thoại, mã số
+    thuế, địa chỉ ghi rõ là mẫu; tiền là số nguyên đơn vị nhỏ nhất + mã tiền tệ; giờ UTC.
+- Mỗi chỗ thiếu API vẫn ghi vào `docs/prompts/web-build-api-gaps.md` của core, cột "Giao diện đang
+  làm gì" ghi "Dữ liệu mẫu (`src/sample/<file>.ts`)".
+
+Lý do: chủ dự án muốn thấy và thử đủ màn theo bản thiết kế trong lúc team API làm từ bước 31. Một
+thư mục, một biến và một nhãn giữ phần giả tách khỏi phần thật, dễ tìm để xoá khi có API.
+
+Đã cân nhắc: core giả chạy riêng (như `e2e/mock-core.ts`) cho phần thiếu — trộn API thật và giả ở
+cùng một địa chỉ, khó biết phần nào là thật; dữ liệu mẫu rải trong component — khó tìm để thay.
+
+## W-007 · Màn "Người dùng và role"; trang mở từ link trong thư; component biểu mẫu dùng chung — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Phân hệ Tổ chức (`org`) vào sổ điều hướng, đứng sau Tổng quan và trước Cài đặt theo thứ tự 12
+  phân hệ của bản thiết kế. Màn `/org/access`, mỗi tab một đường dẫn con: `users`, `roles` (API
+  thật), `invitations`, `delegations`, `public`, `support` (dữ liệu mẫu, W-006, bước 34 của core).
+  `NavPage.permission` nhận một danh sách (có một trong số đó là đủ): màn hiện khi có
+  `auth.users.read` hoặc `auth.roles.read`. Mục này không ghi `module`: thiếu module `auth` thì
+  không đăng nhập được.
+- Danh sách người dùng của core chưa kèm role: mỗi trang 25 người, role của từng người lấy bằng
+  `GET /users/{id}/roles` song song ở máy chủ. Có API trả kèm role thì bỏ (ghi ở chỗ thiếu API).
+- Sửa role và đổi tên người dùng gửi `If-Match` với `ETag` đã đọc: hai người sửa cùng lúc thì người
+  sau nhận 412 thay vì ghi đè. Tạo / sửa role là trang riêng (`/org/access/roles/new`,
+  `/org/access/roles/{id}`), không phải hộp thoại: bộ chọn permission dài, nhóm theo module, có ô
+  tìm không dấu; ô chọn giữ trong state để core báo lỗi thì lựa chọn không mất.
+- "Đặt mật khẩu mới" của quản trị viên theo đúng core: chỉ đặt được mật khẩu **đầu tiên**; muốn
+  đổi mật khẩu đã có thì gửi thư đặt lại mật khẩu (endpoint công khai `POST /auth/password-reset`).
+- Trang công khai `/verify-email`, `/forgot-password`, `/reset-password` trong nhóm route `(public)`,
+  cùng khung với trang đăng nhập; `matcher` của proxy bỏ qua chúng (`src/proxy.ts`, có test).
+  Server Action gọi core như khách (`send(…, { guest: true })`), vì access token cũ trong cookie
+  làm core trả 401 dù endpoint không cần đăng nhập. Mở link xác minh chưa gửi gì: người dùng bấm
+  nút thì mới gửi token (GET không đổi dữ liệu; trình quét link của hộp thư không dùng mất token).
+  "Quên mật khẩu?" luôn báo cùng một câu dù email có tài khoản hay không.
+- `Dialog`, `Field` / `FormAlert` / `useSubmit`…, `ToastProvider`, `PageTabs` dời từ
+  `components/account/` sang `components/ui/` (câu chung chuyển từ `account.form` sang `form`) để
+  mọi màn dùng chung; thêm `SelectField`, `TextareaField`, `CheckField`, `ConfirmAction` (hỏi lại,
+  nêu từng hệ quả), `InlineAction` và `Flash` (báo một câu sau khi Server Action chuyển trang).
+  Nút nằm trên phần sẽ biến mất sau thao tác (vd "Khoá" đổi thành "Mở khoá") báo qua `useSubmit`.
+
+Lý do: làm đúng hợp đồng `openapi.json`, một cách làm cho mỗi việc trên mọi màn.
+
+Đã cân nhắc: tự xác minh email ngay khi mở trang — tiện hơn một bấm nhưng GET đổi dữ liệu và trình
+quét link dùng mất token; ẩn cột role trong danh sách tới khi core có API — bản thiết kế và giao
+việc cần role ở danh sách.
