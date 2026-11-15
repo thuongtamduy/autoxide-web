@@ -560,3 +560,62 @@ thoại; giữ số COD cũ của Vận chuyển và cho đơn lệch — sai lu
 số viết cứng — số trên view và danh sách sẽ không khớp nhau; tạo vận đơn từ màn Đơn hàng bằng cách gọi
 thẳng kho mẫu của Vận chuyển — đặc tả 45 đi qua event `orders.fulfillment_requested`, nên màn Đơn hàng
 chỉ dẫn sang Vận chuyển.
+
+## W-019 · Khách hàng, Kênh bán, Tiếp thị liên kết (dữ liệu mẫu, chờ API bước 47–49) — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Sổ điều hướng (chỉ thêm, đúng `RAIL_TENANT` của bản thiết kế): nhóm mới `buyers` "Khách hàng" (biểu
+  tượng `user`) ngay sau Nội dung, một màn `/customers`; "Kênh bán" `/sales/channels` cuối nhóm Bán hàng;
+  "Tiếp thị liên kết" `/marketing/affiliate` cuối nhóm Tiếp thị. Cả ba `sample: { step }` (47, 48, 49), hiện
+  khi có một trong các permission dự kiến của đặc tả (`src/lib/customers.ts`, `channels.ts`, `affiliate.ts`);
+  tắt dữ liệu mẫu thì 404 (`commerceGate`). Tab là đường dẫn con, chi tiết một dòng mở bằng `?open=` (W-013).
+  - Khách hàng: Hồ sơ khách, Tài khoản người mua (bước 34, nhãn riêng), Nhóm khách, Điểm và hạng, Giỏ bỏ
+    dở, Giới thiệu bạn, Rủi ro COD (bước 45, nhãn riêng).
+  - Kênh bán: Tài khoản kênh, Liên kết sản phẩm, Phân bổ tồn, Đơn cần xử lý, Đối soát, Báo cáo.
+  - Tiếp thị liên kết: Đối tác, Quy tắc hoa hồng, Hoa hồng, Chi trả, Livestream, Góc người tiếp thị (xem
+    trước màn của người có `affiliate.partner`, chỉ dữ liệu của chính họ).
+- Một bộ dữ liệu cho cả ứng dụng:
+  - `src/sample/channel-accounts.ts` (dữ liệu cố định, hàm thuần) giữ tài khoản kênh và liên kết sản phẩm
+    gốc, dùng chung cho `orders.ts` và `channels.ts` (tránh phụ thuộc vòng). Đơn sinh của bộ đơn mẫu có số
+    chia 3 dư 1, ở cửa hàng có tài khoản kênh, mọi dòng có liên kết đang bán, tài khoản đang chạy lúc đặt →
+    đơn nhập từ kênh: `channel` = `shopee` / `tiktok_shop`, thêm `channel_account`, `external_ref` (đặc tả 45:
+    `channel_account_id`, `external_ref`), dòng tiền `channel_collect` (đặc tả 48 `ChannelCollect`), giá dòng
+    là giá kênh, không áp khuyến mại website. Đổi sau bước sinh số, không gọi thêm bộ sinh số, nên số đơn
+    (412 trong 30 ngày, 37 chờ xử lý) và các đơn viết tay giữ nguyên. Bút toán đơn kênh: thu ghi phải thu kênh
+    (`channel_receivable`), giao ghi doanh thu như đơn web. `CHANNELS` của `lib/orders.ts` thêm hai giá trị
+    cuối danh sách.
+  - Hồ sơ khách dựng từ người mua của đơn mẫu (lịch sử mua tính lại mỗi lần đọc nên hoàn tiền, đơn mới hiện
+    ngay) và người có giỏ bỏ dở (đã đăng ký, chưa mua). Khách vãng lai tại quầy và người mua chỉ qua kênh bán
+    ngoài không có hồ sơ (SĐT do kênh che, đặc tả 48: không dùng làm khoá người mua). Đơn trước cửa sổ 30
+    ngày gộp một dòng "đơn trước đó" như bản thiết kế. Tổng chi = đơn hoàn tất − hoàn tiền (đặc tả 47).
+  - "Đơn cần xử lý" là đơn thật có kênh của bộ mẫu, cộng ba đơn kênh gửi về chưa nhập được (hai thiếu ánh xạ,
+    một nhập lỗi khi tài khoản TikTok Shop cần kết nối lại); đơn bán quá và xung đột đặt lên đơn có kênh chọn
+    theo trạng thái. Ánh xạ xong thì nhập thành đơn mới qua `importChannelOrder` (thêm vào `orders.ts`, như
+    `OrderIntake::import`: không trùng theo kênh + mã đơn trên kênh). Bảng kê đối soát dựng từ đơn kênh đã
+    hoàn tất; "kênh còn nợ" = tiền kênh đã thu − dòng bảng kê đã ghi sổ (khớp sổ cái, test kiểm).
+  - Hoa hồng tính từ đơn web thật: ghi nhận (`affiliate_attributions`, bảng của `affiliate`) cho đơn có số
+    chia 6 dư 0 theo vòng người tiếp thị, và đơn đặt trong phiên livestream đã kết thúc (giờ phiên lấy theo
+    một đơn để khớp nhau). Cơ sở tính = tiền dòng sau giảm, chưa thuế (chụp trong dòng đơn); trạng thái
+    theo trạng thái đơn; quy tắc tra theo ngày đặt (sản phẩm > danh mục > mặc định theo ưu tiên).
+- Luật trên màn (D-186, ghi căn cứ và "cần đối chiếu" như đặc tả): người tiếp thị, người livestream phải xác
+  thực danh tính (Luật TMĐT 122/2025/QH15, NĐ 147/2024) qua một cổng kiểm (`gateIssues`); khấu trừ TNCN là
+  dữ liệu thuế có ngày hiệu lực (TT 111/2013 Điều 25; NĐ 253/2026 cần đối chiếu), tính trên cả lệnh chi;
+  tiền chỉ qua đối tác có giấy phép hoặc chuyển khoản tay rồi ghi (D-187); phân khúc, lịch sử mua, lượt bấm
+  là dữ liệu cá nhân (Luật 91/2025) — SĐT, email, ngày sinh luôn che bớt trên màn; nhắc giỏ theo NĐ 91/2020;
+  thẻ quà tặng tắt (NĐ 52/2024). Thưởng điểm khi đánh giá không phụ thuộc số sao (`ui-phase3-api.md`).
+- Thao tác về tiền hay không đảo được qua hộp xác nhận nêu hệ quả (`MoneyConfirm` hay `ConfirmButton`): huỷ
+  đơn bán quá trên kênh, ghi sổ bảng kê, chi lại, đánh dấu đã chi tay, điều chỉnh điểm, ngắt kết nối, gỡ bán,
+  đóng quy tắc, bắt đầu / kết thúc phiên, tắt link, chấm dứt người tiếp thị. Thao tác đảo được có Hoàn tác:
+  khoá / mở tài khoản người mua, gỡ chặn COD, tạm dừng / chạy lại tài khoản kênh, mở lại người tiếp thị.
+  Khoá kết nối của kênh nhập ở ô mật khẩu, không điền lại khi báo lỗi, không lưu trong kho mẫu.
+- Khối hiển thị dùng chung của ba màn ở `components/growth/blocks.tsx` (số liệu, dòng tiền, cặp nhãn – giá
+  trị, dòng thời gian, dòng chi tiết); chữ dưới `customers.*`, `channels.*`, `affiliate.*`; `Namespace` của
+  `lib/commerce-action.ts` thêm ba tên. Ngày hiệu lực (ngày, không phải giờ) hiện bằng `formatDay`.
+
+Lý do: chủ dự án muốn dựng đủ ba màn theo bản thiết kế trong lúc team API làm bước 47–49 (W-006); ba phân hệ
+phải kể cùng một câu chuyện với Đơn hàng, Tồn kho, Khuyến mại đã dựng.
+
+Đã cân nhắc: thêm đơn kênh viết tay có số mới — sẽ đổi dãy sinh số và số đếm 412 / 37; đơn kênh dùng giá
+website — lệch với giá kênh trên màn Liên kết; tạo hồ sơ cho người mua qua kênh — trái đặc tả 48 (SĐT bị che);
+làm lại danh sách giỏ bỏ dở ở màn Khách hàng — đã có ở Đơn hàng, chỉ giữ quy tắc nhắc (của `customers`).

@@ -62,7 +62,8 @@ export function canMove(from: OrderStatus, to: OrderStatus): boolean {
   return TRANSITIONS[from].includes(to);
 }
 
-export const CHANNELS = ["web", "pos", "marketplace"] as const;
+/** Kênh của đơn; `shopee`, `tiktok_shop` là đơn nhập từ kênh bán ngoài (bước 48, W-019). */
+export const CHANNELS = ["web", "pos", "marketplace", "shopee", "tiktok_shop"] as const;
 export type Channel = (typeof CHANNELS)[number];
 
 /**

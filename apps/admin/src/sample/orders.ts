@@ -41,6 +41,14 @@ import {
   variantByCode,
   variants,
 } from "./catalog";
+import {
+  ACCOUNT_SEEDS,
+  type AccountSeed,
+  channelForGenerated,
+  channelPrice,
+  externalRef,
+  liveListing,
+} from "./channel-accounts";
 import { type SamplePage, samplePage } from "./index";
 import { ORDER_REFS, orderByNumber } from "./order-refs";
 import { listUnits } from "./org";
@@ -65,7 +73,8 @@ export const PICKUP_HOLD_DAYS = 3;
 // ---------------------------------------------------------------- Kiểu theo đặc tả bước 45
 
 export type PaymentMethod = "card" | "vietqr" | "ewallet" | "cod" | "cash" | "card_terminal";
-export type FundsFlow = "self_collect" | "partner_collect";
+/** `channel_collect` (đặc tả 48, `ChannelCollect`): kênh bán ngoài (Shopee, TikTok Shop) thu tiền rồi trả lại. */
+export type FundsFlow = "self_collect" | "partner_collect" | "channel_collect";
 export type FulfillmentStatus = "unfulfilled" | "fulfilled" | "returned_partial" | "returned";
 
 /** Người bán trên sàn (bước 46 chưa có): loại theo hồ sơ KYC (bước 37) quyết khấu trừ thuế thay. */
@@ -194,6 +203,10 @@ export interface Order {
   org_id: string;
   org_name: string;
   channel: Channel;
+  /** Tài khoản kênh bán của đơn nhập từ kênh (đặc tả 45: `channel_account_id`; tên là dự kiến `include`). */
+  channel_account: { id: string; name: string } | null;
+  /** Mã đơn trên kênh (đặc tả 45: `external_ref`). */
+  external_ref: string | null;
   seller: Seller | null;
   buyer: { name: string; phone: string; email: string | null };
   ship_to: { line: string; commune: string; province: string } | null;
@@ -436,9 +449,12 @@ export async function priceCart(
   shippingFee: number,
   placedAt: number,
   lineSeed: string,
+  /** Đơn nhập từ kênh: giá kênh theo liên kết của tài khoản, không áp khuyến mại của website. */
+  channelAccountId: string | null = null,
 ): Promise<SampleOutcome<Priced>> {
   const { data: units } = await listUnits();
-  const isStore = units.some((u) => u.id === orgId && u.unit_type === "store");
+  const isStore =
+    channelAccountId === null && units.some((u) => u.id === orgId && u.unit_type === "store");
   const found: { sku: string; variant_id: string; quantity: number }[] = [];
   for (const [sku, quantity] of items) {
     const { data } = await variantByCode(sku);
@@ -490,6 +506,14 @@ export async function priceCart(
     listTaxRates(),
   ]);
   const day = vietnamDay(placedAt);
+  if (channelAccountId) {
+    // Giá kênh đã gồm thuế (đặc tả 48): tính từ giá bảng giá theo quy tắc của liên kết.
+    for (const f of found) {
+      const listing = liveListing(channelAccountId, f.sku);
+      const web = num(prices.get(f.variant_id)?.price?.amount);
+      if (listing && web > 0) units_.set(f.variant_id, channelPrice(listing.price_rule, web, day));
+    }
+  }
   const lines: OrderLine[] = [];
   const build = (
     variantId: string,
@@ -595,6 +619,7 @@ const SELLERS: Record<string, Seller> = {
 const MARKET_NAME = "Chợ Bếp Mộc";
 
 function partnerOf(method: PaymentMethod, flow: FundsFlow, orgName: string): string {
+  if (flow === "channel_collect") return `Kênh bán thu hộ · ${orgName}`;
   if (flow === "partner_collect" && method !== "cod") return "Đối tác thu hộ của sàn (mẫu)";
   switch (method) {
     case "card":
@@ -615,7 +640,7 @@ function partnerOf(method: PaymentMethod, flow: FundsFlow, orgName: string): str
 function flowOf(method: PaymentMethod, funds: FundsFlow): Flow {
   if (method === "cod") return "cod";
   if (method === "cash") return "cash";
-  return funds === "partner_collect" ? "partner" : "self";
+  return funds === "self_collect" ? "self" : "partner";
 }
 
 /** Tiền hoàn đi về đâu: luôn về đúng cách người mua đã trả, qua bên giữ dòng tiền. */
@@ -703,6 +728,9 @@ export function ledgerOf(o: Order): JournalEntry[] {
   const out: JournalEntry[] = [];
   const holding = o.funds_flow === "partner_collect" ? "seller_prepayments" : "buyer_prepayments";
   const source = (() => {
+    // Đơn nhập từ kênh: kênh thu (cả COD) rồi trả theo bảng kê — phải thu kênh (đặc tả 48).
+    if (o.funds_flow === "channel_collect")
+      return { account: "channel_receivable", detail: o.channel_account?.name ?? "" };
     if (o.payment_method === "cod") return { account: "cod_receivable", detail: "Hãng vận chuyển" };
     if (o.payment_method === "cash") return { account: "cash_drawer", detail: o.org_name };
     if (o.funds_flow === "partner_collect")
@@ -733,7 +761,8 @@ export function ledgerOf(o: Order): JournalEntry[] {
   }
   const shippingNet = num(o.shipping_fee) - num(o.shipping_discount);
   const goods = num(o.total) - shippingNet;
-  const revenue = o.funds_flow === "self_collect" && o.delivered_at !== null;
+  // Đơn kênh là hàng của chính cửa hàng bán qua kênh: ghi doanh thu như đơn web.
+  const revenue = o.funds_flow !== "partner_collect" && o.delivered_at !== null;
   if (revenue && o.delivered_at) {
     const tax = num(o.tax);
     out.push({
@@ -1360,6 +1389,8 @@ async function makeOrder(
     province: "79" | "01";
     received?: number;
     late?: boolean;
+    /** Đơn nhập từ kênh bán (`OrderIntake::import` của đặc tả 48). */
+    account?: AccountSeed;
   },
 ): Promise<SampleOutcome<Order>> {
   const seq = seqOf(input.number);
@@ -1370,10 +1401,15 @@ async function makeOrder(
     input.fee,
     input.placed,
     `ol${seq}`,
+    input.account?.id ?? null,
   );
   if (!priced.ok) return priced;
   const p = priced.data;
-  const funds: FundsFlow = input.channel === "marketplace" ? "partner_collect" : "self_collect";
+  const funds: FundsFlow = input.account
+    ? "channel_collect"
+    : input.channel === "marketplace"
+      ? "partner_collect"
+      : "self_collect";
   const built = lifecycle(
     seq,
     input.placed,
@@ -1385,7 +1421,7 @@ async function makeOrder(
   );
   const placedIso = new Date(input.placed).toISOString();
   const payments: OrderPayment[] = [];
-  const partner = partnerOf(input.method, funds, input.org_name);
+  const partner = partnerOf(input.method, funds, input.account?.name ?? input.org_name);
   const reference = `pay-${input.number}`;
   if (input.late) {
     payments.push({
@@ -1479,6 +1515,10 @@ async function makeOrder(
     org_id: input.org_id,
     org_name: input.channel === "marketplace" ? MARKET_NAME : input.org_name,
     channel: input.channel,
+    channel_account: input.account ? { id: input.account.id, name: input.account.name } : null,
+    external_ref: input.account
+      ? externalRef(input.account.kind, seq, vietnamDay(input.placed))
+      : null,
     seller: input.seller,
     buyer: {
       name: input.buyer,
@@ -1626,6 +1666,7 @@ async function seedOrders(s: Pick<Store, "invoiceSeq" | "pickupCodes">): Promise
     items: [SampleSku, number][];
     buyer: string;
     status: OrderStatus;
+    account?: AccountSeed;
   }[] = [];
   for (let n = FIRST_NUMBER; n <= LAST_NUMBER; n += 1) {
     if (explicit.has(n)) continue;
@@ -1667,6 +1708,21 @@ async function seedOrders(s: Pick<Store, "invoiceSeq" | "pickupCodes">): Promise
         : `${pick(LAST_NAMES)} ${pick(MIDDLE)} ${pick(FIRST_NAMES)}`;
     plans.push({ n, placed, channel, org, seller, method, items, buyer, status });
   }
+  // Đơn nhập từ kênh bán (W-019): một phần đơn web của cửa hàng có tài khoản kênh. Chỉ đổi kênh, cách
+  // trả và phí của đơn đó; không gọi thêm bộ sinh số, nên các đơn sinh khác giữ nguyên.
+  for (const plan of plans) {
+    if (plan.channel !== "web") continue;
+    const account = channelForGenerated(
+      plan.n,
+      plan.org,
+      plan.placed,
+      plan.items.map(([sku]) => sku),
+    );
+    if (!account) continue;
+    plan.channel = account.kind as Channel;
+    plan.account = account;
+    plan.method = plan.method === "cod" ? "cod" : "ewallet";
+  }
   // "Chờ xử lý" = 37: đơn viết tay đang chờ cộng các đơn sinh gần nhất (không phải tại quầy).
   const explicitPending = SEEDS.filter((x) => PENDING_STATUSES.includes(x.status)).length;
   let need = PENDING_TARGET - explicitPending;
@@ -1706,6 +1762,7 @@ async function seedOrders(s: Pick<Store, "invoiceSeq" | "pickupCodes">): Promise
       placed: plan.placed,
       pickup: null,
       province: plan.org === ORG.CG ? "01" : "79",
+      ...(plan.account ? { account: plan.account } : {}),
     });
     if (!made.ok) throw new Error(`Không dựng được ${numberOf(plan.n)}: ${made.problem.code}`);
     // Đơn chờ nhận ở cửa hàng có chính sách "cửa hàng nhận đơn" (acceptance_hours > 0).
@@ -2965,6 +3022,51 @@ export async function placePosOrder(input: {
   for (const p of o.payments) p.reference = `pos:${input.reference}`;
   s.orders.unshift(o);
   return { ok: true, data: { order: o, replayed: false } };
+}
+
+// Thay bằng `OrderIntake::import` (bước 45) — module `channels` (bước 48) gọi khi nhập đơn từ kênh.
+/**
+ * Nhập một đơn từ kênh bán: không trùng theo (kênh, mã đơn trên kênh) — gọi lại trả đơn đã có
+ * (`replayed`, không phải lỗi). Đơn mới lấy số kế tiếp như bán tại quầy; giá dòng là giá kênh.
+ */
+export async function importChannelOrder(input: {
+  account_id: string;
+  external_ref: string;
+  buyer: string;
+  items: readonly (readonly [string, number])[];
+  method: "ewallet" | "cod";
+  placed_at: string;
+}): Promise<SampleOutcome<{ order: Order; replayed: boolean }>> {
+  const s = await store();
+  const account = ACCOUNT_SEEDS.find((a) => a.id === input.account_id);
+  if (!account) return fail(404, "channels.account_not_found", "Channel account not found.");
+  const replay = s.orders.find(
+    (o) => o.channel === account.kind && o.external_ref === input.external_ref,
+  );
+  if (replay) return { ok: true, data: { order: replay, replayed: true } };
+  const { data: units } = await listUnits();
+  const next = Math.max(...s.orders.map((o) => seqOf(o.number))) + 1;
+  const made = await makeOrder(s, {
+    number: numberOf(next),
+    org_id: account.org_id,
+    org_name: units.find((u) => u.id === account.org_id)?.name ?? "",
+    channel: account.kind as Channel,
+    seller: null,
+    buyer: input.buyer,
+    items: input.items,
+    codes: [],
+    method: input.method,
+    fee: account.org_id === ORG.CG ? 35_000 : 30_000,
+    status: "confirmed",
+    placed: Date.parse(input.placed_at),
+    pickup: null,
+    province: account.org_id === ORG.CG ? "01" : "79",
+    account,
+  });
+  if (!made.ok) return made;
+  made.data.external_ref = input.external_ref;
+  s.orders.unshift(made.data);
+  return { ok: true, data: { order: made.data, replayed: false } };
 }
 
 // ---------------------------------------------------------------- Lọc bằng lời (AI, mẫu)
