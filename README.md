@@ -53,7 +53,7 @@ agent's approval; request log and events by record) are shown with **sample data
 They show only when `AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes
 there are kept in the app's memory and lost on restart.
 
-Works with Autoxide core **v0.12.0** or newer.
+Works with Autoxide core **v0.14.0** or newer.
 
 ## Requirements
 

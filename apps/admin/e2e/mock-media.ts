@@ -188,6 +188,7 @@ export async function mediaRoutes(
       size: bytes.length,
       sha256: "0".repeat(64),
       alt: "",
+      alts: {},
       title: "",
       caption: "",
       visibility: "private",

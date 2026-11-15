@@ -19,9 +19,9 @@ export const CONTENT_MODULE: ModuleInfo = {
   internal: false,
   position: 3,
   permissions: [
-    { name: "content.read", description: "Read drafts." },
-    { name: "content.write", description: "Write drafts." },
-    { name: "content.publish", description: "Publish." },
+    { name: "content.read", description: "Read drafts.", risk: "read" },
+    { name: "content.write", description: "Write drafts.", risk: "write" },
+    { name: "content.publish", description: "Publish.", risk: "write" },
   ],
   events: [],
   subscriptions: [],

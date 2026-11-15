@@ -49,7 +49,7 @@ request và event theo bản ghi) hiện bằng **dữ liệu mẫu**, có nhãn
 hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật khi không chạy production); thay đổi ở đó chỉ
 giữ trong bộ nhớ của ứng dụng, mất khi khởi động lại.
 
-Chạy với core Autoxide **v0.12.0** trở lên.
+Chạy với core Autoxide **v0.14.0** trở lên.
 
 ## Cần có
 

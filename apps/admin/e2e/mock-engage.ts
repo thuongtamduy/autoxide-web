@@ -29,7 +29,11 @@ function module(name: string, position: number, permissions: string[]): ModuleIn
     name,
     internal: false,
     position,
-    permissions: permissions.map((p) => ({ name: `${name}.${p}`, description: p })),
+    permissions: permissions.map((p) => ({
+      name: `${name}.${p}`,
+      description: p,
+      risk: p === "read" ? "read" : "write",
+    })),
     events: [],
     subscriptions: [],
     jobs: [],
@@ -207,6 +211,7 @@ export function resetEngage() {
       author_name: author,
       author_email: `${author.split(" ")[0]?.toLowerCase()}@example.com`,
       email_verified: false,
+      badges: [],
       body,
       body_html: body,
       status: "pending",
@@ -719,6 +724,7 @@ export async function engageRoutes(
         enabled: true,
         guests_allowed: true,
         signed_in_only_types: [],
+        verified_only_types: [],
         target_types: ["content.entry", "demo.page"],
         max_length: 5000,
         max_links: 2,
@@ -799,6 +805,7 @@ export async function engageRoutes(
         closes_at: null,
         comment_count: mine.filter((c) => c.status === "published").length,
         pending_count: mine.filter((c) => c.status === "pending").length,
+        thread_count: mine.filter((c) => c.status === "published" && c.root_id === c.id).length,
       };
       targets.push(target);
     }

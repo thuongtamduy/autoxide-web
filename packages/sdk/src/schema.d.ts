@@ -923,7 +923,7 @@ export interface paths {
         /**
          * List comments for moderation.
          * @description Requires `comments.read`. By default the comments waiting for approval, newest first; filter
-         *     by status, target and text. Follow `pagination.next_cursor` with the same filters for more.
+         *     by status, target and text, or list unanswered questions (`status=published&unanswered=true`). Follow `pagination.next_cursor` with the same filters for more.
          */
         get: operations["comments_list_comments"];
         put?: never;
@@ -1162,8 +1162,8 @@ export interface paths {
         };
         /**
          * Count the comments of many targets (public).
-         * @description No sign-in needed. Shown comments of up to 100 targets of one kind, in the order asked;
-         *     unknown targets count 0.
+         * @description No sign-in needed. Shown comments (all, and top-level only) of up to 100 targets of one kind,
+         *     in the order asked; unknown and hidden targets count 0.
          */
         get: operations["comments_count_comments"];
         put?: never;
@@ -1225,7 +1225,9 @@ export interface paths {
          * List the comments of a target (public).
          * @description No sign-in needed. Shown top-level comments, newest first (`order=asc`: oldest first), each
          *     with its first replies (oldest first) and `reply_count`. A top-level comment deleted by its
-         *     author stays (with `deleted: true`, no text) while it has replies. Follow
+         *     author stays (with `deleted: true`, no text) while it has replies. With `q`, only matching
+         *     top-level comments, exact-accent matches first (questions and answers on a product use the
+         *     same thread: a question is a top-level comment, answers are its replies). Follow
          *     `pagination.next_cursor` with the same parameters for more.
          */
         get: operations["comments_list_comment_thread"];
@@ -1875,7 +1877,10 @@ export interface paths {
         };
         /**
          * List menus.
+         * @deprecated
          * @description Requires `content.read`. Every menu in every language, by key.
+         *
+         *     **Deprecated** since 2026-11-14. It will be removed on 2027-05-14. Use `/api/v1/menus` instead.
          */
         get: operations["content_list_content_menus"];
         put?: never;
@@ -1895,13 +1900,19 @@ export interface paths {
         };
         /**
          * Get a menu.
+         * @deprecated
          * @description Requires `content.read`.
+         *
+         *     **Deprecated** since 2026-11-14. It will be removed on 2027-05-14. Use `/api/v1/menus/{id}` instead.
          */
         get: operations["content_get_content_menu"];
         /**
          * Create or replace a menu.
+         * @deprecated
          * @description Requires `content.manage`. Replaces the whole item tree. `If-Match` is required: the
          *     menu's `ETag`, or `*` (needed to create a new menu).
+         *
+         *     **Deprecated** since 2026-11-14. It will be removed on 2027-05-14. Use `/api/v1/menus/{id}` instead.
          */
         put: operations["content_put_content_menu"];
         post?: never;
@@ -1961,8 +1972,11 @@ export interface paths {
         };
         /**
          * Get a navigation menu (public).
+         * @deprecated
          * @description No sign-in needed. Items pointing to entries that are not published are left out, with
          *     their sub-items. A menu missing in the language falls back to the default language.
+         *
+         *     **Deprecated** since 2026-11-14. It will be removed on 2027-05-14. Use `/api/v1/menus/public/{key}` instead.
          */
         get: operations["content_get_public_content_menu"];
         put?: never;
@@ -2601,6 +2615,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my interface flags.
+         * @description Requires signing in, no permission: only the caller's own flags, sorted by key. Use them to
+         *     remember per account (not per browser) which hints were dismissed or which news were seen.
+         */
+        get: operations["me_list_my_flags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/flags/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set one of my interface flags.
+         * @description Requires signing in, no permission. Creates the flag or replaces its value: sending it again
+         *     is safe. A user keeps at most `AUTOXIDE_USER_FLAGS_MAX` flags (500 by default).
+         */
+        put: operations["me_set_my_flag"];
+        post?: never;
+        /**
+         * Delete one of my interface flags.
+         * @description Requires signing in, no permission. Deleting a flag that does not exist changes nothing.
+         */
+        delete: operations["me_delete_my_flag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media": {
         parameters: {
             query?: never;
@@ -2792,6 +2852,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/{id}/alts/{locale}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the text alternative of a media item in one language.
+         * @description Requires `media.write`. The item's `alt` stays the default; readers in `locale` get this
+         *     text instead (e.g. a bilingual storefront). `locale` must be one of the languages the server
+         *     lists in `AUTOXIDE_MEDIA_ALT_LOCALES`. `If-Match` is required. To draft the text with AI,
+         *     use `POST /api/v1/media/{id}/alt-suggestions` with the same `locale`, then send it here.
+         */
+        put: operations["media_set_media_alt_translation"];
+        post?: never;
+        /**
+         * Remove the text alternative of a media item in one language.
+         * @description Requires `media.write`. Readers in `locale` get the item's default `alt` again. Removing a
+         *     translation that does not exist changes nothing. `If-Match` is required.
+         */
+        delete: operations["media_delete_media_alt_translation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/{id}/content": {
         parameters: {
             query?: never;
@@ -2861,6 +2949,88 @@ export interface paths {
          */
         post: operations["media_restore_media_item"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List website menus.
+         * @description Requires `menus.read`. Every menu in every language, newest first by default; follow
+         *     `pagination.next_cursor` for more.
+         */
+        get: operations["menus_list_menus"];
+        put?: never;
+        /**
+         * Create a website menu.
+         * @description Requires `menus.manage`. One menu per key and language: the website shows the menu `main`
+         *     in Vietnamese from the menu with key `main` and locale `vi`. All problems with the items
+         *     are reported at once, each with its place (e.g. `items[0].children[1].ref.id`).
+         */
+        post: operations["menus_create_menu"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menus/public/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website menu, ready to show (public).
+         * @description No sign-in needed. Labels, links and pictures are worked out in the menu's language. Items
+         *     pointing to objects that are not public are left out with their sub-items, headings with
+         *     nothing left under them are left out, `auto_children` are filled in, and badges show only
+         *     in their date range. Best sellers of a category are not part of the menu: call the
+         *     product list of the catalog with the item's `ref`.
+         */
+        get: operations["menus_get_public_menu"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menus/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website menu.
+         * @description Requires `menus.read`. The items as saved, without working out titles and links (see
+         *     `GET /api/v1/menus/public/{key}` for that).
+         */
+        get: operations["menus_get_menu"];
+        /**
+         * Replace the items of a website menu.
+         * @description Requires `menus.manage`. Replaces the whole item tree. `If-Match` is required: the menu's
+         *     `ETag` (or `*` to replace it whatever its version). If someone changed the menu since you
+         *     read it, nothing is saved and the answer is 412.
+         */
+        put: operations["menus_replace_menu_items"];
+        post?: never;
+        /**
+         * Delete a website menu.
+         * @description Requires `menus.manage`. Deletes the menu and all its items; it cannot be restored.
+         */
+        delete: operations["menus_delete_menu"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3664,7 +3834,7 @@ export interface components {
              * @description A string; a number for `number`; an array of values for `checkbox`; `true` for
              *     `consent`.
              */
-            value: Record<string, never>;
+            value: unknown;
         };
         /** @description An API key, without its secret. */
         ApiKeyResponse: {
@@ -4000,6 +4170,11 @@ export interface components {
              */
             count: number;
             target_id: string;
+            /**
+             * Format: int32
+             * @description Shown top-level comments only (e.g. the number of questions on a product tab).
+             */
+            thread_count: number;
         };
         /** @description The answer to a delete. */
         CommentDeleted: {
@@ -4012,6 +4187,8 @@ export interface components {
             author_kind: components["schemas"]["CommentAuthorKind"];
             /** @description Guest name or the user's display name. */
             author_name?: string | null;
+            /** @description Codes of what the author was on the target when writing (`seller`, `verified_buyer`…). */
+            badges: string[];
             body: string;
             body_html: string;
             /** Format: date-time */
@@ -4130,6 +4307,11 @@ export interface components {
              * @example comments:{target_type}
              */
             token_scope: string;
+            /**
+             * @description Kinds where only verified accounts (phone number or identity) may comment or answer;
+             *     show "verify your account" instead of the comment box to others.
+             */
+            verified_only_types: string[];
         };
         /**
          * @description Where a comment stands.
@@ -4155,10 +4337,20 @@ export interface components {
              * @description Comments waiting for approval (`null` in the public answer).
              */
             pending_count?: number | null;
+            /**
+             * Format: int32
+             * @description Top-level comments waiting for approval (`null` in the public answer).
+             */
+            pending_thread_count?: number | null;
             /** @description What applies now. */
             state: components["schemas"]["CommentTargetState"];
             target_id: string;
             target_type: string;
+            /**
+             * Format: int32
+             * @description Shown top-level comments, e.g. questions on a product (0 when hidden).
+             */
+            thread_count: number;
         };
         /**
          * @description Whether a target takes comments.
@@ -4402,6 +4594,21 @@ export interface components {
             new_posts?: components["schemas"]["NewPosts"] | null;
             /** @description Omitted: `false` (not open to public sign-up). */
             public?: boolean | null;
+        };
+        /** @description A new menu. */
+        CreateSiteMenuRequest: {
+            items?: components["schemas"]["SiteMenuItemInput"][];
+            /**
+             * @description 1 to 64 lower-case letters, digits, `-` or `_`; unique per language. The website asks
+             *     for a menu by its key.
+             * @example main
+             */
+            key: string;
+            /**
+             * @description The menu's language; omitted: the default language.
+             * @example vi
+             */
+            locale?: string | null;
         };
         /** @description An address to suppress by hand. */
         CreateSuppressionRequest: {
@@ -4698,6 +4905,8 @@ export interface components {
                 author_kind: components["schemas"]["CommentAuthorKind"];
                 /** @description Guest name or the user's display name. */
                 author_name?: string | null;
+                /** @description Codes of what the author was on the target when writing (`seller`, `verified_buyer`…). */
+                badges: string[];
                 body: string;
                 body_html: string;
                 /** Format: date-time */
@@ -4791,6 +5000,11 @@ export interface components {
                  * @example comments:{target_type}
                  */
                 token_scope: string;
+                /**
+                 * @description Kinds where only verified accounts (phone number or identity) may comment or answer;
+                 *     show "verify your account" instead of the comment box to others.
+                 */
+                verified_only_types: string[];
             };
         };
         /** @description Envelope of a single result. */
@@ -4814,10 +5028,20 @@ export interface components {
                  * @description Comments waiting for approval (`null` in the public answer).
                  */
                 pending_count?: number | null;
+                /**
+                 * Format: int32
+                 * @description Top-level comments waiting for approval (`null` in the public answer).
+                 */
+                pending_thread_count?: number | null;
                 /** @description What applies now. */
                 state: components["schemas"]["CommentTargetState"];
                 target_id: string;
                 target_type: string;
+                /**
+                 * Format: int32
+                 * @description Shown top-level comments, e.g. questions on a product (0 when hidden).
+                 */
+                thread_count: number;
             };
         };
         /** @description Envelope of a single result. */
@@ -5338,8 +5562,21 @@ export interface components {
         Data_MediaItemResponse: {
             /** @description A media item. Its content is at `url`. */
             data: {
-                /** @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. */
+                /**
+                 * @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. This is
+                 *     the default language's text, used for any language without a translation in `alts`.
+                 */
                 alt: string;
+                /**
+                 * @description Translations of `alt` by language (BCP 47 code → text), set with
+                 *     `PUT /api/v1/media/{id}/alts/{locale}`. Show `alts[locale]` when present, else `alt`.
+                 * @example {
+                 *       "vi": "Bếp từ đôi màu đen trên mặt bếp gỗ"
+                 *     }
+                 */
+                alts: {
+                    [key: string]: string;
+                };
                 /** @description Caption; empty when unset. */
                 caption: string;
                 /**
@@ -5687,6 +5924,15 @@ export interface components {
             /** @description A comment, as shown to everyone. */
             data: {
                 author: components["schemas"]["CommentAuthor"];
+                /**
+                 * @description Stable codes of what the author was on the target when writing, e.g. `seller` (manages
+                 *     the product) or `verified_buyer` (received it); empty for most comments. Show your own
+                 *     label for each code.
+                 * @example [
+                 *       "verified_buyer"
+                 *     ]
+                 */
+                badges: string[];
                 /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
                 body: string;
                 /**
@@ -5778,6 +6024,20 @@ export interface components {
                 items: components["schemas"]["PublicMenuItem"][];
                 key: string;
                 /** @description The language actually returned (the default language when the menu is not translated). */
+                locale: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_PublicSiteMenu: {
+            /** @description A website menu ready to show: links worked out, hidden targets left out. */
+            data: {
+                items: components["schemas"]["PublicSiteMenuItem"][];
+                /** @example main */
+                key: string;
+                /**
+                 * @description The language actually returned (the default language when the menu is not translated).
+                 * @example vi
+                 */
                 locale: string;
             };
         };
@@ -5974,6 +6234,23 @@ export interface components {
                 model: string;
                 /** @description Up to 5 existing categories or tags of the entry's language that fit; never new ones. */
                 term_ids: string[];
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_SiteMenu: {
+            /** @description A website menu as saved. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                id: string;
+                items: components["schemas"]["SiteMenuItem"][];
+                /** @example main */
+                key: string;
+                /** @example vi */
+                locale: string;
+                /** Format: date-time */
+                updated_at: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -6256,6 +6533,25 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_UserFlag: {
+            /** @description A flag the interface keeps for the signed-in user, e.g. a dismissed hint. */
+            data: {
+                /**
+                 * @description Lower-case letters, digits, `.`, `_` and `-`, up to 100 characters; group flags with a
+                 *     prefix, e.g. `hint.saved_views`.
+                 * @example hint.saved_views
+                 */
+                key: string;
+                /** Format: date-time */
+                updated_at: string;
+                /**
+                 * @description Up to 200 characters, e.g. `dismissed` or the last version whose news were seen.
+                 * @example dismissed
+                 */
+                value: string;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_UserResponse: {
             /** @description A user account. Never includes the password. */
             data: {
@@ -6298,6 +6594,11 @@ export interface components {
                  */
                 count: number;
                 target_id: string;
+                /**
+                 * Format: int32
+                 * @description Shown top-level comments only (e.g. the number of questions on a product tab).
+                 */
+                thread_count: number;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -6486,6 +6787,24 @@ export interface components {
                 status: string;
                 /** Format: date-time */
                 updated_at: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_UserFlag: {
+            data: {
+                /**
+                 * @description Lower-case letters, digits, `.`, `_` and `-`, up to 100 characters; group flags with a
+                 *     prefix, e.g. `hint.saved_views`.
+                 * @example hint.saved_views
+                 */
+                key: string;
+                /** Format: date-time */
+                updated_at: string;
+                /**
+                 * @description Up to 200 characters, e.g. `dismissed` or the last version whose news were seen.
+                 * @example dismissed
+                 */
+                value: string;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -7164,10 +7483,31 @@ export interface components {
              */
             permissions: string[];
         };
+        /** @description A translation of an item's text alternative. */
+        MediaAltTranslation: {
+            /**
+             * @description Text alternative in this language, up to 1000 characters.
+             * @example Bếp từ đôi màu đen trên mặt bếp gỗ
+             */
+            alt: string;
+        };
         /** @description A media item. Its content is at `url`. */
         MediaItemResponse: {
-            /** @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. */
+            /**
+             * @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. This is
+             *     the default language's text, used for any language without a translation in `alts`.
+             */
             alt: string;
+            /**
+             * @description Translations of `alt` by language (BCP 47 code → text), set with
+             *     `PUT /api/v1/media/{id}/alts/{locale}`. Show `alts[locale]` when present, else `alt`.
+             * @example {
+             *       "vi": "Bếp từ đôi màu đen trên mặt bếp gỗ"
+             *     }
+             */
+            alts: {
+                [key: string]: string;
+            };
             /** @description Caption; empty when unset. */
             caption: string;
             /**
@@ -7250,6 +7590,29 @@ export interface components {
              */
             width?: number | null;
         };
+        /** @description A small label on an item, e.g. "-50%" or "New". */
+        MenuBadge: {
+            /**
+             * Format: date-time
+             * @description Shown from this moment; omitted: at once.
+             */
+            from?: string | null;
+            /**
+             * @description 1 to 20 characters, in the menu's language.
+             * @example -50%
+             */
+            text: string;
+            /**
+             * @description `sale`, `brand`, `new` or `neutral`.
+             * @example sale
+             */
+            tone: string;
+            /**
+             * Format: date-time
+             * @description Hidden from this moment on; omitted: never.
+             */
+            until?: string | null;
+        };
         /** @description A menu item to set. Give exactly one of `entry_id`, `term_id` and `url`. */
         MenuItemInput: {
             /** @description Sub-items; menus nest at most 4 levels. */
@@ -7302,6 +7665,15 @@ export interface components {
             locale: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        /**
+         * @description An object of a module, as a resource type (`<module>.<type>`, e.g. `content.entry`,
+         *     `content.term`) and its id.
+         */
+        MenuTarget: {
+            id: string;
+            /** @example content.term */
+            kind: string;
         };
         /** @description Two-step sign-in: the password was right, a code is needed. */
         MfaChallengeResponse: {
@@ -7401,6 +7773,11 @@ export interface components {
             description: string;
             /** @example notes.write */
             name: string;
+            /**
+             * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or `money`.
+             * @example write
+             */
+            risk: string;
         };
         /** @description A recurring job. */
         ModuleSchedule: {
@@ -7415,6 +7792,7 @@ export interface components {
         };
         /** @description An MCP tool. */
         ModuleTool: {
+            deprecation?: components["schemas"]["ModuleToolDeprecation"] | null;
             description: string;
             /** @description The tool deletes or overwrites data that cannot be recovered. */
             destructive: boolean;
@@ -7430,6 +7808,15 @@ export interface components {
             permissions: string[];
             /** @description The tool changes nothing. */
             read_only: boolean;
+        };
+        /** @description A deprecated MCP tool. */
+        ModuleToolDeprecation: {
+            /** @description Deprecated since this date (`YYYY-MM-DD`, UTC). */
+            since: string;
+            /** @description Full name of the tool to use instead, if any. */
+            successor?: string | null;
+            /** @description The tool goes away on this date, if one is set. */
+            sunset?: string | null;
         };
         /** @description Where to move a page. */
         MoveRequest: {
@@ -7694,6 +8081,8 @@ export interface components {
                 author_kind: components["schemas"]["CommentAuthorKind"];
                 /** @description Guest name or the user's display name. */
                 author_name?: string | null;
+                /** @description Codes of what the author was on the target when writing (`seller`, `verified_buyer`…). */
+                badges: string[];
                 body: string;
                 body_html: string;
                 /** Format: date-time */
@@ -8100,8 +8489,21 @@ export interface components {
         Page_MediaItemResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
-                /** @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. */
+                /**
+                 * @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. This is
+                 *     the default language's text, used for any language without a translation in `alts`.
+                 */
                 alt: string;
+                /**
+                 * @description Translations of `alt` by language (BCP 47 code → text), set with
+                 *     `PUT /api/v1/media/{id}/alts/{locale}`. Show `alts[locale]` when present, else `alt`.
+                 * @example {
+                 *       "vi": "Bếp từ đôi màu đen trên mặt bếp gỗ"
+                 *     }
+                 */
+                alts: {
+                    [key: string]: string;
+                };
                 /** @description Caption; empty when unset. */
                 caption: string;
                 /**
@@ -8212,6 +8614,15 @@ export interface components {
             /** @description The items of this page, in the requested order. */
             data: {
                 author: components["schemas"]["CommentAuthor"];
+                /**
+                 * @description Stable codes of what the author was on the target when writing, e.g. `seller` (manages
+                 *     the product) or `verified_buyer` (received it); empty for most comments. Show your own
+                 *     label for each code.
+                 * @example [
+                 *       "verified_buyer"
+                 *     ]
+                 */
+                badges: string[];
                 /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
                 body: string;
                 /**
@@ -8475,6 +8886,23 @@ export interface components {
                  * @example Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0
                  */
                 user_agent?: string | null;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
+        Page_SiteMenuSummary: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                id: string;
+                /** @example main */
+                key: string;
+                /** @example vi */
+                locale: string;
+                /** Format: date-time */
+                updated_at: string;
             }[];
             pagination: components["schemas"]["Pagination"];
         };
@@ -8990,6 +9418,15 @@ export interface components {
         /** @description A comment, as shown to everyone. */
         PublicComment: {
             author: components["schemas"]["CommentAuthor"];
+            /**
+             * @description Stable codes of what the author was on the target when writing, e.g. `seller` (manages
+             *     the product) or `verified_buyer` (received it); empty for most comments. Show your own
+             *     label for each code.
+             * @example [
+             *       "verified_buyer"
+             *     ]
+             */
+            badges: string[];
             /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
             body: string;
             /**
@@ -9194,6 +9631,31 @@ export interface components {
             /** @description The language actually returned (the default language when the menu is not translated). */
             locale: string;
         };
+        /** @description A small label on a menu item. */
+        PublicMenuBadge: {
+            /** @example -50% */
+            text: string;
+            /** @description `sale`, `brand`, `new` or `neutral`. */
+            tone: string;
+        };
+        /** @description An object featured in a drop-down panel. */
+        PublicMenuFeature: {
+            href?: string | null;
+            image?: components["schemas"]["PublicMenuImage"] | null;
+            ref: components["schemas"]["PublicMenuTarget"];
+            summary: string;
+            title: string;
+        };
+        /** @description A public picture. */
+        PublicMenuImage: {
+            alt: string;
+            /** Format: int32 */
+            height?: number | null;
+            /** @description Address of the picture; it changes when the picture changes, so it may be cached long. */
+            url: string;
+            /** Format: int32 */
+            width?: number | null;
+        };
         /** @description An item of a public menu. */
         PublicMenuItem: {
             children: components["schemas"]["PublicMenuItem"][];
@@ -9206,6 +9668,12 @@ export interface components {
             href: string;
             label: string;
             term?: components["schemas"]["PublicTerm"] | null;
+        };
+        /** @description An object of a module, as a resource type and an id. */
+        PublicMenuTarget: {
+            id: string;
+            /** @example content.term */
+            kind: string;
         };
         /** @description A choice, in the asked language. */
         PublicOption: {
@@ -9223,6 +9691,35 @@ export interface components {
             meta_title: string;
             noindex: boolean;
             og_image?: components["schemas"]["PublicMedia"] | null;
+        };
+        /** @description A website menu ready to show: links worked out, hidden targets left out. */
+        PublicSiteMenu: {
+            items: components["schemas"]["PublicSiteMenuItem"][];
+            /** @example main */
+            key: string;
+            /**
+             * @description The language actually returned (the default language when the menu is not translated).
+             * @example vi
+             */
+            locale: string;
+        };
+        /** @description An item of a public menu. */
+        PublicSiteMenuItem: {
+            badge?: components["schemas"]["PublicMenuBadge"] | null;
+            children: components["schemas"]["PublicSiteMenuItem"][];
+            feature?: components["schemas"]["PublicMenuFeature"] | null;
+            /** @description How to set the item apart: `accent`, `brand`, `sale` or `muted`. */
+            highlight?: string | null;
+            /**
+             * @description Where the item links to: a path on the website or an address. `null` for a heading that
+             *     only groups sub-items (e.g. a column of a mega menu).
+             */
+            href?: string | null;
+            /** @description Name of an icon from a fixed set; see the item schema of `PUT /api/v1/menus/{id}`. */
+            icon?: string | null;
+            /** @description The label set on the item, or else the title of the object it points to. */
+            label: string;
+            ref?: components["schemas"]["PublicMenuTarget"] | null;
         };
         /** @description A category or tag of an entry. */
         PublicTerm: {
@@ -9379,6 +9876,10 @@ export interface components {
              * @example brand
              */
             name: string;
+        };
+        /** @description The whole item tree of a menu. */
+        ReplaceSiteMenuItemsRequest: {
+            items: components["schemas"]["SiteMenuItemInput"][];
         };
         /** @description A report. */
         ReportRequest: {
@@ -9613,6 +10114,86 @@ export interface components {
         SetPasswordRequest: {
             /** @description 12 to 128 characters. */
             password: string;
+        };
+        /** @description A website menu as saved. */
+        SiteMenu: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            items: components["schemas"]["SiteMenuItem"][];
+            /** @example main */
+            key: string;
+            /** @example vi */
+            locale: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description A menu item as saved. */
+        SiteMenuItem: {
+            auto_children: boolean;
+            /** Format: int32 */
+            auto_children_limit?: number | null;
+            badge?: components["schemas"]["MenuBadge"] | null;
+            children: components["schemas"]["SiteMenuItem"][];
+            feature?: components["schemas"]["MenuTarget"] | null;
+            highlight?: string | null;
+            icon?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description Empty when the item shows the title of its `ref`. */
+            label: string;
+            ref?: components["schemas"]["MenuTarget"] | null;
+            url?: string | null;
+        };
+        /**
+         * @description A menu item to save. It links to at most one of `url` and `ref`; with neither it is a
+         *     heading that groups its sub-items (e.g. a column of a mega menu).
+         */
+        SiteMenuItemInput: {
+            /**
+             * @description Also list the object's own sub-items (e.g. the sub-categories of a category) after the
+             *     item's children. Only for objects that have sub-items, and only above the 4th level.
+             */
+            auto_children?: boolean;
+            /**
+             * Format: int32
+             * @description How many sub-items `auto_children` takes, 1 to 50; default 12.
+             */
+            auto_children_limit?: number | null;
+            badge?: components["schemas"]["MenuBadge"] | null;
+            /** @description Sub-items. Menus nest at most 4 levels and hold at most 200 items in all. */
+            children?: components["schemas"]["SiteMenuItemInput"][];
+            feature?: components["schemas"]["MenuTarget"] | null;
+            /** @description Sets the item apart: `accent`, `brand`, `sale` or `muted`. */
+            highlight?: string | null;
+            /**
+             * @description One of: `bag`, `bolt`, `book`, `calendar`, `cart`, `category`, `chat`, `fire`, `gift`,
+             *     `grid`, `heart`, `help`, `home`, `info`, `mail`, `map_pin`, `news`, `percent`, `phone`,
+             *     `search`, `shop`, `sparkles`, `star`, `store`, `tag`, `truck`, `user`.
+             */
+            icon?: string | null;
+            /**
+             * @description Up to 200 characters. Needed unless `ref` is given; empty with `ref` shows the title of
+             *     the object, in the menu's language.
+             */
+            label?: string | null;
+            ref?: components["schemas"]["MenuTarget"] | null;
+            /** @description An `https://`, `http://` or `mailto:` address, or a path starting with a single `/`. */
+            url?: string | null;
+        };
+        /** @description A menu in the list. */
+        SiteMenuSummary: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            /** @example main */
+            key: string;
+            /** @example vi */
+            locale: string;
+            /** Format: date-time */
+            updated_at: string;
         };
         /** @description One address of the sitemap. */
         SitemapItem: {
@@ -10210,6 +10791,30 @@ export interface components {
              */
             duplicates: components["schemas"]["DuplicateItem"][];
         };
+        /** @description A flag the interface keeps for the signed-in user, e.g. a dismissed hint. */
+        UserFlag: {
+            /**
+             * @description Lower-case letters, digits, `.`, `_` and `-`, up to 100 characters; group flags with a
+             *     prefix, e.g. `hint.saved_views`.
+             * @example hint.saved_views
+             */
+            key: string;
+            /** Format: date-time */
+            updated_at: string;
+            /**
+             * @description Up to 200 characters, e.g. `dismissed` or the last version whose news were seen.
+             * @example dismissed
+             */
+            value: string;
+        };
+        /** @description The value of a flag. */
+        UserFlagValue: {
+            /**
+             * @description Up to 200 characters, e.g. `dismissed`.
+             * @example dismissed
+             */
+            value: string;
+        };
         /** @description A user account. Never includes the password. */
         UserResponse: {
             /** Format: date-time */
@@ -10333,7 +10938,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `ai.view`; code `permission_denied`. */
@@ -10342,7 +10947,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10390,7 +10995,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10455,7 +11060,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -10464,7 +11069,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `audit.read`; code `permission_denied`. */
@@ -10473,7 +11078,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -10482,7 +11087,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10526,7 +11131,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `audit.read`; code `permission_denied`. */
@@ -10535,7 +11140,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `audit.entry_not_found`. */
@@ -10544,7 +11149,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10601,7 +11206,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -10610,7 +11215,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10659,7 +11264,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.api_key_cannot_create_keys`. */
@@ -10668,7 +11273,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You have too many keys; code `auth.api_key_limit`. */
@@ -10677,7 +11282,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, e.g. a permission you do not have (`not_granted`); see `errors`. */
@@ -10686,7 +11291,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10730,7 +11335,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You have no key with this id; code `auth.api_key_not_found`. */
@@ -10739,7 +11344,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10784,7 +11389,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another account took this address meanwhile; code `auth.email_taken`. */
@@ -10793,7 +11398,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -10802,7 +11407,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10856,7 +11461,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled; code `auth.user_disabled`. */
@@ -10865,7 +11470,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -10874,7 +11479,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many failed sign-ins for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -10883,7 +11488,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10928,7 +11533,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled; code `auth.user_disabled`. */
@@ -10937,7 +11542,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -10946,7 +11551,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many failed attempts for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -10955,7 +11560,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11000,7 +11605,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The passkey was not accepted; code `auth.passkey_sign_in_failed`. */
@@ -11009,7 +11614,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled (`auth.user_disabled`), or passkeys are off (`auth.passkeys_disabled`). */
@@ -11018,7 +11623,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field, or the credential is not a WebAuthn response; see `errors`. */
@@ -11027,7 +11632,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11068,7 +11673,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11111,7 +11716,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11152,7 +11757,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled; code `auth.user_disabled`. */
@@ -11161,7 +11766,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11206,7 +11811,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11215,7 +11820,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -11224,7 +11829,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You are the last active administrator; give the `admin` role to someone else first. Code `auth.last_admin`. */
@@ -11233,7 +11838,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -11242,7 +11847,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many wrong passwords for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -11251,7 +11856,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11296,7 +11901,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11305,7 +11910,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key (code `auth.session_required`), or the account is disabled (code `auth.user_disabled`). */
@@ -11314,7 +11919,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another account has this email (code `auth.email_taken`), or it is already your verified address (code `auth.email_already_verified`). */
@@ -11323,7 +11928,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or the address is invalid; see `errors`. */
@@ -11332,7 +11937,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many wrong passwords for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -11341,7 +11946,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11382,7 +11987,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The address is already verified; code `auth.email_already_verified`. */
@@ -11391,7 +11996,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11432,7 +12037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -11441,7 +12046,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11482,7 +12087,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11529,7 +12134,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -11538,7 +12143,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Two-step sign-in is not on; code `auth.mfa_not_enabled`. */
@@ -11547,7 +12152,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The code is wrong or expired; `errors` names the field `code`. */
@@ -11556,7 +12161,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11603,7 +12208,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11612,7 +12217,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -11621,7 +12226,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Two-step sign-in is already on; code `auth.mfa_already_enabled`. */
@@ -11630,7 +12235,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11677,7 +12282,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -11686,7 +12291,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No setup was started (`auth.mfa_setup_not_started`), or it is already on (`auth.mfa_already_enabled`). */
@@ -11695,7 +12300,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The code is wrong or expired; `errors` names the field `code`. */
@@ -11704,7 +12309,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11751,7 +12356,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -11760,7 +12365,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Two-step sign-in is not on; code `auth.mfa_not_enabled`. */
@@ -11769,7 +12374,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The code is wrong or expired; `errors` names the field `code`. */
@@ -11778,7 +12383,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11835,7 +12440,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -11844,7 +12449,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11893,7 +12498,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11902,7 +12507,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key (`auth.session_required`), or passkeys are off (`auth.passkeys_disabled`). */
@@ -11911,7 +12516,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This passkey is already registered; code `auth.passkey_already_registered`. */
@@ -11920,7 +12525,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid; see `errors`. */
@@ -11929,7 +12534,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11976,7 +12581,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11985,7 +12590,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key (`auth.session_required`), or passkeys are off (`auth.passkeys_disabled`). */
@@ -11994,7 +12599,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You already have the most passkeys allowed; code `auth.passkey_limit`. */
@@ -12003,7 +12608,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12047,7 +12652,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key; code `auth.session_required`. */
@@ -12056,7 +12661,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You have no passkey with this id; code `auth.passkey_not_found`. */
@@ -12065,7 +12670,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12112,7 +12717,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -12121,7 +12726,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key (code `auth.session_required`), or the account is disabled (code `auth.user_disabled`). */
@@ -12130,7 +12735,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field, or the new password breaks the rules (see `errors`). */
@@ -12139,7 +12744,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many wrong passwords for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -12148,7 +12753,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12205,7 +12810,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -12214,7 +12819,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -12223,7 +12828,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12272,7 +12877,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -12281,7 +12886,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `keep` is not a valid id. */
@@ -12290,7 +12895,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12334,7 +12939,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.session_required`. */
@@ -12343,7 +12948,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You have no active session with this id; code `auth.session_not_found`. */
@@ -12352,7 +12957,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12395,7 +13000,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12438,7 +13043,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The password does not follow the rules (12 to 128 characters); see `errors`. */
@@ -12447,7 +13052,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12488,7 +13093,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.read`; code `permission_denied`. */
@@ -12497,7 +13102,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12542,7 +13147,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled; code `auth.user_disabled`. */
@@ -12551,7 +13156,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -12560,7 +13165,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12607,7 +13212,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An account has this email; code `auth.email_taken`. */
@@ -12616,7 +13221,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, e.g. a password shorter than 12 characters; see `errors`. */
@@ -12625,7 +13230,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12682,7 +13287,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.read`; code `permission_denied`. */
@@ -12691,7 +13296,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -12700,7 +13305,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12749,7 +13354,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.manage`; code `permission_denied`. */
@@ -12758,7 +13363,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another role has this name; code `auth.role_name_taken`. */
@@ -12767,7 +13372,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, e.g. an unknown permission; see `errors`. */
@@ -12776,7 +13381,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12822,7 +13427,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.read`; code `permission_denied`. */
@@ -12831,7 +13436,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No role has this id; code `auth.role_not_found`. */
@@ -12840,7 +13445,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12894,7 +13499,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.manage`; code `permission_denied`. */
@@ -12903,7 +13508,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No role has this id; code `auth.role_not_found`. */
@@ -12912,7 +13517,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another role has this name (`auth.role_name_taken`), or the role is the built-in `admin` (`auth.role_builtin`). */
@@ -12921,7 +13526,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the record changed since you read it. Get it again and retry; code `precondition_failed`. */
@@ -12930,7 +13535,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, e.g. an unknown permission; see `errors`. */
@@ -12939,7 +13544,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12983,7 +13588,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.manage`; code `permission_denied`. */
@@ -12992,7 +13597,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No role has this id; code `auth.role_not_found`. */
@@ -13001,7 +13606,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The role is the built-in `admin`; code `auth.role_builtin`. */
@@ -13010,7 +13615,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13072,7 +13677,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.read`; code `permission_denied`. */
@@ -13081,7 +13686,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -13090,7 +13695,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13139,7 +13744,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage`; code `permission_denied`. */
@@ -13148,7 +13753,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An account has this email; code `auth.email_taken`. */
@@ -13157,7 +13762,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -13166,7 +13771,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13212,7 +13817,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.read`; code `permission_denied`. */
@@ -13221,7 +13826,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13230,7 +13835,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13274,7 +13879,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13283,7 +13888,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13292,7 +13897,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This is the last active administrator; code `auth.last_admin`. */
@@ -13301,7 +13906,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13355,7 +13960,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13364,7 +13969,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13373,7 +13978,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No active user would keep the `admin` role; code `auth.last_admin`. */
@@ -13382,7 +13987,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the record changed since you read it. Get it again and retry; code `precondition_failed`. */
@@ -13391,7 +13996,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -13400,7 +14005,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13444,7 +14049,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13453,7 +14058,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13462,7 +14067,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13510,7 +14115,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13519,7 +14124,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13528,7 +14133,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account already has a password; code `auth.password_already_set`. */
@@ -13537,7 +14142,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The password breaks the rules; see `errors`. */
@@ -13546,7 +14151,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13590,7 +14195,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.read`; code `permission_denied`. */
@@ -13599,7 +14204,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13608,7 +14213,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13658,7 +14263,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.manage`; code `permission_denied`. */
@@ -13667,7 +14272,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13676,7 +14281,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user would keep the `admin` role; code `auth.last_admin`. */
@@ -13685,7 +14290,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A role id does not exist, or the list is too long; see `errors`. */
@@ -13694,7 +14299,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13740,7 +14345,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13749,7 +14354,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13758,7 +14363,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13786,6 +14391,11 @@ export interface operations {
                 target_id?: string;
                 /** @description Only comments whose text or author name contains this, ignoring case and accents. */
                 q?: string;
+                /**
+                 * @description `true`: only top-level comments without a shown reply yet, e.g. unanswered questions
+                 *     (use with `status=published`). Defaults to `false` (no such filter).
+                 */
+                unanswered?: boolean;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -13826,7 +14436,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.read`; code `permission_denied`. */
@@ -13835,7 +14445,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -13844,7 +14454,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13905,7 +14515,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.manage`; code `permission_denied`. */
@@ -13914,7 +14524,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -13923,7 +14533,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13972,7 +14582,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.manage`; code `permission_denied`. */
@@ -13981,7 +14591,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid input; see `errors`. */
@@ -13990,7 +14600,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14034,7 +14644,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.manage`; code `permission_denied`. */
@@ -14043,7 +14653,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No ban has this id; code `comments.ban_not_found`. */
@@ -14052,7 +14662,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14099,7 +14709,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.export`; code `permission_denied`. */
@@ -14108,7 +14718,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -14117,7 +14727,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14166,7 +14776,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.export`; code `permission_denied`. */
@@ -14175,7 +14785,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -14184,7 +14794,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14225,7 +14835,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.post`; code `permission_denied`. */
@@ -14234,7 +14844,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14281,7 +14891,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.post`; code `permission_denied`. */
@@ -14290,7 +14900,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another user shows this name; code `comments.name_taken`. */
@@ -14299,7 +14909,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid or reserved name; see `errors`. */
@@ -14308,7 +14918,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14357,7 +14967,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Comments are off (`comments.disabled`), guests may not comment here (`comments.guests_not_allowed`), the author is banned (`comments.banned`), or a signed-in caller lacks `comments.post` (`permission_denied`). */
@@ -14366,7 +14976,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The target takes no comments (`comments.target_not_found`), or the comment to reply to is not shown (`comments.parent_not_found`). */
@@ -14375,7 +14985,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The target is closed (`comments.target_closed`), or a signed-in user has no display name yet (`comments.profile_required`). */
@@ -14384,7 +14994,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is too large; code `payload_too_large`. */
@@ -14393,7 +15003,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid input (see `errors`), or a banned word (`comments.banned_word`). */
@@ -14402,7 +15012,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A signed-in user posted too many; code `antispam.rate_limited`. */
@@ -14411,7 +15021,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The anti-spam check cannot run; code `antispam.verifier_unavailable`. */
@@ -14420,7 +15030,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14464,7 +15074,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14514,7 +15124,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -14523,7 +15133,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too late (`comments.edit_window_passed`), the comment was rejected or deleted (`comments.not_editable`). */
@@ -14532,7 +15142,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A moderator changed it at the same time; code `precondition_failed`. */
@@ -14541,7 +15151,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid text (see `errors`), or a banned word (`comments.banned_word`). */
@@ -14550,7 +15160,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14600,7 +15210,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A moderator changed it at the same time; code `precondition_failed`. */
@@ -14609,7 +15219,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14669,7 +15279,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -14678,7 +15288,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14728,7 +15338,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid input; see `errors`. */
@@ -14737,7 +15347,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14786,7 +15396,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is missing or invalid; see `errors`. */
@@ -14795,7 +15405,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14873,7 +15483,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The id is invalid; see `errors`. */
@@ -14882,7 +15492,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14908,6 +15518,13 @@ export interface operations {
                 target_id?: string;
                 /** @description Replies to include with each top-level comment, 0 to 10. Defaults to 3. */
                 replies_limit?: number;
+                /**
+                 * @description Only top-level comments (e.g. questions) whose text or author name contains this, 1 to
+                 *     100 characters, ignoring case and accents. Matches with the exact accents come first,
+                 *     then the others; within each group the usual `order` applies.
+                 * @example bảo hành
+                 */
+                q?: string;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -14948,7 +15565,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is missing or invalid; see `errors`. */
@@ -14957,7 +15574,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15042,7 +15659,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15090,7 +15707,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.read`; code `permission_denied`. */
@@ -15099,7 +15716,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This kind of target takes no comments; code `comments.target_not_found`. */
@@ -15108,7 +15725,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The id is invalid; see `errors`. */
@@ -15117,7 +15734,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15173,7 +15790,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.manage`; code `permission_denied`. */
@@ -15182,7 +15799,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This kind of target takes no comments; code `comments.target_not_found`. */
@@ -15191,7 +15808,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The target changed since you read it; code `precondition_failed`. */
@@ -15200,7 +15817,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid input; see `errors`. */
@@ -15209,7 +15826,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15255,7 +15872,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.read`; code `permission_denied`. */
@@ -15264,7 +15881,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -15273,7 +15890,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15319,7 +15936,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.moderate`; code `permission_denied`. */
@@ -15328,7 +15945,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -15337,7 +15954,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15391,7 +16008,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.moderate`; code `permission_denied`. */
@@ -15400,7 +16017,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -15409,7 +16026,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The author deleted it; code `comments.deleted`. */
@@ -15418,7 +16035,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The comment changed since you read it; code `precondition_failed`. */
@@ -15427,7 +16044,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The status is invalid; see `errors`. */
@@ -15436,7 +16053,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -15445,7 +16062,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15505,7 +16122,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.read`; code `permission_denied`. */
@@ -15514,7 +16131,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -15523,7 +16140,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -15532,7 +16149,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15589,7 +16206,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -15598,7 +16215,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -15607,7 +16224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15656,7 +16273,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -15665,7 +16282,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -15674,7 +16291,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -15683,7 +16300,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15729,7 +16346,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -15738,7 +16355,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No author has this id; code `content.author_not_found`. */
@@ -15747,7 +16364,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15791,7 +16408,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -15800,7 +16417,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No author has this id; code `content.author_not_found`. */
@@ -15809,7 +16426,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15861,7 +16478,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -15870,7 +16487,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No author has this id; code `content.author_not_found`. */
@@ -15879,7 +16496,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -15888,7 +16505,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The profile changed since you read it; code `precondition_failed`. */
@@ -15897,7 +16514,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -15906,7 +16523,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -15915,7 +16532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15996,7 +16613,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -16005,7 +16622,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A filter or paging parameter is invalid; see `errors`. */
@@ -16014,7 +16631,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16063,7 +16680,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the parent page is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16072,7 +16689,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -16081,7 +16698,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid: see `errors` (code `content.invalid_body` when only the body is, `content.media_not_found` when only media items are missing). */
@@ -16090,7 +16707,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16136,7 +16753,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -16145,7 +16762,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16154,7 +16771,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16200,7 +16817,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.delete`; code `permission_denied`. */
@@ -16209,7 +16826,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16218,7 +16835,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The page has subpages; code `content.page_has_children`. */
@@ -16227,7 +16844,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16236,7 +16853,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16245,7 +16862,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16299,7 +16916,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16308,7 +16925,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16317,7 +16934,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -16326,7 +16943,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the entry changed since you read it; code `precondition_failed`. */
@@ -16335,7 +16952,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -16344,7 +16961,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16353,7 +16970,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16401,7 +17018,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish`; code `permission_denied`. */
@@ -16410,7 +17027,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16419,7 +17036,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A page with published subpages; code `content.page_has_published_children`. */
@@ -16428,7 +17045,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16437,7 +17054,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16446,7 +17063,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16496,7 +17113,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (or `content.publish` / `content.publish_own` for a published entry; code `permission_denied`), or the entry is not yours and you only have the `_own` permission (code `content.not_owner`). */
@@ -16505,7 +17122,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16514,7 +17131,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An id is not an author, too many, or (with only `content.write_own`) a profile of someone else (`not_allowed`); see `errors`. */
@@ -16523,7 +17140,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16575,7 +17192,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the page or the new parent is not yours and you only have `content.write_own` (code `content.not_owner`); or the page is published and you lack `content.publish`. */
@@ -16584,7 +17201,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16593,7 +17210,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Under itself or a subpage (code `content.tree_cycle`), slug taken at the new place (code `content.slug_taken`), address taken (code `content.path_taken`), or the new parent is not published (code `content.parent_not_published`). */
@@ -16602,7 +17219,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16611,7 +17228,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not a page, or the parent is invalid or too deep (`tree_too_deep`); see `errors`. */
@@ -16620,7 +17237,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16629,7 +17246,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16675,7 +17292,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16684,7 +17301,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16693,7 +17310,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Previews are off on this server; code `content.preview_disabled`. */
@@ -16702,7 +17319,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16757,7 +17374,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish` (or `content.publish_own`; code `permission_denied`), the entry is not yours and you only have `content.publish_own` (code `content.not_owner`), an editor archived it and you only have `content.publish_own` (code `content.archived`), or an API key sent `ai_reviewed` (code `content.ai_review_requires_human`). */
@@ -16766,7 +17383,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16775,7 +17392,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The address is used by another published entry (code `content.path_taken`), the parent page is not published (code `content.parent_not_published`), or an editor's redirect is at the address and you only have `content.publish_own` (code `content.path_has_redirect`). */
@@ -16784,7 +17401,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16793,7 +17410,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A media item is missing (code `content.media_not_found`) or not public (code `content.media_not_public`), or `published_at` was sent with only `content.publish_own`; see `errors`. */
@@ -16802,7 +17419,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16811,7 +17428,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16861,7 +17478,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16870,7 +17487,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16879,7 +17496,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16888,7 +17505,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16897,7 +17514,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16947,7 +17564,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16956,7 +17573,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16965,7 +17582,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16974,7 +17591,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16983,7 +17600,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17043,7 +17660,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17052,7 +17669,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17061,7 +17678,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17107,7 +17724,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17116,7 +17733,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such revision of this entry; code `content.revision_not_found`. */
@@ -17125,7 +17742,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17175,7 +17792,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -17184,7 +17801,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such entry or revision; code `content.not_found` or `content.revision_not_found`. */
@@ -17193,7 +17810,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The revision's slug is now taken; code `content.slug_taken`. */
@@ -17202,7 +17819,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -17211,7 +17828,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A media item of the revision no longer exists; see `errors`. */
@@ -17220,7 +17837,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -17229,7 +17846,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17273,7 +17890,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17282,7 +17899,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17336,7 +17953,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish`; code `permission_denied`. */
@@ -17345,7 +17962,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17354,7 +17971,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A schedule of this action is already pending; code `content.schedule_conflict`. */
@@ -17363,7 +17980,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -17372,7 +17989,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `run_at` is not in the future (`schedule_in_past`), or a media item is missing or not public; see `errors`. */
@@ -17381,7 +17998,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -17390,7 +18007,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17434,7 +18051,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17443,7 +18060,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17452,7 +18069,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17498,7 +18115,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -17507,7 +18124,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17516,7 +18133,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The AI model declined the content (code `ai.refused`) or its answer was cut off (code `ai.output_truncated`). */
@@ -17525,7 +18142,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Today's AI token limit is used up; code `ai.quota_exceeded`, with `Retry-After`. */
@@ -17534,7 +18151,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description AI is off (code `ai.disabled`), misconfigured (code `ai.misconfigured`), the provider is busy (code `ai.provider_unavailable`, maybe with `Retry-After`), or its answer had the wrong shape twice (code `ai.output_invalid`). */
@@ -17543,7 +18160,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17593,7 +18210,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (or `content.publish` / `content.publish_own` for a published entry; code `permission_denied`), or the entry is not yours and you only have the `_own` permission (code `content.not_owner`). */
@@ -17602,7 +18219,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17611,7 +18228,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An id is not a category or tag, or too many; see `errors`. */
@@ -17620,7 +18237,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17672,7 +18289,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry (or its translation) is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -17681,7 +18298,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17690,7 +18307,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A translation into this language is already queued or running (code `content.translation_in_progress`), or the parent page has no translation yet (code `content.parent_not_translated`). */
@@ -17699,7 +18316,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported or is the entry's own; see `errors`. */
@@ -17708,7 +18325,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description AI is off on this server; code `ai.disabled`. */
@@ -17717,7 +18334,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17777,7 +18394,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17786,7 +18403,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -17795,7 +18412,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17847,7 +18464,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry — or the translation of its parent page — is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -17856,7 +18473,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17865,7 +18482,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A translation in this language exists (code `content.translation_exists`), the parent page is not translated (code `content.parent_not_translated`), or the slug is taken (code `content.slug_taken`). */
@@ -17874,7 +18491,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported or a value is invalid; see `errors`. */
@@ -17883,7 +18500,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17931,7 +18548,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish` or `content.publish_own` (code `permission_denied`), or the entry is not yours and you only have `content.publish_own` (code `content.not_owner`). */
@@ -17940,7 +18557,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17949,7 +18566,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not published (code `content.not_published`), or a page with published subpages (code `content.page_has_published_children`). */
@@ -17958,7 +18575,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -17967,7 +18584,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -17976,7 +18593,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18017,7 +18634,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -18026,7 +18643,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18075,7 +18692,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -18084,7 +18701,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such menu in this language; code `content.menu_not_found`. */
@@ -18093,7 +18710,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18150,7 +18767,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18159,7 +18776,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The menu changed since you read it; code `precondition_failed`. */
@@ -18168,7 +18785,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An item is invalid (each listed with its place, e.g. `items[0].children[1].url`); see `errors`. */
@@ -18177,7 +18794,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -18186,7 +18803,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18230,7 +18847,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18276,7 +18893,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18323,7 +18940,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported; see `errors`. */
@@ -18332,7 +18949,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18406,7 +19023,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18450,7 +19067,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Previews are off on this server; code `content.preview_disabled`. */
@@ -18459,7 +19076,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18513,7 +19130,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported or the path is malformed; see `errors`. */
@@ -18522,7 +19139,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18579,7 +19196,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -18588,7 +19205,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18647,7 +19264,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18696,7 +19313,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported; see `errors`. */
@@ -18705,7 +19322,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18766,7 +19383,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18775,7 +19392,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -18784,7 +19401,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18833,7 +19450,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18842,7 +19459,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A loop (code `content.redirect_loop`), a published entry at that address (code `content.path_taken`), or a redirect from that address already (code `content.redirect_exists`). */
@@ -18851,7 +19468,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -18860,7 +19477,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18906,7 +19523,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18915,7 +19532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No redirect has this id; code `content.redirect_not_found`. */
@@ -18924,7 +19541,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18968,7 +19585,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18977,7 +19594,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No redirect has this id; code `content.redirect_not_found`. */
@@ -18986,7 +19603,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19038,7 +19655,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -19047,7 +19664,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No redirect has this id; code `content.redirect_not_found`. */
@@ -19056,7 +19673,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A loop, a published entry at that address, or another redirect from it; see the code. */
@@ -19065,7 +19682,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The redirect changed since you read it; code `precondition_failed`. */
@@ -19074,7 +19691,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -19083,7 +19700,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -19092,7 +19709,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19138,7 +19755,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish`; code `permission_denied`. */
@@ -19147,7 +19764,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No schedule has this id; code `content.schedule_not_found`. */
@@ -19156,7 +19773,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description It already ran or was canceled; code `content.schedule_not_pending`. */
@@ -19165,7 +19782,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19222,7 +19839,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -19231,7 +19848,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -19240,7 +19857,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19299,7 +19916,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -19308,7 +19925,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -19317,7 +19934,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19366,7 +19983,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -19375,7 +19992,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -19384,7 +20001,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -19393,7 +20010,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19439,7 +20056,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -19448,7 +20065,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No term has this id; code `content.term_not_found`. */
@@ -19457,7 +20074,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19501,7 +20118,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -19510,7 +20127,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No term has this id; code `content.term_not_found`. */
@@ -19519,7 +20136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The category has subcategories; code `content.term_has_children`. */
@@ -19528,7 +20145,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19580,7 +20197,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -19589,7 +20206,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No term has this id; code `content.term_not_found`. */
@@ -19598,7 +20215,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -19607,7 +20224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The term changed since you read it; code `precondition_failed`. */
@@ -19616,7 +20233,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, or the parent would make a loop (`term_cycle`); see `errors`. */
@@ -19625,7 +20242,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -19634,7 +20251,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19678,7 +20295,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read` (or `content.write` / `content.write_own`); code `permission_denied`. */
@@ -19687,7 +20304,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No translation request you may see has this id; code `content.translation_request_not_found`. */
@@ -19696,7 +20313,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19753,7 +20370,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19762,7 +20379,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -19771,7 +20388,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19827,7 +20444,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -19836,7 +20453,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19845,7 +20462,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The file is too large; code `files.too_large` (or `payload_too_large` when `Content-Length` already says so). */
@@ -19854,7 +20471,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This media type is not accepted; code `files.type_not_allowed`. The message lists the accepted types. */
@@ -19863,7 +20480,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is missing or invalid; see `errors`. */
@@ -19872,7 +20489,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19916,7 +20533,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19925,7 +20542,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No file with this id that you may see; code `files.file_not_found`. */
@@ -19934,7 +20551,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19978,7 +20595,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19987,7 +20604,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No file with this id that you may see (or it was already deleted); code `files.file_not_found`. */
@@ -19996,7 +20613,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20040,7 +20657,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -20049,7 +20666,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No file with this id that you may see; code `files.file_not_found`. */
@@ -20058,7 +20675,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20117,7 +20734,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.read`; code `permission_denied`. */
@@ -20126,7 +20743,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -20135,7 +20752,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20184,7 +20801,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.manage` (or `forms.read`, needed to set `notify_emails`); code `permission_denied`. */
@@ -20193,7 +20810,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The key is taken; code `forms.key_taken`. */
@@ -20202,7 +20819,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The definition is invalid; see `errors`. */
@@ -20211,7 +20828,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20258,7 +20875,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.export`; code `permission_denied`. */
@@ -20267,7 +20884,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -20276,7 +20893,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20325,7 +20942,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.export`; code `permission_denied`. */
@@ -20334,7 +20951,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -20343,7 +20960,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20392,7 +21009,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `locale` is not `en` or `vi`; see `errors`. */
@@ -20401,7 +21018,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20453,7 +21070,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The page's `Origin` is not allowed for this form; code `forms.origin_not_allowed`. */
@@ -20462,7 +21079,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this key; code `forms.not_found`. */
@@ -20471,7 +21088,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The form is closed; code `forms.closed`. */
@@ -20480,7 +21097,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is too large; code `payload_too_large`. */
@@ -20489,7 +21106,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An answer is invalid; see `errors`. */
@@ -20498,7 +21115,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A caller with `forms.submit` sent too many; code `antispam.rate_limited`. */
@@ -20507,7 +21124,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The anti-spam check cannot run; code `antispam.verifier_unavailable`. */
@@ -20516,7 +21133,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20562,7 +21179,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.read`; code `permission_denied`. */
@@ -20571,7 +21188,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No submission has this id; code `forms.submission_not_found`. */
@@ -20580,7 +21197,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20624,7 +21241,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.review`; code `permission_denied`. */
@@ -20633,7 +21250,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No submission has this id; code `forms.submission_not_found`. */
@@ -20642,7 +21259,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20696,7 +21313,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.review`; code `permission_denied`. */
@@ -20705,7 +21322,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No submission has this id; code `forms.submission_not_found`. */
@@ -20714,7 +21331,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The submission changed since you read it; code `precondition_failed`. */
@@ -20723,7 +21340,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The status is invalid; see `errors`. */
@@ -20732,7 +21349,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -20741,7 +21358,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20787,7 +21404,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.read`; code `permission_denied`. */
@@ -20796,7 +21413,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -20805,7 +21422,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20851,7 +21468,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.manage`; code `permission_denied`. */
@@ -20860,7 +21477,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -20869,7 +21486,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The form changed since you read it; code `precondition_failed`. */
@@ -20878,7 +21495,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -20887,7 +21504,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20941,7 +21558,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.manage` (or `forms.read`, needed to change `notify_emails`); code `permission_denied`. */
@@ -20950,7 +21567,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -20959,7 +21576,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The key is taken; code `forms.key_taken`. */
@@ -20968,7 +21585,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The form changed since you read it; code `precondition_failed`. */
@@ -20977,7 +21594,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -20986,7 +21603,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -20995,7 +21612,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21059,7 +21676,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.read`; code `permission_denied`. */
@@ -21068,7 +21685,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -21077,7 +21694,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -21086,7 +21703,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21140,7 +21757,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.export`; code `permission_denied`. */
@@ -21149,7 +21766,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -21158,7 +21775,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -21167,7 +21784,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21208,7 +21825,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `kernel.modules.read`; code `permission_denied`. */
@@ -21217,7 +21834,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21261,7 +21878,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `kernel.modules.read`; code `permission_denied`. */
@@ -21270,7 +21887,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such module; code `kernel.module_not_found`. */
@@ -21279,7 +21896,184 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    me_list_my_flags: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Only flags whose key starts with this, e.g. `hint.`.
+                 * @example hint.
+                 */
+                prefix?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's flags, sorted by key (at most `AUTOXIDE_USER_FLAGS_MAX`). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_UserFlag"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `prefix` is not a valid key prefix; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    me_set_my_flag: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Lower-case letters, digits, `.`, `_` and `-`, up to 100 characters, e.g. `hint.saved_views`. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserFlagValue"];
+            };
+        };
+        responses: {
+            /** @description The flag as stored. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_UserFlag"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The caller already keeps the most flags allowed; delete some first. Code `kernel.flag_limit_reached`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The key or the value is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    me_delete_my_flag: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Key of the flag. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The flag is gone (or never existed). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The key is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21363,7 +22157,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21372,7 +22166,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A filter or paging parameter is invalid; see `errors`. */
@@ -21381,7 +22175,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21444,7 +22238,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -21453,7 +22247,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -21462,7 +22256,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The content is too large; code `media.too_large` (or `payload_too_large` when `Content-Length` already says so). */
@@ -21471,7 +22265,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The type is not accepted (code `media.type_not_allowed`, the message lists the accepted types), the content is not of the declared type (code `media.content_mismatch`), the type could not be detected (code `media.unknown_type`), or the image is damaged (code `media.invalid_image`). */
@@ -21480,7 +22274,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is invalid, the folder does not exist, or the body is empty; see `errors`. */
@@ -21489,7 +22283,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21554,7 +22348,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21563,7 +22357,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A filter or paging parameter is invalid; see `errors`. */
@@ -21572,7 +22366,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21621,7 +22415,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -21630,7 +22424,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The parent already holds a folder with this name; code `media.folder_name_taken`. */
@@ -21639,7 +22433,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is invalid or the parent does not exist; see `errors`. */
@@ -21648,7 +22442,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21694,7 +22488,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21703,7 +22497,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No folder has this id; code `media.folder_not_found`. */
@@ -21712,7 +22506,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21756,7 +22550,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -21765,7 +22559,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No folder has this id; code `media.folder_not_found`. */
@@ -21774,7 +22568,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The folder is not empty; code `media.folder_not_empty`. */
@@ -21783,7 +22577,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21837,7 +22631,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -21846,7 +22640,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No folder has this id; code `media.folder_not_found`. */
@@ -21855,7 +22649,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The new parent already holds a folder with this name (code `media.folder_name_taken`), or is the folder itself or one of its subfolders (code `media.folder_cycle`). */
@@ -21864,7 +22658,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the folder changed since you read it; code `precondition_failed`. */
@@ -21873,7 +22667,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is invalid or the parent does not exist; see `errors`. */
@@ -21882,7 +22676,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -21891,7 +22685,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21952,7 +22746,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21961,7 +22755,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -21970,7 +22764,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22016,7 +22810,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -22025,7 +22819,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No tag has this id; code `media.tag_not_found`. */
@@ -22034,7 +22828,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22078,7 +22872,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22087,7 +22881,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No tag has this id; code `media.tag_not_found`. */
@@ -22096,7 +22890,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22150,7 +22944,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22159,7 +22953,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No tag has this id; code `media.tag_not_found`. */
@@ -22168,7 +22962,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another tag has this name; code `media.tag_name_taken`. */
@@ -22177,7 +22971,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the tag changed since you read it; code `precondition_failed`. */
@@ -22186,7 +22980,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is invalid; see `errors`. */
@@ -22195,7 +22989,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -22204,7 +22998,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22250,7 +23044,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -22259,7 +23053,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22268,7 +23062,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22314,7 +23108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22323,7 +23117,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22332,7 +23126,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is already in the trash; code `media.item_in_trash`. */
@@ -22341,7 +23135,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22395,7 +23189,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22404,7 +23198,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22413,7 +23207,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is in the trash; code `media.item_in_trash`. */
@@ -22422,7 +23216,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the item changed since you read it. Get it again and retry; code `precondition_failed`. */
@@ -22431,7 +23225,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid or the folder does not exist; see `errors`. */
@@ -22440,7 +23234,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -22449,7 +23243,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22499,7 +23293,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write` (code `permission_denied`), or the image is private and may not be sent (code `media.ai_private_not_allowed`). */
@@ -22508,7 +23302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22517,7 +23311,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is in the trash; code `media.item_in_trash`. */
@@ -22526,7 +23320,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid (see `errors`), the item is not a readable JPEG, PNG, GIF or WebP image (code `media.ai_unsupported_image`), the model reads no images (code `ai.unsupported_input`), or it declined the image (code `ai.refused`). */
@@ -22535,7 +23329,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Today's AI token limit is used up; code `ai.quota_exceeded`, with `Retry-After`. */
@@ -22544,7 +23338,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description AI is off (code `ai.disabled`), misconfigured (code `ai.misconfigured`), the provider is busy (code `ai.provider_unavailable`, maybe with `Retry-After`), or its answer had the wrong shape twice (code `ai.output_invalid`). */
@@ -22553,7 +23347,223 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    media_set_media_alt_translation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required: the `ETag` you read (or `*`). The change is made only if nobody changed the item since; otherwise `412`. */
+                "If-Match": string;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the media item. */
+                id: string;
+                /** @description BCP 47 language code, e.g. `vi`. */
+                locale: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaAltTranslation"];
+            };
+        };
+        responses: {
+            /** @description The item after the change, with `alts`. */
+            200: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_MediaItemResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `media.write`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No media item has this id; code `media.item_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The item is in the trash; code `media.item_in_trash`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` does not match: the item changed since you read it. Get it again and retry; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The language is not offered (code `media.unsupported_locale`) or the text is too long; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` is missing; code `precondition_required`. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    media_delete_media_alt_translation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required: the `ETag` you read (or `*`). The change is made only if nobody changed the item since; otherwise `412`. */
+                "If-Match": string;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the media item. */
+                id: string;
+                /** @description BCP 47 language code, e.g. `vi`. */
+                locale: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The item after the change, with `alts`. */
+            200: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_MediaItemResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `media.write`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No media item has this id; code `media.item_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The item is in the trash; code `media.item_in_trash`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` does not match: the item changed since you read it. Get it again and retry; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The language is not offered; code `media.unsupported_locale`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` is missing; code `precondition_required`. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22643,7 +23653,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id that you may load; code `media.item_not_found`. */
@@ -22652,7 +23662,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The range is outside the content; code `media.range_not_satisfiable`. `Content-Range: bytes *\/<size>` gives the size. */
@@ -22661,7 +23671,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `format` is not `webp`; see `errors`. */
@@ -22670,7 +23680,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22725,7 +23735,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -22734,7 +23744,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22743,7 +23753,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22752,7 +23762,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is in the trash; code `media.item_in_trash`. */
@@ -22761,7 +23771,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the item changed since you read it; code `precondition_failed`. */
@@ -22770,7 +23780,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The content is too large; code `media.too_large` (or `payload_too_large`). */
@@ -22779,7 +23789,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The type is not accepted or the content is not of that type; codes as for an upload. */
@@ -22788,7 +23798,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is empty; see `errors`. */
@@ -22797,7 +23807,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -22806,7 +23816,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22922,7 +23932,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.purge`; code `permission_denied`. */
@@ -22931,7 +23941,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id (or it was already deleted); code `media.item_not_found`. */
@@ -22940,7 +23950,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is not in the trash; code `media.item_not_in_trash`. */
@@ -22949,7 +23959,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22995,7 +24005,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -23004,7 +24014,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -23013,7 +24023,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is not in the trash; code `media.item_not_in_trash`. */
@@ -23022,7 +24032,454 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_list_menus: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of menus. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_SiteMenuSummary"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The paging parameters are invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_create_menu: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSiteMenuRequest"];
+            };
+        };
+        responses: {
+            /** @description Created; `Location` is the new menu. */
+            201: {
+                headers: {
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_SiteMenu"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A menu with this key and language exists; code `menus.menu_exists`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid values; see `errors`. Code `menus.ref_unknown_kind` when every problem is a `ref` of a kind no module provides, `menus.ref_not_found` when every problem is a missing object, `menus.children_unsupported` when every problem is `auto_children` on a kind without sub-items; otherwise `validation_failed`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_get_public_menu: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Omitted: the default language. A menu missing in this language falls back to the
+                 *     default language; `locale` in the answer says which one was returned.
+                 * @example vi
+                 */
+                locale?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Key of the menu, e.g. `main`. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The menu. */
+            200: {
+                headers: {
+                    /** @description How long the answer may be reused: until the next badge starts or ends, at most `AUTOXIDE_MENUS_PUBLIC_CACHE_SECONDS`. */
+                    "Cache-Control"?: string;
+                    /** @description Fingerprint of the whole answer; send it in `If-None-Match` to get 304. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_PublicSiteMenu"];
+                };
+            };
+            /** @description The menu has not changed since the `ETag` sent in `If-None-Match`. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No menu has this key, in this language or the default one; code `menus.public_menu_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The language is not supported; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_get_menu: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the menu. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The menu. */
+            200: {
+                headers: {
+                    /** @description Version of the menu: send it in `If-Match` when replacing its items. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_SiteMenu"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No menu has this id; code `menus.menu_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_replace_menu_items: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required: the `ETag` you read, or `*`. */
+                "If-Match": string;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the menu. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceSiteMenuItemsRequest"];
+            };
+        };
+        responses: {
+            /** @description The menu as saved. */
+            200: {
+                headers: {
+                    /** @description New version of the menu. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_SiteMenu"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No menu has this id; code `menus.menu_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The menu changed since you read it; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid values; see `errors` and the codes listed for `POST /api/v1/menus`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` is missing; code `precondition_required`. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_delete_menu: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the menu. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No menu has this id (or it was already deleted); code `menus.menu_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23069,7 +24526,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -23078,7 +24535,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -23087,7 +24544,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23146,7 +24603,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -23155,7 +24612,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -23164,7 +24621,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23213,7 +24670,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -23222,7 +24679,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -23231,7 +24688,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23277,7 +24734,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -23286,7 +24743,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23295,7 +24752,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23341,7 +24798,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -23350,7 +24807,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23359,7 +24816,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign already sent mail; code `newsletter.campaign_not_deletable`. */
@@ -23368,7 +24825,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23377,7 +24834,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -23386,7 +24843,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23440,7 +24897,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -23449,7 +24906,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23458,7 +24915,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is no longer a draft or scheduled; code `newsletter.campaign_not_editable`. */
@@ -23467,7 +24924,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23476,7 +24933,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -23485,7 +24942,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -23494,7 +24951,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23544,7 +25001,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23553,7 +25010,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23562,7 +25019,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is a draft or already finished; code `newsletter.campaign_invalid_transition`. */
@@ -23571,7 +25028,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23580,7 +25037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23630,7 +25087,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23639,7 +25096,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23648,7 +25105,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is not sending; code `newsletter.campaign_invalid_transition`. */
@@ -23657,7 +25114,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23666,7 +25123,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23716,7 +25173,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23725,7 +25182,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23734,7 +25191,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is not paused; code `newsletter.campaign_invalid_transition`. */
@@ -23743,7 +25200,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23752,7 +25209,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A setting needed to send is missing; codes `public_url_missing`, `newsletter.preferences_url_missing`, `newsletter.postal_address_missing`. */
@@ -23761,7 +25218,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23815,7 +25272,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23824,7 +25281,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign (or no list) has this id; code `newsletter.campaign_not_found` or `newsletter.list_not_found`. */
@@ -23833,7 +25290,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is not a draft or scheduled; code `newsletter.campaign_invalid_transition`. */
@@ -23842,7 +25299,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23851,7 +25308,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `at` is not in the future; see `errors`. */
@@ -23860,7 +25317,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -23869,7 +25326,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A setting needed to send is missing; codes `public_url_missing`, `newsletter.preferences_url_missing`, `newsletter.postal_address_missing`. */
@@ -23878,7 +25335,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23928,7 +25385,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23937,7 +25394,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign (or no list) has this id; code `newsletter.campaign_not_found` or `newsletter.list_not_found`. */
@@ -23946,7 +25403,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is not a draft or scheduled; code `newsletter.campaign_invalid_transition`. */
@@ -23955,7 +25412,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23964,7 +25421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -23973,7 +25430,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A setting needed to send is missing; codes `public_url_missing`, `newsletter.preferences_url_missing`, `newsletter.postal_address_missing`. */
@@ -23982,7 +25439,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24030,7 +25487,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -24039,7 +25496,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign (or no list) has this id; code `newsletter.campaign_not_found` or `newsletter.list_not_found`. */
@@ -24048,7 +25505,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is not an email address; see `errors`. */
@@ -24057,7 +25514,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A setting needed to send is missing; codes `public_url_missing`, `newsletter.preferences_url_missing`, `newsletter.postal_address_missing`. */
@@ -24066,7 +25523,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24113,7 +25570,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.export`; code `permission_denied`. */
@@ -24122,7 +25579,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -24131,7 +25588,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24180,7 +25637,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.export`; code `permission_denied`. */
@@ -24189,7 +25646,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -24198,7 +25655,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24255,7 +25712,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -24264,7 +25721,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -24273,7 +25730,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24322,7 +25779,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage` (or `newsletter.send`, needed for `new_posts: send`); code `permission_denied`. */
@@ -24331,7 +25788,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The key is taken; code `newsletter.list_key_taken`. */
@@ -24340,7 +25797,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -24349,7 +25806,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24395,7 +25852,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -24404,7 +25861,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No list has this id; code `newsletter.list_not_found`. */
@@ -24413,7 +25870,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24459,7 +25916,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -24468,7 +25925,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No list has this id; code `newsletter.list_not_found`. */
@@ -24477,7 +25934,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The list has unfinished campaigns; code `newsletter.list_in_use`. */
@@ -24486,7 +25943,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The list changed since you read it; code `precondition_failed`. */
@@ -24495,7 +25952,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -24504,7 +25961,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24558,7 +26015,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage` (or `newsletter.send`, needed for `new_posts: send`); code `permission_denied`. */
@@ -24567,7 +26024,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No list has this id; code `newsletter.list_not_found`. */
@@ -24576,7 +26033,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The key is taken; code `newsletter.list_key_taken`. */
@@ -24585,7 +26042,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The list changed since you read it; code `precondition_failed`. */
@@ -24594,7 +26051,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -24603,7 +26060,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -24612,7 +26069,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24659,7 +26116,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24703,7 +26160,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24747,7 +26204,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `token` is missing; see `errors`. */
@@ -24756,7 +26213,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24806,7 +26263,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -24815,7 +26272,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24862,7 +26319,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid (e.g. a key that is not a public list); see `errors`. */
@@ -24871,7 +26328,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A caller with `newsletter.subscribe` sent too many; code `antispam.rate_limited`. */
@@ -24880,7 +26337,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The server cannot confirm sign-ups (code `newsletter.confirm_url_missing`), or the anti-spam check cannot run (`antispam.verifier_unavailable`). */
@@ -24889,7 +26346,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24994,7 +26451,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -25003,7 +26460,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -25012,7 +26469,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25059,7 +26516,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25068,7 +26525,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -25077,7 +26534,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25123,7 +26580,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -25132,7 +26589,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No subscriber has this id; code `newsletter.subscriber_not_found`. */
@@ -25141,7 +26598,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25185,7 +26642,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25194,7 +26651,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No subscriber has this id; code `newsletter.subscriber_not_found`. */
@@ -25203,7 +26660,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25257,7 +26714,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25266,7 +26723,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No subscriber has this id; code `newsletter.subscriber_not_found`. */
@@ -25275,7 +26732,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The subscriber changed since you read it; code `precondition_failed`. */
@@ -25284,7 +26741,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -25293,7 +26750,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -25302,7 +26759,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25361,7 +26818,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -25370,7 +26827,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -25379,7 +26836,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25428,7 +26885,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25437,7 +26894,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -25446,7 +26903,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25490,7 +26947,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25499,7 +26956,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No suppression has this id; code `newsletter.suppression_not_found`. */
@@ -25508,7 +26965,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25565,7 +27022,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25574,7 +27031,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -25583,7 +27040,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25632,7 +27089,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25641,7 +27098,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid — e.g. the address is not `https://` or an event name is unknown; `errors` lists every problem. */
@@ -25650,7 +27107,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25691,7 +27148,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25700,7 +27157,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25746,7 +27203,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25755,7 +27212,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25764,7 +27221,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25808,7 +27265,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25817,7 +27274,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25826,7 +27283,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25880,7 +27337,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25889,7 +27346,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25898,7 +27355,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the record changed since you read it. Get it again and retry; code `precondition_failed`. */
@@ -25907,7 +27364,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid — e.g. the address is not `https://` or an event name is unknown; `errors` lists every problem. */
@@ -25916,7 +27373,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25976,7 +27433,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25985,7 +27442,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25994,7 +27451,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -26003,7 +27460,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -26049,7 +27506,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -26058,7 +27515,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -26067,7 +27524,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -26140,7 +27597,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
