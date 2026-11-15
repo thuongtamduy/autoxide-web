@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { linkReason } from "@/lib/form";
 import { confirmReset } from "../actions";
 import { PublicAlert, PublicField } from "../field";
 
@@ -26,8 +27,8 @@ export function ResetForm({ token }: { token: string }) {
       </>
     );
   }
-  // Token sai, đã dùng hay hết hạn (30 phút): core trả chung một mã; chỉ cách xin link mới.
-  const invalid = state.code === "auth.invalid_reset_token";
+  // Token bị từ chối: core nói rõ hết hạn (30 phút), đã dùng hay không biết (`reason`).
+  const reason = linkReason(state, "auth.invalid_reset_token");
   return (
     <>
       <CardHeader>
@@ -53,8 +54,12 @@ export function ResetForm({ token }: { token: string }) {
             autoComplete="new-password"
             error={state.fields?.repeat}
           />
-          <PublicAlert error={state.error} code={state.code} />
-          {invalid ? (
+          <PublicAlert
+            error={reason ? t(`reasons.${reason}`) : state.error}
+            code={state.code}
+            reason={reason ?? undefined}
+          />
+          {reason ? (
             <Link className="text-sm underline" href="/forgot-password">
               {t("again")}
             </Link>

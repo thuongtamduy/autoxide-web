@@ -1,8 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
 
-// Mặt điều khiển nền tảng (W-014): không gian riêng của nhân sự vận hành, cả không gian là dữ liệu
-// mẫu (W-006), chờ API của bước 33, 34, 35, 39. Kho mẫu nằm trong tiến trình máy chủ của giao
-// diện, nên mỗi test làm trên bản ghi riêng (khách khác nhau).
+// Mặt điều khiển nền tảng (W-014, W-027): không gian riêng của nhân sự vận hành. Sổ khách và
+// placement là API thật của bước 33 (core giả: `mock-tenants.ts`); gói, thuê bao, cấp phát, sức khoẻ,
+// vào dữ liệu khách là dữ liệu mẫu (W-006) chờ bước 34, 35, 39, cùng các khách chỉ có trong dữ liệu
+// mẫu. Kho mẫu nằm trong tiến trình máy chủ của giao diện, nên mỗi test làm trên bản ghi riêng.
 
 const CORE = "http://127.0.0.1:4010";
 const TRA_SEN = "01a1e000-0000-7000-8000-000000071003";
@@ -30,7 +31,7 @@ test("chuyển giữa hai không gian; khung riêng; cấp phát khách mới c�
   await page.getByRole("link", { name: "Platform control plane" }).click();
   await expect(page).toHaveURL(/\/platform$/);
   await expect(page.getByRole("heading", { level: 1, name: "Customers" })).toBeVisible();
-  await expect(page.getByText("Sample data · waiting for API step 33")).toBeVisible();
+  await expect(page.getByText("Sample data · waiting for API step 35")).toBeVisible();
   const rail = page.getByRole("navigation", { name: "Platform control plane" });
   for (const item of [
     "Customers",
@@ -76,6 +77,56 @@ test("chuyển giữa hai không gian; khung riêng; cấp phát khách mới c�
   await page.getByRole("button", { name: /Account menu/ }).click();
   await page.getByRole("link", { name: "Back to the customer workspace" }).click();
   await expect(page).toHaveURL(/\/$/);
+});
+
+test("khách của core: một khách thì không thêm được; nhiều khách thì thêm, đổi tên, tạm khoá, mở lại", async ({
+  page,
+  request,
+}) => {
+  await signIn(page, "/platform");
+  // Khách nền tảng là khách của core (không có nhãn "mẫu"); khách chỉ có trong dữ liệu mẫu thì có.
+  const rows = page.locator(".pf-table tbody tr");
+  await expect(rows.filter({ hasText: "Default" }).locator(".tag")).toHaveCount(0);
+  await expect(rows.filter({ hasText: "Trà Sen" }).locator(".tag")).toHaveText("sample");
+  await expect(page.getByText("This installation runs one tenant")).toBeVisible();
+  await page.getByRole("button", { name: "Add customer" }).click();
+  await dialog(page).getByLabel("Name", { exact: true }).fill("Acme");
+  await dialog(page).getByLabel("Short name").fill("acme-e2e");
+  await dialog(page).getByRole("button", { name: "Add customer" }).click();
+  await expect(dialog(page).getByRole("alert")).toHaveAttribute("data-code", "tenant_single_mode");
+  await page.keyboard.press("Escape");
+
+  await request.post(`${CORE}/__tenancy`, { data: { mode: "multi" } });
+  await page.reload();
+  await page.getByRole("button", { name: "Add customer" }).click();
+  await dialog(page).getByLabel("Name", { exact: true }).fill("Acme");
+  await dialog(page).getByLabel("Short name").fill("Acme!");
+  await dialog(page).getByRole("button", { name: "Add customer" }).click();
+  await expect(dialog(page).getByLabel("Short name")).toHaveAttribute("aria-invalid", "true");
+  await dialog(page).getByLabel("Short name").fill("acme-e2e");
+  await dialog(page).getByRole("button", { name: "Add customer" }).click();
+  await expect(toast(page)).toHaveText("Customer added.");
+  await expect(page).toHaveURL(/\/platform\/tenants\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Acme" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Rename" }).click();
+  await dialog(page).getByLabel("Name").fill("Acme Ltd");
+  await dialog(page).getByRole("button", { name: "Save name" }).click();
+  await expect(toast(page)).toHaveText("Name saved.");
+  await expect(page.getByRole("heading", { level: 1, name: "Acme Ltd" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Suspend completely" }).click();
+  await dialog(page).getByRole("button", { name: "Suspend" }).click();
+  await expect(dialog(page).locator(".ferr")).toBeVisible();
+  await dialog(page).getByLabel("I understand that Acme Ltd stops completely").check();
+  await dialog(page).getByRole("button", { name: "Suspend" }).click();
+  await expect(toast(page)).toContainText("Acme Ltd is suspended");
+  await page.getByRole("button", { name: "Reactivate" }).click();
+  await dialog(page).getByRole("button", { name: "Reactivate" }).click();
+  await expect(toast(page)).toHaveText("Acme Ltd is active again.");
+
+  await page.goto("/platform/fleet");
+  await expect(page.locator("tbody tr", { hasText: "main" }).first()).toContainText("Up to date");
 });
 
 test("chi tiết khách: dời khách chạy thử trước; tạm khoá có hộp xác nhận nêu hệ quả, mở lại", async ({

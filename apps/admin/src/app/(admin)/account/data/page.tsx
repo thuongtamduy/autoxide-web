@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { DeleteAccountDialog } from "@/components/account/delete-account";
 import { Icon } from "@/components/shell/icon";
 import { getMe } from "@/lib/viewer";
 
-// Tab "Dữ liệu của tôi": tải về mọi dữ liệu core giữ về mình, và xoá tài khoản.
+// Tab "Dữ liệu của tôi": tải về mọi dữ liệu core giữ về mình, và xoá tài khoản. Xoá cần mật khẩu
+// hiện tại: tài khoản chưa có mật khẩu được chỉ sang chỗ xin thư đặt mật khẩu đầu tiên.
 export default async function DataPage() {
   const t = await getTranslations("account.data");
   const me = await getMe();
@@ -35,10 +37,18 @@ export default async function DataPage() {
             </span>
             <span className="item-main">
               <span className="item-title">{t("delete")}</span>
-              <span className="item-meta">{t("deleteMeta")}</span>
+              <span className="item-meta">
+                {me.has_password ? t("deleteMeta") : t("deleteNeedsPassword")}
+              </span>
             </span>
             <span className="item-acts">
-              <DeleteAccountDialog email={me.email} />
+              {me.has_password ? (
+                <DeleteAccountDialog email={me.email} />
+              ) : (
+                <Link className="btn sm" href="/account/security">
+                  {t("setPassword")}
+                </Link>
+              )}
             </span>
           </div>
         </div>

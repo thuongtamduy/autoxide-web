@@ -1,17 +1,33 @@
 import { ApiError, type components } from "@autoxide/sdk";
+import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
+import { removeTenantSetting, setTenantSetting } from "@/app/(admin)/settings/actions";
+import { MessagePanel } from "@/components/message-panel";
 import { SampleBadge } from "@/components/sample-badge";
 import { ConnectionDialog } from "@/components/settings/sample-forms";
-import { InlineAction } from "@/components/ui/confirm";
+import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
+import { FormDialog } from "@/components/ui/form-dialog";
 import { Time } from "@/components/ui/time";
-import { load } from "@/lib/core";
+import { isForbidden, load } from "@/lib/core";
 import { formatCount } from "@/lib/format";
 import { AI_VIEW, TENANT_SETTINGS_MANAGE } from "@/lib/permissions";
+import { can } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
 import { type Connection, listConnections } from "@/sample/settings";
 import { testConnectionAction } from "../../sample-actions";
 
 type AiStatus = components["schemas"]["AiStatus"];
+type TenantSetting = components["schemas"]["TenantSettingState"];
+
+/** Cài đặt theo khách của core (`GET /kernel/settings`); `null` khi core từ chối (403). */
+async function tenantSettings(): Promise<TenantSetting[] | null> {
+  try {
+    return (await load((client) => client.GET("/api/v1/kernel/settings"))).data;
+  } catch (error) {
+    if (isForbidden(error)) return null;
+    throw error;
+  }
+}
 
 /** Trạng thái AI thật của core, hoặc lý do không đọc được. */
 async function aiStatus(): Promise<AiStatus | "forbidden" | "absent"> {
@@ -32,18 +48,102 @@ function connectionState(connection: Connection): "set" | "unset" | "error" {
 
 const BADGE = { set: "badge b-ok", unset: "badge b-draft", error: "badge b-bad" } as const;
 
-// Tab "Kết nối đối tác": email, SMS, cổng thanh toán, hoá đơn điện tử — cài đặt theo khách (dữ
-// liệu mẫu, chờ `/api/v1/kernel/settings` của bước 33 và nhà cung cấp của bước 36, 39); AI đọc thật
-// `GET /api/v1/ai/status` (nhà vận hành bật bằng biến môi trường, không đổi ở đây).
+// Tab "Kết nối đối tác": cài đặt theo khách THẬT của core (`GET/PUT/DELETE /kernel/settings`, bước 33
+// — mỗi module khai cài đặt của mình; giá trị bí mật không bao giờ trả lại), trạng thái AI thật
+// (`GET /ai/status`, nhà vận hành bật bằng biến môi trường). Nhà cung cấp email, SMS, cổng thanh toán,
+// hoá đơn điện tử chưa có ở core (bước 36, 39): khối đó là dữ liệu mẫu, chỉ hiện khi bật dữ liệu mẫu.
 export default async function ConnectionsPage() {
-  const gate = await sampleGate(TENANT_SETTINGS_MANAGE);
-  if (gate) return gate;
+  if (!(await can(TENANT_SETTINGS_MANAGE))) {
+    const e = await getTranslations("errors");
+    return (
+      <MessagePanel
+        title={e("forbiddenTitle")}
+        message={e("forbidden", { permission: TENANT_SETTINGS_MANAGE })}
+      />
+    );
+  }
+  const sample = sampleDataEnabled();
   const t = await getTranslations("settings.connections");
   const locale = await getLocale();
-  const [{ data: connections }, ai] = await Promise.all([listConnections(), aiStatus()]);
+  const [connections, ai, settings] = await Promise.all([
+    sample ? listConnections().then((r) => r.data) : Promise.resolve(null),
+    aiStatus(),
+    tenantSettings(),
+  ]);
+  if (settings === null) notFound();
   return (
     <div className="blocks">
-      <p className="note warn">{t("agentNote")}</p>
+      <section className="block" aria-labelledby="tset-h">
+        <div className="block-head">
+          <h2 id="tset-h" className="h2">
+            {t("tenant.title")}
+          </h2>
+        </div>
+        <p className="fhint">{t("tenant.about")}</p>
+        <div className="card">
+          {settings.length === 0 ? <p className="empty">{t("tenant.empty")}</p> : null}
+          {settings.map((setting) => (
+            <div className="item" key={setting.name} data-testid={`tset-${setting.name}`}>
+              <div className="item-main">
+                <span className="item-title mono">{setting.name}</span>
+                <span className="item-meta">{setting.description}</span>
+                <span className="item-meta">
+                  {setting.is_set ? (
+                    <>
+                      {setting.secret ? t("isSet") : <span className="mono">{setting.value}</span>}
+                      {setting.updated_at ? (
+                        <>
+                          {" · "}
+                          {t("tenant.updated")} <Time value={setting.updated_at} />
+                        </>
+                      ) : null}
+                    </>
+                  ) : (
+                    t("tenant.default")
+                  )}
+                </span>
+              </div>
+              <span className={setting.is_set ? "badge b-ok" : "badge b-draft"}>
+                <span className="dot" />
+                {setting.is_set ? t("state.set") : t("state.unset")}
+              </span>
+              <span className="item-acts">
+                <FormDialog
+                  action={setTenantSetting}
+                  label={setting.is_set ? t("change") : t("tenant.set")}
+                  ariaLabel={t("tenant.setLabel", { name: setting.name })}
+                  title={t("tenant.formTitle", { name: setting.name })}
+                  intro={setting.secret ? t("tenant.secretIntro") : setting.description}
+                  submit={t("tenant.save")}
+                  done={t("tenant.saved", { name: setting.name })}
+                  fields={[
+                    { kind: "hidden", name: "name", value: setting.name },
+                    { kind: "hidden", name: "secret", value: setting.secret ? "1" : "0" },
+                    {
+                      kind: setting.secret ? "password" : "text",
+                      name: "value",
+                      label: t("tenant.value"),
+                      mono: true,
+                      ...(setting.secret ? {} : { defaultValue: setting.value ?? "" }),
+                    },
+                  ]}
+                />
+                {setting.is_set ? (
+                  <ConfirmAction
+                    action={removeTenantSetting}
+                    id={setting.name}
+                    label={t("tenant.remove")}
+                    title={t("tenant.removeTitle", { name: setting.name })}
+                    points={[t("tenant.removeDefault")]}
+                    submit={t("tenant.remove")}
+                    done={t("tenant.removed", { name: setting.name })}
+                  />
+                ) : null}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="block" aria-labelledby="ai-h">
         <div className="block-head">
@@ -104,70 +204,73 @@ export default async function ConnectionsPage() {
         <p className="fhint">{t("ai.about")}</p>
       </section>
 
-      <section className="block" aria-labelledby="conn-h">
-        <div className="block-head">
-          <h2 id="conn-h" className="h2">
-            {t("title")}
-          </h2>
-          <SampleBadge
-            step="33"
-            endpoint="GET /api/v1/kernel/settings, PUT /settings/{name}, POST /settings/{name}/test"
-          />
-        </div>
-        <p className="fhint">{t("about")}</p>
-        <div className="card">
-          {connections.map((connection) => {
-            const state = connectionState(connection);
-            const name = t(`names.${connection.id}`);
-            return (
-              <div className="item" key={connection.id} data-testid={`conn-${connection.id}`}>
-                <div className="item-main">
-                  <span className="item-title">{name}</span>
-                  <span className="item-meta">
-                    {connection.settings
-                      .map(
-                        (s) =>
-                          `${s.name}: ${s.is_set ? (s.secret ? t("isSet") : (s.value ?? "")) : t("notSet")}`,
-                      )
-                      .join(" · ")}
-                  </span>
-                  {connection.last_check ? (
+      {connections ? <p className="note warn">{t("agentNote")}</p> : null}
+      {connections ? (
+        <section className="block" aria-labelledby="conn-h">
+          <div className="block-head">
+            <h2 id="conn-h" className="h2">
+              {t("title")}
+            </h2>
+            <SampleBadge
+              step="33"
+              endpoint="GET /api/v1/kernel/settings, PUT /settings/{name}, POST /settings/{name}/test"
+            />
+          </div>
+          <p className="fhint">{t("about")}</p>
+          <div className="card">
+            {connections.map((connection) => {
+              const state = connectionState(connection);
+              const name = t(`names.${connection.id}`);
+              return (
+                <div className="item" key={connection.id} data-testid={`conn-${connection.id}`}>
+                  <div className="item-main">
+                    <span className="item-title">{name}</span>
                     <span className="item-meta">
-                      {connection.last_check.ok ? t("checkOk") : t("checkFailed")}{" "}
-                      <Time value={connection.last_check.at} />
-                      {connection.last_check.error ? ` · ${connection.last_check.error}` : ""}
+                      {connection.settings
+                        .map(
+                          (s) =>
+                            `${s.name}: ${s.is_set ? (s.secret ? t("isSet") : (s.value ?? "")) : t("notSet")}`,
+                        )
+                        .join(" · ")}
                     </span>
-                  ) : (
-                    <span className="item-meta">{t(`hints.${connection.id}`)}</span>
-                  )}
-                </div>
-                <span className={BADGE[state]}>
-                  <span className="dot" />
-                  {t(`state.${state}`)}
-                </span>
-                <span className="item-acts">
-                  {state !== "unset" ? (
-                    <InlineAction
-                      action={testConnectionAction}
+                    {connection.last_check ? (
+                      <span className="item-meta">
+                        {connection.last_check.ok ? t("checkOk") : t("checkFailed")}{" "}
+                        <Time value={connection.last_check.at} />
+                        {connection.last_check.error ? ` · ${connection.last_check.error}` : ""}
+                      </span>
+                    ) : (
+                      <span className="item-meta">{t(`hints.${connection.id}`)}</span>
+                    )}
+                  </div>
+                  <span className={BADGE[state]}>
+                    <span className="dot" />
+                    {t(`state.${state}`)}
+                  </span>
+                  <span className="item-acts">
+                    {state !== "unset" ? (
+                      <InlineAction
+                        action={testConnectionAction}
+                        id={connection.id}
+                        label={t("test")}
+                        ariaLabel={t("testLabel", { name })}
+                        done={t("tested")}
+                      />
+                    ) : null}
+                    <ConnectionDialog
                       id={connection.id}
-                      label={t("test")}
-                      ariaLabel={t("testLabel", { name })}
-                      done={t("tested")}
+                      title={t("formTitle", { name })}
+                      label={state === "unset" ? t("setUp") : t("change")}
+                      fields={connection.settings}
                     />
-                  ) : null}
-                  <ConnectionDialog
-                    id={connection.id}
-                    title={t("formTitle", { name })}
-                    label={state === "unset" ? t("setUp") : t("change")}
-                    fields={connection.settings}
-                  />
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <p className="note">{t("secretNote")}</p>
-      </section>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="note">{t("secretNote")}</p>
+        </section>
+      ) : null}
     </div>
   );
 }

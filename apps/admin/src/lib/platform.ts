@@ -1,20 +1,120 @@
-// Hàm thuần của mặt điều khiển nền tảng (W-014): lọc sổ khách hàng, xếp cây khách cha – con, đếm
-// ngày còn lại. Không đọc dữ liệu; trang ghép dữ liệu (mẫu hay API thật) rồi gọi các hàm này.
-import type {
-  OperatorSubscription,
-  Placement,
-  Plan,
-  Tenant,
-  TenantUsage,
+// Hàm thuần của mặt điều khiển nền tảng (W-014, W-027): ghép sổ khách và placement THẬT của core
+// với phần còn là dữ liệu mẫu, lọc sổ khách hàng, xếp cây khách cha – con, đếm ngày còn lại. Không
+// đọc dữ liệu; trang ghép dữ liệu (mẫu hay API thật) rồi gọi các hàm này.
+import type { components } from "@autoxide/sdk";
+import {
+  type OperatorSubscription,
+  PLATFORM_TENANT_ID,
+  type Placement,
+  type Plan,
+  type Tenant,
+  type TenantStatus,
+  type TenantUsage,
 } from "@/sample/platform-data";
 import { usageRatio } from "@/sample/platform-plans";
+
+type CoreTenant = components["schemas"]["Tenant"];
+type CorePlacement = components["schemas"]["Placement"];
+
+/** Bản ghi đến từ core (`core`) hay chỉ có trong dữ liệu mẫu (`sample`, phần core chưa có). */
+export type Source = "core" | "sample";
+export type PlatformTenant = Tenant & { source: Source };
+export type PlatformPlacement = Placement & { source: Source };
+
+/** Placement đặt cố định của core cho database điều khiển (D-253 của core). */
+export const MAIN_PLACEMENT_ID = "00000000-0000-7000-8000-000000000002";
+
+/**
+ * Placement của core theo hình dạng giao diện dùng. Trường core chưa có (`location`,
+ * `pending_migrations`, lần kiểm cuối) lấy từ bản mẫu cùng id khi bật dữ liệu mẫu, không thì trống.
+ */
+export function fromCorePlacement(core: CorePlacement, sample?: Placement): PlatformPlacement {
+  return {
+    id: core.id,
+    name: core.name,
+    kind: core.kind === "dedicated" ? "dedicated" : "shared",
+    backend: core.backend === "postgres" ? "postgres" : "sqlite",
+    schema_state:
+      core.schema_state === "behind" || core.schema_state === "migrating"
+        ? core.schema_state
+        : "ready",
+    schema_checked_at: sample?.schema_checked_at ?? null,
+    created_at: core.created_at,
+    updated_at: sample?.updated_at ?? core.created_at,
+    pending_migrations: sample?.pending_migrations ?? [],
+    location: sample?.location ?? "",
+    control: core.id === MAIN_PLACEMENT_ID,
+    source: "core",
+  };
+}
+
+/**
+ * Khách của core theo hình dạng giao diện dùng: placement tra theo tên trong danh sách placement của
+ * core. Trường core chưa có (`business_model`, `primary_domain`, lý do tạm khoá) lấy từ bản mẫu cùng
+ * id khi bật dữ liệu mẫu, không thì `null`.
+ */
+export function fromCoreTenant(
+  core: CoreTenant,
+  placements: readonly Pick<CorePlacement, "id" | "name">[],
+  sample?: Tenant,
+): PlatformTenant {
+  return {
+    id: core.id,
+    slug: core.slug,
+    name: core.name,
+    status: core.status as TenantStatus,
+    parent_id: core.parent_id ?? null,
+    placement_id: placements.find((p) => p.name === core.placement)?.id ?? "",
+    created_at: core.created_at,
+    updated_at: core.updated_at,
+    is_platform: core.id === PLATFORM_TENANT_ID,
+    business_model: sample?.business_model ?? null,
+    primary_domain: sample?.primary_domain ?? null,
+    status_reason: sample?.status_reason ?? null,
+    source: "core",
+  };
+}
+
+/**
+ * Sổ khách: mọi khách của core, rồi (khi bật dữ liệu mẫu) những khách chỉ có trong dữ liệu mẫu —
+ * vd khách vừa "cấp phát" bằng luồng mẫu của bước 35, mà core chưa có API.
+ */
+export function mergeTenants(
+  core: readonly CoreTenant[],
+  placements: readonly Pick<CorePlacement, "id" | "name">[],
+  sample: readonly Tenant[] | null,
+): PlatformTenant[] {
+  const known = new Set(core.map((x) => x.id));
+  const byId = new Map((sample ?? []).map((x) => [x.id, x]));
+  return [
+    ...core.map((x) => fromCoreTenant(x, placements, byId.get(x.id))),
+    ...(sample ?? [])
+      .filter((x) => !known.has(x.id))
+      .map((x) => ({ ...x, source: "sample" as const })),
+  ];
+}
+
+/** Placement: mọi placement của core, rồi placement chỉ có trong dữ liệu mẫu (khi bật). */
+export function mergePlacements(
+  core: readonly CorePlacement[],
+  sample: readonly Placement[] | null,
+): PlatformPlacement[] {
+  const known = new Set(core.map((x) => x.id));
+  const byId = new Map((sample ?? []).map((x) => [x.id, x]));
+  return [
+    ...core.map((x) => fromCorePlacement(x, byId.get(x.id))),
+    ...(sample ?? [])
+      .filter((x) => !known.has(x.id))
+      .map((x) => ({ ...x, source: "sample" as const })),
+  ];
+}
 
 export const TENANT_FILTERS = ["all", "dedicated", "shared", "migration", "attention"] as const;
 export type TenantFilter = (typeof TENANT_FILTERS)[number];
 
 /** Một dòng của sổ khách hàng: khách kèm nơi lưu, thuê bao, gói, hạn mức gần chạm nhất. */
 export interface TenantRow {
-  tenant: Tenant;
+  tenant: PlatformTenant;
   placement: Placement | null;
   subscription: OperatorSubscription | null;
   plan: Plan | null;

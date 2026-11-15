@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { linkReason } from "@/lib/form";
 import { confirmEmail } from "../actions";
 import { PublicAlert } from "../field";
 
@@ -28,8 +29,8 @@ export function VerifyForm({ token }: { token: string }) {
       </>
     );
   }
-  // Token sai, đã dùng hay hết hạn: core trả chung một mã. Chỉ cách xin thư mới.
-  const invalid = state.code === "auth.invalid_verification_token";
+  // Token bị từ chối: core nói rõ hết hạn, đã dùng hay không biết (`reason`) — mỗi trường hợp một câu.
+  const reason = linkReason(state, "auth.invalid_verification_token");
   return (
     <>
       <CardHeader>
@@ -39,14 +40,15 @@ export function VerifyForm({ token }: { token: string }) {
       <CardContent>
         <form action={action} className="grid gap-4">
           <input type="hidden" name="token" value={token} />
-          <PublicAlert error={state.error} code={state.code} />
-          {invalid ? (
-            <p className="text-sm text-muted-foreground">
-              {t("invalidHint")}{" "}
-              <Link className="underline" href="/account">
-                {t("toAccount")}
-              </Link>
-            </p>
+          <PublicAlert
+            error={reason ? t(`reasons.${reason}`) : state.error}
+            code={state.code}
+            reason={reason ?? undefined}
+          />
+          {reason ? (
+            <Link className="text-sm underline" href="/account">
+              {t("toAccount")}
+            </Link>
           ) : null}
           <Button type="submit" disabled={pending}>
             {t("submit")}

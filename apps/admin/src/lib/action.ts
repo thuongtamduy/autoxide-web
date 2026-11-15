@@ -15,7 +15,17 @@ export type Outcome<T> = { ok: true; data: T } | { ok: false; problem: Problem }
 
 export async function send<T>(
   call: (client: AutoxideClient) => Promise<Result<T>>,
-  { guest = false }: { guest?: boolean } = {},
+  {
+    guest = false,
+    own401 = [],
+  }: {
+    guest?: boolean;
+    /**
+     * Mã 401 không nói về phiên đăng nhập mà về chính việc đang làm (vd passkey xác nhận lại không
+     * đúng, `auth.passkey_sign_in_failed`): trả về để form báo, không đưa về trang đăng nhập.
+     */
+    own401?: readonly string[];
+  } = {},
 ): Promise<Outcome<T>> {
   let result: Result<T>;
   try {
@@ -40,8 +50,9 @@ export async function send<T>(
     // 202 / 204 không có thân: `data` là undefined, đúng như kiểu của endpoint đó.
     return { ok: true, data: data as T };
   }
-  if (response.status === 401 && !guest) {
+  const { problem } = toApiError(response, error);
+  if (response.status === 401 && !guest && !own401.includes(problem.code)) {
     redirect("/login");
   }
-  return { ok: false, problem: toApiError(response, error).problem };
+  return { ok: false, problem };
 }

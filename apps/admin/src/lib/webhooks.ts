@@ -5,13 +5,24 @@ import type { components } from "@autoxide/sdk";
 
 type Endpoint = components["schemas"]["EndpointResponse"];
 type Delivery = components["schemas"]["DeliveryResponse"];
+type LastDelivery = components["schemas"]["LastDelivery"];
 
 /** Đang nhận, đang lỗi (lần giao gần nhất chưa thành) hay đã tắt. */
 export type EndpointState = "receiving" | "failing" | "disabled";
 
-export function endpointState(endpoint: Endpoint, last: Delivery | null): EndpointState {
+/**
+ * Trạng thái của endpoint theo lần giao gần nhất (`last_delivery`). Lỗi: lần giao đã bỏ (`failed`)
+ * hay đang chờ thử lại sau một lần bị trả lời lỗi (`pending` mà đã có mã HTTP). Thành công là
+ * `succeeded` (giá trị core thật trả; tài liệu của `LastDelivery` ghi `delivered`, nhận cả hai).
+ */
+export function endpointState(
+  endpoint: Pick<Endpoint, "disabled_at">,
+  last: Pick<LastDelivery, "status" | "response_status"> | null,
+): EndpointState {
   if (endpoint.disabled_at) return "disabled";
-  if (last && last.status !== "succeeded") return "failing";
+  if (!last) return "receiving";
+  if (last.status === "failed") return "failing";
+  if (last.status === "pending" && last.response_status != null) return "failing";
   return "receiving";
 }
 

@@ -45,6 +45,18 @@ test("thanh bên có Tổ chức; danh sách người dùng có role, trạng th
   await expect(admin.locator(".tag")).toHaveText("admin");
   await expect(admin.getByText("Active")).toBeVisible();
   await expect(rows(page).filter({ hasText: "viewer@example.com" })).toContainText("No role");
+  // Lần đăng nhập gần nhất đi cùng danh sách: admin vừa đăng nhập, viewer chưa.
+  await expect(rows(page).filter({ hasText: "viewer@example.com" })).toContainText("Not yet");
+  await expect(admin).not.toContainText("Not yet");
+
+  // Lọc theo trạng thái ở core (`status`), không chỉ trên trang đang xem.
+  const byStatus = page.getByRole("navigation", { name: "Filter by status" });
+  await byStatus.getByRole("link", { name: "Disabled" }).click();
+  await expect(page).toHaveURL(/status=disabled/);
+  await expect(page.getByText("No user has this status.")).toBeVisible();
+  await byStatus.getByRole("link", { name: "Active" }).click();
+  await expect(rows(page)).toHaveCount(3);
+  await byStatus.getByRole("link", { name: "All" }).click();
 
   await page.getByRole("searchbox", { name: "Find users" }).fill("view");
   await page.getByRole("button", { name: "Find" }).click();
@@ -106,6 +118,8 @@ test("tạo người dùng gom lỗi; gán role, đổi tên, đặt mật khẩ
   await expect(toast(page)).toHaveText("Name saved.");
   await expect(page.getByRole("heading", { level: 2, name: "Ada Lovelace" })).toBeVisible();
 
+  // Tài khoản chưa có mật khẩu (`has_password`): có "Đặt mật khẩu đầu tiên"; đặt xong thì không còn.
+  await expect(page.getByTestId("user-sign-in")).toContainText("No password");
   await page.getByRole("button", { name: "Set password" }).click();
   await dialog(page).getByLabel("Password").fill("short");
   await dialog(page).getByRole("button", { name: "Set password" }).click();
@@ -113,13 +127,8 @@ test("tạo người dùng gom lỗi; gán role, đổi tên, đặt mật khẩ
   await dialog(page).getByLabel("Password").fill("ada first password");
   await dialog(page).getByRole("button", { name: "Set password" }).click();
   await expect(toast(page)).toHaveText("Password set; they can sign in with it.");
-  await page.getByRole("button", { name: "Set password" }).click();
-  await dialog(page).getByLabel("Password").fill("another password 1");
-  await dialog(page).getByRole("button", { name: "Set password" }).click();
-  await expect(dialog(page).getByRole("alert")).toHaveAttribute(
-    "data-code",
-    "auth.password_already_set",
-  );
+  await expect(page.getByRole("button", { name: "Set password" })).toHaveCount(0);
+  await expect(page.getByTestId("user-sign-in")).toContainText("Password");
 });
 
 test("thao tác quản trị: đăng xuất, gỡ MFA, khoá có hỏi lại, quản trị viên cuối, xoá", async ({
@@ -146,9 +155,10 @@ test("thao tác quản trị: đăng xuất, gỡ MFA, khoá có hỏi lại, qu
   await dialog(page).getByRole("button", { name: "Sign out everywhere" }).click();
   await expect(toast(page)).toHaveText("Ended 1 session.");
 
-  await page.getByRole("button", { name: "Turn off two-step" }).click();
-  await dialog(page).getByRole("button", { name: "Turn off two-step sign-in" }).click();
-  await expect(toast(page)).toHaveText("Two-step sign-in is off for this account.");
+  // Đã có mật khẩu, chưa bật xác thực hai bước: không có hai nút đó.
+  await expect(page.getByTestId("user-sign-in")).toContainText("two-step sign-in off");
+  await expect(page.getByRole("button", { name: "Turn off two-step" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Set password" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Disable", exact: true }).click();
   await expect(dialog(page)).toContainText("access tokens stop working at once");
@@ -167,6 +177,15 @@ test("thao tác quản trị: đăng xuất, gỡ MFA, khoá có hỏi lại, qu
   await expect(page).toHaveURL(/\/org\/access\/users$/);
   await expect(toast(page)).toHaveText("The account was deleted.");
   await expect(rows(page)).toHaveCount(2);
+
+  // Người đã bật xác thực hai bước: có nút tắt; tắt xong thì nút không còn.
+  await page.getByRole("link", { name: "mfa", exact: true }).click();
+  await expect(page.getByTestId("user-sign-in")).toContainText("two-step sign-in on");
+  await page.getByRole("button", { name: "Turn off two-step" }).click();
+  await dialog(page).getByRole("button", { name: "Turn off two-step sign-in" }).click();
+  await expect(toast(page)).toHaveText("Two-step sign-in is off for this account.");
+  await expect(page.getByRole("button", { name: "Turn off two-step" })).toHaveCount(0);
+  await page.getByRole("link", { name: "All users" }).click();
 
   // Quản trị viên cuối cùng: core từ chối, giao diện hiện `detail` và giữ `code`.
   await page.getByRole("link", { name: "admin", exact: true }).click();
@@ -193,28 +212,28 @@ test("role: dựng sẵn chỉ xem; tạo bằng bộ chọn permission, sửa, 
   await expect(page.getByText("No permission matches “ghi chu”.")).toBeVisible();
   await page.getByLabel("Find permissions").fill("notes");
   await page.getByRole("button", { name: "Choose all of notes" }).click();
-  await expect(page.getByTestId("chosen-count")).toHaveText("2 of 7 chosen");
+  await expect(page.getByTestId("chosen-count")).toHaveText("2 of 8 chosen");
   await page.getByLabel("Find permissions").fill("");
   await page.getByLabel(/auth\.users\.read/).check();
   await page.getByRole("button", { name: "Create role" }).click();
   await expect(page.getByLabel("Name", { exact: true })).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("A role named `editor` already exists.")).toBeVisible();
   // Lựa chọn vẫn còn sau khi core báo lỗi.
-  await expect(page.getByTestId("chosen-count")).toHaveText("3 of 7 chosen");
+  await expect(page.getByTestId("chosen-count")).toHaveText("3 of 8 chosen");
 
   await page.getByLabel("Name", { exact: true }).fill("support");
   await page.getByRole("button", { name: "Create role" }).click();
   await expect(page).toHaveURL(/\/org\/access\/roles\/[0-9a-f-]+$/);
   await expect(toast(page)).toHaveText("Role created.");
   await expect(page.getByRole("heading", { level: 2, name: "support" })).toBeVisible();
-  await expect(page.getByTestId("chosen-count")).toHaveText("3 of 7 chosen");
+  await expect(page.getByTestId("chosen-count")).toHaveText("3 of 8 chosen");
 
   await page.getByLabel("Description (optional)").fill("Answers customers");
   await page.getByLabel(/notes\.write/).uncheck();
   await page.getByRole("button", { name: "Save role" }).click();
   await expect(toast(page)).toHaveText("Role saved.");
   await page.reload();
-  await expect(page.getByTestId("chosen-count")).toHaveText("2 of 7 chosen");
+  await expect(page.getByTestId("chosen-count")).toHaveText("2 of 8 chosen");
   // Lưu lần nữa với ETag mới (trang tải lại sau lần lưu trước): không bị 412.
   await page.getByRole("button", { name: "Save role" }).click();
   await expect(toast(page)).toHaveText("Role saved.");
@@ -298,8 +317,16 @@ test("quản trị viên xem và gỡ passkey của người mất thiết bị 
   page,
   request,
 }) => {
+  // AAGUID của Windows Hello: core trả tên loại authenticator kèm passkey.
+  const hello = "08987058-cadc-4b81-b6e1-30de50dcbe96";
   for (const name of ["iPhone của Lan", "Laptop cơ quan", "Khoá USB"]) {
-    await request.post(`${CORE}/__passkeys`, { data: { email: "viewer@example.com", name } });
+    await request.post(`${CORE}/__passkeys`, {
+      data: {
+        email: "viewer@example.com",
+        name,
+        ...(name === "Laptop cơ quan" ? { aaguid: hello } : {}),
+      },
+    });
   }
   await signIn(page, "/org/access/users");
   await page.getByRole("link", { name: "viewer", exact: true }).click();
@@ -309,6 +336,9 @@ test("quản trị viên xem và gỡ passkey của người mất thiết bị 
     "Laptop cơ quan",
     "iPhone của Lan",
   ]);
+  await expect(section.locator(".item").filter({ hasText: "Laptop cơ quan" })).toContainText(
+    "Windows Hello",
+  );
 
   await section.getByRole("button", { name: "Remove passkey iPhone của Lan" }).click();
   await expect(dialog(page)).toContainText("Their password, other passkeys and sessions stay");

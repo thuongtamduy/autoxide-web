@@ -281,7 +281,9 @@
       "verified": "Đã xác minh",
       "unverified": "Chưa xác minh",
       "verifiedOn": "Đã xác minh lúc",
-      "unverifiedHint": "Mở link trong thư xác minh để xác nhận địa chỉ này."
+      "unverifiedHint": "Mở link trong thư xác minh để xác nhận địa chỉ này.",
+      "pending": "Chờ xác minh",
+      "pendingHint": "Địa chỉ mới của bạn: mở link trong thư gửi tới địa chỉ này. Link dùng được tới"
     },
     "email": {
       "resend": "Gửi lại thư",
@@ -291,7 +293,9 @@
       "changeIntro": "Thư xác minh gửi tới địa chỉ MỚI. Email chỉ đổi khi bạn mở link trong thư trong vòng 24 giờ; tới lúc đó địa chỉ hiện tại vẫn dùng.",
       "new": "Email mới",
       "password": "Mật khẩu hiện tại",
-      "submit": "Gửi thư xác minh"
+      "submit": "Gửi thư xác minh",
+      "cancelChange": "Huỷ đổi email",
+      "cancelled": "Đã huỷ việc đổi sang {email}. Email của bạn giữ nguyên."
     },
     "password": {
       "title": "Mật khẩu",
@@ -302,7 +306,11 @@
       "new": "Mật khẩu mới",
       "rule": "Từ 12 tới 128 ký tự.",
       "submit": "Đổi mật khẩu",
-      "done": "Đã đổi mật khẩu. Các thiết bị khác phải đăng nhập lại."
+      "done": "Đã đổi mật khẩu. Các thiết bị khác phải đăng nhập lại.",
+      "noneMeta": "Tài khoản của bạn chưa có mật khẩu: bạn đăng nhập bằng passkey. Muốn thêm mật khẩu, hãy nhận thư có link để đặt.",
+      "sendLink": "Gửi link cho tôi",
+      "linkSent": "Thư có link đặt mật khẩu đang được gửi tới {email}. Link dùng được trong 30 phút.",
+      "mailOff": "Máy chủ này chưa gửi thư thật: link sẽ không tới được bạn. Hãy nhờ người vận hành cài đặt việc gửi thư."
     },
     "security": {
       "title": "Cách đăng nhập"
@@ -399,7 +407,14 @@
       "unknownCurrent": "Chưa nhận ra phiên này nên chưa đánh dấu hay giữ lại được. Hãy đăng xuất rồi đăng nhập lại, hoặc đợi vài phút.",
       "pages": "Trang",
       "first": "Trang đầu",
-      "more": "Thêm phiên"
+      "more": "Thêm phiên",
+      "method": "Đăng nhập bằng",
+      "methods": {
+        "password": "Mật khẩu",
+        "password_and_mfa": "Mật khẩu và mã",
+        "passkey": "Passkey",
+        "password_change": "Đổi mật khẩu"
+      }
     },
     "data": {
       "title": "Dữ liệu của tôi",
@@ -408,7 +423,9 @@
       "exportSubmit": "Tải về",
       "delete": "Xoá tài khoản",
       "deleteMeta": "Xoá ngay tài khoản của bạn. Không hoàn tác được.",
-      "lastAdmin": "Nếu bạn là quản trị viên cuối cùng, hãy giao role admin cho người khác trước khi xoá tài khoản."
+      "lastAdmin": "Nếu bạn là quản trị viên cuối cùng, hãy giao role admin cho người khác trước khi xoá tài khoản.",
+      "deleteNeedsPassword": "Xoá tài khoản cần mật khẩu, mà tài khoản của bạn chưa có. Hãy đặt mật khẩu trước ở mục Đăng nhập và bảo mật.",
+      "setPassword": "Đặt mật khẩu"
     },
     "delete": {
       "open": "Xoá tài khoản",
@@ -588,7 +605,12 @@
       "roles": "Role",
       "status": "Trạng thái",
       "created": "Ngày tạo",
-      "noRoles": "Chưa có role"
+      "noRoles": "Chưa có role",
+      "byStatus": "Lọc theo trạng thái",
+      "all": "Tất cả",
+      "noStatus": "Không có người dùng nào ở trạng thái này.",
+      "lastSignIn": "Đăng nhập gần nhất",
+      "neverSignedIn": "Chưa có"
     },
     "create": {
       "open": "Tạo người dùng",
@@ -647,7 +669,13 @@
         "done": "Đã xoá tài khoản.",
         "row": "Xoá tài khoản",
         "meta": "Xoá tài khoản và mọi thứ nó sở hữu. Cần có mọi permission người đó có."
-      }
+      },
+      "signIn": "Cách đăng nhập",
+      "hasPassword": "Mật khẩu",
+      "noPassword": "Chưa có mật khẩu (chỉ passkey)",
+      "mfaOn": "đã bật xác thực hai bước",
+      "mfaOff": "chưa bật xác thực hai bước",
+      "apiKeys": "Xem API key của người này"
     },
     "admin": {
       "title": "Thao tác của quản trị viên",
@@ -711,7 +739,8 @@
         "doneOne": "Đã gỡ passkey.",
         "doneAll": "Đã gỡ mọi passkey.",
         "forbidden": "Bạn không xem được passkey của người này: họ có permission mà bạn không có."
-      }
+      },
+      "mailOff": "Máy chủ này chưa gửi thư thật (chưa đặt máy chủ SMTP): thư đặt lại mật khẩu và thư xác minh chỉ được ghi ra tệp trên máy chủ, không ai nhận được."
     },
     "roles": {
       "title": "Role",
@@ -910,8 +939,12 @@
       "done": "Đã xác minh {email}. Nếu bạn vừa đổi địa chỉ thì từ giờ đăng nhập bằng địa chỉ này.",
       "continue": "Tiếp tục",
       "description": "Xác nhận địa chỉ này là của bạn.",
-      "invalidHint": "Đăng nhập rồi gửi thư xác minh mới ở Tài khoản của tôi.",
-      "submit": "Xác minh email của tôi"
+      "submit": "Xác minh email của tôi",
+      "reasons": {
+        "expired": "Link đã hết hạn. Đăng nhập rồi gửi thư xác minh mới ở Tài khoản của tôi.",
+        "used": "Link này đã được dùng rồi. Nếu Tài khoản của tôi ghi email đã xác minh thì bạn không cần làm gì thêm.",
+        "unknown": "Link không hợp lệ: có thể bị cắt mất một phần, hoặc đã có thư mới hơn thay thế. Đăng nhập rồi gửi thư xác minh mới ở Tài khoản của tôi."
+      }
     },
     "forgot": {
       "required": "Nhập địa chỉ email.",
@@ -937,7 +970,12 @@
       "password": "Mật khẩu mới",
       "rule": "12 đến 128 ký tự.",
       "repeat": "Nhập lại mật khẩu mới",
-      "submit": "Đổi mật khẩu"
+      "submit": "Đổi mật khẩu",
+      "reasons": {
+        "expired": "Link đã hết hạn: link chỉ dùng được trong 30 phút. Hãy xin link mới.",
+        "used": "Link này đã được dùng rồi. Nếu không phải bạn đổi mật khẩu bằng link này, hãy xin link mới.",
+        "unknown": "Link không hợp lệ: có thể bị cắt mất một phần, hoặc đã có thư mới hơn thay thế. Hãy xin link mới."
+      }
     },
     "notMe": {
       "title": "Có người khác đổi email của bạn?",
@@ -947,8 +985,12 @@
       "submit": "Không phải tôi — khoá tài khoản",
       "doneTitle": "Đã khoá tài khoản",
       "done": "Người đã đổi email không vào được nữa. Nếu địa chỉ cũ còn trống, thư đặt mật khẩu mới đang được gửi tới đó; nếu không, hãy nhờ quản trị viên trả tài khoản cho bạn.",
-      "invalidHint": "Link không đúng, đã hết hạn hoặc đã dùng. Nếu vẫn không vào được tài khoản, hãy nhờ quản trị viên.",
-      "toLogin": "Tới trang đăng nhập"
+      "toLogin": "Tới trang đăng nhập",
+      "reasons": {
+        "expired": "Link đã hết hạn: link chỉ dùng được trong 7 ngày sau khi email bị đổi. Nếu vẫn không vào được tài khoản, hãy nhờ quản trị viên.",
+        "used": "Link này đã được dùng rồi: tài khoản đã bị khoá trước người đã đổi email. Hãy tìm trong hộp thư cũ thư đặt mật khẩu mới.",
+        "unknown": "Link không hợp lệ. Nếu vẫn không vào được tài khoản, hãy nhờ quản trị viên."
+      }
     }
   },
   "settings": {
@@ -975,7 +1017,9 @@
       "password": "Hãy nhập mật khẩu hiện tại.",
       "events": "Hãy chọn ít nhất một event, hoặc mọi event.",
       "permissions": "Hãy chọn ít nhất một permission.",
-      "domain": "Hãy nhập tên miền."
+      "domain": "Hãy nhập tên miền.",
+      "code": "Nhập mã trong app xác thực.",
+      "value": "Nhập một giá trị."
     },
     "secret": {
       "copy": "Sao chép",
@@ -1134,7 +1178,7 @@
         "embeddingsOff": "Đang tắt.",
         "about": "Nhà vận hành máy chủ bật AI bằng các biến AUTOXIDE_AI_* và AUTOXIDE_EMBEDDING_*. Kết quả của AI chỉ là gợi ý hay bản nháp."
       },
-      "title": "Kết nối",
+      "title": "Kết nối đối tác (mẫu)",
       "about": "Thông tin kết nối riêng của bạn. Không đặt thì dùng cấu hình chung của máy chủ. Secret được mã hoá khi lưu và không bao giờ hiện lại; muốn đổi thì nhập giá trị mới. Cần kernel.settings.manage.",
       "names": {
         "mail": "Email (SMTP)",
@@ -1168,7 +1212,25 @@
       "saved": "Đã lưu kết nối.",
       "secretKeep": "Đã đặt. Để trống để giữ giá trị hiện tại.",
       "secretNew": "Secret: lưu mã hoá, không bao giờ hiện lại.",
-      "save": "Lưu"
+      "save": "Lưu",
+      "tenant": {
+        "title": "Cài đặt của khách này",
+        "about": "Cài đặt mà các module đã cài nhận theo từng khách. Cài đặt để trống thì dùng cấu hình chung của máy chủ. Secret được mã hoá khi lưu và không bao giờ hiện lại; muốn đổi thì nhập giá trị mới.",
+        "empty": "Các module đã cài không nhận cài đặt nào theo khách.",
+        "default": "Chưa đặt: dùng cấu hình chung của máy chủ.",
+        "updated": "đổi lúc",
+        "set": "Đặt",
+        "setLabel": "Đặt {name}",
+        "formTitle": "Đặt {name}",
+        "secretIntro": "Đây là secret: được mã hoá khi lưu và không bao giờ hiện lại, kể cả với bạn.",
+        "value": "Giá trị",
+        "save": "Lưu",
+        "saved": "Đã lưu {name}.",
+        "remove": "Gỡ",
+        "removeTitle": "Gỡ {name}?",
+        "removeDefault": "Cấu hình chung của máy chủ áp dụng lại từ request kế tiếp.",
+        "removed": "Đã gỡ {name}; dùng cấu hình chung của máy chủ."
+      }
     },
     "jobs": {
       "cliNote": "Chưa có API: core chỉ có lệnh máy chủ autoxide jobs cho nhà vận hành. Danh sách theo khách, tiến độ và chạy lại có audit chờ bước 52.",
@@ -1276,7 +1338,11 @@
       },
       "attemptCount": "{count, plural, other {# lần thử}}",
       "find": "Tìm event",
-      "findHint": "Tìm theo tên hay việc đã xảy ra…"
+      "findHint": "Tìm theo tên hay việc đã xảy ra…",
+      "status": {
+        "active": "Đang bật",
+        "disabled": "Đã tắt"
+      }
     },
     "audit": {
       "kindNote": "Lọc theo agent và dịch vụ cần API: nhật ký chỉ phân \"user\" và \"system\"; loại API key (người / agent / dịch vụ) thuộc bước 51 và chưa có tham số lọc theo loại người thực hiện.",
@@ -1315,7 +1381,8 @@
         "approvals": "Chờ duyệt",
         "keys": "API key",
         "mcp": "Kết nối MCP",
-        "calls": "Nhật ký gọi tool MCP"
+        "calls": "Nhật ký gọi tool MCP",
+        "all": "Key của mọi người"
       }
     },
     "apiKeys": {
@@ -1358,8 +1425,29 @@
       },
       "expiryHint": "Key có hạn giảm thiệt hại nếu bị lộ.",
       "password": "Mật khẩu hiện tại",
-      "passwordHint": "Tạo key là thao tác nhạy cảm: phiên đăng nhập bị đánh cắp không được tạo key sống lâu hơn nó.",
-      "create": "Tạo key"
+      "passwordHint": "Tạo key là việc nhạy cảm: một phiên bị lấy cắp không được tự tạo key sống lâu hơn nó. Hãy xác nhận là chính bạn.",
+      "create": "Tạo key",
+      "confirmTitle": "Xác nhận là bạn",
+      "confirmBy": {
+        "password": "Mật khẩu",
+        "totp": "App xác thực",
+        "passkey": "Passkey"
+      },
+      "totpCode": "Mã trong app xác thực",
+      "totpHint": "Mã 6 số app đang hiện.",
+      "passkeyHint": "Khi bạn bấm tạo key, trình duyệt sẽ hỏi một passkey của bạn.",
+      "passkeyUnsupported": "Trình duyệt này không dùng được passkey. Hãy xác nhận bằng mật khẩu hoặc mã.",
+      "passkeyCancelled": "Passkey chưa được dùng. Thử lại, hoặc xác nhận cách khác.",
+      "passkeyFailed": "Không dùng được passkey. Thử lại, hoặc xác nhận cách khác.",
+      "passkeyExpired": "Xác nhận bằng passkey quá lâu. Hãy tạo key lại.",
+      "allTitle": "API key của mọi người dùng",
+      "allAbout": "Thu hồi key bị lộ hoặc không còn dùng. Key hành động thay chủ của nó và không bao giờ có nhiều quyền hơn chủ. Key không bao giờ hiện lại sau lúc tạo.",
+      "allEmpty": "Chưa có API key nào.",
+      "allUsers": "Mọi người dùng",
+      "owner": "Chủ key",
+      "ownerGone": "Tài khoản đã xoá",
+      "revokeOtherTitle": "Thu hồi {name} của {owner}?",
+      "revokeAudit": "Nhật ký audit ghi lại bạn đã thu hồi key này."
     },
     "approvals": {
       "title": "Lệnh chờ duyệt",
@@ -1405,7 +1493,7 @@
       "title": "Kết nối AI agent qua MCP",
       "about": "AI agent gọi đúng các chức năng của REST API, dưới dạng tool, qua Model Context Protocol (Streamable HTTP).",
       "endpoint": "Endpoint MCP",
-      "endpointHint": "Địa chỉ core mà trang quản trị này dùng. Agent chạy ở mạng khác thì dùng địa chỉ công khai của core kèm /mcp.",
+      "endpointHint": "Địa chỉ core mà trang quản trị này dùng: máy chủ chưa đặt địa chỉ công khai (AUTOXIDE_HTTP_PUBLIC_URL). Nếu agent chạy ở mạng khác, hãy dùng địa chỉ công khai của core kèm /mcp.",
       "step1": "Tạo một API key chỉ với các permission agent cần.",
       "step1Link": "Tạo API key",
       "step2": "Thêm endpoint vào agent, gửi key trong header Authorization, sau chữ Bearer.",
@@ -1414,7 +1502,8 @@
       "generic": "MCP client khác (JSON)",
       "rulePermissions": "Mỗi tool cần đúng permission như endpoint REST tương ứng.",
       "ruleSame": "Tool chạy cùng code với REST: tool không bao giờ làm được điều key không làm được qua REST.",
-      "ruleAudit": "Thay đổi do tool ghi vào nhật ký audit kèm key."
+      "ruleAudit": "Thay đổi do tool ghi vào nhật ký audit kèm key.",
+      "endpointPublic": "Địa chỉ công khai của core, theo cấu hình của máy chủ (AUTOXIDE_HTTP_PUBLIC_URL)."
     },
     "developers": {
       "crumb": "Cài đặt · cần webhooks.manage hoặc kernel.devtools.read",
@@ -4404,7 +4493,10 @@
       "plansOpen": "Gói và giá",
       "plansAbout": "Module + tính năng + hạn mức + giá theo kỳ; ghi đè riêng được cho từng khách mà không đổi gói chung.",
       "subscribers": "{count, plural, other {# khách}}",
-      "modules": "{count, plural, other {# module}}"
+      "modules": "{count, plural, other {# module}}",
+      "singleMode": "Bản cài này chạy một khách (AUTOXIDE_TENANCY_MODE=single): khách nền tảng là khách duy nhất, chưa thêm khách mới được tới khi core cho phép nhiều khách.",
+      "sampleRow": "mẫu",
+      "sampleRowHint": "Chỉ có trong dữ liệu mẫu (vd từ luồng cấp phát mẫu của bước 35); core không có khách này."
     },
     "tenant": {
       "back": "Khách hàng",
@@ -4522,7 +4614,18 @@
       "suspended": "Đã tạm khoá hẳn {tenant}; mọi route trả 403 tenant_suspended.",
       "suspendedNow": "Khách đang bị tạm khoá. Mở lại thì mọi API và website chạy lại ngay.",
       "reactivate": "Mở lại",
-      "reactivated": "{tenant} đã hoạt động lại."
+      "reactivated": "{tenant} đã hoạt động lại.",
+      "coreDescription": "Tên, trạng thái, nơi giữ dữ liệu và cây khách, đọc từ core.",
+      "updated": "Đổi lúc",
+      "rename": "Đổi tên",
+      "renameTitle": "Đổi tên {tenant}",
+      "renameSubmit": "Lưu tên",
+      "renamed": "Đã lưu tên.",
+      "behindCore": "Placement này còn migration chưa chạy: khách trên đó nhận 503 tới khi người vận hành chạy autoxide migrate up --all.",
+      "pendingTitle": "Gói, mức dùng, xuất dữ liệu, dời khách và quyền vào hỗ trợ",
+      "pendingAbout": "Các phần này của một khách đến cùng bước 34, 35 của core và API mới ghi ở bảng thiếu API; mặt điều khiển mẫu chỉ hiện chúng cho khách mẫu.",
+      "reactivateTitle": "Mở lại {tenant}?",
+      "reactivateBack": "Mọi request vào khách này chạy lại (máy chủ khác thấy thay đổi sau vài giây)."
     },
     "provision": {
       "button": "Cấp phát khách mới",
@@ -4883,6 +4986,23 @@
       "revokeAudit": "Event auth.support_access_revoked ghi vào audit của khách.",
       "revoked": "Đã thu hồi; khách thấy trong nhật ký audit.",
       "none": "Không có lần cấp nào ở trạng thái này."
+    },
+    "platformOnly": "Chỉ nhân sự của khách nền tảng (của chính nhà vận hành) dùng được mặt điều khiển. Bạn đang đăng nhập vào tài khoản của một khách hàng.",
+    "newTenant": {
+      "button": "Thêm khách",
+      "title": "Thêm một khách",
+      "intro": "Core tạo khách và chuẩn bị khách ở mọi module rồi mới trả lời. Gói và quản trị viên đầu tiên đến cùng bước 35.",
+      "name": "Tên",
+      "slug": "Tên rút gọn",
+      "slugHint": "1 đến 63 chữ thường, số và -, duy nhất trên nền tảng; không bắt đầu hay kết thúc bằng -.",
+      "placement": "Nơi giữ dữ liệu",
+      "placementHint": "Mỗi placement là một database; main là database của nền tảng. Placement khác thêm bằng lệnh autoxide placement add.",
+      "parent": "Khách cha",
+      "noParent": "Không có",
+      "submit": "Thêm khách",
+      "done": "Đã thêm khách.",
+      "slugRequired": "Nhập tên rút gọn.",
+      "nameRequired": "Nhập tên."
     }
   },
   "catalog": {

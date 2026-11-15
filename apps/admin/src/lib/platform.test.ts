@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { Tenant } from "@/sample/platform-data";
 import {
   daysUntil,
+  MAIN_PLACEMENT_ID,
   matchesFilter,
+  mergePlacements,
+  mergeTenants,
   needsAttention,
   orderTree,
   roughAge,
@@ -22,6 +25,52 @@ const tenant = (id: string, name: string, parent_id: string | null = null): Tena
   business_model: "single_store",
   primary_domain: null,
   status_reason: null,
+});
+
+describe("ghép khách và placement của core với dữ liệu mẫu", () => {
+  const core = {
+    id: "00000000-0000-7000-8000-000000000001",
+    slug: "default",
+    name: "Platform",
+    status: "active",
+    placement: "main",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-02T00:00:00Z",
+  };
+  const main = {
+    id: MAIN_PLACEMENT_ID,
+    name: "main",
+    kind: "shared",
+    backend: "sqlite",
+    schema_state: "ready",
+    created_at: "2026-01-01T00:00:00Z",
+  };
+
+  it("khách của core trước, khách chỉ có trong mẫu sau; trường mới lấy từ mẫu cùng id", () => {
+    const sample = [
+      { ...tenant(core.id, "Mẫu nền tảng"), business_model: null, primary_domain: "x.example" },
+      tenant("s", "Khách mẫu"),
+    ];
+    const merged = mergeTenants([core], [main], sample);
+    expect(merged.map((x) => [x.id, x.source])).toEqual([
+      [core.id, "core"],
+      ["s", "sample"],
+    ]);
+    expect(merged[0]).toMatchObject({
+      name: "Platform",
+      placement_id: MAIN_PLACEMENT_ID,
+      is_platform: true,
+      primary_domain: "x.example",
+    });
+  });
+
+  it("tắt dữ liệu mẫu: chỉ dữ liệu của core, trường mới để trống", () => {
+    const [only] = mergeTenants([core], [main], null);
+    expect(only).toMatchObject({ source: "core", business_model: null, primary_domain: null });
+    const placements = mergePlacements([main], null);
+    expect(placements).toHaveLength(1);
+    expect(placements[0]).toMatchObject({ control: true, location: "", pending_migrations: [] });
+  });
 });
 
 describe("sổ khách hàng", () => {
@@ -44,7 +93,7 @@ describe("sổ khách hàng", () => {
 
   it("lọc: database riêng, chờ migration, cần chú ý", () => {
     const row: TenantRow = {
-      tenant: tenant("a", "A"),
+      tenant: { ...tenant("a", "A"), source: "core" },
       placement: {
         id: "p",
         name: "pool-2",

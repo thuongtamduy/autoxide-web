@@ -21,7 +21,7 @@ import { newsSeen } from "@/help/flags";
 import { myFlags } from "@/help/server";
 import { initialsOf } from "@/lib/initials";
 import { MARKETPLACE_SELL } from "@/lib/market";
-import { getMe, getModules } from "@/lib/viewer";
+import { getCurrentTenant, getMe, getModules } from "@/lib/viewer";
 import {
   ACCOUNT_PAGE,
   NAV,
@@ -58,7 +58,7 @@ export async function AdminShell({
   children: ReactNode;
 }) {
   const t = await getTranslations();
-  const [me, modules] = await Promise.all([getMe(), getModules()]);
+  const [me, modules, current] = await Promise.all([getMe(), getModules(), getCurrentTenant()]);
   const viewer: Viewer = {
     allPermissions: me.all_permissions,
     permissions: me.permissions,
@@ -90,7 +90,9 @@ export async function AdminShell({
   const others: { page: ShellPage; icon: "home" | "scope" | "store" }[] = [];
   const toTenant = { id: "tenantSpace", label: t("platform.shell.toTenant"), href: "/" };
   if (workspace === "tenant") {
-    if (shellGroups(NAV_PLATFORM).length > 0) {
+    // Mặt điều khiển chỉ cho nhân sự của khách nền tảng (`GET /kernel/tenant`); core cũ không trả
+    // được thì theo permission như trước.
+    if (current?.platform !== false && shellGroups(NAV_PLATFORM).length > 0) {
       others.push({
         page: { id: "platformSpace", label: t("platform.shell.toPlatform"), href: PLATFORM_HOME },
         icon: "scope",

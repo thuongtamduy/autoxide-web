@@ -9,6 +9,7 @@
 // Quản trị người dùng, role và trang công khai của link trong thư: `mock-access.ts`.
 // Webhook, API key, audit, trạng thái AI, OpenAPI: `mock-settings.ts`.
 // Cờ giao diện theo người dùng (`/api/v1/me/flags`): `mock-flags.ts`.
+// Khách hàng, placement, cài đặt theo khách (bước 33): `mock-tenants.ts`.
 // Màn Nội dung (bài viết, trình soạn, xem trước): `mock-content.ts`.
 // Phân hệ Tiếp thị (biểu mẫu, bản tin, bình luận): `mock-engage.ts`.
 // Menu của website (module `menus`): `mock-menus.ts`.
@@ -16,14 +17,21 @@
 // Mã của app xác thực luôn là 123456. Access token chỉ sống 31 giây (cookie của trang quản trị
 // hết sau 1 giây), để test đi qua đường làm mới token. `GET /__stats` trả số lần làm mới;
 // `POST /__reset` đưa mọi thứ về ban đầu (tài khoản, phiên, passkey, xác thực hai bước);
-// `POST /__sessions` thêm một phiên như khi đăng nhập ở thiết bị khác.
+// `POST /__sessions` thêm một phiên như khi đăng nhập ở thiết bị khác (kèm `method`, `country`);
+// `POST /__no-password` giả tài khoản chưa có mật khẩu.
 // `POST /__ai` (`{"enabled": true}`) bật AI (`GET /api/v1/ai/status`) để thử "Hỏi bằng lời" của Đơn hàng.
 
 import { randomBytes, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { Me } from "@autoxide/sdk";
 import { KERNEL, NOTES } from "../src/test/fixtures.ts";
-import { ADMIN_ROLE, accessRoutes, publicRoutes, resetAccess } from "./mock-access.ts";
+import {
+  ADMIN_ROLE,
+  accessRoutes,
+  PERMISSION_CATALOG,
+  publicRoutes,
+  resetAccess,
+} from "./mock-access.ts";
 import {
   CONTENT_MODULE,
   contentBump,
@@ -49,7 +57,8 @@ import {
 } from "./mock-http.ts";
 import { mediaContent, mediaRoutes, resetMedia } from "./mock-media.ts";
 import { bumpMenu, MENUS_MODULE, menusRoutes, publicMenu, resetMenus } from "./mock-menus.ts";
-import { fireEvent, resetSettings, settingsRoutes } from "./mock-settings.ts";
+import { fireEvent, resetSettings, settingsRoutes, startLoginCeremony } from "./mock-settings.ts";
+import { resetTenants, setTenancy, tenantRoutes } from "./mock-tenants.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
 const CODE = "123456";
@@ -109,6 +118,8 @@ function seed(): Account[] {
     disabledAt: null,
     roleIds: canReadModules && !mfa ? [ADMIN_ROLE] : [],
     hasPassword: true,
+    lastSignInAt: null,
+    pendingEmail: null,
     createdAt: "2026-11-12T00:00:00Z",
     updatedAt: "2026-11-12T00:00:00Z",
   });
@@ -125,6 +136,10 @@ type Session = {
   started: string;
   lastActive: string;
   userAgent: string | null;
+  /** Cách đăng nhập (`sign_in_method` của core). */
+  method: string;
+  /** Mã quốc gia từ header của proxy; core giả nhận `CF-IPCountry` như cấu hình mẫu của core. */
+  country: string | null;
 };
 
 let accounts = seed();
@@ -154,10 +169,24 @@ function issue(session: Session) {
   };
 }
 
-function startSession(account: Account, userAgent: string | null): Session {
+function startSession(
+  account: Account,
+  userAgent: string | null,
+  method = "password",
+  country: string | null = null,
+): Session {
   const now = new Date().toISOString();
-  const session = { id: randomUUID(), account, started: now, lastActive: now, userAgent };
+  const session = {
+    id: randomUUID(),
+    account,
+    started: now,
+    lastActive: now,
+    userAgent,
+    method,
+    country,
+  };
   sessions.set(session.id, session);
+  account.lastSignInAt = now;
   return session;
 }
 
@@ -189,6 +218,8 @@ function sessionView(session: Session): Schemas["SessionResponse"] {
     last_active_at: session.lastActive,
     expires_at: new Date(Date.parse(session.lastActive) + 30 * 86_400_000).toISOString(),
     user_agent: session.userAgent,
+    sign_in_method: session.method,
+    country: session.country,
   };
 }
 
@@ -214,6 +245,16 @@ function creationOptions(account: Account): Record<string, never> {
   return options as unknown as Record<string, never>;
 }
 
+/** Như bảng AAGUID → tên của core (một phần nhỏ). */
+const AUTHENTICATORS: Record<string, string> = {
+  "08987058-cadc-4b81-b6e1-30de50dcbe96": "Windows Hello",
+  "fbfc3007-154e-4ecc-8c0b-6e020557d7bd": "Apple Passwords",
+};
+
+function authenticatorName(aaguid: string | null): string | null {
+  return aaguid ? (AUTHENTICATORS[aaguid] ?? null) : null;
+}
+
 function mfaStatus(account: Account): Schemas["MfaStatusResponse"] {
   return { totp_enabled: account.mfa, recovery_codes_remaining: account.recoveryCodes.length };
 }
@@ -223,6 +264,9 @@ const server = createServer(async (request, response) => {
   const route = `${request.method} ${url.pathname}`;
   const vi = request.headers["accept-language"] === "vi";
   const userAgent = request.headers["user-agent"] ?? null;
+  const countryHeader = request.headers["cf-ipcountry"];
+  const country =
+    typeof countryHeader === "string" && countryHeader !== "XX" ? countryHeader : null;
 
   if (route === "GET /__stats") {
     return send(response, 200, { refreshes });
@@ -243,8 +287,10 @@ const server = createServer(async (request, response) => {
     resetEngage();
     resetMenus();
     resetFlags();
+    resetTenants();
     return send(response, 204);
   }
+  if (route === "POST /__tenancy") return setTenancy(request, response);
   if (route === "POST /__webhooks/fire") {
     return fireEvent(request, response);
   }
@@ -252,7 +298,12 @@ const server = createServer(async (request, response) => {
     const body = await json(request);
     const account = accounts.find((a) => a.email === text(body, "email"));
     if (!account) return problem(response, 404, "not_found", "No such account.");
-    const session = startSession(account, text(body, "user_agent") || null);
+    const session = startSession(
+      account,
+      text(body, "user_agent") || null,
+      text(body, "method") || "password",
+      text(body, "country") || null,
+    );
     return send(response, 201, { id: session.id });
   }
   if (route === "POST /__passkeys") {
@@ -260,14 +311,27 @@ const server = createServer(async (request, response) => {
     const body = await json(request);
     const account = accounts.find((a) => a.email === text(body, "email"));
     if (!account) return problem(response, 404, "not_found", "No such account.");
+    const aaguid = text(body, "aaguid") || null;
     const passkey = {
       id: randomUUID(),
       name: text(body, "name") || "Passkey",
+      aaguid,
+      authenticator: authenticatorName(aaguid),
       created_at: "2026-11-10T08:00:00Z",
       last_used_at: null,
     } satisfies Schemas["PasskeyResponse"];
     account.passkeys.push(passkey);
+    account.credentialIds.push(randomBytes(16).toString("base64url"));
     return send(response, 201, { id: passkey.id });
+  }
+  if (route === "POST /__no-password") {
+    // Giả một tài khoản vào bằng passkey, chưa có mật khẩu (`has_password: false`); core giả vẫn
+    // cho đăng nhập bằng mật khẩu cũ để test vào được.
+    const body = await json(request);
+    const account = accounts.find((a) => a.email === text(body, "email"));
+    if (!account) return problem(response, 404, "not_found", "No such account.");
+    account.hasPassword = false;
+    return send(response, 204);
   }
   if (route === "POST /__ai") {
     setAiEnabled((await json(request)).enabled === true);
@@ -303,7 +367,11 @@ const server = createServer(async (request, response) => {
         data: { mfa_token: token, expires_in: 300, methods: ["totp"] },
       });
     }
-    return send(response, 200, issue(startSession(account, userAgent)));
+    return send(response, 200, issue(startSession(account, userAgent, "password", country)));
+  }
+  // Nghi thức đăng nhập bằng passkey: core dùng lại nó để xác nhận lại khi tạo API key (D-272).
+  if (route === "POST /api/v1/auth/login/passkey/options") {
+    return send(response, 200, { data: startLoginCeremony() });
   }
   if (route === "POST /api/v1/auth/login/mfa") {
     const body = await json(request);
@@ -319,7 +387,11 @@ const server = createServer(async (request, response) => {
     }
     if (recovery >= 0) pending.account.recoveryCodes.splice(recovery, 1);
     mfa.delete(token);
-    return send(response, 200, issue(startSession(pending.account, pending.userAgent)));
+    return send(
+      response,
+      200,
+      issue(startSession(pending.account, pending.userAgent, "password_and_mfa", country)),
+    );
   }
   if (route === "POST /api/v1/auth/refresh") {
     const body = await json(request);
@@ -378,9 +450,15 @@ const server = createServer(async (request, response) => {
         all_permissions: account.canReadModules,
         permissions: [],
         has_password: account.hasPassword,
+        pending_email: account.pendingEmail,
         created_at: "2026-11-12T00:00:00Z",
       } satisfies Me,
     });
+  }
+  if (route === "GET /api/v1/me/permissions") {
+    // Admin có mọi permission: cả sổ; người khác: những gì role của họ cho (ở đây không có).
+    const mine = account.canReadModules ? PERMISSION_CATALOG : [];
+    return send(response, 200, { data: mine } satisfies Schemas["Data_Vec_MyPermission"]);
   }
   if (url.pathname.startsWith("/api/v1/auth/me/") || url.pathname === "/api/v1/auth/me") {
     return mine(request, response, url, route, account);
@@ -399,7 +477,8 @@ const server = createServer(async (request, response) => {
   );
   if (handled) return;
   if (await flagRoutes(request, response, url, account)) return;
-  if (await settingsRoutes(request, response, url, account)) return;
+  if (await tenantRoutes(request, response, url, account)) return;
+  if (await settingsRoutes(request, response, url, account, () => accounts)) return;
   if (await engageRoutes(request, response, url, route)) return;
   if (url.pathname.startsWith("/api/v1/kernel/modules")) {
     if (!account.canReadModules) {
@@ -471,7 +550,7 @@ async function mine(
     }
     account.password = next;
     endAll();
-    return send(response, 200, issue(startSession(account, userAgent)));
+    return send(response, 200, issue(startSession(account, userAgent, "password_change")));
   }
   if (route === "POST /api/v1/auth/me/email") {
     if (!passwordOk()) return wrongPassword(response);
@@ -479,7 +558,23 @@ async function mine(
     if (accounts.some((a) => a.email === email && a !== account)) {
       return problem(response, 409, "auth.email_taken", "Another account has this email.");
     }
+    account.pendingEmail = {
+      email,
+      expires_at: new Date(Date.now() + 86_400_000).toISOString(),
+    };
     return empty(response, 202);
+  }
+  if (route === "DELETE /api/v1/auth/me/email") {
+    if (!account.pendingEmail) {
+      return problem(
+        response,
+        404,
+        "auth.no_pending_email_change",
+        "No email change is waiting to be confirmed.",
+      );
+    }
+    account.pendingEmail = null;
+    return empty(response, 204);
   }
   if (route === "POST /api/v1/auth/me/email/verification") {
     if (account.verified) {
@@ -563,6 +658,9 @@ async function mine(
     const passkey = {
       id: randomUUID(),
       name: text(body, "name"),
+      // Authenticator ảo của Chromium (test) không khai AAGUID: core trả `null` cho cả hai.
+      aaguid: null,
+      authenticator: null,
       created_at: new Date().toISOString(),
       last_used_at: null,
     } satisfies Schemas["PasskeyResponse"];

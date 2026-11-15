@@ -46,12 +46,13 @@ function FirstPasswordForm({ target, close }: { target: Target; close: () => voi
   const t = useTranslations("access.admin.password");
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
-  const [state, action, pending] = useActionState(setFirstPassword, {});
-  useFocusInvalid(form, state);
-  useOnDone(state.done, () => {
+  // `useSubmit`: dòng "Đặt mật khẩu đầu tiên" biến mất khi trang làm mới (tài khoản đã có mật
+  // khẩu), nên báo ngay khi action trả về thay vì chờ effect.
+  const [state, action, pending] = useSubmit(setFirstPassword, () => {
     close();
     toast(t("done"));
   });
+  useFocusInvalid(form, state);
   return (
     <form ref={form} action={action} noValidate className="dlg-form">
       <input type="hidden" name="id" value={target.id} />
@@ -148,8 +149,8 @@ export function RemoveMfaDialog({ target }: { target: Target }) {
 function RemoveMfaForm({ target, close }: { target: Target; close: () => void }) {
   const t = useTranslations("access.admin.mfa");
   const toast = useToast();
-  const [state, action, pending] = useActionState(removeUserMfa, {});
-  useOnDone(state.done, () => {
+  // Như trên: dòng "Tắt xác thực hai bước" biến mất khi trang làm mới.
+  const [state, action, pending] = useSubmit(removeUserMfa, () => {
     close();
     toast(t("done"));
   });

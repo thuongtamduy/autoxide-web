@@ -4,11 +4,10 @@ import { getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
-import { auditFilter, auditHref } from "@/lib/audit";
+import { actorNames, auditFilter, auditHref } from "@/lib/audit";
 import { isForbidden, load } from "@/lib/core";
 import { AUDIT_READ } from "@/lib/permissions";
 import { getModules } from "@/lib/viewer";
-import { actorNames } from "./actors";
 
 const BASE = "/settings/audit";
 
@@ -23,7 +22,9 @@ export default async function AuditPage(props: PageProps<"/settings/audit">) {
   try {
     page = await load((client) =>
       client.GET("/api/v1/audit", {
-        params: { query: { ...filter, limit: 50, ...(cursor ? { cursor } : {}) } },
+        params: {
+          query: { ...filter, include: "actor", limit: 50, ...(cursor ? { cursor } : {}) },
+        },
       }),
     );
   } catch (error) {
@@ -37,10 +38,9 @@ export default async function AuditPage(props: PageProps<"/settings/audit">) {
     }
     throw error;
   }
-  const [modules, names] = await Promise.all([
-    getModules(),
-    actorNames(page.data.map((entry) => entry.actor_user_id)),
-  ]);
+  // Tên người làm đi cùng mỗi mục (`include=actor`): không gọi thêm cho từng người.
+  const modules = await getModules();
+  const names = actorNames(page.data);
   const next = page.pagination.next_cursor;
   const a = (key: string, values?: Record<string, string>) => t(`settings.audit.${key}`, values);
   const filtered = Object.keys(filter).length > 0;

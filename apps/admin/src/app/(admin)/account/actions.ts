@@ -84,7 +84,37 @@ export async function changeEmail(state: FormState, formData: FormData): Promise
       values: { new_email: typed },
     };
   }
+  // Trang hiện email đang chờ xác minh (`pending_email` của `/me`), nên tải lại.
+  refresh();
   return { done: nextDone(state), values: { new_email: input.data.new_email } };
+}
+
+/** Huỷ yêu cầu đổi email: link gửi tới địa chỉ mới ngừng dùng được, email giữ nguyên. */
+export async function cancelEmailChange(state: FormState): Promise<FormState> {
+  const result = await send((client) => client.DELETE("/api/v1/auth/me/email"));
+  if (!result.ok) {
+    const failed = problemState(result.problem, []);
+    // Không còn yêu cầu nào (đã xác minh hay đã huỷ ở tab khác): tải lại để hiện đúng.
+    if (failed.code === "auth.no_pending_email_change") refresh();
+    return failed;
+  }
+  refresh();
+  return { done: nextDone(state) };
+}
+
+/**
+ * Tài khoản chưa có mật khẩu (vào bằng passkey) tự đặt mật khẩu đầu tiên: core không có endpoint
+ * "đặt mật khẩu bằng phiên" (D-265 của core — kẻ lấy được token sẽ tạo được cách đăng nhập lâu dài),
+ * mà gửi thư đặt lại mật khẩu tới chính email của tài khoản; nhận thư là bằng chứng chủ tài khoản.
+ */
+export async function sendPasswordLink(state: FormState): Promise<FormState> {
+  const me = await getMe();
+  const result = await send(
+    (client) => client.POST("/api/v1/auth/password-reset", { body: { email: me.email } }),
+    { guest: true },
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  return { done: nextDone(state), values: { email: me.email } };
 }
 
 /** Gửi lại thư xác minh email (core cho tối đa một thư mỗi phút). */

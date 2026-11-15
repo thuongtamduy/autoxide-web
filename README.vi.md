@@ -28,23 +28,30 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
   lên, thư mục, thẻ, alt theo từng ngôn ngữ kèm gợi ý của AI, thùng rác).
 - **Tiếp thị**: biểu mẫu và bài nộp (xuất CSV, xuất nền cho form nhiều bài nộp), danh sách, chiến dịch
   và người nhận bản tin, duyệt bình luận (chữ thường hay Markdown).
-- **Tổ chức › Người dùng và role**: tài khoản, role với bộ chọn permission (permission rủi ro có
-  nhãn), đăng xuất mọi nơi, tắt xác thực hai bước, gỡ passkey của người mất thiết bị.
-- **Cài đặt**: module, webhook, nhật ký audit, API key và AI agent (MCP), công cụ cho lập trình viên.
-- **Tài khoản của tôi**: hồ sơ, email và mật khẩu, xác thực hai bước, passkey, thiết bị, dữ liệu của bạn.
+- **Tổ chức › Người dùng và role**: tài khoản kèm role, lọc theo trạng thái và lần đăng nhập gần nhất,
+  role với bộ chọn permission (permission rủi ro có nhãn), đặt mật khẩu đầu tiên và tắt xác thực hai
+  bước chỉ khi cần, đăng xuất mọi nơi, gỡ passkey của người mất thiết bị.
+- **Cài đặt**: module, cài đặt theo khách, webhook (kèm lần giao gần nhất), nhật ký audit, API key và
+  AI agent (MCP; xác nhận key mới bằng mật khẩu, mã của app xác thực hay passkey; quản trị viên xem và
+  thu hồi key của mọi người), công cụ cho lập trình viên.
+- **Tài khoản của tôi**: hồ sơ, email và mật khẩu (huỷ yêu cầu đổi email đang chờ; tài khoản chưa có
+  mật khẩu nhận link để đặt), xác thực hai bước, passkey kèm loại thiết bị, thiết bị kèm cách đăng nhập
+  và quốc gia, dữ liệu của bạn.
+- **Mặt điều khiển nền tảng › Khách hàng và Đội database**: khách và placement của core; thêm, đổi tên,
+  tạm khoá và mở lại một khách.
 - **Trang mở từ mail** (không cần đăng nhập): xác nhận email, quên và đặt lại mật khẩu, và "không phải
   tôi" khi người khác đổi email của bạn.
 
 **Các màn dùng dữ liệu mẫu** (có nhãn "Dữ liệu mẫu · chờ API bước N"), vì core dựng chúng ở các bước
 sau: Bán hàng (đơn hàng, đổi trả, bán tại quầy, vận chuyển và COD, cửa hàng, kênh bán), Sản phẩm
 (danh mục, giá, nhóm thuế, tồn kho), Tiếp thị (khuyến mại, tiếp thị liên kết), Khách hàng, Sàn và
-Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Cây tổ chức, Tuân thủ và Mặt điều
-khiển nền tảng. Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
+Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Cây tổ chức, Tuân thủ và phần còn lại
+của Mặt điều khiển nền tảng (gói, thuê bao, cấp phát, sức khoẻ, vào dữ liệu khách). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
 liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật, trừ production); thay đổi ở đó nằm
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).
 
-Chạy với core Autoxide từ commit `e2c3596` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
+Chạy với core Autoxide từ commit `27380c9` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
 sẽ có).
 
 ## Cần có

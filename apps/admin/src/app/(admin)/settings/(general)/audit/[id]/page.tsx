@@ -7,7 +7,7 @@ import { Time } from "@/components/ui/time";
 import { auditHref } from "@/lib/audit";
 import { isForbidden, isNotFound, load } from "@/lib/core";
 import { AUDIT_READ } from "@/lib/permissions";
-import { actorNames } from "../actors";
+import { actorName } from "../actors";
 
 /** Giá trị JSON của mục audit, thụt lề cho dễ đọc; không có thì `null`. */
 function pretty(value: unknown): string | null {
@@ -36,7 +36,7 @@ export default async function AuditEntryPage(props: PageProps<"/settings/audit/[
     if (isNotFound(error)) notFound();
     throw error;
   }
-  const names = await actorNames([entry.actor_user_id]);
+  const name = await actorName(entry.actor_user_id);
   const a = (key: string) => t(`settings.audit.${key}`);
   const parts: [string, string | null][] = [
     [a("before"), pretty(entry.before)],
@@ -67,7 +67,7 @@ export default async function AuditEntryPage(props: PageProps<"/settings/audit/[
             <dd>
               {actor ? (
                 <Link href={auditHref("/settings/audit", { actor_user_id: actor })}>
-                  {names.get(actor) ?? actor}
+                  {name ?? actor}
                 </Link>
               ) : (
                 a(`kind.${entry.actor_kind}`)

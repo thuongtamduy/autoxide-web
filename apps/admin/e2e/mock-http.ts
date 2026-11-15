@@ -22,6 +22,10 @@ export type Account = {
   disabledAt: string | null;
   roleIds: string[];
   hasPassword: boolean;
+  /** Lần mở phiên gần nhất (đăng nhập, đổi mật khẩu); `null` khi chưa từng. */
+  lastSignInAt: string | null;
+  /** Email đang chờ xác minh sau khi xin đổi; `null` khi không có. */
+  pendingEmail: Schemas["PendingEmail"] | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -42,6 +46,7 @@ export function problem(
   code: string,
   detail: string,
   errors?: Schemas["ProblemField"][],
+  reason?: string,
 ) {
   send(response, status, {
     type: "about:blank",
@@ -50,7 +55,17 @@ export function problem(
     code,
     detail,
     ...(errors ? { errors } : {}),
+    ...(reason ? { reason } : {}),
   } satisfies Schemas["Problem"]);
+}
+
+/**
+ * `reason` của token trong link bị từ chối, như core (D-264): `used` khi đã dùng, `expired` với token
+ * mẫu có đuôi `-expired`, còn lại `unknown`.
+ */
+export function tokenReason(token: string, used: boolean): string {
+  if (used) return "used";
+  return token.endsWith("-expired") ? "expired" : "unknown";
 }
 
 export function wrongPassword(response: ServerResponse) {

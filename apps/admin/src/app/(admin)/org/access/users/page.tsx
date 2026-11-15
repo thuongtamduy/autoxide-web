@@ -5,56 +5,44 @@ import { MessagePanel } from "@/components/message-panel";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
-import { coreClient, isForbidden, load } from "@/lib/core";
+import { isForbidden, load } from "@/lib/core";
 import { USERS_READ } from "@/lib/permissions";
 
 type User = components["schemas"]["UserResponse"];
-type Role = components["schemas"]["RoleResponse"];
 
-/** Mỗi trang 25 người: mỗi người thêm một lời gọi lấy role (danh sách của core chưa kèm role). */
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 50;
+const STATUSES = ["active", "disabled"] as const;
+type Status = (typeof STATUSES)[number];
 
-/**
- * Role của từng người trên trang, gọi song song. Lời gọi nào lỗi thì người đó hiện "—" thay vì
- * làm hỏng cả trang.
- */
-async function rolesOf(users: readonly User[]): Promise<Map<string, Role[] | null>> {
-  const client = await coreClient();
-  const entries = await Promise.all(
-    users.map(async (user) => {
-      try {
-        const { data } = await client.GET("/api/v1/auth/users/{id}/roles", {
-          params: { path: { id: user.id } },
-        });
-        return [user.id, data?.data ?? null] as const;
-      } catch {
-        return [user.id, null] as const;
-      }
-    }),
-  );
-  return new Map(entries);
-}
-
-function href(search: string, cursor?: string): string {
+function href(search: string, status: Status | null, cursor?: string): string {
   const query = new URLSearchParams();
   if (search) query.set("search", search);
+  if (status) query.set("status", status);
   if (cursor) query.set("cursor", cursor);
   const text = query.toString();
   return text ? `/org/access/users?${text}` : "/org/access/users";
 }
 
-// Tab "Người dùng": tìm theo email hay tên (tham số `search` của core), pagination theo con trỏ.
+// Tab "Người dùng": tìm theo email hay tên (`search`), lọc đang dùng / đã khoá (`status`), role của
+// từng người đi cùng danh sách (`include=roles`) — một lời gọi cho cả trang, pagination theo con trỏ.
 export default async function UsersPage(props: PageProps<"/org/access/users">) {
   const t = await getTranslations();
   const params = await props.searchParams;
   const search = typeof params.search === "string" ? params.search.trim() : "";
   const cursor = typeof params.cursor === "string" ? params.cursor : undefined;
+  const status = STATUSES.find((s) => s === params.status) ?? null;
   let page: components["schemas"]["Page_UserResponse"];
   try {
     page = await load((client) =>
       client.GET("/api/v1/auth/users", {
         params: {
-          query: { limit: PAGE_SIZE, ...(search ? { search } : {}), ...(cursor ? { cursor } : {}) },
+          query: {
+            limit: PAGE_SIZE,
+            include: "roles",
+            ...(search ? { search } : {}),
+            ...(status ? { status } : {}),
+            ...(cursor ? { cursor } : {}),
+          },
         },
       }),
     );
@@ -69,7 +57,6 @@ export default async function UsersPage(props: PageProps<"/org/access/users">) {
     }
     throw error;
   }
-  const roles = await rolesOf(page.data);
   const next = page.pagination.next_cursor;
   return (
     <div className="blocks">
@@ -80,8 +67,24 @@ export default async function UsersPage(props: PageProps<"/org/access/users">) {
             {t("access.users.title")}
           </h2>
         </div>
+        <nav className="chips" aria-label={t("access.users.byStatus")}>
+          {[null, ...STATUSES].map((value) => {
+            const on = value === status;
+            return (
+              <Link
+                key={value ?? "all"}
+                className={on ? "chip on" : "chip"}
+                href={href(search, value)}
+                aria-current={on ? "page" : undefined}
+              >
+                {value ? t(`access.status.${value}`) : t("access.users.all")}
+              </Link>
+            );
+          })}
+        </nav>
         <search aria-label={t("access.users.search")}>
           <form method="get" className="searchrow">
+            {status ? <input type="hidden" name="status" value={status} /> : null}
             <input
               className="inp"
               type="search"
@@ -94,7 +97,7 @@ export default async function UsersPage(props: PageProps<"/org/access/users">) {
               {t("access.users.find")}
             </button>
             {search ? (
-              <Link className="btn ghost" href="/org/access/users">
+              <Link className="btn ghost" href={href("", status)}>
                 {t("access.users.clear")}
               </Link>
             ) : null}
@@ -103,7 +106,11 @@ export default async function UsersPage(props: PageProps<"/org/access/users">) {
         <div className="card tcard">
           {page.data.length === 0 ? (
             <p className="empty">
-              {search ? t("access.users.noMatch", { search }) : t("access.users.empty")}
+              {search
+                ? t("access.users.noMatch", { search })
+                : status
+                  ? t("access.users.noStatus")
+                  : t("access.users.empty")}
             </p>
           ) : (
             <Table cards>
@@ -112,12 +119,13 @@ export default async function UsersPage(props: PageProps<"/org/access/users">) {
                   <Th>{t("access.users.user")}</Th>
                   <Th>{t("access.users.roles")}</Th>
                   <Th>{t("access.users.status")}</Th>
+                  <Th>{t("access.users.lastSignIn")}</Th>
                   <Th>{t("access.users.created")}</Th>
                 </tr>
               </thead>
               <tbody>
                 {page.data.map((user) => {
-                  const held = roles.get(user.id);
+                  const held = user.roles;
                   return (
                     <tr key={user.id}>
                       <Td className="rt-title">
@@ -146,6 +154,13 @@ export default async function UsersPage(props: PageProps<"/org/access/users">) {
                       <Td label={t("access.users.status")}>
                         <UserStatus user={user} labels={t} />
                       </Td>
+                      <Td className="whitespace-nowrap" label={t("access.users.lastSignIn")}>
+                        {user.last_sign_in_at ? (
+                          <Time value={user.last_sign_in_at} />
+                        ) : (
+                          <span className="muted">{t("access.users.neverSignedIn")}</span>
+                        )}
+                      </Td>
                       <Td className="whitespace-nowrap" label={t("access.users.created")}>
                         <Time value={user.created_at} />
                       </Td>
@@ -159,12 +174,12 @@ export default async function UsersPage(props: PageProps<"/org/access/users">) {
         {cursor || next ? (
           <nav className="pager" aria-label={t("access.pages")}>
             {cursor ? (
-              <Link className="btn sm" href={href(search)}>
+              <Link className="btn sm" href={href(search, status)}>
                 {t("access.first")}
               </Link>
             ) : null}
             {next ? (
-              <Link className="btn sm" href={href(search, next)}>
+              <Link className="btn sm" href={href(search, status, next)}>
                 {t("access.next")}
               </Link>
             ) : null}

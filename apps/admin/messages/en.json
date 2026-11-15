@@ -281,7 +281,9 @@
       "verified": "Verified",
       "unverified": "Not verified",
       "verifiedOn": "Verified on",
-      "unverifiedHint": "Open the link in the verification mail to confirm this address."
+      "unverifiedHint": "Open the link in the verification mail to confirm this address.",
+      "pending": "Waiting for confirmation",
+      "pendingHint": "Your new address: open the link in the mail sent to it. The link works until"
     },
     "email": {
       "resend": "Send the mail again",
@@ -291,7 +293,9 @@
       "changeIntro": "The verification mail goes to the NEW address. Your email changes only when you open its link within 24 hours; until then the current address stays in use.",
       "new": "New email",
       "password": "Current password",
-      "submit": "Send verification mail"
+      "submit": "Send verification mail",
+      "cancelChange": "Cancel change",
+      "cancelled": "Cancelled the change to {email}. Your email stays as it is."
     },
     "password": {
       "title": "Password",
@@ -302,7 +306,11 @@
       "new": "New password",
       "rule": "12 to 128 characters.",
       "submit": "Change password",
-      "done": "Password changed. Other devices must sign in again."
+      "done": "Password changed. Other devices must sign in again.",
+      "noneMeta": "Your account has no password: you sign in with a passkey. To add one, get a mail with a link to choose it.",
+      "sendLink": "Send me the link",
+      "linkSent": "A mail with a link to choose your password is on its way to {email}. The link works for 30 minutes.",
+      "mailOff": "This server does not send mail yet: the link would not reach you. Ask the operator to set up mail sending."
     },
     "security": {
       "title": "Ways to sign in"
@@ -399,7 +407,14 @@
       "unknownCurrent": "This session is not recognized yet, so it cannot be marked or kept. Sign out and in again, or wait a few minutes.",
       "pages": "Pages",
       "first": "First page",
-      "more": "More sessions"
+      "more": "More sessions",
+      "method": "Signed in with",
+      "methods": {
+        "password": "Password",
+        "password_and_mfa": "Password and code",
+        "passkey": "Passkey",
+        "password_change": "Password change"
+      }
     },
     "data": {
       "title": "My data",
@@ -408,7 +423,9 @@
       "exportSubmit": "Download",
       "delete": "Delete account",
       "deleteMeta": "Deletes your account at once. This cannot be undone.",
-      "lastAdmin": "If you are the last administrator, give the admin role to someone else before deleting your account."
+      "lastAdmin": "If you are the last administrator, give the admin role to someone else before deleting your account.",
+      "deleteNeedsPassword": "Deleting asks for your password, and your account has none yet. Set one first in Sign-in and security.",
+      "setPassword": "Set a password"
     },
     "delete": {
       "open": "Delete account",
@@ -588,7 +605,12 @@
       "roles": "Roles",
       "status": "Status",
       "created": "Created",
-      "noRoles": "No role"
+      "noRoles": "No role",
+      "byStatus": "Filter by status",
+      "all": "All",
+      "noStatus": "No user has this status.",
+      "lastSignIn": "Last sign-in",
+      "neverSignedIn": "Not yet"
     },
     "create": {
       "open": "New user",
@@ -647,7 +669,13 @@
         "done": "The account was deleted.",
         "row": "Delete the account",
         "meta": "Removes the account and everything it owns. Needs every permission the person has."
-      }
+      },
+      "signIn": "Signs in with",
+      "hasPassword": "Password",
+      "noPassword": "No password (passkey only)",
+      "mfaOn": "two-step sign-in on",
+      "mfaOff": "two-step sign-in off",
+      "apiKeys": "See their API keys"
     },
     "admin": {
       "title": "Administrator actions",
@@ -711,7 +739,8 @@
         "doneOne": "Passkey removed.",
         "doneAll": "Every passkey removed.",
         "forbidden": "You cannot see the passkeys of this person: they have permissions you lack."
-      }
+      },
+      "mailOff": "This server does not send mail yet (no SMTP server set): reset and verification mails are only written to files on the server, and nobody receives them."
     },
     "roles": {
       "title": "Roles",
@@ -910,8 +939,12 @@
       "done": "{email} is confirmed. If you asked to change your address, sign in with this one from now on.",
       "continue": "Continue",
       "description": "Confirm that this address belongs to you.",
-      "invalidHint": "Sign in and send a new verification mail from My account.",
-      "submit": "Confirm my email"
+      "submit": "Confirm my email",
+      "reasons": {
+        "expired": "This link has expired. Sign in and send a new verification mail from My account.",
+        "used": "This link was already used. If My account shows your email as confirmed, there is nothing more to do.",
+        "unknown": "This link is not valid: it may be cut off, or a newer mail replaced it. Sign in and send a new verification mail from My account."
+      }
     },
     "forgot": {
       "required": "Enter your email address.",
@@ -937,7 +970,12 @@
       "password": "New password",
       "rule": "12 to 128 characters.",
       "repeat": "New password again",
-      "submit": "Change password"
+      "submit": "Change password",
+      "reasons": {
+        "expired": "This link has expired: it works for 30 minutes. Ask for a new one.",
+        "used": "This link was already used. If you did not change your password with it, ask for a new link.",
+        "unknown": "This link is not valid: it may be cut off, or a newer mail replaced it. Ask for a new one."
+      }
     },
     "notMe": {
       "title": "Did someone else change your email?",
@@ -947,8 +985,12 @@
       "submit": "It was not me — lock my account",
       "doneTitle": "Account locked",
       "done": "Whoever changed your email can no longer get in. If your old address was free, a mail to choose a new password is on its way to it; otherwise ask an administrator to give the account back to you.",
-      "invalidHint": "This link is unknown, expired or already used. If you still cannot get into your account, ask an administrator.",
-      "toLogin": "Go to sign-in"
+      "toLogin": "Go to sign-in",
+      "reasons": {
+        "expired": "This link has expired: it works for 7 days after the change. If you still cannot get into your account, ask an administrator.",
+        "used": "This link was already used: the account is already locked against whoever changed the email. Look in your old mailbox for a mail to choose a new password.",
+        "unknown": "This link is not valid. If you still cannot get into your account, ask an administrator."
+      }
     }
   },
   "settings": {
@@ -975,7 +1017,9 @@
       "password": "Enter your current password.",
       "events": "Choose at least one event, or every event.",
       "permissions": "Choose at least one permission.",
-      "domain": "Enter a domain name."
+      "domain": "Enter a domain name.",
+      "code": "Enter the code from your authenticator app.",
+      "value": "Enter a value."
     },
     "secret": {
       "copy": "Copy",
@@ -1134,7 +1178,7 @@
         "embeddingsOff": "Off.",
         "about": "The server operator turns AI on with the AUTOXIDE_AI_* and AUTOXIDE_EMBEDDING_* settings. AI output is only ever a suggestion or a draft."
       },
-      "title": "Partner connections",
+      "title": "Partner connections (sample)",
       "about": "Connection details of your own partners. Without them, the server-wide configuration is used. Secrets are encrypted when saved and never shown again; to change one, enter a new value. Needs kernel.settings.manage.",
       "names": {
         "mail": "Email (SMTP)",
@@ -1168,7 +1212,25 @@
       "saved": "Connection saved.",
       "secretKeep": "Set. Leave empty to keep the current value.",
       "secretNew": "Secret: stored encrypted, never shown again.",
-      "save": "Save"
+      "save": "Save",
+      "tenant": {
+        "title": "Settings of this customer",
+        "about": "Settings the installed modules take per customer. A setting left unset uses the server-wide configuration. Secrets are encrypted when saved and never shown again; to change one, enter a new value.",
+        "empty": "The installed modules take no per-customer setting.",
+        "default": "Not set: the server-wide configuration applies.",
+        "updated": "changed",
+        "set": "Set",
+        "setLabel": "Set {name}",
+        "formTitle": "Set {name}",
+        "secretIntro": "A secret: stored encrypted and never shown again, not even to you.",
+        "value": "Value",
+        "save": "Save",
+        "saved": "Saved {name}.",
+        "remove": "Remove",
+        "removeTitle": "Remove {name}?",
+        "removeDefault": "The server-wide configuration applies again from the next request.",
+        "removed": "Removed {name}; the server-wide configuration applies."
+      }
     },
     "jobs": {
       "cliNote": "Not in the API yet: the core has only the server command autoxide jobs for operators. The list per account, progress and retry with audit wait for step 52.",
@@ -1276,7 +1338,11 @@
       },
       "attemptCount": "{count, plural, one {# attempt} other {# attempts}}",
       "find": "Find events",
-      "findHint": "Find by name or what happened…"
+      "findHint": "Find by name or what happened…",
+      "status": {
+        "active": "Turned on",
+        "disabled": "Turned off"
+      }
     },
     "audit": {
       "kindNote": "Filtering by AI agent or service needs API: the log tells only “user” and “system” apart; API key kinds (person / agent / service) come with step 51, and there is no filter by kind of actor yet.",
@@ -1315,7 +1381,8 @@
         "approvals": "Waiting for approval",
         "keys": "API keys",
         "mcp": "MCP connection",
-        "calls": "MCP tool calls"
+        "calls": "MCP tool calls",
+        "all": "Everyone's keys"
       }
     },
     "apiKeys": {
@@ -1358,8 +1425,29 @@
       },
       "expiryHint": "A key that expires limits the damage if it leaks.",
       "password": "Current password",
-      "passwordHint": "Creating a key is sensitive: a stolen session alone must not create a key that outlives it.",
-      "create": "Create key"
+      "passwordHint": "Creating a key is sensitive: a stolen session alone must not create a key that outlives it. Confirm it is you.",
+      "create": "Create key",
+      "confirmTitle": "Confirm it is you",
+      "confirmBy": {
+        "password": "Password",
+        "totp": "Authenticator app",
+        "passkey": "Passkey"
+      },
+      "totpCode": "Code from your authenticator app",
+      "totpHint": "The 6-digit code the app shows now.",
+      "passkeyHint": "When you create the key, your browser asks for one of your passkeys.",
+      "passkeyUnsupported": "This browser cannot use passkeys. Confirm with your password or a code instead.",
+      "passkeyCancelled": "The passkey was not used. Try again, or confirm another way.",
+      "passkeyFailed": "The passkey could not be used. Try again, or confirm another way.",
+      "passkeyExpired": "The passkey confirmation took too long. Create the key again.",
+      "allTitle": "API keys of every user",
+      "allAbout": "Revoke a key that leaked or is no longer used. A key acts as its owner and never has more than they have. Keys are never shown again after they are created.",
+      "allEmpty": "No API keys.",
+      "allUsers": "Every user",
+      "owner": "Owner",
+      "ownerGone": "Deleted account",
+      "revokeOtherTitle": "Revoke {name} of {owner}?",
+      "revokeAudit": "The audit log records that you revoked it."
     },
     "approvals": {
       "title": "Commands waiting for approval",
@@ -1405,7 +1493,7 @@
       "title": "Connect an AI agent over MCP",
       "about": "AI agents call the same functions as the REST API, as tools, through the Model Context Protocol (Streamable HTTP).",
       "endpoint": "MCP endpoint",
-      "endpointHint": "The core address this admin uses. If the agent runs on another network, use the public address of the core with /mcp.",
+      "endpointHint": "The core address this admin uses: the server has no public address set (AUTOXIDE_HTTP_PUBLIC_URL). If the agent runs on another network, use the public address of the core with /mcp.",
       "step1": "Create an API key with only the permissions the agent needs.",
       "step1Link": "Create API key",
       "step2": "Add the endpoint to your agent and send the key in the Authorization header, after the word Bearer.",
@@ -1414,7 +1502,8 @@
       "generic": "Other MCP clients (JSON)",
       "rulePermissions": "Each tool needs the same permission as the matching REST endpoint.",
       "ruleSame": "Tools run the same code as REST: a tool can never do what the key could not do over REST.",
-      "ruleAudit": "Writes made by tools land in the audit log with the key."
+      "ruleAudit": "Writes made by tools land in the audit log with the key.",
+      "endpointPublic": "The public address of the core, as set on the server (AUTOXIDE_HTTP_PUBLIC_URL)."
     },
     "developers": {
       "crumb": "Settings · needs webhooks.manage or kernel.devtools.read",
@@ -4404,7 +4493,10 @@
       "plansOpen": "Plans and prices",
       "plansAbout": "Modules, features, limits and prices per period; one customer can get an override without changing the plan.",
       "subscribers": "{count, plural, one {# customer} other {# customers}}",
-      "modules": "{count, plural, one {# module} other {# modules}}"
+      "modules": "{count, plural, one {# module} other {# modules}}",
+      "singleMode": "This installation runs one tenant (AUTOXIDE_TENANCY_MODE=single): the platform tenant is the only one, and new customers cannot be added until the core allows many tenants.",
+      "sampleRow": "sample",
+      "sampleRowHint": "Only in the sample data (e.g. from the sample provisioning flow of step 35); the core does not have this customer."
     },
     "tenant": {
       "back": "Customers",
@@ -4522,7 +4614,18 @@
       "suspended": "{tenant} is suspended; every route answers 403 tenant_suspended.",
       "suspendedNow": "This customer is suspended. Reactivating restores every API and website at once.",
       "reactivate": "Reactivate",
-      "reactivated": "{tenant} is active again."
+      "reactivated": "{tenant} is active again.",
+      "coreDescription": "Name, status, where its data is kept and the customer tree, from the core.",
+      "updated": "Changed",
+      "rename": "Rename",
+      "renameTitle": "Rename {tenant}",
+      "renameSubmit": "Save name",
+      "renamed": "Name saved.",
+      "behindCore": "This placement has migrations to apply: its customers get 503 until an operator runs autoxide migrate up --all.",
+      "pendingTitle": "Plan, usage, data export, move and support access",
+      "pendingAbout": "These parts of a customer come with steps 34 and 35 of the core and with new API listed in the API gaps; the sample console shows them only for sample customers.",
+      "reactivateTitle": "Resume {tenant}?",
+      "reactivateBack": "Every request to this customer works again (other servers see it within a few seconds)."
     },
     "provision": {
       "button": "Provision a customer",
@@ -4883,6 +4986,23 @@
       "revokeAudit": "The event auth.support_access_revoked is written to the customer’s audit log.",
       "revoked": "Access revoked; the customer sees it in their audit log.",
       "none": "No grant with this status."
+    },
+    "platformOnly": "Only staff of the platform tenant (the operator's own) can use the control plane. You are signed in to a customer's account.",
+    "newTenant": {
+      "button": "Add customer",
+      "title": "Add a customer",
+      "intro": "The core creates the customer and prepares it in every module before answering. Plans and the first administrator come with step 35.",
+      "name": "Name",
+      "slug": "Short name",
+      "slugHint": "1 to 63 lower-case letters, digits and -, unique on the platform; not starting or ending with -.",
+      "placement": "Where its data is kept",
+      "placementHint": "A placement is one database; main is the platform's own. Others are added with autoxide placement add.",
+      "parent": "Parent customer",
+      "noParent": "None",
+      "submit": "Add customer",
+      "done": "Customer added.",
+      "slugRequired": "Enter a short name.",
+      "nameRequired": "Enter a name."
     }
   },
   "catalog": {

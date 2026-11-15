@@ -29,8 +29,9 @@ export function PlatformHead({
   crumb: string;
   title: string;
   description: string;
-  step: string;
-  endpoint: string;
+  /** Bước của core mà phần dữ liệu mẫu của màn đang chờ; không có = màn chỉ có dữ liệu thật. */
+  step?: string | undefined;
+  endpoint?: string | undefined;
   actions?: ReactNode;
 }) {
   return (
@@ -39,9 +40,11 @@ export function PlatformHead({
         <span className="crumb ell">{crumb}</span>
         <h1 className="h1">{title}</h1>
         <p className="pdesc">{description}</p>
-        <span>
-          <SampleBadge step={step} endpoint={endpoint} />
-        </span>
+        {step ? (
+          <span>
+            <SampleBadge step={step} endpoint={endpoint ?? ""} />
+          </span>
+        ) : null}
       </div>
       {actions ? <div className="headacts eg-headacts">{actions}</div> : null}
     </section>

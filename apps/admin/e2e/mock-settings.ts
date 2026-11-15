@@ -2,8 +2,12 @@
 // Hình dạng theo `openapi.json` (`satisfies` kiểu của SDK). Luật như core:
 // - webhook chỉ nhận địa chỉ `https://` và event có trong sổ; secret ký chỉ trả lúc tạo / đổi;
 // - sửa endpoint gửi `If-Match` cũ thì 412 (`precondition_failed`);
-// - tạo API key cần đúng mật khẩu hiện tại (`auth.wrong_password`) và ít nhất một permission;
-// - chỉ tài khoản có mọi permission (admin) quản lý webhook, đọc audit, xem AI.
+// - tạo API key cần xác nhận lại bằng đúng một trong: mật khẩu hiện tại (`auth.wrong_password`), mã
+//   của app xác thực (123456; `auth.mfa_not_enabled` khi chưa bật) hay passkey (nghi thức của
+//   `POST /auth/login/passkey/options`; passkey lạ → 401 `auth.passkey_sign_in_failed`); và ít nhất
+//   một permission;
+// - chỉ tài khoản có mọi permission (admin) quản lý webhook, đọc audit, xem AI, quản trị key của mọi
+//   người (`/auth/all-api-keys`).
 //
 // `POST /__webhooks/fire {event}` giả một event: mỗi endpoint đang bật có đăng ký event đó nhận một
 // lần giao (`failed`, HTTP 502 khi địa chỉ có chữ "fail"; còn lại `succeeded`, HTTP 200).
@@ -25,6 +29,24 @@ const EVENTS: Schemas["EventTypeResponse"][] = [
   { name: "notes.note_created", description: "A note was created." },
 ];
 
+/** Nghi thức passkey đang chờ (`POST /api/v1/auth/login/passkey/options`), dùng một lần. */
+const loginCeremonies = new Set<string>();
+
+/** Bắt đầu một nghi thức đăng nhập bằng passkey; trả id và options cho `navigator.credentials.get`. */
+export function startLoginCeremony(): Schemas["CeremonyResponse"] {
+  const id = randomUUID();
+  loginCeremonies.add(id);
+  const options = {
+    challenge: randomBytes(32).toString("base64url"),
+    rpId: "localhost",
+    timeout: 60_000,
+    userVerification: "required",
+    allowCredentials: [],
+  };
+  // `options` là object tự do trong `openapi.json` (kiểu sinh ra là `Record<string, never>`).
+  return { ceremony_id: id, options: options as unknown as Record<string, never> };
+}
+
 let endpoints: Endpoint[] = [];
 let deliveries = new Map<string, Delivery[]>();
 let keys: ApiKey[] = [];
@@ -34,6 +56,7 @@ export function resetSettings() {
   endpoints = [];
   deliveries = new Map();
   keys = [];
+  loginCeremonies.clear();
   audit = [
     {
       id: randomUUID(),
@@ -79,6 +102,24 @@ function page<T extends { id: string }>(items: T[], url: URL) {
   };
 }
 
+/** Endpoint kèm lần giao mới nhất (`last_delivery`), như danh sách và trang một endpoint của core. */
+function withLast(endpoint: Endpoint): Endpoint {
+  const last = deliveries.get(endpoint.id)?.[0];
+  return {
+    ...endpoint,
+    last_delivery: last
+      ? {
+          id: last.id,
+          event_name: last.event_name,
+          status: last.status,
+          response_status: last.response_status ?? null,
+          last_attempt_at: last.last_attempt_at ?? null,
+          created_at: last.created_at,
+        }
+      : null,
+  };
+}
+
 function forbidden(response: ServerResponse, permission: string) {
   problem(response, 403, "permission_denied", `Missing permission \`${permission}\`.`);
 }
@@ -113,12 +154,71 @@ function secret(): string {
   return `whsec_${randomBytes(18).toString("base64url")}`;
 }
 
+/**
+ * Xác nhận lại khi tạo API key, như core (D-272): đúng một trong mật khẩu, mã TOTP, passkey. Trả
+ * hàm trả lỗi khi bị từ chối, `null` khi đúng.
+ */
+function confirmation(
+  body: Record<string, unknown>,
+  account: Account,
+): ((response: ServerResponse) => void) | null {
+  const password = typeof body.current_password === "string";
+  const totp = typeof body.totp_code === "string";
+  const ceremony = typeof body.passkey_ceremony_id === "string";
+  if (Number(password) + Number(totp) + Number(ceremony) !== 1) {
+    return (response) =>
+      problem(response, 422, "validation_failed", "The request has invalid fields.", [
+        {
+          field: "current_password",
+          code: "confirmation",
+          detail: "send exactly one of current_password, totp_code or a passkey",
+        },
+      ]);
+  }
+  if (password) {
+    return text(body, "current_password") === account.password
+      ? null
+      : (response) =>
+          problem(response, 400, "auth.wrong_password", "The current password is incorrect.");
+  }
+  if (totp) {
+    if (!account.mfa) {
+      return (response) =>
+        problem(response, 409, "auth.mfa_not_enabled", "Two-step sign-in is off for you.");
+    }
+    return text(body, "totp_code") === "123456"
+      ? null
+      : (response) =>
+          problem(response, 422, "validation_failed", "The request has invalid fields.", [
+            { field: "totp_code", code: "invalid", detail: "is not a current code from your app" },
+          ]);
+  }
+  const id = text(body, "passkey_ceremony_id");
+  const credential = body.passkey_credential as { id?: unknown } | null | undefined;
+  const known = loginCeremonies.delete(id);
+  if (
+    !known ||
+    typeof credential?.id !== "string" ||
+    !account.credentialIds.includes(credential.id)
+  ) {
+    return (response) =>
+      problem(
+        response,
+        401,
+        "auth.passkey_sign_in_failed",
+        "The passkey is not one of yours, or its answer is not valid.",
+      );
+  }
+  return null;
+}
+
 /** Endpoint của phần Cài đặt. Trả `true` khi đã trả lời. */
 export async function settingsRoutes(
   request: IncomingMessage,
   response: ServerResponse,
   url: URL,
   account: Account,
+  accounts: () => Account[],
 ): Promise<boolean> {
   const path = url.pathname;
   const method = request.method ?? "GET";
@@ -159,11 +259,16 @@ export async function settingsRoutes(
       return true;
     }
     if (path === "/api/v1/webhooks" && method === "GET") {
-      send(
-        response,
-        200,
-        page([...endpoints].reverse(), url) satisfies Schemas["Page_EndpointResponse"],
-      );
+      const status = url.searchParams.get("status");
+      if (status && status !== "active" && status !== "disabled") {
+        problem(response, 400, "bad_request", "A query parameter has an invalid value.");
+        return true;
+      }
+      const list = [...endpoints]
+        .reverse()
+        .filter((e) => !status || (status === "disabled") === Boolean(e.disabled_at))
+        .map(withLast);
+      send(response, 200, page(list, url) satisfies Schemas["Page_EndpointResponse"]);
       return true;
     }
     if (path === "/api/v1/webhooks" && method === "POST") {
@@ -213,7 +318,7 @@ export async function settingsRoutes(
     }
     if (!tail && method === "GET") {
       response.setHeader("ETag", `"${endpoint.updated_at}"`);
-      send(response, 200, { data: endpoint } satisfies Schemas["Data_EndpointResponse"]);
+      send(response, 200, { data: withLast(endpoint) } satisfies Schemas["Data_EndpointResponse"]);
       return true;
     }
     if (!tail && method === "PATCH") {
@@ -261,8 +366,9 @@ export async function settingsRoutes(
     }
     if (path === "/api/v1/auth/api-keys" && method === "POST") {
       const body = await json(request);
-      if (text(body, "current_password") !== account.password) {
-        problem(response, 400, "auth.wrong_password", "The current password is incorrect.");
+      const refused = confirmation(body, account);
+      if (refused) {
+        refused(response);
         return true;
       }
       const permissions = Array.isArray(body.permissions) ? (body.permissions as string[]) : [];
@@ -312,6 +418,43 @@ export async function settingsRoutes(
     return false;
   }
 
+  if (path.startsWith("/api/v1/auth/all-api-keys")) {
+    if (!admin) {
+      forbidden(response, "auth.api_keys.manage");
+      return true;
+    }
+    if (path === "/api/v1/auth/all-api-keys" && method === "GET") {
+      const user = url.searchParams.get("user_id");
+      const list = keys
+        .filter((k) => !user || k.owner === user)
+        .reverse()
+        .map(({ owner, ...key }) => {
+          const who = accounts().find((a) => a.id === owner && !a.deleted);
+          return {
+            ...key,
+            user_id: owner,
+            user_name: who?.name ?? null,
+            user_email: who?.email ?? null,
+          };
+        });
+      send(response, 200, page(list, url) satisfies Schemas["Page_ManagedApiKeyResponse"]);
+      return true;
+    }
+    const id = path.slice("/api/v1/auth/all-api-keys/".length);
+    if (method === "DELETE" && id) {
+      const found = keys.find((k) => k.id === id);
+      if (!found) {
+        problem(response, 404, "auth.api_key_not_found", "No key has this id.");
+        return true;
+      }
+      keys = keys.filter((k) => k !== found);
+      record(account, "auth.api_key_revoked", `auth.api_key:${found.id}`);
+      empty(response, 204);
+      return true;
+    }
+    return false;
+  }
+
   // ------------------------------------------------------------ Audit
   if (path.startsWith("/api/v1/audit")) {
     if (!admin) {
@@ -327,7 +470,24 @@ export async function settingsRoutes(
           (!q.get("subject") || e.subject === q.get("subject")) &&
           (!q.get("actor_user_id") || e.actor_user_id === q.get("actor_user_id")),
       );
-      send(response, 200, page(list, url) satisfies Schemas["Page_AuditEntryResponse"]);
+      const include = q.get("include");
+      if (include && include !== "actor") {
+        problem(response, 400, "bad_request", "A query parameter has an invalid value.");
+        return true;
+      }
+      const named =
+        include === "actor"
+          ? list.map((e) =>
+              e.actor_user_id
+                ? {
+                    ...e,
+                    actor_name:
+                      accounts().find((a) => a.id === e.actor_user_id && !a.deleted)?.name ?? null,
+                  }
+                : e,
+            )
+          : list;
+      send(response, 200, page(named, url) satisfies Schemas["Page_AuditEntryResponse"]);
       return true;
     }
     const entry = audit.find((e) => e.id === path.slice("/api/v1/audit/".length));

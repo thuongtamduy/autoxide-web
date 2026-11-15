@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ceremonyErrorKey, creationOptionsJson } from "./webauthn";
+import { ceremonyErrorKey, creationOptionsJson, requestOptionsJson } from "./webauthn";
 
 describe("creationOptionsJson", () => {
   const inner = { challenge: "c", rp: { id: "localhost", name: "x" } };
@@ -7,6 +7,15 @@ describe("creationOptionsJson", () => {
   it("nhận options trần và options bọc trong publicKey", () => {
     expect(creationOptionsJson(inner)).toBe(inner);
     expect(creationOptionsJson({ publicKey: inner })).toBe(inner);
+  });
+});
+
+describe("requestOptionsJson", () => {
+  const inner = { challenge: "c", rpId: "localhost" };
+
+  it("nhận options trần và options bọc trong publicKey", () => {
+    expect(requestOptionsJson(inner)).toBe(inner);
+    expect(requestOptionsJson({ publicKey: inner })).toBe(inner);
   });
 });
 

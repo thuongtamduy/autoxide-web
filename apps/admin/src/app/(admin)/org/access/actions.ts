@@ -128,7 +128,12 @@ export async function setFirstPassword(state: FormState, formData: FormData): Pr
       body: input.data,
     }),
   );
-  if (!result.ok) return problemState(result.problem, ["password"]);
+  if (!result.ok) {
+    // Đã có mật khẩu (đặt ở nơi khác): tải lại để dòng này biến mất.
+    if (result.problem.code === "auth.password_already_set") refresh();
+    return problemState(result.problem, ["password"]);
+  }
+  refresh();
   return { done: nextDone(state) };
 }
 
@@ -166,7 +171,11 @@ export async function removeUserMfa(state: FormState, formData: FormData): Promi
   const result = await send((client) =>
     client.DELETE("/api/v1/auth/users/{id}/mfa", { params: { path: { id: idOf(formData) } } }),
   );
-  if (!result.ok) return problemState(result.problem, []);
+  if (!result.ok) {
+    if (result.problem.code === "auth.mfa_not_enabled") refresh();
+    return problemState(result.problem, []);
+  }
+  refresh();
   return { done: nextDone(state) };
 }
 

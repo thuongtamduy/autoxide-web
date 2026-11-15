@@ -5,9 +5,10 @@ import "server-only";
 // chung một lần đọc mỗi nguồn.
 import type { components } from "@autoxide/sdk";
 import { cache } from "react";
-import { actorNames } from "@/app/(admin)/settings/(general)/audit/actors";
-import { coreClient, isForbidden, isNotFound, load } from "@/lib/core";
-import { AUDIT_READ, USERS_READ } from "@/lib/permissions";
+import { allRoles } from "@/lib/access";
+import { actorNames } from "@/lib/audit";
+import { isForbidden, isNotFound, load } from "@/lib/core";
+import { AUDIT_READ, ROLES_READ, USERS_READ } from "@/lib/permissions";
 import { getMe, getModules } from "@/lib/viewer";
 import { holds, NAV, type Viewer } from "@/nav/nav";
 import { sampleDataEnabled } from "@/sample";
@@ -119,8 +120,11 @@ export interface Candidate {
 }
 
 /**
- * Người có thể được giao việc: người dùng của core (trang đầu, 50 người) kèm permission theo role. Người
- * xem không đọc được danh sách người dùng (`auth.users.read`) thì chỉ giao được cho chính mình.
+ * Người có thể được giao việc: người dùng đang dùng của core (trang đầu, 50 người) kèm role của từng
+ * người trong cùng câu trả lời (`include=roles&status=active`), permission tra theo sổ role
+ * (`GET /auth/roles`, một lời gọi). Người xem không đọc được danh sách người dùng (`auth.users.read`)
+ * thì chỉ giao được cho chính mình; không đọc được sổ role (`auth.roles.read`) thì không biết
+ * permission của người khác: họ chỉ được coi là xử lý được việc không đòi permission.
  */
 export const assignCandidates = cache(async (): Promise<Candidate[]> => {
   const [me, ctx] = await Promise.all([getMe(), workContext()]);
@@ -130,30 +134,26 @@ export const assignCandidates = cache(async (): Promise<Candidate[]> => {
     permissions: me.all_permissions ? "all" : me.permissions,
   };
   if (!ctx.can(USERS_READ)) return [self];
-  const page = await load((client) =>
-    client.GET("/api/v1/auth/users", { params: { query: { limit: 50 } } }),
-  );
-  const client = await coreClient();
-  const people = await Promise.all(
-    page.data
-      .filter((user: User) => !user.disabled_at)
-      .map(async (user: User): Promise<Candidate | null> => {
-        if (user.id === me.id) return self;
-        const { data } = await client.GET("/api/v1/auth/users/{id}/roles", {
-          params: { path: { id: user.id } },
-        });
-        const roles: Role[] = data?.data ?? [];
-        if (!data) return null;
-        return {
-          id: user.id,
-          name: user.name || user.email,
-          permissions: roles.some((r) => r.all_permissions)
-            ? "all"
-            : [...new Set(roles.flatMap((r) => r.permissions))],
-        };
+  const [page, roles] = await Promise.all([
+    load((client) =>
+      client.GET("/api/v1/auth/users", {
+        params: { query: { limit: 50, status: "active", include: "roles" } },
       }),
-  );
-  return people.filter((p): p is Candidate => p !== null);
+    ),
+    ctx.can(ROLES_READ) ? allRoles() : Promise.resolve([] as Role[]),
+  ]);
+  const byId = new Map(roles.map((role) => [role.id, role]));
+  return page.data.map((user: User): Candidate => {
+    if (user.id === me.id) return self;
+    const held = (user.roles ?? []).map((r) => byId.get(r.id)).filter((r): r is Role => !!r);
+    return {
+      id: user.id,
+      name: user.name || user.email,
+      permissions: held.some((r) => r.all_permissions)
+        ? "all"
+        : [...new Set(held.flatMap((r) => r.permissions))],
+    };
+  });
 });
 
 /** Người này xử lý được việc của nguồn `sourceId` (có một trong các permission của nguồn). */
@@ -177,7 +177,7 @@ export const recentActivity = cache(
     let page: components["schemas"]["Page_AuditEntryResponse"];
     try {
       page = await load((client) =>
-        client.GET("/api/v1/audit", { params: { query: { limit: 200 } } }),
+        client.GET("/api/v1/audit", { params: { query: { limit: 200, include: "actor" } } }),
       );
     } catch (error) {
       // Không có module `audit` (404) hay core từ chối (403): không có khối hoạt động.
@@ -185,8 +185,7 @@ export const recentActivity = cache(
       throw error;
     }
     const lines = activityLines(page.data, limit);
-    // Tên người làm: đọc từ core khi người xem có `auth.users.read` (mỗi người một lần, song song).
-    const names = await actorNames(lines.map((l) => (l.actor.kind === "user" ? l.actor.id : null)));
-    return { lines, names };
+    // Tên người làm đi cùng mỗi mục (`include=actor`), không gọi thêm cho từng người.
+    return { lines, names: actorNames(page.data) };
   },
 );

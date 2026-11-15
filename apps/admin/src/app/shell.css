@@ -1721,3 +1721,40 @@
     box-shadow: none;
   }
 }
+
+/* Chọn một trong vài cách (vd cách xác nhận lại khi tạo API key): nút radio dạng phân đoạn */
+.ax .rseg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--panel);
+  gap: 2px;
+}
+.ax .rseg label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.ax .rseg label:has(input:checked) {
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(20, 23, 31, 0.12);
+}
+.ax .rseg input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.ax .rseg label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

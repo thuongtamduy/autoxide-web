@@ -29,11 +29,18 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
   library** (upload, folders, tags, alt text per language with optional AI suggestions, trash).
 - **Marketing**: forms and their submissions (CSV export, also in the background for large forms),
   newsletter lists, campaigns and subscribers, comment moderation (plain text or Markdown).
-- **Organization › Users and roles**: accounts, roles with a permission picker (risky permissions
-  are labelled), sign-out everywhere, two-step sign-in reset, removing the passkeys of someone who
+- **Organization › Users and roles**: accounts with their roles, status filter and last sign-in,
+  roles with a permission picker (risky permissions are labelled), first password and two-step
+  sign-in reset only where they apply, sign-out everywhere, removing the passkeys of someone who
   lost their device.
-- **Settings**: modules, webhooks, audit log, API keys and AI agents (MCP), developer tools.
-- **My account**: profile, email and password, two-step sign-in, passkeys, devices, your data.
+- **Settings**: modules, per-customer settings, webhooks (with their last delivery), audit log,
+  API keys and AI agents (MCP; confirm a new key with a password, an authenticator code or a
+  passkey; administrators see and revoke everyone's keys), developer tools.
+- **My account**: profile, email and password (cancel a pending email change; an account without a
+  password gets a link to set one), two-step sign-in, passkeys with their kind, devices with how and
+  from which country they signed in, your data.
+- **Platform console › Customers and Database fleet**: the customers and placements of the core;
+  add, rename, suspend and resume a customer.
 - **Pages opened from mail** (no sign-in): verify an email, forgot and reset password, and "it was
   not me" when someone else changed your email.
 
@@ -41,13 +48,14 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
 builds them in later steps: Sales (orders, returns, counter sales, shipping and COD, stores,
 sales channels), Products (catalog, prices, tax groups, inventory), Marketing (promotions,
 affiliate marketing), Customers, Marketplace and the Seller Center, Finance (ledger, e-invoices,
-tax), Organization tree, Compliance, and the Platform console. Parts of the real screens the core
+tax), Organization tree, Compliance, and the rest of the Platform console (plans, subscriptions,
+provisioning, health, customer data access). Parts of the real screens the core
 has no API for yet use sample data the same way. Sample data shows only when
 `AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes there are kept in the
 app's memory and lost on restart. The sample records agree across screens (an order, its
 shipment, its ledger entries and its invoice are the same order).
 
-Works with Autoxide core from commit `e2c3596` of its `main` branch or newer (the next release,
+Works with Autoxide core from commit `27380c9` of its `main` branch or newer (the next release,
 v0.15.0, will include it).
 
 ## Requirements

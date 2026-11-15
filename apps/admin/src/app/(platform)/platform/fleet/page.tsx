@@ -1,5 +1,4 @@
 import { getTranslations } from "next-intl/server";
-import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
 import {
   dryRunMigrations,
   migrateFleet,
@@ -13,30 +12,50 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { oneOf, type SearchParams } from "@/lib/engage";
 import { PLACEMENTS_READ, TENANTS_MANAGE } from "@/lib/permissions";
+import {
+  type PlatformData,
+  platformData,
+  platformGate,
+  platformRefused,
+} from "@/lib/platform-server";
 import { can } from "@/lib/viewer";
-import { getDryRuns, listPlacements, listTenants } from "@/sample/platform";
-import type { SchemaState } from "@/sample/platform-data";
+import { sampleDataEnabled } from "@/sample";
+import { getDryRuns } from "@/sample/platform";
+import type { SchemaState, Store } from "@/sample/platform-data";
 
 const STATES: readonly SchemaState[] = ["behind", "migrating", "ready"];
 const ENDPOINTS =
-  "GET /api/v1/kernel/placements (bước 33); mới: POST /api/v1/kernel/placements/migrations {placement_id?, dry_run} (core mới có CLI autoxide migrate up --all)";
+  "mới: POST /api/v1/kernel/placements/migrations {placement_id?, dry_run} (core mới có CLI autoxide migrate up --all)";
 
-// Màn "Đội database" (dữ liệu mẫu, W-014): các nơi lưu (placement) dùng chung hay riêng, trạng thái
-// migration. Migrate luôn chạy thử trước; placement thiếu migration thì chỉ khách trên đó nhận 503.
+// Màn "Đội database": placement THẬT của core (`GET /kernel/placements`, bước 33) — dùng chung hay
+// riêng, backend, trạng thái migration — và số khách trên mỗi placement. Core chưa có API chạy
+// migration (chỉ CLI `autoxide migrate up --all`): nút chạy thử / migrate là dữ liệu mẫu (W-014), chỉ
+// cho placement mẫu khi bật dữ liệu mẫu.
 export default async function FleetPage(props: { searchParams: Promise<SearchParams> }) {
-  const gate = await sampleGate(PLACEMENTS_READ);
+  const gate = await platformGate(PLACEMENTS_READ);
   if (gate) return gate;
   const t = await getTranslations("platform.fleet");
   const tp = await getTranslations("platform");
   const state = oneOf(await props.searchParams, "state", STATES);
-  const [{ data: all }, { data: tenants }, { data: dryRuns }, manage] = await Promise.all([
-    listPlacements(),
-    listTenants(),
-    getDryRuns(),
+  const sample = sampleDataEnabled();
+  let data: PlatformData;
+  try {
+    data = await platformData();
+  } catch (error) {
+    const refused = await platformRefused(error);
+    if (refused) return refused;
+    throw error;
+  }
+  const { placements: all, tenants } = data;
+  const [dryRuns, manage] = await Promise.all([
+    sample
+      ? getDryRuns().then((r) => r.data)
+      : Promise.resolve<Store["dryRuns"]>({ fleet: null, placements: {}, moves: {} }),
     can(TENANTS_MANAGE),
   ]);
   const placements = all.filter((p) => !state || p.schema_state === state);
-  const behind = all.filter((p) => p.schema_state === "behind");
+  // Chỉ placement mẫu chạy được migration bằng nút (mẫu); placement của core dùng CLI.
+  const behind = all.filter((p) => p.schema_state === "behind" && p.source === "sample");
   const fleet = dryRuns.fleet;
   return (
     <div className="page">
@@ -44,8 +63,8 @@ export default async function FleetPage(props: { searchParams: Promise<SearchPar
         crumb={t("crumb")}
         title={t("title")}
         description={t("description")}
-        step="33"
-        endpoint={ENDPOINTS}
+        step={sample ? "mới" : undefined}
+        endpoint={sample ? ENDPOINTS : undefined}
         actions={
           manage && behind.length > 0 ? (
             <InlineAction
@@ -152,6 +171,9 @@ export default async function FleetPage(props: { searchParams: Promise<SearchPar
                     <Td className="rt-title">
                       <span className="cell2">
                         <b className="mono">{p.name}</b>
+                        {p.source === "sample" ? (
+                          <span className="tag">{tp("tenants.sampleRow")}</span>
+                        ) : null}
                         <span className="sub">{p.control ? t("control") : p.location}</span>
                       </span>
                     </Td>
@@ -184,7 +206,7 @@ export default async function FleetPage(props: { searchParams: Promise<SearchPar
                       </span>
                     </Td>
                     <Td className="rt-acts">
-                      {manage && p.schema_state === "behind" ? (
+                      {manage && p.schema_state === "behind" && p.source === "sample" ? (
                         <div className="eg-acts">
                           <InlineAction
                             action={dryRunMigrations}

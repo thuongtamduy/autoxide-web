@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { linkReason } from "@/lib/form";
 import { reportEmailChange } from "../actions";
 import { PublicAlert } from "../field";
 
@@ -26,8 +27,8 @@ export function NotMeForm({ token }: { token: string }) {
       </>
     );
   }
-  // Token sai, đã dùng, hết hạn hay tài khoản đã xoá: core trả chung một mã, không cho dò gì.
-  const invalid = state.code === "auth.invalid_email_change_report_token";
+  // Token bị từ chối: core nói rõ hết hạn (7 ngày), đã dùng hay không biết (`reason`).
+  const reason = linkReason(state, "auth.invalid_email_change_report_token");
   return (
     <>
       <CardHeader>
@@ -38,8 +39,11 @@ export function NotMeForm({ token }: { token: string }) {
         <form action={action} className="grid gap-4">
           <input type="hidden" name="token" value={token} />
           <p className="text-sm text-muted-foreground">{t("effects")}</p>
-          <PublicAlert error={state.error} code={state.code} />
-          {invalid ? <p className="text-sm text-muted-foreground">{t("invalidHint")}</p> : null}
+          <PublicAlert
+            error={reason ? t(`reasons.${reason}`) : state.error}
+            code={state.code}
+            reason={reason ?? undefined}
+          />
           <Button type="submit" disabled={pending}>
             {t("submit")}
           </Button>

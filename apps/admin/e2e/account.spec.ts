@@ -68,6 +68,17 @@ test("menu tài khoản mở màn; hồ sơ: gửi lại thư xác minh, đổi 
   await box.getByRole("button", { name: "Send verification mail" }).click();
   await expect(dialog(page)).toHaveCount(0);
   await expect(toast(page)).toHaveText("A verification mail is on its way to ada@example.org.");
+
+  // Email đang chờ xác minh (`pending_email` của core), huỷ được; email hiện tại giữ nguyên.
+  const pending = page.getByTestId("pending-email");
+  await expect(pending).toContainText("ada@example.org");
+  await expect(pending).toContainText("Waiting for confirmation");
+  await pending.getByRole("button", { name: "Cancel change" }).click();
+  await expect(toast(page)).toHaveText(
+    "Cancelled the change to ada@example.org. Your email stays as it is.",
+  );
+  await expect(page.getByTestId("pending-email")).toHaveCount(0);
+  await expect(page.getByTestId("account-email")).toHaveText("admin@example.com");
 });
 
 test("đổi mật khẩu: lỗi của core dưới ô; xong vẫn đăng nhập bằng phiên mới", async ({
@@ -209,6 +220,31 @@ test("passkey: thêm qua WebAuthn của trình duyệt, hiện trong danh sách,
   await expect(page.getByText("No passkey yet.")).toBeVisible();
 });
 
+test("tài khoản chưa có mật khẩu: xin thư đặt mật khẩu đầu tiên; xoá tài khoản chỉ sang đặt mật khẩu", async ({
+  page,
+  request,
+}) => {
+  await signIn(page, "/account/security");
+  const row = page.getByTestId("password");
+  await expect(row.getByRole("button", { name: "Change password" })).toBeVisible();
+  await request.post(`${CORE}/__no-password`, { data: { email: "admin@example.com" } });
+  await page.reload();
+  await expect(row).toContainText("Your account has no password");
+  await expect(row.getByRole("button", { name: "Change password" })).toHaveCount(0);
+  // Máy chủ chưa gửi thư thật (`mail.sends` của cấu hình cho giao diện): nói trước.
+  await expect(page.getByText("This server does not send mail yet")).toBeVisible();
+  await row.getByRole("button", { name: "Send me the link" }).click();
+  await expect(toast(page)).toContainText("A mail with a link to choose your password");
+  expect((await (await request.get(`${CORE}/__resets`)).json()).emails).toEqual([
+    "admin@example.com",
+  ]);
+
+  await page.goto("/account/data");
+  await expect(page.getByRole("button", { name: "Delete account" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Set a password" }).click();
+  await expect(page).toHaveURL(/\/account\/security$/);
+});
+
 test("phiên: đánh dấu phiên này, đăng xuất một thiết bị, đăng xuất mọi thiết bị khác", async ({
   page,
   request,
@@ -216,13 +252,21 @@ test("phiên: đánh dấu phiên này, đăng xuất một thiết bị, đăng
   await signIn(page, "/account/sessions");
   for (const agent of [FIREFOX, IPHONE]) {
     await request.post(`${CORE}/__sessions`, {
-      data: { email: "admin@example.com", user_agent: agent },
+      data: {
+        email: "admin@example.com",
+        user_agent: agent,
+        ...(agent === IPHONE ? { method: "passkey", country: "VN" } : {}),
+      },
     });
   }
   await page.reload();
   const rows = page.locator("tbody tr");
   await expect(rows).toHaveCount(3);
   await expect(rows.filter({ hasText: "Mobile Safari on iOS" })).toHaveCount(1);
+  // Cách đăng nhập và quốc gia gần đúng của mỗi phiên (core không lưu IP).
+  await expect(rows.filter({ hasText: "Mobile Safari on iOS" })).toContainText("Passkey");
+  await expect(rows.filter({ hasText: "Mobile Safari on iOS" })).toContainText("Vietnam");
+  await expect(page.locator("tbody tr[data-current]")).toContainText("Password");
   // Phiên của trình duyệt này: core lưu User-Agent mà máy chủ chuyển tiếp lúc đăng nhập.
   const mine = page.locator("tbody tr[data-current]");
   await expect(mine).toContainText("This session");

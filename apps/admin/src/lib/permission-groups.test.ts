@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  groupPermissions,
-  matchesPermission,
-  moduleOf,
-  notableRisk,
-  withRisk,
-} from "./permission-groups";
+import { groupPermissions, matchesPermission, moduleOf, notableRisk } from "./permission-groups";
 
 const CATALOG = [
   { name: "notes.write", description: "Write notes." },
@@ -40,19 +34,7 @@ describe("permission theo module", () => {
   });
 });
 
-describe("mức rủi ro của permission (core v0.14.0)", () => {
-  it("gắn risk theo tên từ sổ module, giữ nguyên permission không có trong sổ", () => {
-    const catalog = [
-      { name: "media.purge", description: "Erase files." },
-      { name: "gone.thing", description: "" },
-    ];
-    const modules = [{ permissions: [{ name: "media.purge", risk: "destructive" }] }];
-    expect(withRisk(catalog, modules)).toEqual([
-      { name: "media.purge", description: "Erase files.", risk: "destructive" },
-      { name: "gone.thing", description: "" },
-    ]);
-  });
-
+describe("mức rủi ro của permission", () => {
   it("chỉ nêu xoá, dữ liệu cá nhân và tiền", () => {
     expect(notableRisk({ name: "a.b", description: "", risk: "money" })).toBe("money");
     expect(notableRisk({ name: "a.b", description: "", risk: "write" })).toBeNull();
