@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isLocale, LOCALE_COOKIE } from "@/i18n/locales";
 import { anonymousClient } from "@/lib/core";
 import { ACCESS_COOKIE, MFA_COOKIE, REFRESH_COOKIE } from "@/lib/session";
+import { isTheme, THEME_COOKIE } from "@/lib/theme";
 
 /** Đăng xuất: kết thúc phiên ở core rồi xoá cookie. */
 export async function signOut(): Promise<void> {
@@ -22,6 +23,20 @@ export async function signOut(): Promise<void> {
     store.delete(name);
   }
   redirect("/login");
+}
+
+/** Đổi giao diện sáng / tối / theo máy (cookie giữ một năm; "theo máy" thì xoá cookie). */
+export async function setTheme(formData: FormData): Promise<void> {
+  const theme = formData.get("theme");
+  if (!isTheme(theme)) {
+    return;
+  }
+  const store = await cookies();
+  if (theme === "system") {
+    store.delete(THEME_COOKIE);
+  } else {
+    store.set(THEME_COOKIE, theme, { path: "/", sameSite: "lax", maxAge: 365 * 24 * 60 * 60 });
+  }
 }
 
 /** Đổi ngôn ngữ giao diện (cookie giữ một năm). */

@@ -8,10 +8,18 @@ core.
 
 ## Status
 
-First screen: **modules**. It lists the modules installed in the core server and what each
-declares: permissions, events, jobs, schedules, MCP tools, deprecated endpoints and migration
-status. The screen is read-only: modules are compiled into the core, so installing or removing
-one means rebuilding the core.
+The admin frame follows the Autoxide admin design: an area bar (bottom bar on phones), a menu for
+the screens of each area, a command palette (Ctrl K / ⌘K) and light, dark or system appearance.
+An area shows up only when its module is installed in the core and your role grants its
+permission.
+
+Screens so far:
+
+- **Overview**: the areas you can use.
+- **Settings › Modules**: the modules installed in the core server and what each declares:
+  permissions, events, jobs, schedules, MCP tools, deprecated endpoints and migration status.
+  The screen is read-only: modules are compiled into the core, so installing or removing one
+  means rebuilding the core.
 
 Works with Autoxide core **v0.5.0** or newer.
 

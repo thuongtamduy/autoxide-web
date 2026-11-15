@@ -4,9 +4,21 @@
     "admin": "Admin"
   },
   "nav": {
-    "modules": "Modules",
     "signOut": "Sign out",
-    "language": "Language"
+    "language": "Language",
+    "groups": {
+      "home": "Overview",
+      "settings": "Settings"
+    },
+    "pages": {
+      "dashboard": "Dashboard",
+      "modules": "Modules",
+      "account": "My account"
+    },
+    "about": {
+      "dashboard": "Greeting and a way into every area you can use.",
+      "modules": "Modules installed on this server: permissions, events, jobs, migrations."
+    }
   },
   "login": {
     "title": "Sign in",
@@ -74,5 +86,31 @@
     "failedTitle": "Something went wrong",
     "failed": "The page could not be loaded. Try again; if it keeps failing, check that the Autoxide server is running.",
     "retry": "Try again"
+  },
+  "shell": {
+    "home": "Autoxide admin, go to the overview",
+    "areas": "Areas",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "collapseLabel": "Collapse the area bar",
+    "search": "Search and run commands",
+    "searchShort": "Search",
+    "searchHint": "Search all areas…",
+    "searchPlaceholder": "Find a page or an area…",
+    "goTo": "Go to",
+    "noMatch": "No page matches. Try the name of an area, such as \"modules\".",
+    "quickNav": "Quick navigation",
+    "close": "Close",
+    "theme": "Appearance",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "account": "Account",
+    "accountMenu": "Account menu of {name}"
+  },
+  "dashboard": {
+    "hello": "Hello, {name}",
+    "description": "Every area you can use on this server. Areas appear here once their module is installed and your role grants their permission.",
+    "nothing": "No area is available to you yet. Ask an administrator to add a role with the permissions you need."
   }
 }

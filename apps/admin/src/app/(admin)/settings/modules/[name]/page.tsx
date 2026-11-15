@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { isForbidden, load } from "@/lib/core";
 import { MODULES_READ } from "@/lib/permissions";
 
-export default async function ModulePage(props: PageProps<"/modules/[name]">) {
+export default async function ModulePage(props: PageProps<"/settings/modules/[name]">) {
   const { name } = await props.params;
   const t = await getTranslations();
   let module: ModuleInfo;
@@ -33,7 +33,7 @@ export default async function ModulePage(props: PageProps<"/modules/[name]">) {
   return (
     <div className="grid gap-6">
       <div className="grid gap-2">
-        <Link href="/modules" className="text-sm text-primary hover:underline">
+        <Link href="/settings/modules" className="text-sm text-primary hover:underline">
           ← {t("modules.back")}
         </Link>
         <div className="flex flex-wrap items-center gap-3">

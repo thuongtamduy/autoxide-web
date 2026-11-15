@@ -8,10 +8,16 @@ core đã đăng nhập.
 
 ## Trạng thái
 
-Màn hình đầu tiên: **module**. Màn hình liệt kê các module đã cài trên máy chủ core và những gì
-mỗi module khai: permission, event, job, lịch chạy, tool MCP, endpoint deprecated và trạng thái
-migration. Màn hình chỉ xem: module được biên dịch cùng core, nên cài hay gỡ một module nghĩa là
-build lại core.
+Khung quản trị theo bản thiết kế quản trị của Autoxide: thanh phân hệ (thanh đáy trên điện
+thoại), menu các màn của từng phân hệ, bảng lệnh (Ctrl K / ⌘K) và giao diện sáng, tối hoặc theo
+máy. Một phân hệ chỉ hiện khi module của nó đã cài trên core và role của bạn có permission của nó.
+
+Các màn đã có:
+
+- **Tổng quan**: các phân hệ bạn dùng được.
+- **Cài đặt › Module**: các module đã cài trên máy chủ core và những gì mỗi module khai:
+  permission, event, job, lịch chạy, tool MCP, endpoint deprecated và trạng thái migration. Màn
+  hình chỉ xem: module được biên dịch cùng core, nên cài hay gỡ một module nghĩa là build lại core.
 
 Chạy với core Autoxide **v0.5.0** trở lên.
 

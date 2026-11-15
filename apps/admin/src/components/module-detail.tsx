@@ -183,7 +183,7 @@ function List({ head, rows, empty }: { head: string[]; rows: ReactNode[][]; empt
     return <None />;
   }
   return (
-    <Table>
+    <Table cards>
       <thead>
         <tr>
           {head.map((cell, index) => (
@@ -198,8 +198,14 @@ function List({ head, rows, empty }: { head: string[]; rows: ReactNode[][]; empt
           // biome-ignore lint/suspicious/noArrayIndexKey: dòng giữ đúng thứ tự core trả.
           <tr key={index}>
             {row.map((cell, column) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: cột cố định theo vị trí.
-              <Td key={column}>{cell}</Td>
+              <Td
+                // biome-ignore lint/suspicious/noArrayIndexKey: cột cố định theo vị trí.
+                key={column}
+                className={column === 0 ? "rt-title" : undefined}
+                label={column === 0 ? undefined : head[column]}
+              >
+                {cell}
+              </Td>
             ))}
           </tr>
         ))}

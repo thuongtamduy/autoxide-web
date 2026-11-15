@@ -68,3 +68,35 @@ Lý do: TypeScript 7 chưa có API JavaScript. Khi `openapi-typescript` hỗ tr�
 bản 5.
 
 Đã cân nhắc: giữ TypeScript 5 cho cả repo — lùi một bản lớn chỉ vì một công cụ sinh mã.
+
+## W-004 · Dựng giao diện theo bản thiết kế quản trị 2; sổ điều hướng tạm ở giao diện — 2026-11-15 — chủ dự án quyết hướng, agent quyết cách làm
+
+Quyết định:
+
+- Giao diện theo bản thiết kế quản trị 2 của core (`docs/research/ui-design.md` mục 2.3 và 7 của
+  core). Màu "Graphite & Oxide" sáng / tối là token CSS (`--bg`, `--ink`, `--accent`…); tên kiểu
+  shadcn/ui (`--background`, `--primary`…) trỏ vào cùng giá trị nên component cũ khớp màu.
+- Khung chung (`src/app/(admin)/layout.tsx`, `src/components/shell/`):
+  - thanh bên theo phân hệ (232px từ 1280px, thu gọn được);
+  - menu con hai bậc: các màn của phân hệ, rồi tab của màn;
+  - thanh đáy trên điện thoại (Tổng quan · Tìm · Phân hệ);
+  - bảng lệnh Ctrl K tìm không dấu;
+  - menu tài khoản có giao diện sáng / tối / theo máy và ngôn ngữ.
+- Sổ điều hướng nằm ở `src/nav/nav.ts`: một nguồn cho thanh bên, menu con, thanh đáy và bảng
+  lệnh. Mục chỉ hiện khi module của nó đã cài trên core và người dùng có permission. Khi core có
+  sổ điều hướng (bước 51 của core, `Module::navigation`) thì lấy từ core và bỏ file này.
+- Chỉ dựng màn có API trong `openapi.json`; màn của phân hệ chưa có module (bán hàng, sản phẩm…)
+  chờ core.
+- Màn Module dời vào Cài đặt (`/settings/modules`); đường dẫn cũ `/modules/…` chuyển hướng 308.
+- Giao diện sáng / tối lưu trong cookie `ax_theme` (không phải secret); không có cookie thì theo
+  máy. Đổi bằng Server Action như đổi ngôn ngữ, chạy được khi chưa tải JavaScript.
+- Bảng trên điện thoại thành thẻ: `Table cards` và `Td label` (nhãn cột hiện trước giá trị).
+- Chữ: Inter / JetBrains Mono khi máy có, không thì phông hệ thống. Chưa tải phông từ Google
+  Fonts, để build không cần mạng.
+
+Lý do: chủ dự án yêu cầu dựng theo bản thiết kế. Sổ điều hướng một nguồn là kết luận của lần rà
+soát bản thiết kế (R4): mỗi màn tự khai menu thì các màn trong cùng phân hệ lệch nhau.
+
+Đã cân nhắc: chép nguyên CSS của bản thiết kế — bản thiết kế có cả màn mẫu và lớp thử nghiệm,
+nên chỉ chép phần khung đang dùng. Dùng Radix cho popover và menu — HTML `popover` đã đủ
+(Esc, bấm ra ngoài để đóng, lớp trên cùng), không thêm thư viện.

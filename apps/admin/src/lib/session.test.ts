@@ -38,13 +38,13 @@ describe("safeNext", () => {
   it.each([
     ["/modules/auth", "/modules/auth"],
     ["/modules?x=1", "/modules?x=1"],
-    [undefined, "/modules"],
-    ["", "/modules"],
-    ["https://evil.example", "/modules"],
-    ["//evil.example", "/modules"],
-    ["/\\evil.example", "/modules"],
-    ["/login", "/modules"],
-    [["/a"], "/modules"],
+    [undefined, "/"],
+    ["", "/"],
+    ["https://evil.example", "/"],
+    ["//evil.example", "/"],
+    ["/\\evil.example", "/"],
+    ["/login", "/"],
+    [["/a"], "/"],
   ])("%j → %s", (input, expected) => {
     expect(safeNext(input)).toBe(expected);
   });

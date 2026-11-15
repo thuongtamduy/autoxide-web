@@ -8,8 +8,10 @@
 //
 // Access token chỉ sống 31 giây (cookie của trang quản trị hết sau 1 giây), để test đi qua
 // đường làm mới token. `GET /__stats` trả số lần làm mới; `POST /__reset` xoá trạng thái.
+
 import { randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import type { Me } from "@autoxide/sdk";
 import { KERNEL, NOTES } from "../src/test/fixtures.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
@@ -145,10 +147,12 @@ const server = createServer(async (request, response) => {
       data: {
         id: randomUUID(),
         email: account.email,
-        name: account.email.split("@")[0],
+        name: account.email.split("@")[0] ?? account.email,
+        email_verified_at: null,
         all_permissions: account.canReadModules,
+        permissions: [],
         created_at: "2026-11-12T00:00:00Z",
-      },
+      } satisfies Me,
     });
   }
   if (url.pathname.startsWith("/api/v1/kernel/modules")) {

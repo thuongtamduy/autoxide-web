@@ -11,7 +11,7 @@ export function ModuleTable({ modules }: { modules: ModuleInfo[] }) {
     return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
   }
   return (
-    <Table>
+    <Table cards>
       <thead>
         <tr>
           <Th className="w-16">{t("position")}</Th>
@@ -26,11 +26,13 @@ export function ModuleTable({ modules }: { modules: ModuleInfo[] }) {
       <tbody>
         {modules.map((module) => (
           <tr key={module.name} className="hover:bg-muted/60">
-            <Td className="tabular-nums text-muted-foreground">{module.position}</Td>
-            <Td>
+            <Td className="tabular-nums text-muted-foreground" label={t("position")}>
+              {module.position}
+            </Td>
+            <Td className="rt-title">
               <div className="flex items-center gap-2">
                 <Link
-                  href={`/modules/${encodeURIComponent(module.name)}`}
+                  href={`/settings/modules/${encodeURIComponent(module.name)}`}
                   className="font-mono font-medium text-primary hover:underline"
                 >
                   {module.name}
@@ -38,11 +40,21 @@ export function ModuleTable({ modules }: { modules: ModuleInfo[] }) {
                 {module.internal && <Badge>{t("internal")}</Badge>}
               </div>
             </Td>
-            <Td className="text-right tabular-nums">{module.permissions.length}</Td>
-            <Td className="text-right tabular-nums">{module.events.length}</Td>
-            <Td className="text-right tabular-nums">{module.jobs.length}</Td>
-            <Td className="text-right tabular-nums">{module.tools.length}</Td>
-            <Td className="text-right tabular-nums">{module.migrations.length}</Td>
+            <Td className="text-right tabular-nums" label={t("permissions")}>
+              {module.permissions.length}
+            </Td>
+            <Td className="text-right tabular-nums" label={t("events")}>
+              {module.events.length}
+            </Td>
+            <Td className="text-right tabular-nums" label={t("jobs")}>
+              {module.jobs.length}
+            </Td>
+            <Td className="text-right tabular-nums" label={t("tools")}>
+              {module.tools.length}
+            </Td>
+            <Td className="text-right tabular-nums" label={t("migrations")}>
+              {module.migrations.length}
+            </Td>
           </tr>
         ))}
       </tbody>

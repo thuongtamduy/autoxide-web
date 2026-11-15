@@ -4,9 +4,21 @@
     "admin": "Quản trị"
   },
   "nav": {
-    "modules": "Module",
     "signOut": "Đăng xuất",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "groups": {
+      "home": "Tổng quan",
+      "settings": "Cài đặt"
+    },
+    "pages": {
+      "dashboard": "Bảng điều khiển",
+      "modules": "Module",
+      "account": "Tài khoản của tôi"
+    },
+    "about": {
+      "dashboard": "Lời chào và lối vào mọi phân hệ bạn dùng được.",
+      "modules": "Các module đã cài trên máy chủ này: permission, event, job, migration."
+    }
   },
   "login": {
     "title": "Đăng nhập",
@@ -74,5 +86,31 @@
     "failedTitle": "Đã có lỗi",
     "failed": "Không tải được trang. Hãy thử lại; nếu vẫn lỗi, kiểm tra máy chủ Autoxide có đang chạy không.",
     "retry": "Thử lại"
+  },
+  "shell": {
+    "home": "Quản trị Autoxide, về tổng quan",
+    "areas": "Phân hệ",
+    "collapse": "Thu gọn",
+    "expand": "Mở rộng",
+    "collapseLabel": "Thu gọn thanh phân hệ",
+    "search": "Tìm và chạy lệnh",
+    "searchShort": "Tìm",
+    "searchHint": "Tìm trong mọi phân hệ…",
+    "searchPlaceholder": "Tìm màn hay phân hệ…",
+    "goTo": "Đi tới",
+    "noMatch": "Không thấy màn nào khớp. Thử gõ tên phân hệ, ví dụ \"module\".",
+    "quickNav": "Điều hướng nhanh",
+    "close": "Đóng",
+    "theme": "Giao diện",
+    "themeLight": "Sáng",
+    "themeDark": "Tối",
+    "themeSystem": "Theo máy",
+    "account": "Tài khoản",
+    "accountMenu": "Menu tài khoản của {name}"
+  },
+  "dashboard": {
+    "hello": "Chào {name}",
+    "description": "Mọi phân hệ bạn dùng được trên máy chủ này. Một phân hệ hiện ở đây khi module của nó đã cài và role của bạn có permission của nó.",
+    "nothing": "Bạn chưa dùng được phân hệ nào. Hãy nhờ quản trị viên gán một role có permission bạn cần."
   }
 }

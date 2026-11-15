@@ -64,10 +64,10 @@ export function mfaCookie(challenge: MfaChallenge, secure: boolean): CookieToSet
  */
 export function safeNext(value: unknown): string {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
-    return "/modules";
+    return "/";
   }
   if (value.startsWith("/\\") || value.startsWith("/login")) {
-    return "/modules";
+    return "/";
   }
   return value;
 }
