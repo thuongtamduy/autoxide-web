@@ -2,6 +2,7 @@ import type { components } from "@autoxide/sdk";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { TipHeading } from "@/components/help/info-tip";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { load } from "@/lib/core";
@@ -42,9 +43,9 @@ export default async function DeliveriesPage(props: PageProps<"/settings/develop
     <div className="blocks">
       <section className="block" aria-labelledby="dlv-h">
         <div className="block-head">
-          <h2 id="dlv-h" className="h2">
+          <TipHeading id="dlv-h" tip="deliveries">
             {t("deliveries")}
-          </h2>
+          </TipHeading>
           <Link className="btn sm" href="/settings/webhooks">
             {t("manageEndpoints")}
           </Link>

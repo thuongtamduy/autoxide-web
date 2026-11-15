@@ -37,6 +37,7 @@ import { roleOptions } from "./access/sample-gate";
 import { addUnit, archiveUnit, askSplit, dropSetting, putSetting } from "./actions";
 import "@/components/engage/engage.css";
 import "@/components/orgtree/orgtree.css";
+import { TipHeading } from "@/components/help/info-tip";
 
 const ENDPOINTS =
   "GET/POST /api/v1/organizations/units, GET /api/v1/auth/memberships?org_id=, GET/PUT/DELETE /api/v1/organizations/units/{id}/settings, POST /api/v1/organizations/units/{id}/split-requests";
@@ -324,9 +325,9 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
             </section>
 
             <section className="block" aria-labelledby="ot-settings-h">
-              <h2 id="ot-settings-h" className="h2">
+              <TipHeading id="ot-settings-h" tip="inherit">
                 {t("settings.title")}
-              </h2>
+              </TipHeading>
               <p className="fhint">{t("settings.hint")}</p>
               <div className="card tcard">
                 {settings.ok ? (
@@ -420,9 +421,9 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
             </section>
 
             <section className="block" aria-labelledby="ot-depth-h">
-              <h2 id="ot-depth-h" className="h2">
+              <TipHeading id="ot-depth-h" tip="depth">
                 {t("depth.title")}
-              </h2>
+              </TipHeading>
               <p className="fhint">{t("depth.hint")}</p>
               <ul className="card ot-depths">
                 {SCOPES.map((scope) => (

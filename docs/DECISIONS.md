@@ -1011,3 +1011,67 @@ thiếu (sổ đối tượng, API nhập menu cũ) giữ mẫu hoặc chỉ xem
 Đã cân nhắc: chạy nhập menu cũ từ giao diện bằng `POST /api/v1/menus` cho từng menu — chép logic của lệnh
 trên máy chủ vào giao diện, và `POST` kiểm đích còn lệnh nhập thì không; giữ kho mẫu cho phần nhập — tạo
 menu giả lẫn với menu thật; liệt kê loại thương mại chỉ khi core có — mất phần thiết kế cần thử.
+
+## W-023 · Trợ giúp trong giao diện: nút "?", hộp ⓘ, thẻ giới thiệu, cờ theo người dùng của core — 2026-11-15 — agent quyết
+
+Bối cảnh: thiết kế mục 6 của core (`docs/research/ui-design.md`, "Trợ giúp trong giao diện") có ba mẫu
+cho trang quản trị: bảng Trợ giúp theo trang mở từ nút "?", nút ⓘ (toggletip) cạnh tiêu đề mục, thẻ giới
+thiệu tính năng mới tắt được. Core v0.14.0 đã có cờ giao diện theo người dùng (D-207:
+`GET/PUT/DELETE /api/v1/me/flags`).
+
+Quyết định:
+
+- **Cờ ở core, không ở trình duyệt.** Gợi ý đã tắt: `hint.<id>` = `dismissed`; "Có gì mới" đã xem:
+  `whatsnew.seen` = phiên bản mới nhất đã xem. `src/help/server.ts` đọc mọi cờ một lần mỗi request
+  (`cache` của React); khung và trang dùng chung. Khung **không chờ** lời gọi cờ: nút "?" nhận một
+  promise (như số đếm của W-020) và đọc nó trong effect, không qua `Suspense` — đổi từ phần chờ sang
+  phần thật sẽ dựng lại nút và bảng, đóng bảng người dùng vừa mở khi máy chậm (e2e đã bắt được). Chưa
+  biết cờ thì chưa có chấm và mở bảng không ghi gì. Trang Đơn hàng thì chờ cờ (`cache`, cùng lần gọi với
+  khung) để thẻ giới thiệu không hiện rồi biến mất. Đọc lỗi gì cũng trả `null` và mọi gợi ý vẫn hiện (fail open): cờ chỉ để bớt làm phiền, không
+  được làm hỏng trang. Ghi qua Server Action `src/help/actions.ts` (SDK tự gắn `Idempotency-Key`; PUT
+  ghi đè nên gọi lại an toàn); trình duyệt chỉ gửi id gợi ý nằm trong danh sách `HINTS`, key và giá trị
+  do máy chủ dựng. Giao diện ẩn ngay (lạc quan); ghi không được thì lần tải sau gợi ý hiện lại.
+- **Nút "?" ở đầu mọi trang của khung** (cả ba không gian), phím `?` mở ở mọi màn (trừ khi đang gõ
+  chữ). Bảng là popover HTML: bên phải trên máy tính, tấm trượt từ đáy trên điện thoại. Nội dung theo
+  đường dẫn (`src/help/pages.ts`): Tổng quan `/`, Đơn hàng `/sales/orders`, Nội dung `/content`, Tổ chức
+  `/org` (gồm `/org/access`), Tuân thủ `/compliance`, Nền tảng `/platform`, Nhà phát triển
+  `/settings/developers`, API key `/settings/api-keys`; màn khác chỉ có tìm, phím tắt và "Có gì mới".
+  - Core chưa có API bài hướng dẫn: bài là tiêu đề và một câu tóm tắt ở `messages/` (`help.pages`). Bài
+    có màn liên quan thì là liên kết tới màn đó; không có thì chỉ là chữ — không có liên kết giả. Ô tìm
+    lọc mọi bài của mọi trang (không cần dấu).
+  - Màn kỹ thuật (Nền tảng, Nhà phát triển, API key) có lối tải `openapi.json` qua route sẵn có
+    `/settings/developers/openapi.json`.
+  - **Không có "Hỏi trợ lý AI" và "Liên hệ hỗ trợ"**: giao diện chưa có lối vào trợ lý, cũng chưa có
+    luồng liên hệ; thêm khi có, không dựng nút không làm gì.
+  - **"Có gì mới"** là danh sách tĩnh `src/help/whats-new.ts` (core chưa có nguồn tin cập nhật), phiên bản
+    là ngày phát hành thêm `.n`, so theo từng phần số. Nút "?" có chấm khi còn tin mới hơn
+    `whatsnew.seen`; mở bảng thì ghi cờ, chấm mất ngay, nhãn "Mới" còn trên tin trong lúc đang đọc.
+- **Nút ⓘ** (`InfoTip`, `TipHeading` ở `src/components/help/info-tip.tsx`): bấm hay chạm mới mở, popover
+  `auto`, đặt cạnh nút bằng CSS anchor positioning (trình duyệt chưa hỗ trợ thì hộp ở đáy màn hình);
+  trên điện thoại là tấm trượt từ đáy có nút "Đã hiểu". "Tìm hiểu thêm" đóng hộp và mở bảng Trợ giúp
+  của trang. Nút nằm **cạnh** thẻ tiêu đề, không nằm trong, để tên của tiêu đề (mà `aria-labelledby`
+  của mục và test dùng) giữ nguyên. 14 hộp trên các màn trên; chữ theo luật viết của thiết kế: tối đa ba
+  câu và một ví dụ, nêu căn cứ pháp luật kèm "cần đối chiếu văn bản gốc", không chứa thông tin bắt
+  buộc hay cảnh báo (những thứ đó vẫn hiện thẳng trên trang). Chữ trong hộp bổ sung cho dòng giải thích
+  đã có trên trang, không lặp lại; riêng "View đã lưu" của Đơn hàng thì dòng giải thích cũ chuyển vào
+  hộp (thẻ giới thiệu đã nói tính năng ngay trên đó).
+  - **Không có hộp định nghĩa số liệu** (thiết kế có "Doanh thu hôm nay tính thế nào?"): luật của thiết
+    kế là định nghĩa số liệu lấy từ máy chủ, mà `definition` của `GET /api/v1/kernel/summary` mới ở đặc
+    tả bước 51 P4 (D-207 mục 2). Cách tính doanh thu vẫn ghi ngay dưới khối như trước.
+- **Chú thích khi rê chuột** (`data-tip`, chỉ máy có chuột, sau 0,4 giây) chỉ cho nút chỉ có biểu
+  tượng: nút "?". Đầu trang thật chưa có nút sáng / tối hay thông báo như bản thiết kế.
+- **Thẻ giới thiệu** (`IntroCard`): Đơn hàng, "Lưu view cho bộ lọc hay dùng"; trang chỉ dựng thẻ khi cờ
+  `hint.saved_views` chưa có, nên đã tắt thì không hiện lại ở mọi thiết bị của tài khoản.
+- Core giả có `/api/v1/me/flags` (`e2e/mock-flags.ts`, theo tài khoản, trong bộ nhớ, đúng hình dạng
+  `openapi.json`, kiểm key / giá trị, 409 `kernel.flag_limit_reached`).
+
+Lý do: trợ giúp đúng lúc cạnh tính năng hiệu quả hơn hướng dẫn dạo đầu (thiết kế mục 6); lưu ở core vì
+lưu ở trình duyệt thì đổi máy là hiện lại.
+
+Đã cân nhắc: lưu cờ ở `localStorage` — đổi máy hiện lại, sai yêu cầu "lưu theo người dùng"; hộp mở khi
+rê chuột — không dùng được trên điện thoại, không chứa được nút; đặt bảng Trợ giúp vào từng trang —
+mỗi trang phải tự thêm, dễ sót, trong khi khung đã có ở mọi trang; bịa bài hướng dẫn có trang riêng hay
+nút trợ lý AI — liên kết giả.
+
+Thiếu ở core (ghi lại để thêm sau): API bài hướng dẫn theo trang, nguồn tin "Có gì mới", `definition`
+của số liệu (bước 51 P4).

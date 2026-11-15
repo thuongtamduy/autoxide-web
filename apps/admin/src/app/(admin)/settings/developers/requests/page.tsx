@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
+import { TipHeading } from "@/components/help/info-tip";
 import { SampleBadge } from "@/components/sample-badge";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -42,9 +43,9 @@ export default async function RequestsPage(props: PageProps<"/settings/developer
     <div className="blocks">
       <section className="block" aria-labelledby="req-h">
         <div className="block-head">
-          <h2 id="req-h" className="h2">
+          <TipHeading id="req-h" tip="idempotency">
             {t("requests")}
-          </h2>
+          </TipHeading>
           <SampleBadge step="52" endpoint="GET /api/v1/kernel/requests" />
         </div>
         <p className="fhint">{t("requestsAbout")}</p>

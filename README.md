@@ -8,50 +8,41 @@ core.
 
 ## Status
 
-The admin frame follows the Autoxide admin design: an area bar (bottom bar on phones), a menu for
-the screens of each area, a command palette (Ctrl K / ⌘K) and light, dark or system appearance.
-An area shows up only when its module is installed in the core and your role grants its
-permission.
+The admin follows the Autoxide admin design: an area bar (bottom bar on phones), a menu for the
+screens of each area with a count of waiting work next to each screen, a command palette
+(Ctrl K / ⌘K) and light, dark or system appearance. An area shows up only when its module is
+installed in the core and your role grants its permission.
 
-Screens so far:
+In-app help: a **?** button on every page (or the `?` key) opens the guides of that page, keyboard
+shortcuts and what's new; an ⓘ icon next to a section explains it in place; a short card
+introduces a new feature until you press "Got it". Dismissed cards and seen news are remembered
+per account by the core (`/api/v1/me/flags`), so they stay dismissed on every device.
 
-- **Overview**: the areas you can use.
-- **Settings › General settings**, one tab each:
-  - **Modules**: the modules installed in the core server and what each declares: permissions,
-    events, jobs, schedules, MCP tools, deprecated endpoints and migration status. Read-only:
-    modules are compiled into the core, so installing or removing one means rebuilding the core.
-  - **Webhooks**: add endpoints that receive events (the signing secret is shown once), choose
-    their events, turn them off and on, replace the secret, delete them and see each delivery.
-    Needs `webhooks.manage`.
-  - **Audit log**: who changed what and when, filtered by module, change, record or person, with
-    the state before and after. Needs `audit.read`.
-  - **Staff** links to Organization › Users and roles.
-- **Settings › API keys and AI agents**: create keys for programs and AI agents with only the
-  permissions they need and an expiry date (the key is shown once, with a `curl` command to try
-  it), revoke them, and connect an AI agent to the core's MCP endpoint. Every signed-in account
-  manages its own keys.
-- **Settings › Developers**: recent webhook deliveries of every endpoint, the OpenAPI document of
-  the core and its API docs page (when the core turns it on).
-- **My account** (account menu, or Ctrl K): your profile and email verification, changing your
-  email or password, two-step sign-in with an authenticator app and recovery codes, passkeys,
-  the devices signed in to your account, downloading your data and deleting your account. Every
-  signed-in account can open it; no permission is needed.
-- **Organization › Users and roles**: find and page through user accounts with their roles and
-  status; create an account, rename, disable or enable it, give it roles, set its first
-  password, send it a password-reset mail, sign it out everywhere, turn off its two-step
-  sign-in or delete it (each risky action asks first and says what happens). Roles: create and
-  change them with a permission picker grouped by module, with search; the built-in `admin` role
-  is read-only. Needs `auth.users.read` or `auth.roles.read`; changes need
-  `auth.users.manage` / `auth.roles.manage`.
-- **Pages opened from mail** (no sign-in needed): `/verify-email` confirms an email address,
-  `/forgot-password` asks for a password-reset mail and `/reset-password` chooses the new
-  password. Point the core's mail links here (see [Mail links](#mail-links)).
+**Screens on the core's real API**
 
-Parts of the design the core has no API for yet (invitations, delegation, public store profiles,
-support access; plan and subscription, domains, partner connections, jobs; commands waiting for an
-agent's approval; request log and events by record) are shown with **sample data**, marked "Sample data · waiting for API step N".
-They show only when `AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes
-there are kept in the app's memory and lost on restart.
+- **Overview** and **Work and activity**: greeting, figures, the work waiting for you gathered from
+  every area (snooze or hand over an item), setup steps and recent activity from the audit log.
+- **Content**: posts and pages with the block editor, review and scheduling, version history;
+  pages, categories, tags, authors and redirects; **website menus** (category bar, mega menu,
+  footer; items point to posts, categories or addresses; storefront preview); the **media
+  library** (upload, folders, tags, alt text per language with optional AI suggestions, trash).
+- **Marketing**: forms and their submissions, newsletter lists, campaigns and subscribers,
+  comment moderation.
+- **Organization › Users and roles**: accounts, roles with a permission picker (risky permissions
+  are labelled), sign-out everywhere, two-step sign-in reset.
+- **Settings**: modules, webhooks, audit log, API keys and AI agents (MCP), developer tools.
+- **My account**: profile, email and password, two-step sign-in, passkeys, devices, your data.
+- **Pages opened from mail** (no sign-in): verify an email, forgot and reset password.
+
+**Screens on sample data** (marked "Sample data · waiting for API step N"), because the core
+builds them in later steps: Sales (orders, returns, counter sales, shipping and COD, stores,
+sales channels), Products (catalog, prices, tax groups, inventory), Marketing (promotions,
+affiliate marketing), Customers, Marketplace and the Seller Center, Finance (ledger, e-invoices,
+tax), Organization tree, Compliance, and the Platform console. Parts of the real screens the core
+has no API for yet use sample data the same way. Sample data shows only when
+`AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes there are kept in the
+app's memory and lost on restart. The sample records agree across screens (an order, its
+shipment, its ledger entries and its invoice are the same order).
 
 Works with Autoxide core **v0.14.0** or newer.
 

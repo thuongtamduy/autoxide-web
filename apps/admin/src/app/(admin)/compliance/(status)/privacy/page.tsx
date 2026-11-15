@@ -4,6 +4,7 @@ import { incidentStep, openIncidentAction } from "@/app/(admin)/compliance/actio
 import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
 import { Basis, TimeLeft } from "@/components/compliance/common";
 import { ConfirmButton } from "@/components/engage/actions";
+import { TipHeading } from "@/components/help/info-tip";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Time } from "@/components/ui/time";
 import { INCIDENTS_MANAGE, PRIVACY_READ } from "@/lib/permissions";
@@ -46,9 +47,9 @@ export default async function PrivacyTab() {
     <div className="blocks">
       <section className="block" aria-labelledby="cp-inc-h">
         <div className="block-head">
-          <h2 id="cp-inc-h" className="h2">
+          <TipHeading id="cp-inc-h" tip="incident">
             {t("incident.title")}
-          </h2>
+          </TipHeading>
         </div>
         <p className="fhint">{t("incident.about", { hours })}</p>
         {open ? (
@@ -214,9 +215,9 @@ export default async function PrivacyTab() {
 
       <section className="block" aria-labelledby="cp-dsr-h">
         <div className="block-head">
-          <h2 id="cp-dsr-h" className="h2">
+          <TipHeading id="cp-dsr-h" tip="data_requests">
             {t("requests.title")}
-          </h2>
+          </TipHeading>
           <Link className="btn sm" href="/compliance/records/requests">
             {t("requests.open")}
           </Link>

@@ -8,46 +8,39 @@ core đã đăng nhập.
 
 ## Trạng thái
 
-Khung quản trị theo bản thiết kế quản trị của Autoxide: thanh phân hệ (thanh đáy trên điện
-thoại), menu các màn của từng phân hệ, bảng lệnh (Ctrl K / ⌘K) và giao diện sáng, tối hoặc theo
-máy. Một phân hệ chỉ hiện khi module của nó đã cài trên core và role của bạn có permission của nó.
+Trang quản trị theo bản thiết kế quản trị của Autoxide: thanh phân hệ (thanh đáy trên điện thoại),
+menu các màn của từng phân hệ kèm số việc đang chờ cạnh mỗi màn, bảng lệnh (Ctrl K / ⌘K) và giao
+diện sáng, tối hay theo hệ thống. Một phân hệ chỉ hiện khi module của nó được cài trong core và role
+của bạn có permission tương ứng.
 
-Các màn đã có:
+Trợ giúp trong giao diện: nút **?** ở mọi trang (hoặc phím `?`) mở hướng dẫn của trang đó, phím tắt
+và tin "Có gì mới"; biểu tượng ⓘ cạnh một mục giải thích mục đó ngay tại chỗ; một thẻ ngắn giới thiệu
+tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và tin đã xem được core nhớ theo tài khoản
+(`/api/v1/me/flags`), nên đổi máy cũng không hiện lại.
 
-- **Tổng quan**: các phân hệ bạn dùng được.
-- **Cài đặt › Cài đặt chung**, mỗi việc một tab:
-  - **Module**: các module đã cài trên máy chủ core và những gì mỗi module khai: permission, event,
-    job, lịch chạy, tool MCP, endpoint deprecated và trạng thái migration. Chỉ xem: module được
-    biên dịch cùng core, nên cài hay gỡ một module nghĩa là build lại core.
-  - **Webhook**: thêm endpoint nhận event (secret ký chỉ hiện một lần), chọn event, tắt và bật,
-    đổi secret, xoá và xem từng lần giao. Cần `webhooks.manage`.
-  - **Nhật ký audit**: ai đổi gì, lúc nào, lọc theo module, việc, bản ghi hay người làm, kèm trạng
-    thái trước và sau. Cần `audit.read`.
-  - **Nhân sự** là link sang Tổ chức › Người dùng và role.
-- **Cài đặt › API key và AI agent**: tạo key cho chương trình và AI agent với đúng permission cần
-  và ngày hết hạn (khoá chỉ hiện một lần, kèm lệnh `curl` để thử), thu hồi key, và kết nối AI agent
-  với endpoint MCP của core. Mọi tài khoản đã đăng nhập tự quản lý key của mình.
-- **Cài đặt › Nhà phát triển**: các lần giao webhook gần đây của mọi endpoint, tài liệu OpenAPI
-  của core và trang tài liệu API (khi core bật).
-- **Tài khoản của tôi** (menu tài khoản, hoặc Ctrl K): hồ sơ và xác minh email, đổi email hay
-  mật khẩu, xác thực hai bước bằng ứng dụng xác thực và mã khôi phục, passkey, các thiết bị đang
-  đăng nhập, tải dữ liệu của bạn và xoá tài khoản. Mọi tài khoản đã đăng nhập đều mở được, không
-  cần permission.
-- **Tổ chức › Người dùng và role**: tìm và lật trang danh sách tài khoản kèm role và trạng thái;
-  tạo tài khoản, đổi tên, khoá hay mở khoá, gán role, đặt mật khẩu đầu tiên, gửi thư đặt lại mật
-  khẩu, đăng xuất ở mọi thiết bị, tắt xác thực hai bước hay xoá (mỗi thao tác rủi ro đều hỏi lại
-  và nêu hệ quả). Role: tạo và sửa bằng bộ chọn permission nhóm theo module, có ô tìm; role dựng
-  sẵn `admin` chỉ xem. Cần `auth.users.read` hoặc `auth.roles.read`; sửa cần
-  `auth.users.manage` / `auth.roles.manage`.
-- **Trang mở từ thư** (không cần đăng nhập): `/verify-email` xác minh email, `/forgot-password`
-  xin thư đặt lại mật khẩu và `/reset-password` chọn mật khẩu mới. Trỏ link trong thư của core
-  về đây (xem [Link trong thư](#link-trong-thư)).
+**Các màn chạy trên API thật của core**
 
-Phần của bản thiết kế mà core chưa có API (lời mời, uỷ quyền, hồ sơ công khai của cửa hàng,
-quyền vào hỗ trợ; gói và thuê bao, tên miền, kết nối đối tác, job; lệnh agent chờ duyệt; nhật ký
-request và event theo bản ghi) hiện bằng **dữ liệu mẫu**, có nhãn "Dữ liệu mẫu · chờ API bước N". Chúng chỉ
-hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật khi không chạy production); thay đổi ở đó chỉ
-giữ trong bộ nhớ của ứng dụng, mất khi khởi động lại.
+- **Tổng quan** và **Việc và hoạt động**: lời chào, số liệu, việc đang chờ bạn gom từ mọi phân hệ
+  (hoãn hay giao cho người khác), các bước thiết lập và hoạt động gần đây từ nhật ký audit.
+- **Nội dung**: bài viết và trang với trình soạn theo khối, duyệt và lên lịch, lịch sử phiên bản;
+  trang, danh mục, thẻ, tác giả và chuyển hướng; **menu của website** (thanh danh mục, bảng xổ lớn,
+  chân trang; mục trỏ tới bài, danh mục hay địa chỉ; xem trước mặt tiền); **thư viện media** (tải
+  lên, thư mục, thẻ, alt theo từng ngôn ngữ kèm gợi ý của AI, thùng rác).
+- **Tiếp thị**: biểu mẫu và bài nộp, danh sách, chiến dịch và người nhận bản tin, duyệt bình luận.
+- **Tổ chức › Người dùng và role**: tài khoản, role với bộ chọn permission (permission rủi ro có
+  nhãn), đăng xuất mọi nơi, tắt xác thực hai bước.
+- **Cài đặt**: module, webhook, nhật ký audit, API key và AI agent (MCP), công cụ cho lập trình viên.
+- **Tài khoản của tôi**: hồ sơ, email và mật khẩu, xác thực hai bước, passkey, thiết bị, dữ liệu của bạn.
+- **Trang mở từ mail** (không cần đăng nhập): xác nhận email, quên và đặt lại mật khẩu.
+
+**Các màn dùng dữ liệu mẫu** (có nhãn "Dữ liệu mẫu · chờ API bước N"), vì core dựng chúng ở các bước
+sau: Bán hàng (đơn hàng, đổi trả, bán tại quầy, vận chuyển và COD, cửa hàng, kênh bán), Sản phẩm
+(danh mục, giá, nhóm thuế, tồn kho), Tiếp thị (khuyến mại, tiếp thị liên kết), Khách hàng, Sàn và
+Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Cây tổ chức, Tuân thủ và Mặt điều
+khiển nền tảng. Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
+liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật, trừ production); thay đổi ở đó nằm
+trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
+vận đơn, bút toán và hoá đơn của nó là cùng một đơn).
 
 Chạy với core Autoxide **v0.14.0** trở lên.
 

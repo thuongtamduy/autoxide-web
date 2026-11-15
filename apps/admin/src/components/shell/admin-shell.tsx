@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { setTheme, signOut } from "@/app/actions";
+import { Help } from "@/components/help/help-panel";
 import { LanguageSwitch } from "@/components/language-switch";
 import { CommandPalette } from "@/components/shell/command-palette";
 import { Icon } from "@/components/shell/icon";
@@ -16,6 +17,8 @@ import {
   type ShellPage,
   Subnav,
 } from "@/components/shell/nav-client";
+import { newsSeen } from "@/help/flags";
+import { myFlags } from "@/help/server";
 import { initialsOf } from "@/lib/initials";
 import { MARKETPLACE_SELL } from "@/lib/market";
 import { getMe, getModules } from "@/lib/viewer";
@@ -34,6 +37,7 @@ import {
 } from "@/nav/nav";
 import { sampleDataEnabled } from "@/sample";
 import { shellCounts } from "@/work/server";
+import "@/components/help/help.css";
 
 // Khung chung của các trang cần đăng nhập (thiết kế quản trị 2): thanh bên, đầu trang, menu con,
 // thanh đáy điện thoại, bảng lệnh. Người dùng và sổ module lấy từ core; phiên không còn hợp lệ
@@ -64,6 +68,8 @@ export async function AdminShell({
   // Số đếm cạnh tên màn (W-020): từ cùng sổ nguồn việc với hộp việc; chỉ không gian của khách có.
   // Không `await`: khung hiện ngay, số đếm tới sau qua `Suspense` ở phía trình duyệt.
   const counts = workspace === "tenant" ? shellCounts() : undefined;
+  // "Có gì mới" đã xem (cờ D-207 của core, W-023): cũng không `await`, nút "?" nhận promise.
+  const newsSeenUpTo = myFlags().then(newsSeen);
   const shellGroups = (nav: NavGroup[]): ShellGroup[] =>
     visibleNav(viewer, nav).map((group) => ({
       id: group.id,
@@ -186,6 +192,7 @@ export async function AdminShell({
             <span className="kbd hide-mobile">K</span>
           </button>
           {platform ? <ScopeNote /> : null}
+          <Help seen={newsSeenUpTo} />
           <button
             type="button"
             className="avatar"

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
 import { Chips } from "@/components/engage/common";
+import { TipHeading } from "@/components/help/info-tip";
 import {
   PlatformHead,
   SCHEMA_BADGE,
@@ -147,9 +148,9 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
       </section>
 
       <section className="block" aria-labelledby="pf-tenants-h">
-        <h2 id="pf-tenants-h" className="h2">
+        <TipHeading id="pf-tenants-h" tip="placement">
           {t("tenants.list")}
-        </h2>
+        </TipHeading>
         <Chips
           label={t("tenants.filterLabel")}
           chips={TENANT_FILTERS.map((f) => ({
@@ -271,9 +272,9 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
 
       <section className="block" aria-labelledby="pf-plans-h">
         <div className="block-head">
-          <h2 id="pf-plans-h" className="h2">
+          <TipHeading id="pf-plans-h" tip="plans">
             {t("tenants.plansTitle")}
-          </h2>
+          </TipHeading>
           <Link href="/platform/plans" className="btn sm">
             {t("tenants.plansOpen")}
           </Link>

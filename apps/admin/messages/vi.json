@@ -8887,7 +8887,6 @@
     "views": {
       "title": "View đã lưu",
       "custom": "Tuỳ chỉnh",
-      "about": "View lưu bộ lọc để mở lại bằng một lần bấm. View cá nhân chỉ bạn thấy; view của một nút thì mọi người ở nút đó cùng thấy.",
       "save": "Lưu thành view",
       "saveTitle": "Lưu bộ lọc này thành view",
       "saveIntro": "Số đếm tính lại mỗi lần mở view.",
@@ -11487,6 +11486,303 @@
       "affiliate_already_pinned": "Đã gắn trong phiên này.",
       "affiliate_link_code_format": "3–40 chữ thường, số hoặc gạch ngang.",
       "affiliate_code_taken": "“{value}” đã có người dùng."
+    }
+  },
+  "help": {
+    "button": "Trợ giúp cho trang này",
+    "buttonNews": "Trợ giúp cho trang này, có tin mới bạn chưa xem",
+    "tooltip": "Trợ giúp",
+    "title": "Trợ giúp",
+    "titlePage": "Trợ giúp · {page}",
+    "close": "Đóng trợ giúp",
+    "search": "Tìm trong hướng dẫn",
+    "searchPlaceholder": "Tìm trong hướng dẫn…",
+    "noMatch": "Không có hướng dẫn nào khớp. Thử ít từ hơn.",
+    "onThisPage": "Trên trang này",
+    "found": "Hướng dẫn",
+    "tipHint": "Bấm biểu tượng ⓘ cạnh một mục để xem giải thích ngắn ngay tại chỗ.",
+    "shortcuts": "Phím tắt",
+    "keys": {
+      "search": "Tìm và đi tới một màn",
+      "help": "Mở trợ giúp này",
+      "close": "Đóng hộp đang mở"
+    },
+    "moreHelp": "Cần thêm trợ giúp",
+    "api": {
+      "title": "Tài liệu API",
+      "body": "Tải tài liệu OpenAPI của core: mọi endpoint, cho lập trình viên và AI agent"
+    },
+    "news": {
+      "title": "Có gì mới",
+      "badge": "Mới",
+      "items": {
+        "help": {
+          "title": "Trợ giúp ở mọi trang",
+          "body": "Nút ? mở hướng dẫn của trang đang xem; biểu tượng ⓘ giải thích một mục ngay tại chỗ."
+        },
+        "alt_text": {
+          "title": "Mô tả ảnh theo từng ngôn ngữ",
+          "body": "Viết mô tả của một ảnh cho từng ngôn ngữ của website."
+        },
+        "work_box": {
+          "title": "Hộp việc và số đếm trên menu",
+          "body": "Mọi việc đang chờ bạn, gom từ mọi phân hệ, có số đếm cạnh từng màn."
+        }
+      }
+    },
+    "pages": {
+      "home": {
+        "name": "Tổng quan",
+        "articles": {
+          "overview": {
+            "title": "Đọc bảng điều khiển",
+            "summary": "Mỗi ô ghi số liệu lấy từ đâu: API thật hay dữ liệu mẫu"
+          },
+          "work": {
+            "title": "Việc cần làm đến từ đâu",
+            "summary": "Việc được gom từ mọi phân hệ bạn có quyền; xử lý ngay hoặc hoãn"
+          },
+          "scope": {
+            "title": "Cây tổ chức và phạm vi xem",
+            "summary": "Bạn thấy dữ liệu của những nút được giao"
+          },
+          "setup": {
+            "title": "Hoàn tất thiết lập để bắt đầu bán",
+            "summary": "Các bước bắt buộc theo luật và theo gói"
+          }
+        }
+      },
+      "orders": {
+        "name": "Đơn hàng",
+        "articles": {
+          "handle": {
+            "title": "Xác nhận và xử lý một đơn",
+            "summary": "Từ lúc khách đặt tới khi giao xong: mở đơn để xem bước kế tiếp"
+          },
+          "refunds": {
+            "title": "Hoàn tiền và đổi trả",
+            "summary": "Hoàn một phần, hoàn toàn bộ, nhận hàng về kho"
+          },
+          "pos": {
+            "title": "Bán tại quầy",
+            "summary": "Tạo đơn, thu tiền và in hoá đơn ở cửa hàng"
+          },
+          "views": {
+            "title": "Lưu view",
+            "summary": "Mở lại đúng bộ lọc bằng một lần bấm"
+          }
+        }
+      },
+      "content": {
+        "name": "Nội dung",
+        "articles": {
+          "write": {
+            "title": "Viết, lên lịch và đăng bài",
+            "summary": "Bản nháp, chờ duyệt, lên lịch, đã đăng"
+          },
+          "ai": {
+            "title": "Duyệt bài có AI hỗ trợ",
+            "summary": "AI chỉ viết nháp; người duyệt mới đăng"
+          },
+          "required": {
+            "title": "Trang bắt buộc theo luật",
+            "summary": "Những trang website bán hàng phải có"
+          },
+          "sites": {
+            "title": "Nhiều website trong một tài khoản",
+            "summary": "Mỗi tên miền gắn với một nút tổ chức"
+          }
+        }
+      },
+      "org": {
+        "name": "Tổ chức",
+        "articles": {
+          "tree": {
+            "title": "Cây tổ chức là gì",
+            "summary": "Trụ sở, vùng, cửa hàng, kho, sàn"
+          },
+          "roles": {
+            "title": "Role và độ sâu của quyền",
+            "summary": "Được làm gì, và làm ở những nút nào"
+          },
+          "invite": {
+            "title": "Mời thành viên",
+            "summary": "Gửi lời mời, chọn role và nút làm việc"
+          }
+        }
+      },
+      "compliance": {
+        "name": "Tuân thủ",
+        "articles": {
+          "register": {
+            "title": "Thông báo, đăng ký website với Bộ Công Thương",
+            "summary": "Hồ sơ cần có và cách nộp"
+          },
+          "kyc": {
+            "title": "Xác thực người bán (KYC)",
+            "summary": "Ai phải xác thực, bằng giấy tờ gì"
+          },
+          "requests": {
+            "title": "Xử lý yêu cầu về dữ liệu cá nhân",
+            "summary": "Xuất, xoá, rút đồng ý, trả lời đúng hạn"
+          },
+          "incident": {
+            "title": "Báo sự cố dữ liệu",
+            "summary": "Các bước cần làm ngay khi phát hiện"
+          }
+        }
+      },
+      "platform": {
+        "name": "Nền tảng",
+        "articles": {
+          "provision": {
+            "title": "Cấp phát khách mới",
+            "summary": "Tạo khách, chọn gói và nơi lưu dữ liệu"
+          },
+          "placement": {
+            "title": "Database dùng chung hay riêng",
+            "summary": "Khi nào nên chuyển, khách bị ảnh hưởng gì"
+          },
+          "migrations": {
+            "title": "Chạy migration cho cả đội database",
+            "summary": "Theo dõi tiến độ, xử lý database lỗi"
+          },
+          "support": {
+            "title": "Vào dữ liệu khách để hỗ trợ",
+            "summary": "Có thời hạn, ghi lý do, khách thấy trong audit"
+          }
+        }
+      },
+      "developers": {
+        "name": "Nhà phát triển",
+        "articles": {
+          "requests": {
+            "title": "Đọc nhật ký request",
+            "summary": "Lọc theo status, mã lỗi, API key"
+          },
+          "deliveries": {
+            "title": "Lần giao webhook",
+            "summary": "Vì sao giao thất bại; lần lỗi được gửi lại trong khoảng hai giờ"
+          },
+          "jobs": {
+            "title": "Job lỗi và dead-letter queue",
+            "summary": "Khi nào job dừng retry; chạy lại bằng autoxide jobs retry"
+          },
+          "idempotency": {
+            "title": "Idempotency-Key",
+            "summary": "Gửi lại lệnh mà không làm hai lần"
+          }
+        }
+      },
+      "apiKeys": {
+        "name": "API key và AI agent",
+        "articles": {
+          "create": {
+            "title": "Tạo API key cho agent",
+            "summary": "Chọn ít permission nhất có thể"
+          },
+          "approvals": {
+            "title": "Lệnh cần người duyệt",
+            "summary": "Agent nhận 202 và chờ; người duyệt thì lệnh chạy"
+          },
+          "mcp": {
+            "title": "Kết nối qua MCP",
+            "summary": "Mỗi tool cần đúng permission như endpoint REST của nó"
+          },
+          "revoke": {
+            "title": "Thu hồi key bị lộ",
+            "summary": "Thu hồi có hiệu lực ngay, rồi kiểm lại nhật ký request"
+          }
+        }
+      }
+    },
+    "tip": {
+      "open": "Giải thích: {name}",
+      "more": "Tìm hiểu thêm",
+      "ok": "Đã hiểu"
+    },
+    "tips": {
+      "tasks": {
+        "label": "Việc cần làm",
+        "title": "Việc cần làm là gì?",
+        "body": "Việc được gom từ mọi phân hệ bạn có quyền: đơn chờ xác nhận, hồ sơ còn thiếu, lệnh agent chờ duyệt. Xử lý xong ở nơi gốc thì việc tự biến mất."
+      },
+      "setup": {
+        "label": "Thiết lập",
+        "title": "Các bước thiết lập",
+        "body": "Những việc phải xong trước khi bán, theo luật và theo gói đang dùng. Bước pháp lý phải xong trước khi bắt đầu bán; các bước khác làm sau được."
+      },
+      "saved_views": {
+        "label": "View đã lưu",
+        "title": "View là gì?",
+        "body": "View lưu bộ lọc đang dùng dưới một cái tên để mở lại bằng một lần bấm. View cá nhân chỉ bạn thấy; view của một nút thì mọi người ở nút đó cùng thấy.",
+        "example": "Ví dụ: view “Chờ xác nhận ở Quận 3” mở các đơn đang chờ của cửa hàng đó."
+      },
+      "required_pages": {
+        "label": "Trang bắt buộc",
+        "title": "Vì sao có trang bắt buộc?",
+        "body": "Người mua phải đọc được ai bán, cách thanh toán, đổi trả và khiếu nại trước khi mua. Thiếu trang nào, Autoxide nhắc ở đây và ở mục Tuân thủ."
+      },
+      "websites": {
+        "label": "Website",
+        "title": "Một tên miền, một website",
+        "body": "Website gắn với một nút tổ chức, nên người ở nút đó và nút cha mới quản lý được. Trang bắt buộc được kiểm theo từng website.",
+        "example": "Ví dụ: shop.example.vn và example.vn có thể là hai website của hai nút khác nhau."
+      },
+      "depth": {
+        "label": "Độ sâu của quyền",
+        "title": "Role và độ sâu",
+        "body": "Role cho biết bạn được làm gì; độ sâu cho biết làm ở đâu.",
+        "example": "Ví dụ: quản lý Miền Nam với độ sâu “Nút và con” làm việc được ở mọi cửa hàng của Miền Nam."
+      },
+      "inherit": {
+        "label": "Cài đặt hiệu lực",
+        "title": "Cài đặt kế thừa thế nào?",
+        "body": "Khi nút con đã tự đặt giá trị, đổi ở nút cha không còn áp xuống nút đó. Chọn “Dùng giá trị kế thừa” để theo lại nút cha."
+      },
+      "incident": {
+        "label": "Sự cố dữ liệu",
+        "title": "Khi nào phải báo sự cố?",
+        "body": "Khi dữ liệu cá nhân bị lộ, mất hoặc bị truy cập trái phép, kể cả khi chưa rõ mức độ. Báo trong thời hạn ghi trên trang này, theo Luật Bảo vệ dữ liệu cá nhân 2025 (cần đối chiếu văn bản gốc)."
+      },
+      "data_requests": {
+        "label": "Yêu cầu của chủ thể dữ liệu",
+        "title": "Chủ thể dữ liệu là ai?",
+        "body": "Là người mà dữ liệu cá nhân nói về: người mua, người đăng ký nhận tin, nhân viên."
+      },
+      "plans": {
+        "label": "Gói",
+        "title": "Gói là dữ liệu",
+        "body": "Gói là cấu hình chứ không phải code: đổi gói không cần cài lại, khách đang dùng nhận quyền mới ngay. Ghi đè cho một khách không ảnh hưởng gói chung."
+      },
+      "placement": {
+        "label": "Vị trí dữ liệu",
+        "title": "Dùng chung hay database riêng",
+        "body": "Dùng chung: nhiều khách cùng một database, tách nhau bằng tenant_id. Database riêng: khách có database của mình và chọn được nơi lưu. Đổi giữa hai kiểu bằng job chép dữ liệu; khách chỉ đọc trong vài phút."
+      },
+      "deliveries": {
+        "label": "Lần giao webhook",
+        "title": "Gửi lại",
+        "body": "Lần giao lỗi được tự gửi lại, mỗi lần chờ lâu hơn, trong khoảng hai giờ. Bên nhận phải chịu được việc nhận lại một event mà không làm việc hai lần."
+      },
+      "idempotency": {
+        "label": "Idempotency-Key",
+        "title": "Idempotency-Key",
+        "body": "Khoá chống trùng mà client gửi kèm lệnh ghi. Gửi lại cùng khoá thì máy chủ trả kết quả lần trước, không tạo đơn hay trừ tiền lần hai. Agent hay retry nên luôn cần khoá này."
+      },
+      "agent_keys": {
+        "label": "API key",
+        "title": "Chọn permission thế nào?",
+        "body": "Mỗi chương trình hay agent một key riêng, chọn ít permission nhất có thể; bị từ chối thì thêm sau. Key có thể đã lộ thì thu hồi ngay."
+      }
+    },
+    "intro": {
+      "badge": "Mới",
+      "ok": "Đã hiểu",
+      "saved_views": {
+        "title": "Lưu view cho bộ lọc hay dùng.",
+        "body": "Chọn bộ lọc rồi bấm “Lưu thành view” để lần sau mở lại bằng một lần bấm."
+      }
     }
   }
 }

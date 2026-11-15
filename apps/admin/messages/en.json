@@ -8887,7 +8887,6 @@
     "views": {
       "title": "Saved views",
       "custom": "Custom",
-      "about": "A view keeps filters so you can reopen them in one click. Personal views are yours; a node's views are shared with everyone at that node.",
       "save": "Save as view",
       "saveTitle": "Save these filters as a view",
       "saveIntro": "Counts are recalculated each time the view opens.",
@@ -11487,6 +11486,303 @@
       "affiliate_already_pinned": "Already pinned in this session.",
       "affiliate_link_code_format": "3–40 lowercase letters, digits or dashes.",
       "affiliate_code_taken": "“{value}” is already taken."
+    }
+  },
+  "help": {
+    "button": "Help for this page",
+    "buttonNews": "Help for this page, with news you have not seen",
+    "tooltip": "Help",
+    "title": "Help",
+    "titlePage": "Help · {page}",
+    "close": "Close help",
+    "search": "Search the guides",
+    "searchPlaceholder": "Search the guides…",
+    "noMatch": "No guide matches. Try fewer words.",
+    "onThisPage": "On this page",
+    "found": "Guides",
+    "tipHint": "Click the ⓘ icon next to a section for a short explanation right there.",
+    "shortcuts": "Keyboard shortcuts",
+    "keys": {
+      "search": "Search and go to a screen",
+      "help": "Open this help",
+      "close": "Close the open box"
+    },
+    "moreHelp": "More help",
+    "api": {
+      "title": "API reference",
+      "body": "Download the OpenAPI document of the core: every endpoint, for developers and AI agents"
+    },
+    "news": {
+      "title": "What's new",
+      "badge": "New",
+      "items": {
+        "help": {
+          "title": "Help on every page",
+          "body": "The ? button opens guides for the page you are on; the ⓘ icon explains a section in place."
+        },
+        "alt_text": {
+          "title": "Image descriptions per language",
+          "body": "Write the description of an image once for each language of your website."
+        },
+        "work_box": {
+          "title": "Work box and counts on the menu",
+          "body": "Everything waiting for you, gathered from every area, with a count next to each screen."
+        }
+      }
+    },
+    "pages": {
+      "home": {
+        "name": "Overview",
+        "articles": {
+          "overview": {
+            "title": "Reading the overview",
+            "summary": "Each tile says where its number comes from: the live API or sample data"
+          },
+          "work": {
+            "title": "Where work comes from",
+            "summary": "Gathered from every area you have permission for; handle it or snooze it"
+          },
+          "scope": {
+            "title": "Organization tree and what you see",
+            "summary": "You see the data of the units you are assigned to"
+          },
+          "setup": {
+            "title": "Finish setup to start selling",
+            "summary": "Steps required by law and by your plan"
+          }
+        }
+      },
+      "orders": {
+        "name": "Orders",
+        "articles": {
+          "handle": {
+            "title": "Confirming and handling an order",
+            "summary": "From the buyer's order to delivery: open an order to see its next step"
+          },
+          "refunds": {
+            "title": "Refunds and returns",
+            "summary": "Refund part or all of an order, take goods back to stock"
+          },
+          "pos": {
+            "title": "Selling at the counter",
+            "summary": "Create the order, take the money and print the receipt in the store"
+          },
+          "views": {
+            "title": "Saved views",
+            "summary": "Reopen the same filters in one click"
+          }
+        }
+      },
+      "content": {
+        "name": "Content",
+        "articles": {
+          "write": {
+            "title": "Writing, scheduling and publishing",
+            "summary": "Draft, in review, scheduled, published"
+          },
+          "ai": {
+            "title": "Reviewing with AI help",
+            "summary": "AI only writes drafts; a person publishes"
+          },
+          "required": {
+            "title": "Pages required by law",
+            "summary": "The pages an online shop must publish"
+          },
+          "sites": {
+            "title": "Several websites in one account",
+            "summary": "Each domain belongs to one organization unit"
+          }
+        }
+      },
+      "org": {
+        "name": "Organization",
+        "articles": {
+          "tree": {
+            "title": "What the organization tree is",
+            "summary": "Head office, regions, stores, warehouses, marketplace"
+          },
+          "roles": {
+            "title": "Roles and depth of permissions",
+            "summary": "What someone may do, and at which units"
+          },
+          "invite": {
+            "title": "Inviting members",
+            "summary": "Send an invitation, choose a role and a unit"
+          }
+        }
+      },
+      "compliance": {
+        "name": "Compliance",
+        "articles": {
+          "register": {
+            "title": "Notifying or registering a website with the Ministry of Industry and Trade",
+            "summary": "The documents needed and how to file them"
+          },
+          "kyc": {
+            "title": "Seller verification (KYC)",
+            "summary": "Who must verify, and with which documents"
+          },
+          "requests": {
+            "title": "Handling personal data requests",
+            "summary": "Export, delete, withdraw consent, answer on time"
+          },
+          "incident": {
+            "title": "Reporting a data incident",
+            "summary": "What to do as soon as you find one"
+          }
+        }
+      },
+      "platform": {
+        "name": "Platform",
+        "articles": {
+          "provision": {
+            "title": "Provisioning a new customer",
+            "summary": "Create the customer, choose a plan and where its data lives"
+          },
+          "placement": {
+            "title": "Shared or own database",
+            "summary": "When to move a customer, and what the customer notices"
+          },
+          "migrations": {
+            "title": "Running migrations across the database fleet",
+            "summary": "Follow progress, handle a database that failed"
+          },
+          "support": {
+            "title": "Entering customer data for support",
+            "summary": "Time-limited, with a reason; the customer sees it in the audit"
+          }
+        }
+      },
+      "developers": {
+        "name": "Developers",
+        "articles": {
+          "requests": {
+            "title": "Reading the request log",
+            "summary": "Filter by status, error code and API key"
+          },
+          "deliveries": {
+            "title": "Webhook deliveries",
+            "summary": "Why a delivery failed; failed ones are retried for about two hours"
+          },
+          "jobs": {
+            "title": "Failed jobs and the dead-letter queue",
+            "summary": "When a job stops retrying; run it again with autoxide jobs retry"
+          },
+          "idempotency": {
+            "title": "Idempotency-Key",
+            "summary": "Send a command again without doing it twice"
+          }
+        }
+      },
+      "apiKeys": {
+        "name": "API keys and agents",
+        "articles": {
+          "create": {
+            "title": "Creating an API key for an agent",
+            "summary": "Choose the fewest permissions it needs"
+          },
+          "approvals": {
+            "title": "Commands that need approval",
+            "summary": "The agent gets 202 and waits; the command runs once a person approves"
+          },
+          "mcp": {
+            "title": "Connecting through MCP",
+            "summary": "Each tool needs the same permission as its REST endpoint"
+          },
+          "revoke": {
+            "title": "Revoking a leaked key",
+            "summary": "Revoking works at once; then check the request log"
+          }
+        }
+      }
+    },
+    "tip": {
+      "open": "Explain: {name}",
+      "more": "Learn more",
+      "ok": "Got it"
+    },
+    "tips": {
+      "tasks": {
+        "label": "Work to do",
+        "title": "Where does this work come from?",
+        "body": "Each item comes from an area you have permission for: an order waiting for confirmation, a missing document, an agent command waiting for approval. Handle it where it came from and it leaves the list by itself."
+      },
+      "setup": {
+        "label": "Setup steps",
+        "title": "Setup steps",
+        "body": "What must be done before selling, by law and by the plan in use. Legal steps must be done before you start selling; the others can wait."
+      },
+      "saved_views": {
+        "label": "Saved views",
+        "title": "What is a view?",
+        "body": "A view keeps the filters you use under a name, to reopen them in one click. Personal views are only yours; a node's views are shared with everyone at that node.",
+        "example": "Example: a view “Awaiting at District 3” opens the orders waiting for that store."
+      },
+      "required_pages": {
+        "label": "Required pages",
+        "title": "Why are some pages required?",
+        "body": "Buyers must be able to read who sells, how to pay, how to return goods and how to complain before they buy. A missing page is flagged here and under Compliance."
+      },
+      "websites": {
+        "label": "Websites",
+        "title": "One domain, one website",
+        "body": "Each website belongs to one organization unit, so people at that unit or a parent unit manage it. Required pages are checked per website.",
+        "example": "Example: shop.example.vn and example.vn can be two websites of two different units."
+      },
+      "depth": {
+        "label": "Depth of permissions",
+        "title": "Role and depth",
+        "body": "The role says what you may do; the depth says where.",
+        "example": "Example: a South region manager with depth “Unit and children” can work at every store of the South region."
+      },
+      "inherit": {
+        "label": "Effective settings",
+        "title": "How do settings pass down?",
+        "body": "Once a child unit sets its own value, later changes at the parent no longer reach it. Choose “Use inherited value” to follow the parent again."
+      },
+      "incident": {
+        "label": "Data incidents",
+        "title": "When must an incident be reported?",
+        "body": "Whenever personal data is leaked, lost or accessed without permission, even before you know how much. Report within the deadline shown on this page, set by the Personal Data Protection Law 2025 (check the original text)."
+      },
+      "data_requests": {
+        "label": "Data subject requests",
+        "title": "Who is a data subject?",
+        "body": "The person the personal data is about: a buyer, a newsletter subscriber, a member of staff."
+      },
+      "plans": {
+        "label": "Plans",
+        "title": "A plan is data",
+        "body": "A plan is configuration, not code: changing it needs no new release, and customers on it get the new rights at once. An override for one customer leaves the shared plan unchanged."
+      },
+      "placement": {
+        "label": "Data location",
+        "title": "Shared or own database",
+        "body": "Shared: many customers in one database, kept apart by tenant_id. Own database: the customer has a database of its own and can choose where it is stored. Moving between the two is a copy job; the customer is read-only for a few minutes."
+      },
+      "deliveries": {
+        "label": "Webhook deliveries",
+        "title": "Retries",
+        "body": "A failed delivery is sent again automatically, waiting longer each time, for about two hours. Your receiver must accept the same event twice without doing the work twice."
+      },
+      "idempotency": {
+        "label": "Idempotency-Key",
+        "title": "Idempotency-Key",
+        "body": "A key the client sends with a write command. Sending again with the same key returns the first result instead of creating an order or charging twice. Agents retry often, so they always need it."
+      },
+      "agent_keys": {
+        "label": "API keys",
+        "title": "Choosing permissions",
+        "body": "Give each program or agent its own key with the fewest permissions it needs; add more later if a call is refused. Revoke a key as soon as it may have leaked."
+      }
+    },
+    "intro": {
+      "badge": "New",
+      "ok": "Got it",
+      "saved_views": {
+        "title": "Save views for filters you use often.",
+        "body": "Choose filters, then press “Save as view” to reopen them in one click next time."
+      }
     }
   }
 }

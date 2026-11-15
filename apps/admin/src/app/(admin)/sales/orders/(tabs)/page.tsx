@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { TipHeading } from "@/components/help/info-tip";
+import { IntroCard } from "@/components/help/intro-card";
 import { ORDER_BADGE } from "@/components/orders/badges";
 import { AskFilter, BulkForm, SaveViewDialog } from "@/components/orders/forms";
 import { SampleBadge } from "@/components/sample-badge";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
+import { hintDismissed } from "@/help/flags";
+import { myFlags } from "@/help/server";
 import { loadAi } from "@/lib/content-server";
 import { formatCount, formatMoney } from "@/lib/format";
 import {
@@ -48,13 +52,14 @@ export default async function OrdersPage(props: PageProps<"/sales/orders">) {
   const filters = readFilters(params);
   const cursor = typeof params.cursor === "string" ? params.cursor : null;
   const query = filterQuery(filters);
-  const [page, matching, views, nodes, ai, manage] = await Promise.all([
+  const [page, matching, views, nodes, ai, manage, flags] = await Promise.all([
     listOrders(filters, { cursor }),
     countOrders(filters),
     listViews(),
     sellingNodes(t("market")),
     loadAi(),
     can(ORDERS_MANAGE),
+    myFlags(),
   ]);
   const counted = await Promise.all(
     views.data.map(async (v) => ({
@@ -88,11 +93,12 @@ export default async function OrdersPage(props: PageProps<"/sales/orders">) {
   }
   return (
     <div className="blocks">
+      {hintDismissed(flags, "saved_views") ? null : <IntroCard id="saved_views" />}
       <section className="block" aria-labelledby="views-h">
         <div className="block-head">
-          <h2 id="views-h" className="h2">
+          <TipHeading id="views-h" tip="saved_views">
             {t("views.title")}
-          </h2>
+          </TipHeading>
           {hasFilters(filters) && !active ? <SaveViewDialog query={query} /> : null}
         </div>
         <nav className="chips ord-views" aria-label={t("views.title")}>
@@ -117,7 +123,6 @@ export default async function OrdersPage(props: PageProps<"/sales/orders">) {
             </span>
           )}
         </nav>
-        <p className="fhint">{t("views.about")}</p>
       </section>
 
       <AskFilter enabled={ai.enabled} orgs={nodes} />
