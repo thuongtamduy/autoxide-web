@@ -1,0 +1,260 @@
+{
+  "site": {
+    "defaultName": "Autoxide",
+    "blog": "Bài viết",
+    "description": "{name}: mua sắm trực tuyến, nhận tại cửa hàng, đọc bài viết hướng dẫn."
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "breadcrumbs": "Đường dẫn",
+    "skip": "Bỏ qua tới nội dung chính",
+    "categories": "Danh mục",
+    "all": "Danh mục",
+    "groups": "Nhóm hàng",
+    "seeAll": "Xem tất cả {label}",
+    "bestSellers": "Bán chạy",
+    "suggestion": "Gợi ý",
+    "sampleMenu": "Core chưa có menu `{key}`: đang hiện menu mẫu. Tạo menu trong trang quản trị để thay."
+  },
+  "header": {
+    "home": "{name}, trang chủ",
+    "secure": "Đặt hàng an toàn",
+    "secureShort": "An toàn",
+    "searchPlaceholder": "Tìm sản phẩm, bài viết…",
+    "searchLabel": "Tìm sản phẩm, bài viết, cửa hàng",
+    "store": "Cửa hàng của bạn",
+    "account": "Tài khoản",
+    "theme": "Đổi giao diện sáng / tối",
+    "cart": "Giỏ hàng",
+    "cartCount": "Giỏ hàng, {count} món"
+  },
+  "sample": {
+    "mark": "mẫu",
+    "noticeShort": "Bản chạy thử: phần ghi “mẫu” là dữ liệu mẫu.",
+    "missing": "Dữ liệu mẫu: core chưa có {endpoint} (bước {step}).",
+    "notice": "Bản chạy thử: sản phẩm, giá, cửa hàng, giỏ hàng là dữ liệu mẫu (ghi “mẫu”). Bài viết, menu, bình luận, bản tin là dữ liệu thật."
+  },
+  "product": {
+    "add": "Thêm",
+    "addNamed": "Thêm {name} vào giỏ",
+    "added": "Đã thêm {name} vào giỏ",
+    "withCode": "với mã {code}",
+    "ratingLabel": "Điểm {score} trên 5, {count} đánh giá",
+    "options": "{count} lựa chọn",
+    "soldBy": "Người bán: {seller}",
+    "flagCoupon": "−10% với mã",
+    "flagNew": "Mới",
+    "availability": {
+      "in_store": "Có sẵn ở {store}",
+      "low": "Còn {left} ở {store}",
+      "out": "Hết ở {store} · giao từ kho",
+      "warehouse": "Giao từ kho, 1–2 ngày",
+      "seller": "Người bán giao, 2–4 ngày"
+    }
+  },
+  "footer": {
+    "about": "Mua online, nhận tại cửa hàng hoặc giao tận nơi.",
+    "links": "Liên kết",
+    "sampleMenu": "Core chưa có menu `footer`: đang hiện menu mẫu.",
+    "legal": "Công ty [TÊN PHÁP LÝ] · Mã số thuế [MÃ SỐ THUẾ] · Địa chỉ [ĐỊA CHỈ TRỤ SỞ] · Điện thoại [SỐ ĐIỆN THOẠI] · Email [EMAIL] · Người đại diện [HỌ TÊN]",
+    "moit": "Logo “Đã thông báo Bộ Công Thương” do cơ quan cấp, hiện tại đây",
+    "copyright": "© {year} {name}",
+    "poweredBy": "Vận hành trên Autoxide, mã nguồn mở",
+    "rss": "RSS",
+    "language": "Ngôn ngữ"
+  },
+  "newsletter": {
+    "lead": "Nhận bài {blog} và ưu đãi mỗi tuần. Bạn bấm xác nhận trong email trước khi vào danh sách.",
+    "email": "Email nhận bản tin",
+    "placeholder": "ban@example.com",
+    "submit": "Đăng ký",
+    "consent": "Bấm Đăng ký là bạn đồng ý nhận thư; mỗi thư có link huỷ đăng ký.",
+    "lists": "Danh sách nhận thư",
+    "emailRequired": "Hãy nhập email, ví dụ ban@example.com.",
+    "listRequired": "Hãy chọn ít nhất một danh sách.",
+    "checkInbox": "Đã gửi thư xác nhận tới {email}. Bấm liên kết trong thư để hoàn tất.",
+    "subscribed": "Đã đăng ký. Cảm ơn bạn!",
+    "failed": "Không gửi được lúc này. Hãy thử lại sau.",
+    "confirm": {
+      "title": "Xác nhận đăng ký bản tin",
+      "body": "Bấm nút dưới đây để xác nhận email nhận bản tin.",
+      "button": "Xác nhận",
+      "done": "Đã xác nhận: {lists}.",
+      "doneNone": "Đã xác nhận.",
+      "invalid": "Liên kết không còn dùng được. Có thể bạn đã xác nhận rồi, hoặc liên kết đã hết hạn."
+    },
+    "unsubscribe": {
+      "title": "Huỷ đăng ký bản tin",
+      "body": "Bấm nút dưới đây để ngừng nhận mọi thư bản tin.",
+      "button": "Huỷ đăng ký",
+      "done": "Đã huỷ đăng ký. Bạn sẽ không nhận thư bản tin nữa.",
+      "preferences": "Chỉ muốn bớt thư? Chọn danh sách"
+    },
+    "preferences": {
+      "title": "Tuỳ chọn nhận thư",
+      "body": "Chọn danh sách bạn muốn nhận cho {email}.",
+      "save": "Lưu lựa chọn",
+      "saved": "Đã lưu.",
+      "all": "Huỷ mọi danh sách",
+      "invalid": "Liên kết không còn dùng được. Hãy mở liên kết trong thư mới nhất.",
+      "status": "Trạng thái: {status}",
+      "unconfirmed": "chờ xác nhận",
+      "confirmed": "đang nhận",
+      "unsubscribed": "đã huỷ"
+    }
+  },
+  "errors": {
+    "title": "Không tải được trang",
+    "body": "Máy chủ đang bận hoặc mất kết nối. Hãy thử lại sau ít phút.",
+    "retry": "Thử lại",
+    "notFoundTitle": "Không tìm thấy trang",
+    "notFoundBody": "Địa chỉ có thể đã đổi hoặc trang đã bị gỡ. Hãy tìm lại hoặc về trang chủ.",
+    "home": "Về trang chủ",
+    "search": "Tìm kiếm"
+  },
+  "home": {
+    "allProducts": "Tất cả sản phẩm",
+    "categories": "Mua theo danh mục",
+    "productCount": "{count} sản phẩm",
+    "best": "Bán chạy tuần này",
+    "bestSub": "Tình trạng hàng theo {store}",
+    "more": "Xem thêm",
+    "allPosts": "Tất cả bài viết",
+    "hero": {
+      "shop": "Mua dụng cụ nấu",
+      "stores": "Cửa hàng gần bạn",
+      "withCode": "với mã {code}"
+    },
+    "plain": {
+      "lead": "Bài viết, hướng dẫn và tin mới nhất.",
+      "read": "Đọc {blog}"
+    },
+    "coupon": {
+      "label": "Mã giảm giá đang chạy",
+      "until": "Tới hết {date}",
+      "left": "Còn {count} lượt.",
+      "copy": "Sao chép mã",
+      "copied": "Đã sao chép mã {code}"
+    },
+    "meal": {
+      "title": "Hôm nay nấu gì?",
+      "sub": "Chọn một món, xem cách làm và gom đủ dụng cụ vào giỏ một lần.",
+      "pick": "Chọn món",
+      "time": "{minutes} phút · {people} người",
+      "tools": "Dụng cụ dùng trong món",
+      "toolsHint": "Bỏ chọn món bạn đã có ở nhà.",
+      "postLink": "Cách làm trong bài viết",
+      "count": "{picked} trên {total} dụng cụ · tạm tính",
+      "add": "Thêm {all, select, yes {các} other {{count}}} dụng cụ này vào giỏ",
+      "addedButton": "Đã thêm {count} dụng cụ vào giỏ",
+      "added": "Đã thêm {count} dụng cụ cho món {name} vào giỏ",
+      "none": "Hãy chọn ít nhất một dụng cụ",
+      "toolLabel": "Thêm {name} vào danh sách",
+      "image": "Ảnh minh hoạ món {name}",
+      "noteCoupon": "Giảm 10% với mã {code}",
+      "noteShop": "Cửa hàng bán và giao"
+    },
+    "stores": {
+      "title": "Hệ thống cửa hàng",
+      "sub": "Chọn cửa hàng để xem hàng có sẵn và nhận đơn tại quầy.",
+      "yours": "Cửa hàng của bạn",
+      "choose": "Chọn cửa hàng này",
+      "opens": "Mở cửa {hours}",
+      "pickup": "Nhận hàng tại quầy sau 2 giờ"
+    },
+    "market": {
+      "title": "Xưởng và người làm nghề bán trực tiếp",
+      "lead": "{count} người bán đã xác thực danh tính trước khi được đăng bán. Mỗi sản phẩm ghi rõ ai bán, ở đâu; thanh toán qua đối tác thu hộ có giấy phép, tiền chỉ tới người bán sau hạn đổi trả.",
+      "enter": "Vào {name}",
+      "verified": "Đã xác thực",
+      "meta": "{rating} ★ · {count} sản phẩm"
+    }
+  },
+  "blog": {
+    "readingTime": "{minutes} phút đọc",
+    "intro": "Hướng dẫn, mẹo dùng và câu chuyện từ cửa hàng.",
+    "older": "Bài cũ hơn",
+    "newest": "Về bài mới nhất",
+    "empty": "Chưa có bài viết nào.",
+    "topics": "Chủ đề",
+    "page": "Trang sau",
+    "rss": "Theo dõi qua RSS",
+    "category": "Danh mục",
+    "tag": "Thẻ",
+    "termEmpty": "Chưa có bài viết nào trong mục này.",
+    "authorPosts": "Bài viết của {name}",
+    "website": "Trang web"
+  },
+  "article": {
+    "toc": "Trong bài này",
+    "tocShort": "Trong bài",
+    "comments": "Bình luận",
+    "readNext": "Đọc tiếp trong {blog}",
+    "mentioned": "Sản phẩm nhắc tới trong bài",
+    "mentionedNote": "Sản phẩm gắn trong bài là hàng cửa hàng bán.",
+    "aiNotice": "Bài viết được tạo với sự hỗ trợ của AI.",
+    "aiReviewed": "Bài viết được tạo với sự hỗ trợ của AI và đã được biên tập viên duyệt.",
+    "languages": "Ngôn ngữ bài viết",
+    "updated": "Cập nhật {date}",
+    "by": "Tác giả"
+  },
+  "comments": {
+    "title": "Bình luận ({count})",
+    "closed": "Bình luận đã đóng.",
+    "signIn": "Bình luận ở mục này cần đăng nhập. Website chưa có đăng nhập cho người mua.",
+    "label": "Viết bình luận",
+    "name": "Tên hiển thị",
+    "email": "Email (không hiện công khai)",
+    "notify": "Gửi email cho tôi khi có người trả lời",
+    "placeholder": "Chia sẻ kinh nghiệm của bạn…",
+    "markdown": "Viết được **đậm**, *nghiêng*, [link](https://…), > trích dẫn, `mã`.",
+    "moderated": "Bình luận có thể được kiểm duyệt trước khi hiện công khai.",
+    "submit": "Gửi bình luận",
+    "pending": "Đã gửi. Bình luận của bạn đang chờ duyệt và sẽ hiện khi được duyệt.",
+    "published": "Đã đăng bình luận của bạn.",
+    "failed": "Không gửi được lúc này. Hãy thử lại sau.",
+    "empty": "Chưa có bình luận. Hãy là người đầu tiên.",
+    "reply": "Trả lời",
+    "replyTo": "Trả lời {name}",
+    "cancel": "Huỷ",
+    "more": "Xem thêm bình luận",
+    "moreReplies": "Còn {count} trả lời",
+    "deleted": "Bình luận đã bị xoá.",
+    "deletedName": "Đã xoá",
+    "edited": "đã sửa",
+    "guest": "Khách",
+    "badge_seller": "Cửa hàng",
+    "badge_verified_buyer": "Đã mua",
+    "verifyTitle": "Xác nhận email nhận thông báo",
+    "verifyBody": "Bấm nút dưới đây để nhận email khi có người trả lời bình luận của bạn.",
+    "verifyButton": "Xác nhận",
+    "verified": "Đã xác nhận. Bạn sẽ nhận email khi có trả lời.",
+    "unsubscribeTitle": "Ngừng nhận thông báo trả lời",
+    "unsubscribeBody": "Bấm nút dưới đây để ngừng nhận email khi có người trả lời bình luận của bạn.",
+    "unsubscribeButton": "Ngừng nhận",
+    "unsubscribed": "Đã ngừng. Bạn sẽ không nhận email trả lời nữa.",
+    "linkInvalid": "Liên kết không còn dùng được."
+  },
+  "search": {
+    "title": "Tìm kiếm",
+    "resultsFor": "Kết quả cho “{q}”",
+    "label": "Tìm sản phẩm, bài viết",
+    "submit": "Tìm",
+    "hint": "Gõ không dấu vẫn tìm được.",
+    "products": "Sản phẩm",
+    "content": "Bài viết và trang",
+    "none": "Không thấy kết quả cho “{q}”. Thử từ ngắn hơn, hoặc gõ không dấu.",
+    "noContent": "Không có bài viết nào khớp.",
+    "page": "Trang",
+    "post": "Bài viết",
+    "start": "Nhập từ khoá để tìm sản phẩm và bài viết."
+  },
+  "preview": {
+    "title": "Xem trước bản nháp",
+    "banner": "Bản xem trước: chưa đăng, chỉ ai có liên kết mới xem được.",
+    "invalid": "Liên kết xem trước không còn dùng được (hết hạn hoặc sai). Hãy tạo liên kết mới trong trình soạn."
+  },
+  "page": {
+    "updated": "Cập nhật {date}"
+  }
+}

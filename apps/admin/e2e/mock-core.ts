@@ -12,6 +12,7 @@
 // Màn Nội dung (bài viết, trình soạn, xem trước): `mock-content.ts`.
 // Phân hệ Tiếp thị (biểu mẫu, bản tin, bình luận): `mock-engage.ts`.
 // Menu của website (module `menus`): `mock-menus.ts`.
+// Phần công khai cho website `apps/storefront` (bài đã đăng, bình luận, bản tin): `mock-storefront.ts`.
 //
 // Mã của app xác thực luôn là 123456. Access token chỉ sống 31 giây (cookie của trang quản trị
 // hết sau 1 giây), để test đi qua đường làm mới token. `GET /__stats` trả số lần làm mới;
@@ -50,6 +51,7 @@ import {
 import { mediaContent, mediaRoutes, resetMedia } from "./mock-media.ts";
 import { bumpMenu, MENUS_MODULE, menusRoutes, publicMenu, resetMenus } from "./mock-menus.ts";
 import { fireEvent, resetSettings, settingsRoutes } from "./mock-settings.ts";
+import { storefrontRoutes } from "./mock-storefront.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
 const CODE = "123456";
@@ -327,6 +329,13 @@ const server = createServer(async (request, response) => {
   ) {
     return;
   }
+  // Phần công khai của website: không cần đăng nhập, như core. Cài đặt bình luận công khai dùng
+  // chung với màn Bình luận của trang quản trị (`mock-engage.ts`).
+  if (route === "GET /api/v1/comments/public/settings") {
+    await engageRoutes(request, response, url, route);
+    return;
+  }
+  if (await storefrontRoutes(request, response, url, route)) return;
   const session = caller(request);
   if (!session) {
     return problem(response, 401, "auth.invalid_token", "Sign in.");

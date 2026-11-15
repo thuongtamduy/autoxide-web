@@ -1128,3 +1128,97 @@ lâu; chủ dự án muốn làm tiếp không chờ. Ghim theo commit giữ đ�
 
 Đã cân nhắc: ghim theo "main mới nhất" — mỗi lần sinh lại SDK có thể ra hợp đồng khác, giao diện hỏng mà không
 biết vì sao; chờ bản phát hành — không biết bao giờ.
+
+## W-026 · Website bán hàng `apps/storefront`: nền chung, trang dùng API thật, trang chủ; dữ liệu mẫu kín đáo — 2026-11-15 — agent quyết
+
+Theo D-097 (một stack Next.js cho trang quản trị và website, cùng repo) và D-200 (website là mặt tiền
+bán hàng của một khách; blog là một mục) của core, thiết kế ở `docs/research/ui-design.md` mục 3, 7, 8
+của core và các bảng trang "v2" của bản thiết kế mặt tiền.
+
+Quyết định:
+
+- **App mới `apps/storefront`** (`@autoxide/storefront`), cùng phiên bản thư viện với `apps/admin`
+  (Next.js 16, React 19, next-intl 4, Vitest, Playwright), `output: "standalone"`,
+  `scripts/start-standalone.mjs`, Biome của gốc. Không thêm thư viện nào.
+- **Không Tailwind**: CSS của bản thiết kế (`shop-r38.css`) chép gần nguyên văn thành
+  `src/styles/shop.css` (lớp `.pcard`, `.pgrid`, `.g2/.g3/.g4/.g6`, `.filters`, `.buybar`, `.co-nav`,
+  `.segtabs`… để trang thương mại dùng lại), `!important` của bản gốc bỏ đi; màu ở `tokens.css`; lớp
+  của website thay cho `style="…"` của bản thiết kế ở `site.css`. Thứ tự nạp: tokens → site → shop
+  (luật theo khổ màn của bản thiết kế ghi đè lớp của website như bản gốc ghi đè style). Trang đặt hàng
+  khép kín bằng `<main class="enclosed">`.
+- **Sáng / tối**: `data-theme` trên `<html>` từ cookie `ax_theme` (như trang quản trị), không có thì
+  theo máy; nút đổi ngay không tải lại. **Bốn kiểu giao diện** của các bảng `Main`, `StyleMarket`,
+  `StyleMinimal`, `StyleLuxe`: `AUTOXIDE_STOREFRONT_THEME` (`default`, `market`, `minimal`, `luxe`) →
+  `data-variant`, chỉ đổi biến (màu, phông tiêu đề, bo góc nút). Tạm là biến môi trường; khi core có cấu
+  hình giao diện của khách (hồ sơ công khai, bước 34) thì đọc từ đó. Không tải phông từ máy chủ ngoài
+  (không gửi IP người đọc cho bên thứ ba): Be Vietnam Pro / Inter khi máy có, không thì phông hệ thống.
+- **Ngôn ngữ trên địa chỉ** (SEO): next-intl `localePrefix: "as-needed"`, tiếng Việt mặc định ở `/`,
+  tiếng Anh ở `/en`; không đoán theo trình duyệt hay cookie (một địa chỉ một ngôn ngữ). Ngôn ngữ đọc
+  bằng `next/root-params` (`requestLocale` đã deprecated); Server Action và route handler truyền ngôn
+  ngữ rõ ràng. `hreflang`, `canonical`, Open Graph qua `pageMetadata()` (`src/lib/seo.ts`) cho mọi trang.
+- **Gọi core**: chỉ endpoint công khai, từ máy chủ Next.js, không token (`src/lib/core.ts`:
+  `loadPublic` — 404 thành `null`; `loadOptional` — mọi lỗi thành `null` cho khối phụ). Ảnh của core
+  (`/api/v1/media/<id>/content?v=`) đi qua route cùng đường dẫn của website. Lệnh ghi công khai (bình
+  luận, bản tin, token chống spam) chuyển tiếp `X-Forwarded-For`; token chống spam xin khi người đọc
+  focus vào form (Server Action), không để trong HTML.
+- **Trang dùng API thật**: menu `main` (thanh danh mục, bảng xổ bằng CSS từ 1024px, dải chip ở màn hẹp)
+  và `footer`; `/blog` (12 bài một trang, con trỏ của core), `/blog/{category|tag}/<slug>`,
+  `/blog/author/<slug>`; mọi địa chỉ khác qua `content/public/resolve` (bài, trang tĩnh, chuyển
+  hướng; "đã gỡ" trả 404 vì trang App Router chưa trả được 410); bài viết theo bảng `Article` (khung
+  1144px, mục lục, bản dịch, nhãn AI, bình luận của khách theo cài đặt công khai, `body_html` của core);
+  `/search` (bài và trang của core + sản phẩm mẫu; core tắt tìm theo nghĩa cho khách — mặc định, 404
+  `content.semantic_search_disabled` — thì tìm theo chữ trong bài bằng `posts?q=`); `/preview?token=`; trang mở từ thư:
+  `/newsletter/confirm|preferences|unsubscribe`, `/comments/verify|unsubscribe` (chỉ chạy khi bấm nút);
+  `sitemap.xml` (theo con trỏ tới hết, `hreflang`), `robots.txt`, RSS `/feed.xml`, `/en/feed.xml`.
+- **Dữ liệu mẫu trên website** (W-006, cùng biến `AUTOXIDE_WEB_SAMPLE_DATA`): thư mục
+  `src/sample/`, chép phần tối thiểu từ dữ liệu mẫu của trang quản trị (không import chéo app): 12 sản
+  phẩm đang bán, SKU, giá bán lẻ quý 4, danh mục, tồn ở CN Quận 3 / Thủ Đức / Cầu Giấy, mã BEPMOC10, ba
+  người bán. Trên website công khai không dùng nhãn lớn: dấu `SampleMark` nhỏ ("mẫu", `title` ghi
+  endpoint và bước còn thiếu) và dải `SampleNotice` đầu trang. Tắt dữ liệu mẫu thì mọi khối thương mại,
+  dải cam kết, chọn cửa hàng, giỏ, tài khoản ẩn; trang chủ chỉ còn lời mở đầu chung và bài viết. Menu:
+  core trả 404 (khách chưa tạo menu) thì dùng menu mẫu khi bật dữ liệu mẫu — menu thật luôn thắng. Giỏ
+  hàng mẫu và cửa hàng đã chọn ở cookie `sf_cart`, `sf_store` (Server Action ghi). Tên cửa hàng:
+  `AUTOXIDE_STOREFRONT_NAME`, trống thì tên khách mẫu khi bật dữ liệu mẫu, không thì "Autoxide".
+- **Test**: Vitest cho hàm thuần (tiền, thân bài, menu, SEO, RSS / sitemap, giỏ, catalog mẫu,
+  messages hai ngôn ngữ, matcher của proxy) và `BodyView`; Playwright `apps/storefront/e2e/` chạy bản
+  standalone với core giả của trang quản trị ở cổng riêng (core 4012, website 3200), phần công khai mới
+  của core giả ở `apps/admin/e2e/mock-storefront.ts` (dữ liệu riêng, không đụng dữ liệu của test trang
+  quản trị). Bài bố cục quét 360–1440px: không cuộn ngang, tiền không bẻ dòng, không thẻ lẻ. `gate.sh`
+  chạy e2e của website sau trang quản trị. `Dockerfile` nhận `--build-arg APP=storefront`.
+
+Cho hai agent làm tiếp các trang thương mại:
+
+- **Trang mới** ở `src/app/[locale]/<đường dẫn>/page.tsx`, đường dẫn lấy từ `src/lib/routes.ts`
+  (`/danh-muc/<slug>`, `/san-pham/<slug>`, `/gio-hang`, `/thanh-toan`, `/tai-khoan`,
+  `/tra-cuu-don-hang`, `/khuyen-mai`, `/livestream`, `/nguoi-ban/<slug>`, `/ban-tren-cho`). Trang là
+  Server Component, `<main id="main">`, `generateMetadata` dùng `pageMetadata()`; trang không vào chỉ mục
+  (giỏ, đặt hàng, tài khoản) đặt `noindex`. Link nội bộ dùng `Link` của `@/i18n/navigation`. Trang đặt
+  hàng: `<main className="enclosed …">` để đầu trang khép kín.
+- **Dữ liệu mẫu** thêm vào `src/sample/<phân hệ>.ts`, mỗi hàm có comment "Thay bằng `<endpoint>`
+  (bước N)", dữ liệu khớp trang quản trị (comment trỏ tới file nguồn); có sẵn `catalog.ts` (sản phẩm,
+  danh mục, cửa hàng, tồn, mã giảm), `cart.ts` + `actions.ts` (giỏ trong cookie), `site.ts` (khách mẫu,
+  người bán, món ăn), `view.ts` (`productCard()`), `server.ts` (`readCart`, `readStore`). Khối dùng mẫu
+  luôn có `SampleMark` và chỉ hiện khi `sampleDataEnabled()`.
+- **Component dùng chung** (`src/components/`): `ProductCard` (+ `ProductCardData`, độc lập với nguồn),
+  `Price` (tiền, NBSP), `Rating`, `Badge`, `Breadcrumbs`, `SectionHeader`, `PostCard`, `PostList`,
+  `AddToCart`, `MediaImage`, `BodyView`, `Icon` / `Art` (bộ biểu tượng của menu core và hình minh hoạ
+  sản phẩm), `SampleMark`. Chữ chỉ qua `messages/{vi,en}.json` (thêm namespace theo trang).
+- **CSS**: lớp của bản thiết kế có sẵn ở `shop.css`; lớp riêng của trang thêm vào `site.css` với tiền tố
+  của trang, chỉ dùng biến của `tokens.css`; lưới có số thẻ cố định dùng `.g2/.g3/.g4/.g6`; số tiền luôn
+  qua `Price` / `.price`. Thêm trang vào vòng lặp bố cục của `e2e/storefront.spec.ts`.
+
+Chỗ core còn thiếu cho website (ghi thêm vào bảng chỗ thiếu API của core): hồ sơ công khai của khách
+(tên, thông tin pháp lý, logo Bộ Công Thương, cấu hình giao diện — bước 34); danh sách danh mục / thẻ công
+khai của `content` (chip chủ đề của `/blog` đang gom từ bài trên trang); nhúng bản ghi trong nội dung
+(sản phẩm trong bài — bước 51); catalog, tồn, giá khi áp mã, cửa hàng, giỏ, đơn, người bán (bước 41–46);
+bộ biểu tượng của menu chưa có biểu tượng ngành hàng (website dùng hình minh hoạ cho danh mục mẫu).
+
+Lý do: chủ dự án giao dựng website theo bản thiết kế mặt tiền; nền chung (khung trang, dữ liệu mẫu,
+component, test) làm trước để hai agent sau thêm trang mà không dựng lại. Ngôn ngữ trên địa chỉ và
+render phía máy chủ là điều kiện của SEO (D-097).
+
+Đã cân nhắc: Tailwind như trang quản trị — phải viết lại toàn bộ luật của bản thiết kế, khó đối chiếu với
+bảng gốc; ngôn ngữ theo cookie như trang quản trị — máy tìm kiếm chỉ thấy một ngôn ngữ; chia component
+sang một gói chung với trang quản trị — hai app khác hẳn về giao diện, chỉ chung vài hàm thuần (chép kèm
+comment trỏ nguồn); nhãn "Dữ liệu mẫu · chờ API bước N" như trang quản trị — quá nổi trên trang bán hàng;
+tải phông Google lúc build — build cần mạng, và website gửi IP người đọc cho bên thứ ba nếu tải lúc chạy.
