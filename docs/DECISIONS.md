@@ -383,3 +383,61 @@ của core); giữ một cách làm cho mỗi việc với các màn đã có.
 người đăng ký, bình luận), một màn sẽ quá sâu. Tiptap cho bản tin rồi đổi sang HTML — mất HTML
 email có sẵn (bảng, style nội dòng) khi mở lại, và core không nhận JSON. Gửi `If-Match` bằng `ETag`
 đọc lúc render từng dòng — phải gọi chi tiết cho mọi dòng của bảng mỗi lần mở trang.
+
+## W-012 · Màn Cây tổ chức và phân hệ Tuân thủ (dữ liệu mẫu); hộp thoại form dùng chung — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- Nhóm `org` có màn "Cây tổ chức" (`/org`) đứng trước "Người dùng và role" (`sample: { step: "34" }`,
+  permission `organizations.units.read`). Máy tính: cây bên trái, chi tiết nút bên phải; điện thoại:
+  danh sách → chi tiết theo `?unit=` (có thì hiện chi tiết, không thì hiện cây), chỉ bằng CSS, không
+  JavaScript. Chi tiết nút: ai làm ở nút (gồm người ở nút cha có độ sâu `subtree` / `tenant`), cài
+  đặt hiệu lực kèm nút nguồn (đặt riêng / dùng lại giá trị kế thừa), thêm nút con (Hoàn tác = lưu
+  trữ nút vừa tạo, như `POST …/status {archived}` của bước 34), yêu cầu tách nhánh, mời thành viên
+  (dùng lại `InviteDialog` và lời mời mẫu của `org.ts`, role thật của core).
+- Cây mẫu của `org.ts` thêm Miền Bắc (CN Cầu Giấy chuyển về dưới đó, như bản thiết kế), sàn Chợ Bếp
+  Mộc và sáu nút người bán; `SAMPLE_UNIT_IDS` cho phân hệ khác trỏ đúng nút. Hồ sơ công khai (tab
+  của Phân quyền) bỏ sàn và người bán: gian hàng là việc của bước 46. Phần riêng của màn (thành
+  viên, cài đặt theo nút, yêu cầu tách) ở `src/sample/org-tree.ts` để `org.ts` không quá dài.
+- Phân hệ Tuân thủ (`legal`, biểu tượng `shield`) vào sổ điều hướng sau Tổ chức, trước Cài đặt
+  (thứ tự `RAIL_TENANT`), hai màn `sample: { step: "37" }`: "Tình trạng tuân thủ" (`/compliance`,
+  tab `websites`, `kyc`, `privacy`, `documents`, `reports`) và "Hồ sơ và dữ liệu cá nhân"
+  (`/compliance/records`, tab `purposes`, `retention`, `posting`, `documents`, `cases`, `ai`,
+  `requests`). Hai route group (`(status)` và `records`) dùng chung một layout chặn khi tắt dữ liệu
+  mẫu. Tab của "Tình trạng" là tóm tắt và việc gấp (nộp hồ sơ Bộ Công Thương, duyệt KYC, sự cố 72
+  giờ); sổ dùng hằng ngày (phát hành văn bản, xử lý vụ việc, yêu cầu của chủ thể) nằm ở "Hồ sơ".
+- Mọi điểm luật hay đổi là dữ liệu có phiên bản và ngày hiệu lực (`src/sample/compliance-rules.ts`,
+  theo `compliance_rules` của bước 37): danh sách kiểm hồ sơ (bản 1 theo NĐ 52/2013 – NĐ 85/2021 tới
+  30/6/2026, bản 2 từ 01/7/2026), việc cần KYC, hạn sự cố, hạn vụ việc theo ngày làm việc, giới hạn
+  lưu, hạn trả lời yêu cầu của chủ thể (đề xuất). Màn hiện căn cứ (văn bản, điều, ngày hiệu lực) từ
+  dữ liệu đó (`Basis`), kèm "cần đối chiếu văn bản gốc / người có chuyên môn pháp lý" khi quy tắc
+  đánh dấu. Ngày hiệu lực hiện như ngày lịch (`Day`, không đổi múi giờ).
+- Một bộ dữ liệu: website và trang bắt buộc lấy từ `src/sample/content.ts` (tạo nháp từ mẫu ở màn
+  Nội dung thì danh sách kiểm đổi theo), chủ thể KYC là nút người bán của `org.ts`, mức xác thực bình
+  luận đọc từ `src/sample/engage.ts` (đặt ở màn Bình luận).
+- Phần THẬT: trang nguồn của văn bản pháp lý là trang đã đăng của `content` (đọc lại ngay lúc phát
+  hành, không tin danh sách trình duyệt gửi); tab Nhãn AI đọc bài có `ai_generated` trong 100 bài sửa
+  gần nhất (core chưa có bộ lọc); yêu cầu của chủ thể dẫn tới các tab "dữ liệu theo email" thật của
+  Biểu mẫu, Bản tin, Bình luận (chỉ hiện module đã cài và người xem có permission xuất).
+- Thao tác không đảo được có hộp xác nhận nêu từng hệ quả: ghi nộp hồ sơ (kèm ô "tôi đã nộp"), phát
+  hành văn bản (kèm ô "bản đã phát hành không sửa được"), quyết định vụ việc, ghi nhận sự cố (bắt đầu
+  đếm 72 giờ), duyệt KYC, từ chối yêu cầu. Thao tác đảo được (tắt mục đích, ẩn tạm đích, bỏ nhãn AI)
+  báo kèm Hoàn tác qua `ChangeButtons` của phân hệ Tiếp thị.
+- Hộp thoại form mô tả bằng dữ liệu: `FormDialog` và `InlineForm` (`components/ui/form-dialog.tsx`)
+  nhận Server Action và danh sách ô (`FieldSpec`: text, date, number, select, textarea, check,
+  checks, hidden) với chữ đã dịch từ Server Component; gom lỗi một lần, lỗi dưới từng ô, con trỏ về
+  ô sai đầu tiên; action trả `undo` thì báo kèm Hoàn tác, trả `go` thì mở trang đó. Màn mới dùng nó
+  thay cho viết một component form cho mỗi hộp thoại.
+- Tải bộ hồ sơ (`/compliance/websites/{id}/dossier`) và sổ hoạt động xử lý
+  (`/compliance/records/processing-register`) là route của giao diện trả JSON từ dữ liệu mẫu; khi core
+  có API thì route gọi core bằng token trong cookie rồi trả nguyên tệp, như xuất CSV của Biểu mẫu.
+- Core giả có thêm `POST /__content/legal` (một trang đã đăng, một bài `ai_generated`) cho e2e của
+  Tuân thủ, không đổi dữ liệu ban đầu của các test khác.
+
+Lý do: chủ dự án muốn dựng đủ hai phân hệ theo bản thiết kế trong lúc core làm bước 34 và 37 (W-006);
+luật số hai của core đòi điểm luật hay đổi là dữ liệu có ngày hiệu lực và ghi căn cứ.
+
+Đã cân nhắc: một màn Tuân thủ duy nhất với 14 tab — quá dài trên điện thoại, hai bản thiết kế đã
+tách hai màn. Điện thoại dùng JavaScript để đổi cây / chi tiết — `?unit=` đã đủ, nút quay lại của
+trình duyệt chạy đúng. Viết một component form cho mỗi hộp thoại như các màn trước — hơn hai mươi
+hộp thoại mới, cùng một khuôn.

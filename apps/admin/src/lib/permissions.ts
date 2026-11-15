@@ -63,3 +63,33 @@ export const CONTENT_MANAGE = "content.manage";
 export const MENUS_READ = "menus.read";
 /** Sửa menu của website (module `menus`, chưa có). */
 export const MENUS_MANAGE = "menus.manage";
+/** Thêm nút, đổi trạng thái nút (duyệt nút `pending`) ở nhánh của mình (bước 34). */
+export const UNITS_MANAGE = "organizations.units.manage";
+
+// Permission của bước 37 của core (module `compliance`, chưa có): màn Tuân thủ dùng dữ liệu mẫu.
+/** Xem hồ sơ định danh (KYC). */
+export const KYC_READ = "compliance.kyc.read";
+/** Duyệt, trả lại hồ sơ định danh (chỉ bằng phiên đăng nhập của người). */
+export const KYC_REVIEW = "compliance.kyc.review";
+/** Xem hồ sơ pháp lý, website, danh sách kiểm, bộ hồ sơ Bộ Công Thương. */
+export const LEGAL_READ = "compliance.legal.read";
+/** Sửa hồ sơ pháp lý, ghi trạng thái hồ sơ Bộ Công Thương. */
+export const LEGAL_MANAGE = "compliance.legal.manage";
+/** Xem văn bản pháp lý, phiên bản và bằng chứng chấp nhận. */
+export const DOCUMENTS_READ = "compliance.documents.read";
+/** Phát hành phiên bản mới của văn bản. */
+export const DOCUMENTS_MANAGE = "compliance.documents.manage";
+/** Xem sổ mục đích, hạn lưu, yêu cầu của chủ thể dữ liệu. */
+export const PRIVACY_READ = "compliance.privacy.read";
+/** Sửa sổ mục đích; xử lý yêu cầu của chủ thể dữ liệu. */
+export const PRIVACY_MANAGE = "compliance.privacy.manage";
+/** Ghi nhận và xử lý sự cố dữ liệu cá nhân. */
+export const INCIDENTS_MANAGE = "compliance.incidents.manage";
+/** Xem vụ việc (báo vi phạm, khiếu nại). */
+export const CASES_READ = "compliance.cases.read";
+/** Xử lý vụ việc: ẩn tạm, báo bên bị phản ánh, quyết định. */
+export const CASES_HANDLE = "compliance.cases.handle";
+/** Đặt chính sách của khách (xác thực người đăng nội dung, kênh khiếu nại). */
+export const POLICIES_MANAGE = "compliance.policies.manage";
+/** Bỏ nhãn AI của nội dung đã đăng (module `content`). */
+export const CONTENT_PUBLISH = "content.publish";

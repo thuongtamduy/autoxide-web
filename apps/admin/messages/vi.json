@@ -11,7 +11,8 @@
       "settings": "Cài đặt",
       "org": "Tổ chức",
       "content": "Nội dung",
-      "mkt": "Tiếp thị"
+      "mkt": "Tiếp thị",
+      "legal": "Tuân thủ"
     },
     "pages": {
       "dashboard": "Bảng điều khiển",
@@ -27,7 +28,10 @@
       "media": "Thư viện media",
       "forms": "Biểu mẫu",
       "newsletter": "Bản tin",
-      "comments": "Bình luận"
+      "comments": "Bình luận",
+      "orgTree": "Cây tổ chức",
+      "compliance": "Tình trạng tuân thủ",
+      "complianceRecords": "Hồ sơ và dữ liệu cá nhân"
     },
     "about": {
       "dashboard": "Lời chào và lối vào mọi phân hệ bạn dùng được.",
@@ -42,7 +46,10 @@
       "media": "Ảnh, video, tài liệu: thư mục, thẻ, alt, thùng rác.",
       "forms": "Biểu mẫu cho website, hộp thư bài nộp, xuất CSV, dữ liệu theo email.",
       "newsletter": "Chiến dịch, danh sách nhận tin, người đăng ký kèm bằng chứng đồng ý, danh sách không gửi.",
-      "comments": "Hàng chờ duyệt, báo cáo vi phạm, bình luận theo bài, danh sách cấm, cài đặt."
+      "comments": "Hàng chờ duyệt, báo cáo vi phạm, bình luận theo bài, danh sách cấm, cài đặt.",
+      "orgTree": "Trụ sở, vùng, cửa hàng, kho, người bán; ai làm ở đâu; cài đặt kế thừa.",
+      "compliance": "Website TMĐT, định danh người bán, sự cố dữ liệu cá nhân, văn bản pháp lý, báo vi phạm.",
+      "complianceRecords": "Hồ sơ pháp lý, mục đích xử lý, hạn lưu, đăng nội dung, văn bản, vụ việc, nhãn AI, yêu cầu của chủ thể dữ liệu."
     }
   },
   "login": {
@@ -338,7 +345,32 @@
       "kernel_approval_not_found": "Yêu cầu duyệt này không tồn tại.",
       "kernel_approval_not_pending": "Yêu cầu này đã được quyết hoặc đã hết hạn.",
       "menus_not_found": "Menu này không còn.",
-      "menus_key_taken": "Website này đã có menu cùng khoá và ngôn ngữ."
+      "menus_key_taken": "Website này đã có menu cùng khoá và ngôn ngữ.",
+      "organizations_depth_exceeded": "Cây tổ chức không sâu thêm được; hãy thêm nút ở cấp cao hơn.",
+      "organizations_root_immutable": "Không dời, khoá hay lưu trữ được nút gốc.",
+      "organizations_invalid_transition": "Nút không chuyển được sang trạng thái đó từ trạng thái hiện tại.",
+      "organizations_setting_unknown": "Cài đặt này không có, hoặc không đặt riêng ở nút này.",
+      "organizations_split_not_allowed": "Chỉ vùng, cửa hàng hay sàn đang hoạt động mới tách thành khách riêng được.",
+      "organizations_split_request_exists": "Nút này đã có một yêu cầu tách đang chờ.",
+      "compliance_website_not_found": "Website này không còn nữa.",
+      "compliance_website_state_invalid": "Hồ sơ đang ở trạng thái không ghi được việc này.",
+      "compliance_rules_missing": "Chưa có quy tắc nào đang hiệu lực cho mục kiểm này.",
+      "compliance_profile_not_found": "Hồ sơ pháp lý này không còn nữa.",
+      "compliance_kyc_not_found": "Hồ sơ định danh này không còn nữa.",
+      "compliance_kyc_state_invalid": "Hồ sơ định danh này đã được xét.",
+      "compliance_incident_open": "Còn một sự cố chưa đóng; hãy đóng nó trước.",
+      "compliance_incident_not_found": "Sự cố này không còn nữa.",
+      "compliance_incident_closed": "Sự cố này đã đóng.",
+      "compliance_incident_step_invalid": "Bước này đã làm rồi.",
+      "compliance_document_not_found": "Văn bản này không còn nữa.",
+      "compliance_purpose_not_found": "Mục đích này không còn nữa.",
+      "compliance_purpose_required_by_law": "Mục đích theo nghĩa vụ pháp lý không tắt được.",
+      "compliance_case_not_found": "Vụ việc này không còn nữa.",
+      "compliance_case_state_invalid": "Vụ việc đang ở trạng thái không làm được việc này.",
+      "compliance_ai_item_not_found": "Mục này không còn nữa.",
+      "compliance_ai_label_locked": "Nội dung do AI tạo giữ nhãn tới khi người viết lại.",
+      "compliance_request_not_found": "Yêu cầu này không còn nữa.",
+      "compliance_request_state_invalid": "Yêu cầu này đã trả lời hoặc đã từ chối."
     },
     "fields": {
       "email": "Nhập một địa chỉ email hợp lệ.",
@@ -349,7 +381,24 @@
       "min_one": "Chọn ít nhất một.",
       "length_10_500": "Viết từ 10 đến 500 ký tự.",
       "tax_code": "Hãy nhập 10 chữ số, hoặc 10 chữ số, gạch nối và 3 chữ số.",
-      "domain": "Hãy nhập tên miền như shop.example.com (không phải địa chỉ IP hay localhost)."
+      "domain": "Hãy nhập tên miền như shop.example.com (không phải địa chỉ IP hay localhost).",
+      "length_1_120": "Viết từ 1 tới 120 ký tự.",
+      "unit_code": "Dùng chữ, số, dấu chấm, gạch ngang hay gạch dưới (tối đa 32).",
+      "taken": "Giá trị này đã được dùng.",
+      "acknowledge": "Đánh dấu ô này để xác nhận.",
+      "length_0_500": "Viết tối đa 500 ký tự.",
+      "not_published": "Chọn một trang đã đăng.",
+      "past_date": "Chọn hôm nay hoặc ngày sau.",
+      "future_date": "Chọn hôm nay hoặc ngày trước.",
+      "purpose_key": "Dùng chữ thường nối bằng dấu chấm, vd marketing.zalo.",
+      "length_5_2000": "Viết từ 5 tới 2000 ký tự.",
+      "email_or_phone": "Nhập email hoặc số điện thoại.",
+      "logo_link": "Dán link cơ quan cấp; link bắt đầu bằng https://online.gov.vn/.",
+      "https_url": "Nhập địa chỉ bắt đầu bằng https://.",
+      "identity_required": "Phát trực tiếp bán hàng cần định danh theo quy tắc đang hiệu lực.",
+      "range_1_10": "Nhập số nguyên từ 1 tới 10.",
+      "length_10_2000": "Viết từ 10 tới 2000 ký tự.",
+      "whole_number": "Nhập số nguyên."
     },
     "badgeNew": "Dữ liệu mẫu · chờ API mới",
     "badgeModule": "Dữ liệu mẫu · chờ module {module}"
@@ -3055,6 +3104,928 @@
       "eraseVerify": "Chỉ làm khi yêu cầu của chủ dữ liệu đã được xác minh.",
       "eraseSubmit": "Xoá vĩnh viễn",
       "erased": "Đã xoá dữ liệu."
+    }
+  },
+  "orgtree": {
+    "crumb": "Tổ chức · {tenant}",
+    "title": "Cây tổ chức",
+    "description": "Cửa hàng, kho, vùng và người bán xếp thành cây. Quyền gán ở một nút chảy xuống nút con theo độ sâu của role.",
+    "units": "Các nút",
+    "membersCount": "Số người làm được ở nút này",
+    "treeHint": "Loại nút do khách tự đặt. Nút con dùng cài đặt của nút cha gần nhất, trừ khi tự đặt.",
+    "back": "Mọi nút",
+    "rootPath": "Nút gốc của khách hàng",
+    "pendingNote": "Nút này đang chờ người có quyền quản lý nút duyệt; chưa ghi dữ liệu vào được.",
+    "undo": "Hoàn tác",
+    "types": {
+      "tenant": "Trụ sở",
+      "region": "Vùng",
+      "store": "Cửa hàng",
+      "warehouse": "Kho",
+      "marketplace": "Sàn",
+      "seller": "Người bán"
+    },
+    "status": {
+      "pending": "Chờ duyệt",
+      "active": "Đang hoạt động",
+      "suspended": "Tạm khoá",
+      "archived": "Đã lưu trữ"
+    },
+    "values": {
+      "tax_profile": {
+        "company_deduction": "Doanh nghiệp, khấu trừ",
+        "household_flat": "Hộ kinh doanh, khoán",
+        "per_seller": "Theo hồ sơ từng người bán"
+      },
+      "bool": {
+        "true": "Bật",
+        "false": "Tắt"
+      },
+      "language": {
+        "en": "Tiếng Anh",
+        "vi": "Tiếng Việt"
+      }
+    },
+    "add": {
+      "button": "Thêm nút con",
+      "title": "Thêm nút dưới {parent}",
+      "intro": "Nút là cửa hàng, kho, vùng hay người bán. Role có độ sâu \"nút và con\" ở nút cha tự có hiệu lực ở nút mới.",
+      "submit": "Thêm nút",
+      "done": "Đã thêm nút dưới {parent}.",
+      "undone": "Đã lưu trữ nút vừa thêm.",
+      "name": "Tên nút",
+      "type": "Loại nút",
+      "typeHint": "Nút mới dùng cài đặt của {parent} cho tới khi tự đặt.",
+      "code": "Mã nội bộ (không bắt buộc)",
+      "codeHint": "Vd mã cửa hàng; không trùng trong khách hàng."
+    },
+    "split": {
+      "button": "Yêu cầu tách",
+      "title": "Yêu cầu tách {unit} thành khách riêng",
+      "intro": "Nhân sự vận hành nền tảng xem yêu cầu, chạy thử (dry-run) rồi hẹn giờ tách với bạn. Nhánh thành khách con có database riêng, vẫn nằm trong cây khách hàng.",
+      "copy": "Dữ liệu của nhánh được chép sang database riêng bằng job.",
+      "readOnly": "Nhánh chỉ đọc trong vài phút lúc chuyển; việc tách không huỷ được giữa chừng.",
+      "keeps": "ID và lịch sử giữ nguyên; role ở đây vẫn có hiệu lực qua uỷ quyền; báo cáo gộp vẫn thấy số của nhánh.",
+      "submit": "Gửi yêu cầu",
+      "done": "Đã gửi yêu cầu tách {unit}; bạn nhận thông báo khi có lịch.",
+      "note": "Ghi chú cho nhân sự vận hành (không bắt buộc)",
+      "ack": "Tôi hiểu việc tách chạy nền và không huỷ được giữa chừng",
+      "waiting": "Có một yêu cầu tách đang chờ nhân sự vận hành nền tảng, gửi lúc"
+    },
+    "members": {
+      "title": "Ai làm việc ở nút này",
+      "hint": "Gồm cả người được gán ở nút cha với độ sâu chảy xuống nút này.",
+      "empty": "Chưa ai được gán ở nút này.",
+      "member": "Thành viên",
+      "role": "Role",
+      "depth": "Độ sâu",
+      "from": "Gán ở",
+      "inherited": "Từ {unit}",
+      "direct": "Trực tiếp ở nút này",
+      "invited": "Đã mời · chờ chấp nhận"
+    },
+    "scopes": {
+      "own": "Của mình",
+      "unit": "Nút",
+      "subtree": "Nút và con",
+      "tenant": "Toàn khách"
+    },
+    "settings": {
+      "title": "Cài đặt hiệu lực",
+      "hint": "Cài đặt đặt ở nút cha tự áp xuống nút con, trừ khi nút con tự đặt. Mỗi dòng cho biết giá trị lấy từ nút nào.",
+      "key": "Cài đặt",
+      "value": "Giá trị",
+      "source": "Lấy từ",
+      "actions": "Thao tác",
+      "here": "Đặt tại nút này",
+      "from": "Kế thừa từ {unit}",
+      "default": "Mặc định của máy chủ",
+      "set": "Đặt riêng",
+      "setTitle": "{key} ở {unit}",
+      "setIntro": "Giá trị áp cho nút này và mọi nút con chưa tự đặt.",
+      "save": "Lưu cài đặt",
+      "saved": "Đã lưu cài đặt.",
+      "inherit": "Dùng giá trị kế thừa",
+      "inherited": "Nút này đã dùng lại giá trị kế thừa.",
+      "keys": {
+        "organizations_timezone": "Múi giờ",
+        "organizations_currency": "Tiền tệ",
+        "organizations_language": "Ngôn ngữ",
+        "auth_customer_registration": "Người mua tự đăng ký",
+        "tax_profile": "Hồ sơ thuế"
+      }
+    },
+    "depth": {
+      "title": "Độ sâu của quyền",
+      "hint": "Role cho biết được làm gì; độ sâu cho biết làm ở đâu: chỉ bản ghi của mình, nút này, nút này và mọi nút con, hay toàn khách. Quyền kiểm bằng permission, không bằng tên role.",
+      "own": "Chỉ bản ghi người đó tạo, vd thu ngân thấy đơn mình bán.",
+      "unit": "Mọi dữ liệu của đúng nút được gán.",
+      "subtree": "Nút được gán và mọi nút con; cha tạo dữ liệu cho con được.",
+      "tenant": "Toàn bộ khách hàng này.",
+      "staff": "Nhân sự là tài khoản toàn nền tảng: một người làm được cho nhiều khách, nhiều nút. Người mua là tài khoản riêng của từng khách."
+    }
+  },
+  "compliance": {
+    "crumb": "Tuân thủ · bộ quy định {ruleset}",
+    "title": "Tình trạng tuân thủ",
+    "description": "Mỗi khối là một nghĩa vụ theo luật Việt Nam. Khối đỏ chặn một việc kinh doanh; khối vàng cần làm trong hạn.",
+    "overdue": "Quá hạn",
+    "left": "Còn {hours} giờ {minutes} phút",
+    "badRequest": "Yêu cầu không hợp lệ; tải lại trang rồi thử lại.",
+    "tabs": {
+      "label": "Các phần của tuân thủ",
+      "status": "Tình trạng",
+      "websites": "Website TMĐT",
+      "kyc": "Định danh (KYC)",
+      "privacy": "Dữ liệu cá nhân",
+      "documents": "Văn bản pháp lý",
+      "reports": "Báo vi phạm và AI"
+    },
+    "basis": {
+      "label": "Căn cứ:",
+      "effective": "Quy tắc bản {version}, hiệu lực từ",
+      "until": "tới",
+      "review": "Cần đối chiếu văn bản gốc / người có chuyên môn pháp lý."
+    },
+    "status": {
+      "title": "Nghĩa vụ",
+      "about": "Mở một khối để xem còn thiếu gì và sửa.",
+      "areas": {
+        "websites": "Website TMĐT",
+        "kyc": "Định danh người bán",
+        "privacy": "Dữ liệu cá nhân",
+        "documents": "Văn bản pháp lý",
+        "reports": "Báo vi phạm"
+      },
+      "state": {
+        "websites": {
+          "ok": "Mọi website đã thông báo hay đăng ký",
+          "open": "{open} website chưa thông báo hay đăng ký"
+        },
+        "kyc": {
+          "ok": "Không còn hồ sơ chờ",
+          "open": "{open} hồ sơ đang chờ"
+        },
+        "privacy": {
+          "ok": "Không có yêu cầu hay sự cố đang mở",
+          "open": "{incident, select, none {{requests} yêu cầu đang chờ} other {Sự cố {incident} đang mở}}"
+        },
+        "documents": {
+          "ok": "Bản hiện hành đã được chấp nhận",
+          "open": "{pending} người chưa chấp nhận bản hiện hành"
+        },
+        "reports": {
+          "ok": "Không có vụ việc đang mở",
+          "open": "{open} vụ việc đang mở"
+        }
+      },
+      "note": {
+        "websites": "{missing, plural, =0 {Không còn mục thiếu trước khi nộp.} other {Còn # mục thiếu trước khi nộp.}} {done, plural, =0 {} other {# website đã xong.}}",
+        "kyc": "Người bán chưa xác thực thì không đăng bán, không livestream được.",
+        "privacy": "{incident, select, none {Không có sự cố dữ liệu cá nhân đang mở.} other {Báo cơ quan chuyên trách trong hạn.}}",
+        "documents": "{scheduled, plural, =0 {Không có bản mới chờ hiệu lực.} other {# bản mới chờ hiệu lực.}}",
+        "reports": "{next, select, none {Không có hạn sắp tới.} other {Hạn gần nhất: {next}.}}"
+      },
+      "tone": {
+        "ok": "Đã xong",
+        "warn": "Cần làm",
+        "bad": "Đang chặn",
+        "info": "Đang xử lý"
+      },
+      "rules": {
+        "title": "Bộ quy định đang áp dụng",
+        "about": "Điểm luật hay đổi (danh mục hồ sơ, thời hạn, giới hạn) là dữ liệu có ngày hiệu lực, không viết cứng trong code. Bản mới tự có hiệu lực từ ngày của nó mà không phải sửa code.",
+        "key": "Quy tắc",
+        "version": "Bản",
+        "from": "Hiệu lực từ",
+        "basis": "Căn cứ",
+        "review": "Cần đối chiếu văn bản gốc",
+        "keys": {
+          "kyc_required_activities": "Việc cần xác thực danh tính",
+          "moit_checklist_sales": "Danh sách kiểm hồ sơ: website bán hàng",
+          "moit_checklist_platform": "Danh sách kiểm hồ sơ: sàn TMĐT",
+          "privacy_incident": "Thời hạn sự cố dữ liệu cá nhân",
+          "privacy_subject_requests": "Hạn trả lời yêu cầu của chủ thể dữ liệu (đề xuất)",
+          "privacy_retention_limits": "Giới hạn thời hạn lưu",
+          "cases_deadlines": "Hạn xử lý vụ việc (ngày làm việc)",
+          "posting_verification": "Xác thực tài khoản đăng nội dung",
+          "documents_evidence": "Bằng chứng chấp nhận",
+          "ai_labels": "Nhãn cho nội dung AI"
+        }
+      }
+    },
+    "websites": {
+      "status": {
+        "not_submitted": "Chưa nộp",
+        "submitted": "Đã nộp, chờ kết quả",
+        "needs_supplement": "Cần bổ sung",
+        "notified": "Đã thông báo",
+        "registered": "Đã đăng ký",
+        "rejected": "Bị từ chối"
+      },
+      "kind": {
+        "sales": "Website bán hàng",
+        "platform": "Sàn giao dịch TMĐT"
+      },
+      "owner": "nút {unit}",
+      "duty": {
+        "notify": "Thông báo với Bộ Công Thương",
+        "register": "Đăng ký với Bộ Công Thương"
+      },
+      "progress": "Danh sách kiểm",
+      "count": "{met} / {total} mục",
+      "result": {
+        "met": "Đã có",
+        "missing": "Còn thiếu",
+        "unknown": "Chưa kiểm được",
+        "manual": "Kiểm bằng tay"
+      },
+      "reason": {
+        "draft": "có bản nháp chưa đăng",
+        "not_registered": "chờ module sàn"
+      },
+      "fix": "Bổ sung",
+      "checklistVersion": "Danh sách kiểm bản {version}.",
+      "older": "Bản trước {version}:",
+      "reference": "Số hồ sơ",
+      "submittedAt": "Ngày nộp",
+      "logo": "Link logo",
+      "decidedAt": "Ghi kết quả lúc",
+      "foot": {
+        "not_submitted": "Nộp trên cổng dịch vụ công của Bộ Công Thương, rồi ghi lại việc nộp ở đây.",
+        "submitted": "Khi Bộ trả lời, ghi kết quả và link logo ở đây.",
+        "needs_supplement": "Bổ sung giấy tờ còn thiếu, nộp lại, rồi ghi lại ở đây.",
+        "notified": "Logo \"Đã thông báo\" hiện ở chân trang qua endpoint công khai.",
+        "registered": "Logo \"Đã đăng ký\" hiện ở chân trang qua endpoint công khai.",
+        "rejected": "Sửa theo lý do của Bộ rồi nộp hồ sơ mới."
+      },
+      "download": "Tải bộ hồ sơ",
+      "submit": {
+        "button": "Ghi đã nộp hồ sơ",
+        "title": "Ghi hồ sơ đã nộp cho {domain}",
+        "portal": "Hồ sơ do người nộp trên cổng của Bộ; ở đây chỉ ghi lại.",
+        "final": "Đã ghi nộp thì không hoàn tác được; hồ sơ chuyển sang chờ Bộ trả lời.",
+        "missing": "Danh sách kiểm còn {count} mục thiếu.",
+        "submit": "Ghi đã nộp",
+        "done": "Đã ghi việc nộp hồ sơ cho {domain}.",
+        "reference": "Số hồ sơ trên cổng",
+        "date": "Ngày nộp",
+        "ack": "Tôi đã nộp hồ sơ này trên cổng của Bộ Công Thương"
+      },
+      "decide": {
+        "button": "Ghi kết quả",
+        "title": "Kết quả của Bộ cho {domain}",
+        "intro": "Ghi điều Bộ trả lời. Website đã thông báo hay đã đăng ký cần link và ảnh logo do Bộ cấp.",
+        "submit": "Lưu kết quả",
+        "done": "Đã ghi kết quả.",
+        "status": "Kết quả",
+        "link": "Link logo",
+        "linkHint": "Bắt đầu bằng https://online.gov.vn/",
+        "image": "Địa chỉ ảnh logo"
+      }
+    },
+    "kyc": {
+      "title": "Hồ sơ định danh",
+      "about": "Người bán, người livestream bán hàng và người tiếp thị liên kết phải được xác thực danh tính trước khi bán. Hồ sơ có hạn; tới hạn thì hệ thống nhắc xác thực lại.",
+      "filter": "Lọc theo trạng thái",
+      "all": "Tất cả",
+      "empty": "Không có hồ sơ nào trong danh sách này.",
+      "subject": "Chủ thể",
+      "party": "Loại",
+      "method": "Cách xác thực",
+      "state": "Trạng thái",
+      "actions": "Thao tác",
+      "sent": "gửi",
+      "missingDocuments": "Chờ xét · thiếu giấy tờ",
+      "expires": "Hết hạn",
+      "human": "Duyệt và trả lại cần phiên đăng nhập của người có compliance.kyc.review; API key và AI agent không quyết được.",
+      "gate": "Cổng chặn: nút người bán chưa xác thực thì không đăng bán và không livestream được; API trả lỗi kèm lý do.",
+      "status": {
+        "draft": "Bản nháp",
+        "pending": "Chờ xét",
+        "verified": "Đã xác thực",
+        "rejected": "Đã trả lại",
+        "expired": "Hết hạn",
+        "revoked": "Đã thu hồi"
+      },
+      "activity": {
+        "sell": "Bán hàng",
+        "livestream": "Livestream bán hàng",
+        "affiliate": "Tiếp thị liên kết"
+      },
+      "parties": {
+        "individual": "Cá nhân",
+        "household_business": "Hộ kinh doanh",
+        "organization": "Doanh nghiệp"
+      },
+      "methods": {
+        "vneid": "VNeID qua nhà cung cấp eKYC",
+        "ekyc": "eKYC giấy tờ + khuôn mặt",
+        "business_registry": "Giấy đăng ký kinh doanh + người đại diện",
+        "manual": "Giấy tờ duyệt tay"
+      },
+      "reasons": {
+        "documents_missing": "Thiếu giấy tờ",
+        "document_unreadable": "Giấy tờ không đọc được",
+        "name_mismatch": "Tên không khớp",
+        "duplicate_document": "Giấy tờ đã dùng cho hồ sơ khác",
+        "other": "Lý do khác"
+      },
+      "approve": {
+        "button": "Xác nhận",
+        "title": "Xác nhận {name}",
+        "sell": "Người bán đăng bán và bán trên sàn được ngay.",
+        "audit": "Việc xác nhận ghi vào nhật ký audit kèm tên bạn.",
+        "expiry": "Xác thực hết hạn sau thời hạn trong bộ quy định; người bán được nhắc xác thực lại.",
+        "submit": "Xác nhận",
+        "done": "{name} đã xác thực: từ giờ được đăng bán."
+      },
+      "reject": {
+        "button": "Trả lại kèm lý do",
+        "title": "Trả lại hồ sơ của {name}",
+        "intro": "Người bán nhận lý do, sửa hồ sơ và nộp lại.",
+        "submit": "Trả lại hồ sơ",
+        "done": "Đã trả lại hồ sơ của {name}.",
+        "reason": "Lý do",
+        "choose": "Chọn lý do",
+        "note": "Ghi chú cho người bán",
+        "noteHint": "Bắt buộc khi lý do là \"Lý do khác\"."
+      }
+    },
+    "privacy": {
+      "incident": {
+        "title": "Sự cố dữ liệu cá nhân",
+        "about": "Khi dữ liệu cá nhân bị lộ, mất hoặc bị truy cập trái phép, phải báo cơ quan chuyên trách trong {hours} giờ kể từ lúc phát hiện. Đồng hồ và các mốc nhắc lấy từ bộ quy định.",
+        "status": {
+          "open": "Đang mở",
+          "contained": "Đã khoanh vùng",
+          "reported": "Đã báo cơ quan",
+          "closed": "Đã đóng"
+        },
+        "detected": "Phát hiện lúc",
+        "due": "Hạn báo cơ quan",
+        "categories": "Loại dữ liệu bị ảnh hưởng",
+        "reference": "Số văn bản đã gửi",
+        "steps": {
+          "contain": "Khoanh vùng, chặn đường rò rỉ",
+          "notify_authority": "Gửi thông báo cho cơ quan chuyên trách",
+          "notify_subjects": "Báo người bị ảnh hưởng"
+        },
+        "do": {
+          "contain": "Ghi đã khoanh vùng",
+          "notify_authority": "Ghi đã báo cơ quan",
+          "notify_subjects": "Ghi đã báo người bị ảnh hưởng",
+          "close": "Đóng sự cố"
+        },
+        "done": {
+          "contain": "Đã ghi khoanh vùng.",
+          "notify_authority": "Đã ghi việc báo cơ quan chuyên trách.",
+          "notify_subjects": "Đã ghi việc báo người bị ảnh hưởng.",
+          "close": "Đã đóng sự cố; hồ sơ lưu theo thời hạn của luật."
+        },
+        "points": {
+          "contain": "Ghi rằng đường rò rỉ đã chặn; thời điểm lưu vào nhật ký sự cố.",
+          "notify_authority": "Nhập số văn bản đã gửi cơ quan chuyên trách. Đồng hồ đếm hạn dừng.",
+          "notify_subjects": "Ghi rằng người bị ảnh hưởng đã được báo; thời điểm lưu vào nhật ký sự cố.",
+          "close": "Sự cố đã đóng không mở lại được; nếu tái diễn thì ghi sự cố mới.",
+          "notReported": "Chưa báo cơ quan chuyên trách."
+        },
+        "none": "Không có sự cố đang mở",
+        "noneAbout": "Khi ghi nhận sự cố, đồng hồ {hours} giờ bắt đầu chạy từ lúc phát hiện; hệ thống dựng sẵn bản thông báo.",
+        "open": {
+          "button": "Ghi nhận sự cố",
+          "title": "Ghi nhận sự cố dữ liệu cá nhân",
+          "intro": "Thời điểm phát hiện được lưu ngay khi bạn bấm ghi nhận và không sửa được về sau.",
+          "clock": "Đồng hồ {hours} giờ bắt đầu chạy ngay.",
+          "notify": "Quản trị và người phụ trách dữ liệu cá nhân được báo ngay.",
+          "submit": "Ghi nhận và bắt đầu đếm {hours} giờ",
+          "done": "Đã ghi nhận sự cố; quản trị đã được báo.",
+          "description": "Mô tả ngắn",
+          "severity": "Mức độ",
+          "affected": "Số người bị ảnh hưởng (ước tính)",
+          "affectedHint": "Để trống nếu chưa biết."
+        },
+        "kinds": {
+          "contact": "Liên hệ (email, SĐT)",
+          "address": "Địa chỉ",
+          "order_history": "Lịch sử mua",
+          "identity": "Giấy tờ định danh"
+        },
+        "severity": {
+          "low": "Thấp",
+          "medium": "Trung bình",
+          "high": "Cao"
+        },
+        "past": "{count} sự cố trước đây",
+        "entries": {
+          "opened": "Ghi nhận sự cố",
+          "contain": "Đã khoanh vùng",
+          "notify_authority": "Đã báo cơ quan",
+          "notify_subjects": "Đã báo người bị ảnh hưởng",
+          "closed": "Đã đóng"
+        }
+      },
+      "requests": {
+        "title": "Yêu cầu của chủ thể dữ liệu",
+        "open": "Mở danh sách yêu cầu",
+        "about": "Người có dữ liệu trong hệ thống có quyền xin xem, sửa, xoá dữ liệu và rút đồng ý. Người có tài khoản tự làm; yêu cầu qua kênh khác xử lý ở Hồ sơ và dữ liệu cá nhân. Chứng từ kế toán vẫn giữ đủ thời hạn luật định dù có yêu cầu xoá.",
+        "waiting": "Đang chờ trả lời",
+        "waitingSub": "Mỗi yêu cầu có hạn theo bộ quy định",
+        "exports": "Tự xuất dữ liệu (30 ngày)",
+        "selfSub": "Chạy ngay, chỉ để theo dõi",
+        "deletions": "Tự xoá tài khoản (30 ngày)",
+        "keepSub": "Chứng từ kế toán giữ theo luật"
+      }
+    },
+    "documents": {
+      "title": "Văn bản pháp lý",
+      "manage": "Quản lý và phát hành",
+      "about": "Điều khoản, chính sách, quy chế sàn và hợp đồng người bán có phiên bản. Ai chấp nhận bản nào được lưu làm bằng chứng.",
+      "currentVersion": "Bản {version} hiệu lực từ",
+      "acceptedOf": "{count} / {total} đã chấp nhận",
+      "accepted": "{count} người đã chấp nhận",
+      "noVersion": "Chưa phát hành",
+      "next": "bản {version} từ",
+      "notAccepted": "{count} chưa chấp nhận",
+      "state": {
+        "current": "Đang hiệu lực",
+        "scheduled": "Có bản mới chờ hiệu lực",
+        "none": "Chưa phát hành"
+      },
+      "evidence": "Điều khoản, quy chế sàn và hợp đồng người bán là hợp đồng điện tử: mỗi lần chấp nhận lưu người, phiên bản, thời điểm và dấu vết IP làm bằng chứng. Bản mới không ghi đè bản cũ."
+    },
+    "reports": {
+      "cases": "Báo vi phạm và khiếu nại",
+      "openCases": "Xử lý vụ việc",
+      "about": "Hàng giả, xâm phạm quyền, nội dung vi phạm và khiếu nại người tiêu dùng, kèm hạn kế tiếp.",
+      "kinds": {
+        "ip_infringement": "Sở hữu trí tuệ",
+        "counterfeit": "Hàng giả",
+        "prohibited_goods": "Hàng có điều kiện",
+        "consumer_complaint": "Khiếu nại người tiêu dùng",
+        "other": "Khác"
+      },
+      "hidden": "đang ẩn tạm",
+      "visible": "vẫn hiện",
+      "respondBy": "Hạn phản hồi",
+      "decideBy": "Hạn quyết định",
+      "status": {
+        "received": "Mới nhận",
+        "under_review": "Đang xem xét",
+        "awaiting_response": "Chờ bên bị phản ánh",
+        "decided": "Đã quyết định",
+        "closed": "Đã đóng",
+        "withdrawn": "Đã rút"
+      },
+      "flow": "Luồng xử lý: nhận phản ánh → ẩn tạm → bên bị phản ánh phản hồi → người quyết định; mỗi bước có hạn và lưu vết.",
+      "ai": "Nội dung gắn nhãn AI",
+      "openAi": "Kiểm nhãn",
+      "aiPosts": "Bài viết và trang",
+      "aiPostsSub": "Mang ai_generated trong {limit} bài sửa gần nhất",
+      "aiPostsNone": "Bạn không dùng được module nội dung",
+      "aiOther": "Sản phẩm và alt ảnh",
+      "aiOtherSub": "Có nhãn AI",
+      "aiLaw": "Nội dung do AI tạo hay sửa được gắn nhãn khi hiện."
+    },
+    "records": {
+      "crumb": "Tuân thủ · bộ quy định {ruleset}",
+      "title": "Hồ sơ và dữ liệu cá nhân",
+      "description": "Hồ sơ pháp lý, sổ mục đích xử lý dữ liệu cá nhân, hạn lưu, chính sách đăng nội dung, văn bản có phiên bản, vụ việc, nội dung có nhãn AI và yêu cầu của chủ thể dữ liệu. Người phụ trách pháp chế và quản trị khách dùng.",
+      "export": "Xuất sổ xử lý",
+      "tabs": {
+        "label": "Các phần của hồ sơ",
+        "profile": "Hồ sơ pháp lý",
+        "purposes": "Mục đích xử lý",
+        "retention": "Hạn lưu",
+        "posting": "Đăng nội dung",
+        "documents": "Văn bản",
+        "cases": "Vụ việc",
+        "ai": "Nhãn AI",
+        "requests": "Yêu cầu chủ thể"
+      },
+      "profile": {
+        "owner": "Chủ sở hữu: {name} (cấp khách)",
+        "about": "Dùng cho chân trang, mẫu trang bắt buộc và bộ hồ sơ gửi Bộ Công Thương.",
+        "save": "Lưu hồ sơ",
+        "saved": "Đã lưu; chân trang và mẫu trang dùng thông tin mới.",
+        "entity": "Loại chủ thể",
+        "entities": {
+          "company": "Doanh nghiệp",
+          "household_business": "Hộ kinh doanh",
+          "individual": "Cá nhân"
+        },
+        "legalName": "Tên pháp lý",
+        "tradeName": "Tên giao dịch",
+        "taxCode": "Mã số thuế",
+        "taxHint": "10 chữ số, hoặc 10 chữ số, gạch ngang và 3 chữ số.",
+        "registration": "Số đăng ký kinh doanh",
+        "representative": "Người đại diện",
+        "representativeTitle": "Chức danh người đại diện",
+        "province": "Tỉnh / thành phố",
+        "commune": "Phường / xã",
+        "line": "Số nhà, đường",
+        "phone": "Điện thoại",
+        "email": "Email",
+        "contacts": "Kênh liên hệ",
+        "contactsAbout": "Hiện trên website và trong bộ hồ sơ: nơi người mua gửi khiếu nại và hỏi về dữ liệu cá nhân.",
+        "saveContacts": "Lưu kênh liên hệ",
+        "savedContacts": "Đã lưu kênh liên hệ.",
+        "complaints": "Kênh tiếp nhận khiếu nại",
+        "privacy": "Liên hệ về dữ liệu cá nhân",
+        "byUnit": "Hồ sơ theo nút",
+        "byUnitAbout": "Mỗi người bán trên sàn có hồ sơ pháp lý riêng, gắn với hồ sơ định danh.",
+        "subject": "Chủ thể",
+        "kyc": "Định danh",
+        "updated": "Cập nhật",
+        "seller": "người bán",
+        "tenant": "cấp khách",
+        "kycStatus": {
+          "draft": "Chưa bắt đầu",
+          "pending": "Chờ duyệt",
+          "verified": "Đã xác thực",
+          "rejected": "Đã trả lại",
+          "expired": "Hết hạn",
+          "revoked": "Đã thu hồi"
+        }
+      },
+      "purposes": {
+        "title": "Mục đích",
+        "about": "Vì sao thu, căn cứ, loại dữ liệu, hạn lưu. Danh sách công khai trên website để minh bạch, và là đầu vào cho sổ hoạt động xử lý.",
+        "add": {
+          "button": "Thêm mục đích",
+          "title": "Thêm mục đích xử lý",
+          "intro": "Mục đích mới hiện ngay trong danh sách công khai. Căn cứ \"đồng ý\" thì cần hỏi đồng ý trước khi thu.",
+          "submit": "Thêm",
+          "done": "Đã thêm mục đích; danh sách công khai cập nhật.",
+          "key": "Khoá",
+          "descriptionVi": "Mô tả cho người dùng (tiếng Việt)",
+          "descriptionEn": "Mô tả cho người dùng (tiếng Anh)",
+          "basisHint": "Đồng ý thì phải có bản ghi đồng ý của từng người và họ rút được bất kỳ lúc nào."
+        },
+        "basis": "Căn cứ",
+        "bases": {
+          "consent": "Đồng ý",
+          "contract": "Thực hiện hợp đồng",
+          "legal_obligation": "Nghĩa vụ pháp lý",
+          "vital_interest": "Lợi ích sống còn"
+        },
+        "categories": "Loại dữ liệu",
+        "data": {
+          "name": "Họ tên",
+          "contact": "Email, số điện thoại",
+          "address": "Địa chỉ",
+          "tax": "Mã số thuế",
+          "identity_last4": "4 số cuối giấy tờ",
+          "order_history": "Lịch sử mua",
+          "device_id": "Mã thiết bị ẩn danh"
+        },
+        "retention": "Hạn lưu",
+        "retentions": {
+          "P13M": "13 tháng",
+          "P1Y": "1 năm",
+          "P3Y": "3 năm",
+          "P5Y": "5 năm",
+          "P10Y": "10 năm",
+          "until_withdrawn": "Tới khi rút đồng ý",
+          "kyc_validity": "Theo hạn KYC"
+        },
+        "purpose": "Mục đích",
+        "state": "Trạng thái",
+        "actions": "Thao tác",
+        "source": {
+          "default": "mặc định của bộ quy định",
+          "tenant": "khách thêm"
+        },
+        "consents": "{granted} người đồng ý, {withdrawn} người đã rút",
+        "on": "Đang dùng",
+        "off": "Đã tắt",
+        "required": "Bắt buộc theo luật",
+        "undo": "Hoàn tác",
+        "undone": "Đã hoàn tác.",
+        "disable": "Tắt mục đích",
+        "disabled": "Đã tắt; dữ liệu đã thu giữ theo hạn lưu, không thu thêm.",
+        "enable": "Bật lại",
+        "enabled": "Đã bật.",
+        "consentNote": "Rút đồng ý thì tin quảng cáo đang chờ gửi cho người đó bị huỷ ngay."
+      },
+      "retention": {
+        "forever": "Mãi mãi",
+        "years": "{count} năm",
+        "days": "{count} ngày",
+        "residency": "Nơi lưu dữ liệu",
+        "countries": {
+          "VN": "Việt Nam"
+        },
+        "residencySub": "Nhà vận hành nền tảng đặt",
+        "toReview": "Mục cần xem",
+        "toReviewSub": "Dữ liệu cá nhân giữ mãi hay vượt giới hạn",
+        "title": "Hạn lưu theo module",
+        "about": "Mỗi module khai dữ liệu nó giữ bao lâu; hệ thống so với giới hạn trong bộ quy định.",
+        "data": "Dữ liệu",
+        "category": "Mức",
+        "keep": "Hạn lưu",
+        "limit": "Giới hạn",
+        "state": "Trạng thái",
+        "items": {
+          "forms_submissions": "Bài gửi biểu mẫu",
+          "auth_sessions": "Phiên đăng nhập, token",
+          "comments_ip_traces": "Dấu vết IP bình luận",
+          "compliance_kyc_documents": "Ảnh giấy tờ KYC tải tay",
+          "webhooks_deliveries": "Lần gửi webhook",
+          "audit_events": "Nhật ký audit"
+        },
+        "categories": {
+          "basic": "Cơ bản",
+          "sensitive": "Nhạy cảm",
+          "security": "Bảo mật",
+          "accounting": "Kế toán"
+        },
+        "review": "Cần xem",
+        "ok": "Trong giới hạn",
+        "operator": "Hạn lưu đọc từ cấu hình của máy chủ, chưa đặt riêng được cho từng khách. Đổi hạn lưu cần nhà vận hành đổi biến môi trường.",
+        "limits": "Giới hạn trong bảng là số mẫu của bộ quy định."
+      },
+      "posting": {
+        "title": "Xác thực người đăng",
+        "about": "Ai được đánh giá sản phẩm, phát trực tiếp bán hàng: không cần xác thực, cần số di động Việt Nam đã xác thực, hay cần định danh.",
+        "comments": "Bình luận bài viết:",
+        "commentsWhere": "Đổi ở Bình luận › Cài đặt",
+        "levels": {
+          "none": "Không cần",
+          "phone": "Số di động",
+          "identity": "Định danh"
+        },
+        "save": "Lưu chính sách",
+        "saved": "Đã lưu; áp ngay cho lần đăng kế tiếp.",
+        "reviews": "Đánh giá sản phẩm",
+        "livestream": "Phát trực tiếp bán hàng",
+        "livestreamHint": "Người phát bán hàng phải xác thực danh tính từ ngày ghi trong bộ quy định (bên dưới).",
+        "maxAccounts": "Số tài khoản tối đa cho một số điện thoại",
+        "maxHint": "Một số đã xác thực dùng cho bao nhiêu tài khoản (1 tới 10).",
+        "kycFrom": "Xác thực danh tính khi bán và phát trực tiếp bán hàng bắt buộc từ",
+        "buyers": "Tài khoản người mua",
+        "verified": {
+          "phone": "Đã xác thực số di động",
+          "identity": "Đã định danh"
+        },
+        "verifiedNote": {
+          "phone": "Bình luận và đánh giá mở cho nhóm này.",
+          "identity": "Gồm người phát trực tiếp và tiếp thị."
+        },
+        "guestsTitle": "Khách vãng lai.",
+        "guests": "Người chưa đăng nhập chỉ đăng được khi chính sách là \"Không cần\". Mã xác thực SMS cần kết nối SMS brandname ở Cài đặt › Kết nối đối tác."
+      },
+      "documents": {
+        "title": "Văn bản và phiên bản",
+        "about": "Văn bản soạn như trang ở Nội dung; phát hành thì chép ảnh chụp bất biến kèm ngày hiệu lực. Bản mới bắt chấp nhận lại thì người dùng bị chặn ở việc liên quan (đặt hàng, đăng bán) tới khi chấp nhận.",
+        "noContent": "Không đọc được trang đã đăng (thiếu module content hay permission content.read), nên chưa chọn được trang nguồn.",
+        "document": "Văn bản",
+        "audience": "Áp cho",
+        "version": "Bản mới nhất",
+        "accepted": "Đã chấp nhận",
+        "state": "Trạng thái",
+        "actions": "Thao tác",
+        "audiences": {
+          "user": "Mọi người",
+          "buyer": "Người mua",
+          "seller": "Người bán"
+        },
+        "versionFrom": "Bản {version} · từ",
+        "reaccept": "bắt chấp nhận lại",
+        "noReaccept": "không bắt chấp nhận lại",
+        "states": {
+          "current": "Đang hiệu lực",
+          "scheduled": "Chờ hiệu lực",
+          "none": "Chưa phát hành"
+        },
+        "publish": {
+          "button": "Phát hành bản mới",
+          "title": "Phát hành bản mới của {title}",
+          "intro": "Trang nguồn phải đã đăng.",
+          "snapshot": "Hệ thống chép ảnh chụp bất biến của trang (nội dung và SHA-256).",
+          "final": "Bản đã phát hành không sửa, không xoá được.",
+          "reacceptPoint": "Nếu bắt chấp nhận lại, người dùng bị chặn ở việc liên quan tới khi chấp nhận.",
+          "submit": "Phát hành",
+          "done": "Đã phát hành; bản mới có hiệu lực từ ngày đã chọn.",
+          "source": "Trang nguồn",
+          "choose": "Chọn một trang đã đăng",
+          "noSources": "Chưa có trang nào đã đăng: hãy đăng trang ở Nội dung trước.",
+          "sourceHint": "Trang đã đăng đọc từ Nội dung.",
+          "locale": "Ngôn ngữ",
+          "effective": "Hiệu lực từ",
+          "reaccept": "Bắt người dùng chấp nhận lại",
+          "reacceptHint": "Bật khi thay đổi ảnh hưởng quyền lợi.",
+          "ack": "Tôi hiểu bản đã phát hành không sửa được"
+        },
+        "evidence": "{count} bằng chứng chấp nhận",
+        "versionShort": "bản {version}",
+        "channels": {
+          "web": "Website",
+          "mobile_app": "Ứng dụng di động",
+          "api": "API",
+          "in_store": "Tại quầy"
+        },
+        "methods": {
+          "checkbox": "ô đánh dấu",
+          "click_wrap": "bấm đồng ý",
+          "signature": "chữ ký"
+        },
+        "countNote": "Số người đã chấp nhận theo phiên bản cần API; hiện core chỉ có danh sách bằng chứng từng người.",
+        "evidenceLaw": "Mỗi lần chấp nhận lưu người, phiên bản, kênh, thời điểm và SHA-256 của bản đã hiện."
+      },
+      "cases": {
+        "title": "Vụ việc",
+        "about": "Báo vi phạm sở hữu trí tuệ, hàng giả, hàng cấm và khiếu nại của người tiêu dùng. Hạn xác nhận, hạn phản hồi, hạn quyết định tính theo ngày làm việc từ bộ quy định.",
+        "filter": "Lọc theo trạng thái",
+        "all": "Tất cả",
+        "status": {
+          "received": "Mới nhận",
+          "under_review": "Đang xem xét",
+          "awaiting_response": "Chờ bên bị phản ánh",
+          "decided": "Đã quyết định",
+          "closed": "Đã đóng",
+          "withdrawn": "Đã rút"
+        },
+        "empty": "Không có vụ việc nào trong danh sách này.",
+        "hidden": "Đích đang ẩn",
+        "kinds": {
+          "ip_infringement": "Sở hữu trí tuệ",
+          "counterfeit": "Hàng giả",
+          "prohibited_goods": "Hàng có điều kiện",
+          "consumer_complaint": "Khiếu nại người tiêu dùng",
+          "other": "Khác"
+        },
+        "reporter": "Người báo",
+        "reporters": {
+          "guest": "Khách vãng lai",
+          "user": "Người mua",
+          "rights_holder": "Chủ văn bằng",
+          "authority": "Cơ quan"
+        },
+        "respondent": "Bên bị phản ánh",
+        "respondBy": "Hạn phản hồi",
+        "decidedAt": "Quyết định lúc",
+        "decideBy": "Hạn quyết định",
+        "decision": "Quyết định",
+        "decisions": {
+          "upheld": "Chấp nhận, giữ ẩn",
+          "partially_upheld": "Chấp nhận một phần",
+          "rejected": "Bác, hiện lại"
+        },
+        "trail": "{count} bước trong nhật ký",
+        "entries": {
+          "restricted": "Ẩn đích trong lúc xem xét",
+          "restored": "Hiện lại đích",
+          "respondent_notified": "Đã báo bên bị phản ánh; hạn phản hồi theo ngày làm việc"
+        },
+        "undo": "Hoàn tác",
+        "restored": "Đích đã hiện lại.",
+        "restrict": "Hạn chế đích",
+        "restrictedDone": "Đã ẩn đích trong lúc xem xét (event compliance.target_restricted).",
+        "notify": {
+          "button": "Báo bên bị phản ánh",
+          "title": "Báo {name}",
+          "mail": "Bên bị phản ánh nhận email kèm nội dung phản ánh.",
+          "deadline": "Hạn phản hồi tính theo ngày làm việc từ bộ quy định.",
+          "submit": "Gửi thông báo",
+          "done": "Đã báo bên bị phản ánh."
+        },
+        "decide": {
+          "button": "Quyết định",
+          "title": "Quyết định {reference}",
+          "final": "Quyết định không hoàn tác được.",
+          "human": "Cần phiên đăng nhập của bạn; AI agent và API key không quyết được.",
+          "parties": "Hai bên nhận quyết định kèm lý do của bạn.",
+          "submit": "Ghi quyết định",
+          "done": "Đã ghi quyết định; hai bên đã được báo.",
+          "reason": "Lý do gửi hai bên"
+        },
+        "human": "Ẩn tạm (hạn chế đích) không phải quyết định cuối. Mọi bước ghi một dòng lưu vết, không sửa được.",
+        "deadlines": "Hạn theo loại vụ việc."
+      },
+      "ai": {
+        "posts": "Bài viết và trang mang nhãn AI tạo",
+        "postsAbout": "Đọc từ Nội dung: bài mang ai_generated trong {limit} bài sửa gần nhất. Core chưa có bộ lọc cho việc này.",
+        "noContent": "Bạn không dùng được module nội dung.",
+        "noPosts": "Không có bài hay trang gần đây nào mang nhãn AI tạo.",
+        "content": "Nội dung",
+        "status": "Nhãn",
+        "updated": "Cập nhật",
+        "actions": "Thao tác",
+        "untitled": "Chưa có tiêu đề",
+        "kinds": {
+          "post": "Bài viết",
+          "page": "Trang",
+          "product": "Sản phẩm",
+          "media": "Media"
+        },
+        "generated": "AI tạo",
+        "statuses": {
+          "draft": "bản nháp",
+          "published": "đã đăng",
+          "archived": "đã lưu trữ"
+        },
+        "open": "Mở trình soạn",
+        "other": "Sản phẩm và alt ảnh",
+        "otherAbout": "Nhãn trên mô tả sản phẩm và alt ảnh viết có AI hỗ trợ. Bỏ nhãn được ghi audit kèm tên bạn.",
+        "what": "Phần do AI",
+        "reviewer": "Người duyệt",
+        "label": "Nhãn",
+        "notReviewed": "Chưa duyệt",
+        "labels": {
+          "ai_generated": "Nhãn: AI tạo",
+          "ai_assisted": "Nhãn: AI hỗ trợ",
+          "removed": "Đã bỏ nhãn"
+        },
+        "locked": "Bản nháp do AI viết không tự đăng",
+        "undo": "Hoàn tác",
+        "undone": "Đã hoàn tác đổi nhãn.",
+        "remove": "Bỏ nhãn",
+        "removed": "Đã bỏ nhãn; ghi vào nhật ký audit.",
+        "restore": "Gắn lại nhãn",
+        "restored": "Đã gắn nhãn AI hỗ trợ.",
+        "law": "Nội dung do AI tạo hay sửa phải mang nhãn khi hiện."
+      },
+      "requests": {
+        "exports": "Tự xuất dữ liệu (30 ngày)",
+        "exportsSub": "Chạy ngay, chỉ để theo dõi",
+        "deletions": "Tự xoá tài khoản (30 ngày)",
+        "deletionsSub": "Bằng chứng chấp nhận giữ theo hạn",
+        "open": "Yêu cầu qua kênh khác",
+        "openSub": "Đang mở, mỗi yêu cầu có hạn",
+        "title": "Yêu cầu qua kênh khác",
+        "add": {
+          "button": "Ghi yêu cầu",
+          "title": "Ghi yêu cầu của chủ thể dữ liệu",
+          "intro": "Ghi yêu cầu nhận qua email, điện thoại, tại quầy hay thư. Xác minh đúng người trước khi đưa dữ liệu.",
+          "submit": "Ghi",
+          "done": "Đã ghi yêu cầu; hạn trả lời tính theo bộ quy định.",
+          "subject": "Người yêu cầu (email hay số điện thoại)",
+          "subjectHint": "Dùng để xác minh người yêu cầu và tra dữ liệu của họ.",
+          "note": "Nội dung yêu cầu"
+        },
+        "kind": "Yêu cầu",
+        "kinds": {
+          "access": "Xem dữ liệu",
+          "rectify": "Sửa dữ liệu",
+          "erase": "Xoá dữ liệu",
+          "withdraw": "Rút đồng ý",
+          "object": "Phản đối xử lý"
+        },
+        "channel": "Kênh",
+        "channels": {
+          "email": "Email",
+          "phone": "Điện thoại",
+          "in_store": "Tại quầy",
+          "post": "Thư"
+        },
+        "about": "Người có tài khoản tự xuất, tự xoá ngay, không cần ai duyệt. Yêu cầu của người không có tài khoản hay qua kênh khác ghi và trả lời ở đây.",
+        "filter": "Lọc theo trạng thái",
+        "all": "Tất cả",
+        "status": {
+          "new": "Mới nhận",
+          "verifying": "Đang xác minh người yêu cầu",
+          "in_progress": "Đang xử lý",
+          "done": "Đã trả lời",
+          "rejected": "Từ chối có lý do"
+        },
+        "empty": "Không có yêu cầu nào trong danh sách này.",
+        "request": "Yêu cầu",
+        "received": "Nhận",
+        "due": "Hạn trả lời",
+        "state": "Trạng thái",
+        "actions": "Thao tác",
+        "reason": "Lý do: {reason}",
+        "do": {
+          "done": "Hoàn tất",
+          "verified": "Đã xác minh người yêu cầu",
+          "reject": "Từ chối có lý do"
+        },
+        "done": {
+          "done": "Đã ghi trả lời.",
+          "verified": "Đã ghi xác minh; bắt đầu xử lý.",
+          "rejected": "Đã từ chối; người yêu cầu nhận lý do và cách khiếu nại."
+        },
+        "points": {
+          "done": "Ghi rằng người yêu cầu đã nhận trả lời (gói xuất tạo bằng job và gửi link có hạn).",
+          "accounting": "Chứng từ kế toán vẫn giữ đủ thời hạn luật định dù có yêu cầu xoá.",
+          "verified": "Ghi rằng bạn đã kiểm đúng người yêu cầu.",
+          "reject": "Người yêu cầu nhận lý do của bạn và cách khiếu nại.",
+          "final": "Yêu cầu đã trả lời hay từ chối không mở lại được."
+        },
+        "rejectTitle": "Từ chối {reference}",
+        "rejectReason": "Lý do",
+        "lookup": {
+          "title": "Tra và xoá dữ liệu theo email",
+          "about": "Các công cụ này đọc và xoá dữ liệu thật mỗi module giữ cho một email. Dán email của người yêu cầu vào đó; email không bao giờ nằm trên địa chỉ trang.",
+          "none": "Bạn chưa dùng được module nào có tra dữ liệu theo email.",
+          "forms": "Biểu mẫu: dữ liệu theo email",
+          "newsletter": "Bản tin: dữ liệu theo email",
+          "comments": "Bình luận: dữ liệu theo email",
+          "self": "Dữ liệu của tôi"
+        },
+        "deadlines": "Hạn trả lời theo loại yêu cầu (quy tắc đề xuất)."
+      }
     }
   }
 }

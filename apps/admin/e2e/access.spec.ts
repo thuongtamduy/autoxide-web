@@ -28,6 +28,12 @@ test("thanh bên có Tổ chức; danh sách người dùng có role, trạng th
     .getByRole("navigation", { name: "Areas" })
     .getByRole("link", { name: "Organization" })
     .click();
+  // Màn đầu của phân hệ là Cây tổ chức (dữ liệu mẫu, W-012); Người dùng và role đứng sau.
+  await expect(page).toHaveURL(/\/org$/);
+  await page
+    .getByRole("navigation", { name: "Organization", exact: true })
+    .getByRole("link", { name: "Users and roles" })
+    .click();
   await expect(page).toHaveURL(/\/org\/access\/users$/);
   await expect(page.getByRole("heading", { level: 1, name: "Users and roles" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Users", exact: true })).toHaveAttribute(

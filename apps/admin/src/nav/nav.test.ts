@@ -210,3 +210,35 @@ describe("nhóm Tiếp thị", () => {
     expect(missing.find((g) => g.id === "mkt")?.pages.map((p) => p.id)).toEqual(["forms"]);
   });
 });
+
+describe("Cây tổ chức và phân hệ Tuân thủ (dữ liệu mẫu, W-012)", () => {
+  const admin: Viewer = { allPermissions: true, permissions: [], modules: [], sample: true };
+
+  it("Cây tổ chức đứng trước Người dùng và role; Tuân thủ đứng sau Tổ chức, trước Cài đặt", () => {
+    const nav = visibleNav(admin, REAL_NAV);
+    expect(nav.find((g) => g.id === "org")?.pages.map((p) => p.id)).toEqual(["orgTree", "access"]);
+    const ids = nav.map((g) => g.id);
+    expect(ids.indexOf("legal")).toBe(ids.indexOf("org") + 1);
+    expect(ids.indexOf("settings")).toBe(ids.indexOf("legal") + 1);
+    expect(nav.find((g) => g.id === "legal")?.pages.map((p) => p.href)).toEqual([
+      "/compliance",
+      "/compliance/records",
+    ]);
+    expect(activePage(REAL_NAV, "/org")?.page.id).toBe("orgTree");
+    expect(activePage(REAL_NAV, "/org/access/users")?.page.id).toBe("access");
+    expect(activePage(REAL_NAV, "/compliance/kyc")?.page.id).toBe("compliance");
+    expect(activePage(REAL_NAV, "/compliance/records/cases")?.page.id).toBe("complianceRecords");
+  });
+
+  it("tắt dữ liệu mẫu thì không có; người thiếu permission dự kiến thì không thấy", () => {
+    const off = visibleNav({ ...admin, sample: false }, REAL_NAV);
+    expect(off.find((g) => g.id === "legal")).toBeUndefined();
+    expect(off.find((g) => g.id === "org")?.pages.map((p) => p.id)).toEqual(["access"]);
+    const legal = visibleNav(
+      { allPermissions: false, permissions: ["compliance.kyc.read"], modules: [], sample: true },
+      REAL_NAV,
+    );
+    expect(legal.find((g) => g.id === "legal")?.pages.map((p) => p.id)).toEqual(["compliance"]);
+    expect(legal.find((g) => g.id === "org")).toBeUndefined();
+  });
+});

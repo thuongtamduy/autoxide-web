@@ -18,12 +18,19 @@ import {
 } from "@/lib/engage";
 import {
   AUDIT_READ,
+  CASES_READ,
   CONTENT_READ,
   DEVTOOLS_READ,
+  DOCUMENTS_READ,
+  KYC_READ,
+  LEGAL_READ,
   MEDIA_READ,
   MENUS_READ,
   MODULES_READ,
+  POLICIES_MANAGE,
+  PRIVACY_READ,
   ROLES_READ,
+  UNITS_READ,
   USERS_READ,
   WEBHOOKS_MANAGE,
 } from "@/lib/permissions";
@@ -99,8 +106,29 @@ export const NAV: NavGroup[] = [
     id: "org",
     icon: "org",
     pages: [
+      // Cây tổ chức: chờ API của bước 34 (module `organizations`), dựng bằng dữ liệu mẫu (W-012).
+      { id: "orgTree", href: "/org", permission: UNITS_READ, sample: { step: "34" } },
       // Không ghi `module`: không có module `auth` thì không đăng nhập được vào trang này.
       { id: "access", href: "/org/access", permission: [USERS_READ, ROLES_READ] },
+    ],
+  },
+  {
+    // Tuân thủ pháp luật Việt Nam (module `compliance` của bước 37, chưa có): dữ liệu mẫu (W-012).
+    id: "legal",
+    icon: "shield",
+    pages: [
+      {
+        id: "compliance",
+        href: "/compliance",
+        permission: [LEGAL_READ, KYC_READ, PRIVACY_READ, DOCUMENTS_READ, CASES_READ],
+        sample: { step: "37" },
+      },
+      {
+        id: "complianceRecords",
+        href: "/compliance/records",
+        permission: [LEGAL_READ, PRIVACY_READ, DOCUMENTS_READ, CASES_READ, POLICIES_MANAGE],
+        sample: { step: "37" },
+      },
     ],
   },
   {

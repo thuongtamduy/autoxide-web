@@ -20,13 +20,23 @@ export interface Ref {
 
 // ---------------------------------------------------------------- Kiểu theo đặc tả bước 34
 
+/**
+ * Loại nút (`organizations_unit_type.code`): khách tự đặt thêm được; đây là các loại mẫu của bản
+ * thiết kế. `tenant` dành cho gốc; `seller` là người bán trên sàn (bước 34, mô hình sàn).
+ */
+export type UnitType = "tenant" | "region" | "store" | "warehouse" | "marketplace" | "seller";
+
+export type UnitStatus = "pending" | "active" | "suspended" | "archived";
+
 /** Nút của cây tổ chức (`GET /api/v1/organizations/units`). */
 export interface OrgUnit {
   id: string;
   parent_id: string | null;
-  unit_type: "tenant" | "region" | "store" | "warehouse";
+  unit_type: UnitType;
   name: string;
-  status: "pending" | "active" | "suspended" | "archived";
+  status: UnitStatus;
+  /** Mã nội bộ (vd mã cửa hàng); duy nhất trong khách khi có. */
+  code?: string | null;
 }
 
 export type InvitationStatus = "pending" | "accepted" | "revoked" | "expired";
@@ -155,6 +165,41 @@ const Q3 = "01a1e000-0000-7000-8000-000000000a03";
 const TD = "01a1e000-0000-7000-8000-000000000a04";
 const WH = "01a1e000-0000-7000-8000-000000000a05";
 const CG = "01a1e000-0000-7000-8000-000000000a06";
+const NORTH = "01a1e000-0000-7000-8000-000000000a07";
+const MARKET = "01a1e000-0000-7000-8000-000000000a08";
+/** Id của các nút mẫu, để dữ liệu mẫu của phân hệ khác (tuân thủ, kho…) trỏ đúng nút. */
+export const SAMPLE_UNIT_IDS = {
+  root: ROOT,
+  south: SOUTH,
+  q3: Q3,
+  thuDuc: TD,
+  warehouse: WH,
+  cauGiay: CG,
+  north: NORTH,
+  market: MARKET,
+  /** Người bán trên Chợ Bếp Mộc, theo thứ tự của `SAMPLE_SELLERS`. */
+  sellers: [
+    "01a1e000-0000-7000-8000-000000000a10",
+    "01a1e000-0000-7000-8000-000000000a11",
+    "01a1e000-0000-7000-8000-000000000a12",
+    "01a1e000-0000-7000-8000-000000000a13",
+    "01a1e000-0000-7000-8000-000000000a14",
+    "01a1e000-0000-7000-8000-000000000a15",
+  ],
+} as const;
+
+/** Người bán mẫu (tên gian hàng) trên Chợ Bếp Mộc; `suspended` = đang tạm khoá. */
+export const SAMPLE_SELLERS: readonly { name: string; status: UnitStatus }[] = [
+  { name: "Gia Dụng Nhà Na", status: "active" },
+  { name: "Gốm Sứ Bát Tràng Xưa", status: "active" },
+  { name: "Bếp Nhà Thỏ", status: "active" },
+  { name: "Dao Kéo Đa Sỹ Truyền Thống", status: "active" },
+  { name: "Thực Phẩm Sạch An Nhiên", status: "active" },
+  { name: "Khăn Bông Hạ Long", status: "suspended" },
+];
+
+/** Độ sâu tối đa của cây (`AUTOXIDE_ORGANIZATIONS_MAX_DEPTH`, mặc định 8; gốc = 0). */
+export const SAMPLE_MAX_DEPTH = 8;
 
 const MAI: Ref = { id: "01a1e000-0000-7000-8000-000000000f01", name: "Ngô Mai" };
 const NAM: Ref = { id: "01a1e000-0000-7000-8000-000000000f02", name: "Hoàng Nam" };
@@ -197,8 +242,34 @@ function seed(): Store {
     { id: Q3, parent_id: SOUTH, unit_type: "store", name: "CN Quận 3", status: "active" },
     { id: TD, parent_id: SOUTH, unit_type: "store", name: "CN Thủ Đức", status: "active" },
     { id: WH, parent_id: SOUTH, unit_type: "warehouse", name: "Kho Thủ Đức", status: "active" },
-    { id: CG, parent_id: ROOT, unit_type: "store", name: "CN Cầu Giấy", status: "active" },
+    { id: NORTH, parent_id: ROOT, unit_type: "region", name: "Miền Bắc", status: "active" },
+    { id: CG, parent_id: NORTH, unit_type: "store", name: "CN Cầu Giấy", status: "active" },
+    {
+      id: MARKET,
+      parent_id: ROOT,
+      unit_type: "marketplace",
+      name: "Chợ Bếp Mộc",
+      status: "active",
+    },
+    ...SAMPLE_SELLERS.map(
+      (seller, index): OrgUnit => ({
+        id: SAMPLE_UNIT_IDS.sellers[index] as string,
+        parent_id: MARKET,
+        unit_type: "seller",
+        name: seller.name,
+        status: seller.status,
+      }),
+    ),
   ];
+  for (const [id, code] of [
+    [Q3, "CH-Q3"],
+    [TD, "CH-TD"],
+    [WH, "KHO-TD"],
+    [CG, "CH-CG"],
+  ] as const) {
+    const unit = units.find((u) => u.id === id);
+    if (unit) unit.code = code;
+  }
   const invitation = (
     n: string,
     email: string,
@@ -404,6 +475,126 @@ export async function listUnits(): Promise<{ data: OrgUnit[] }> {
   return { data: [...store().units] };
 }
 
+/** Loại nút của khách (`GET /api/v1/organizations/unit-types`, bước 34). */
+export interface UnitTypeInfo {
+  code: UnitType;
+  /** Tên khách tự đặt; giao diện hiện tên dịch sẵn cho các loại mẫu. */
+  name: string;
+}
+
+const UNIT_TYPES: readonly UnitTypeInfo[] = [
+  { code: "tenant", name: "Trụ sở" },
+  { code: "region", name: "Vùng" },
+  { code: "store", name: "Cửa hàng" },
+  { code: "warehouse", name: "Kho" },
+  { code: "marketplace", name: "Sàn" },
+  { code: "seller", name: "Người bán" },
+];
+
+/** Thay bằng GET /api/v1/organizations/unit-types (bước 34) khi core có. */
+export async function listUnitTypes(): Promise<{ data: UnitTypeInfo[] }> {
+  return { data: [...UNIT_TYPES] };
+}
+
+/** Khoảng cách từ gốc (gốc = 0), như cột `depth` của `kernel_org_units`. */
+export function unitDepth(units: readonly OrgUnit[], id: string): number {
+  let depth = 0;
+  let current = units.find((u) => u.id === id);
+  while (current?.parent_id) {
+    depth += 1;
+    current = units.find((u) => u.id === current?.parent_id);
+  }
+  return depth;
+}
+
+export interface NewUnit {
+  parent_id: string;
+  unit_type: string;
+  name: string;
+  code?: string;
+}
+
+const UNIT_CODE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/;
+
+/**
+ * Thay bằng POST /api/v1/organizations/units (bước 34) khi core có. Nút mới `active` khi người tạo
+ * có `organizations.units.manage` ở nút cha, không thì `pending` chờ duyệt.
+ */
+export async function createUnit(
+  input: NewUnit,
+  { manage }: { manage: boolean },
+): Promise<SampleOutcome<OrgUnit>> {
+  const { units } = store();
+  const parent = units.find((u) => u.id === input.parent_id);
+  if (!parent || parent.status === "archived") {
+    return failed(404, "organizations.unit_not_found", `No unit ${input.parent_id}.`);
+  }
+  const errors: NonNullable<Problem["errors"]> = [];
+  const name = input.name.trim();
+  if (!name) errors.push({ field: "name", code: "required", detail: "must not be empty" });
+  else if (name.length > 120) {
+    errors.push({ field: "name", code: "length_1_120", detail: "must be at most 120 characters" });
+  }
+  if (!UNIT_TYPES.some((type) => type.code === input.unit_type && type.code !== "tenant")) {
+    errors.push({ field: "unit_type", code: "unknown", detail: "is not a unit type" });
+  }
+  const code = input.code?.trim() ?? "";
+  if (code && !UNIT_CODE.test(code)) {
+    errors.push({ field: "code", code: "unit_code", detail: "use letters, digits, . _ -" });
+  } else if (code && units.some((u) => u.code?.toLowerCase() === code.toLowerCase())) {
+    errors.push({ field: "code", code: "taken", detail: "is used by another unit" });
+  }
+  if (errors.length > 0) return invalid(errors, "The request has invalid fields.");
+  if (unitDepth(units, parent.id) + 1 > SAMPLE_MAX_DEPTH) {
+    return failed(
+      422,
+      "organizations.depth_exceeded",
+      `The organization tree is at most ${SAMPLE_MAX_DEPTH} levels deep.`,
+    );
+  }
+  const unit: OrgUnit = {
+    id: newId(),
+    parent_id: parent.id,
+    unit_type: input.unit_type as UnitType,
+    name,
+    status: manage ? "active" : "pending",
+    code: code || null,
+  };
+  units.push(unit);
+  return { ok: true, data: unit };
+}
+
+const TRANSITIONS: Readonly<Record<UnitStatus, readonly UnitStatus[]>> = {
+  pending: ["active"],
+  active: ["suspended", "archived"],
+  suspended: ["active", "archived"],
+  archived: ["active"],
+};
+
+/**
+ * Thay bằng POST /api/v1/organizations/units/{id}/status (bước 34) khi core có. Chuyển hợp lệ:
+ * `pending→active`, `active↔suspended`, `active/suspended→archived`, `archived→active`.
+ */
+export async function setUnitStatus(
+  id: string,
+  status: UnitStatus,
+): Promise<SampleOutcome<OrgUnit>> {
+  const unit = store().units.find((u) => u.id === id);
+  if (!unit) return failed(404, "organizations.unit_not_found", `No unit ${id}.`);
+  if (unit.parent_id === null) {
+    return failed(409, "organizations.root_immutable", "The root unit cannot change status.");
+  }
+  if (!TRANSITIONS[unit.status].includes(status)) {
+    return failed(
+      409,
+      "organizations.invalid_transition",
+      `Cannot move the unit from ${unit.status} to ${status}.`,
+    );
+  }
+  unit.status = status;
+  return { ok: true, data: { ...unit } };
+}
+
 // ---------------------------------------------------------------- Lời mời
 
 /** Trạng thái lúc đọc: lời mời còn chờ mà quá hạn thì là `expired`. */
@@ -548,9 +739,12 @@ export async function revokeDelegation(id: string): Promise<SampleOutcome<undefi
 /** Thay bằng GET /api/v1/organizations/units/{id} (phần hồ sơ công khai, bước 34) khi core có. */
 export async function listProfiles(): Promise<{ data: PublicProfile[] }> {
   const { units, profiles } = store();
-  // Mọi nút trừ gốc đều có hồ sơ (mặc định không công khai).
+  // Mọi nút trừ gốc đều có hồ sơ (mặc định không công khai). Gian hàng của người bán trên sàn là
+  // việc của module sàn (bước 46), không nằm ở đây.
   const data = units
-    .filter((u) => u.parent_id !== null)
+    .filter(
+      (u) => u.parent_id !== null && u.unit_type !== "marketplace" && u.unit_type !== "seller",
+    )
     .map(
       (unit) =>
         profiles.find((p) => p.unit_id === unit.id) ?? {

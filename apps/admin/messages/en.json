@@ -11,7 +11,8 @@
       "settings": "Settings",
       "org": "Organization",
       "content": "Content",
-      "mkt": "Marketing"
+      "mkt": "Marketing",
+      "legal": "Compliance"
     },
     "pages": {
       "dashboard": "Dashboard",
@@ -27,7 +28,10 @@
       "media": "Media library",
       "forms": "Forms",
       "newsletter": "Newsletter",
-      "comments": "Comments"
+      "comments": "Comments",
+      "orgTree": "Organization tree",
+      "compliance": "Compliance status",
+      "complianceRecords": "Records and personal data"
     },
     "about": {
       "dashboard": "Greeting and a way into every area you can use.",
@@ -42,7 +46,10 @@
       "media": "Images, videos and documents: folders, tags, alt text, trash.",
       "forms": "Forms for your website, submissions inbox, CSV export, data by email.",
       "newsletter": "Campaigns, lists, subscribers with proof of consent, suppression list.",
-      "comments": "Moderation queue, reports, comments per post, bans, settings."
+      "comments": "Moderation queue, reports, comments per post, bans, settings.",
+      "orgTree": "Head office, regions, stores, warehouses and sellers; who works where; inherited settings.",
+      "compliance": "E-commerce websites, seller verification, personal data incidents, legal documents, reports.",
+      "complianceRecords": "Legal profile, processing purposes, retention, posting rules, documents, cases, AI labels, data subject requests."
     }
   },
   "login": {
@@ -338,7 +345,32 @@
       "kernel_approval_not_found": "This approval request does not exist.",
       "kernel_approval_not_pending": "This request was already decided or has expired.",
       "menus_not_found": "This menu no longer exists.",
-      "menus_key_taken": "This website already has a menu with this key and language."
+      "menus_key_taken": "This website already has a menu with this key and language.",
+      "organizations_depth_exceeded": "The organization tree cannot be deeper; add the unit higher up.",
+      "organizations_root_immutable": "The root unit cannot be moved, suspended or archived.",
+      "organizations_invalid_transition": "The unit cannot move to that status from its current one.",
+      "organizations_setting_unknown": "This setting does not exist or is not set at this unit.",
+      "organizations_split_not_allowed": "Only an active region, store or marketplace can become a separate customer.",
+      "organizations_split_request_exists": "A split request for this unit is already waiting.",
+      "compliance_website_not_found": "This website no longer exists.",
+      "compliance_website_state_invalid": "The dossier is not in a state where this can be recorded.",
+      "compliance_rules_missing": "No rule set is in effect for this check.",
+      "compliance_profile_not_found": "This legal profile no longer exists.",
+      "compliance_kyc_not_found": "This verification profile no longer exists.",
+      "compliance_kyc_state_invalid": "This verification profile was already decided.",
+      "compliance_incident_open": "Another incident is still open; close it first.",
+      "compliance_incident_not_found": "This incident no longer exists.",
+      "compliance_incident_closed": "This incident is closed.",
+      "compliance_incident_step_invalid": "This step is already done.",
+      "compliance_document_not_found": "This document no longer exists.",
+      "compliance_purpose_not_found": "This purpose no longer exists.",
+      "compliance_purpose_required_by_law": "A purpose based on a legal obligation cannot be turned off.",
+      "compliance_case_not_found": "This case no longer exists.",
+      "compliance_case_state_invalid": "The case is not in a state where this can be done.",
+      "compliance_ai_item_not_found": "This item no longer exists.",
+      "compliance_ai_label_locked": "AI-generated content keeps its label until a person rewrites it.",
+      "compliance_request_not_found": "This request no longer exists.",
+      "compliance_request_state_invalid": "This request was already answered or rejected."
     },
     "fields": {
       "email": "Enter a valid email address.",
@@ -349,7 +381,24 @@
       "min_one": "Choose at least one.",
       "length_10_500": "Write 10 to 500 characters.",
       "tax_code": "Enter 10 digits, or 10 digits, a dash and 3 digits.",
-      "domain": "Enter a domain name such as shop.example.com (not an IP address or localhost)."
+      "domain": "Enter a domain name such as shop.example.com (not an IP address or localhost).",
+      "length_1_120": "Write 1 to 120 characters.",
+      "unit_code": "Use letters, digits, dot, dash or underscore (up to 32).",
+      "taken": "This value is already in use.",
+      "acknowledge": "Tick this box to confirm.",
+      "length_0_500": "Write at most 500 characters.",
+      "not_published": "Choose a page that is published.",
+      "past_date": "Choose today or a later date.",
+      "future_date": "Choose today or an earlier date.",
+      "purpose_key": "Use lowercase words joined by dots, such as marketing.zalo.",
+      "length_5_2000": "Write 5 to 2000 characters.",
+      "email_or_phone": "Enter an email address or a phone number.",
+      "logo_link": "Paste the link the ministry gave you; it starts with https://online.gov.vn/.",
+      "https_url": "Enter an address that starts with https://.",
+      "identity_required": "Live selling needs identity verification under the rule in effect.",
+      "range_1_10": "Enter a whole number from 1 to 10.",
+      "length_10_2000": "Write 10 to 2000 characters.",
+      "whole_number": "Enter a whole number."
     },
     "badgeNew": "Sample data · waiting for a new API",
     "badgeModule": "Sample data · waiting for the {module} module"
@@ -3055,6 +3104,928 @@
       "eraseVerify": "Do this only for a verified request of the person the data is about.",
       "eraseSubmit": "Erase for good",
       "erased": "Data erased."
+    }
+  },
+  "orgtree": {
+    "crumb": "Organization · {tenant}",
+    "title": "Organization tree",
+    "description": "Stores, warehouses, regions and sellers arranged as a tree. A role given at a unit flows down to child units according to its depth.",
+    "units": "Units",
+    "membersCount": "People who can work here",
+    "treeHint": "Unit types are set by the customer. A child unit uses the settings of its nearest parent unless it sets its own.",
+    "back": "All units",
+    "rootPath": "Root unit of the customer",
+    "pendingNote": "This unit is waiting for approval by someone who can manage units; nothing can be written to it yet.",
+    "undo": "Undo",
+    "types": {
+      "tenant": "Head office",
+      "region": "Region",
+      "store": "Store",
+      "warehouse": "Warehouse",
+      "marketplace": "Marketplace",
+      "seller": "Seller"
+    },
+    "status": {
+      "pending": "Waiting for approval",
+      "active": "Active",
+      "suspended": "Suspended",
+      "archived": "Archived"
+    },
+    "values": {
+      "tax_profile": {
+        "company_deduction": "Company, VAT credit method",
+        "household_flat": "Household business, flat rate",
+        "per_seller": "Each seller's own profile"
+      },
+      "bool": {
+        "true": "On",
+        "false": "Off"
+      },
+      "language": {
+        "en": "English",
+        "vi": "Vietnamese"
+      }
+    },
+    "add": {
+      "button": "Add child unit",
+      "title": "Add a unit under {parent}",
+      "intro": "A unit is a store, warehouse, region or seller. Roles with the depth \"unit and children\" at the parent apply to the new unit at once.",
+      "submit": "Add unit",
+      "done": "Unit added under {parent}.",
+      "undone": "The new unit was archived.",
+      "name": "Unit name",
+      "type": "Unit type",
+      "typeHint": "The new unit uses the settings of {parent} until it sets its own.",
+      "code": "Internal code (optional)",
+      "codeHint": "For example a store code; unique within the customer."
+    },
+    "split": {
+      "button": "Request split",
+      "title": "Request to make {unit} a separate customer",
+      "intro": "Platform operations staff review the request, run a dry run and schedule the split with you. The branch becomes a child customer with its own database and stays in the customer tree.",
+      "copy": "The branch data is copied to its own database by a background job.",
+      "readOnly": "The branch is read-only for a few minutes during the switch; the split cannot be cancelled halfway.",
+      "keeps": "IDs and history stay the same; roles here keep working through delegation; combined reports still include the branch.",
+      "submit": "Send request",
+      "done": "Split request for {unit} sent; you will be notified when it is scheduled.",
+      "note": "Note for operations staff (optional)",
+      "ack": "I understand the split runs in the background and cannot be cancelled halfway",
+      "waiting": "A split request is waiting for platform operations staff, sent"
+    },
+    "members": {
+      "title": "Who works at this unit",
+      "hint": "Includes people assigned at a parent unit with a depth that flows down to this unit.",
+      "empty": "No one is assigned at this unit.",
+      "member": "Member",
+      "role": "Role",
+      "depth": "Depth",
+      "from": "Assigned at",
+      "inherited": "From {unit}",
+      "direct": "Directly at this unit",
+      "invited": "Invited · waiting"
+    },
+    "scopes": {
+      "own": "Own records",
+      "unit": "This unit",
+      "subtree": "Unit and children",
+      "tenant": "Whole customer"
+    },
+    "settings": {
+      "title": "Effective settings",
+      "hint": "A setting made at a parent unit applies to its child units unless a child sets its own. Each row shows which unit the value comes from.",
+      "key": "Setting",
+      "value": "Value",
+      "source": "Comes from",
+      "actions": "Actions",
+      "here": "Set at this unit",
+      "from": "Inherited from {unit}",
+      "default": "Server default",
+      "set": "Set here",
+      "setTitle": "{key} at {unit}",
+      "setIntro": "The value applies to this unit and every child unit that does not set its own.",
+      "save": "Save setting",
+      "saved": "Setting saved.",
+      "inherit": "Use inherited value",
+      "inherited": "This unit now uses the inherited value.",
+      "keys": {
+        "organizations_timezone": "Time zone",
+        "organizations_currency": "Currency",
+        "organizations_language": "Language",
+        "auth_customer_registration": "Buyer sign-up",
+        "tax_profile": "Tax profile"
+      }
+    },
+    "depth": {
+      "title": "Depth of permissions",
+      "hint": "A role says what a person may do; its depth says where: only their own records, this unit, this unit and every child unit, or the whole customer. Access is checked by permission, never by role name.",
+      "own": "Only records the person created, for example a cashier sees their own sales.",
+      "unit": "All data of exactly the unit they are assigned to.",
+      "subtree": "The assigned unit and every unit below it; a parent can create data for a child.",
+      "tenant": "Everything of this customer.",
+      "staff": "Staff accounts are platform-wide: one person can work for several customers and units. Buyers have separate accounts per customer."
+    }
+  },
+  "compliance": {
+    "crumb": "Compliance · rule set {ruleset}",
+    "title": "Compliance status",
+    "description": "Each block is a duty under Vietnamese law. Red blocks stop a business activity; yellow ones need action within a deadline.",
+    "overdue": "Overdue",
+    "left": "{hours} h {minutes} min left",
+    "badRequest": "The request is not valid; reload the page and try again.",
+    "tabs": {
+      "label": "Compliance sections",
+      "status": "Status",
+      "websites": "E-commerce websites",
+      "kyc": "Identity (KYC)",
+      "privacy": "Personal data",
+      "documents": "Legal documents",
+      "reports": "Reports and AI"
+    },
+    "basis": {
+      "label": "Legal basis:",
+      "effective": "Rule version {version}, in effect from",
+      "until": "until",
+      "review": "Needs checking against the original text or by a person with legal expertise."
+    },
+    "status": {
+      "title": "Duties",
+      "about": "Open a block to see what is missing and fix it.",
+      "areas": {
+        "websites": "E-commerce websites",
+        "kyc": "Seller identity",
+        "privacy": "Personal data",
+        "documents": "Legal documents",
+        "reports": "Violation reports"
+      },
+      "state": {
+        "websites": {
+          "ok": "Every website notified or registered",
+          "open": "{open, plural, one {# website not yet notified or registered} other {# websites not yet notified or registered}}"
+        },
+        "kyc": {
+          "ok": "No profile waiting",
+          "open": "{open, plural, one {# profile waiting} other {# profiles waiting}}"
+        },
+        "privacy": {
+          "ok": "No open request or incident",
+          "open": "{incident, select, none {{requests, plural, one {# request waiting} other {# requests waiting}}} other {Incident {incident} is open}}"
+        },
+        "documents": {
+          "ok": "Current versions accepted",
+          "open": "{pending, plural, one {# person has not accepted} other {# people have not accepted}} the current version"
+        },
+        "reports": {
+          "ok": "No open case",
+          "open": "{open, plural, one {# open case} other {# open cases}}"
+        }
+      },
+      "note": {
+        "websites": "{missing, plural, =0 {Nothing missing before submitting.} one {# item missing before submitting.} other {# items missing before submitting.}} {done, plural, =0 {} one {# website already done.} other {# websites already done.}}",
+        "kyc": "A seller who is not verified cannot list products or sell live.",
+        "privacy": "{incident, select, none {No personal data incident is open.} other {Report it to the authority within the deadline.}}",
+        "documents": "{scheduled, plural, =0 {No new version waiting to take effect.} one {# new version waiting to take effect.} other {# new versions waiting to take effect.}}",
+        "reports": "{next, select, none {No deadline coming up.} other {Next deadline: {next}.}}"
+      },
+      "tone": {
+        "ok": "Done",
+        "warn": "Needs action",
+        "bad": "Blocking",
+        "info": "In progress"
+      },
+      "rules": {
+        "title": "Rule set in effect",
+        "about": "Values that change with the law (document lists, deadlines, limits) are data with an effective date, never written into the code. A new version takes effect on its date without a code change.",
+        "key": "Rule",
+        "version": "Version",
+        "from": "In effect from",
+        "basis": "Legal basis",
+        "review": "Needs checking against the original text",
+        "keys": {
+          "kyc_required_activities": "Activities that need identity verification",
+          "moit_checklist_sales": "Dossier checklist: sales website",
+          "moit_checklist_platform": "Dossier checklist: marketplace",
+          "privacy_incident": "Personal data incident deadlines",
+          "privacy_subject_requests": "Data subject request deadlines (proposed)",
+          "privacy_retention_limits": "Retention limits",
+          "cases_deadlines": "Case deadlines (working days)",
+          "posting_verification": "Account verification for posting",
+          "documents_evidence": "Evidence of acceptance",
+          "ai_labels": "Labels for AI content"
+        }
+      }
+    },
+    "websites": {
+      "status": {
+        "not_submitted": "Not submitted",
+        "submitted": "Submitted, waiting",
+        "needs_supplement": "Needs more documents",
+        "notified": "Notified",
+        "registered": "Registered",
+        "rejected": "Rejected"
+      },
+      "kind": {
+        "sales": "Sales website",
+        "platform": "E-commerce marketplace"
+      },
+      "owner": "unit {unit}",
+      "duty": {
+        "notify": "Notify the Ministry of Industry and Trade",
+        "register": "Register with the Ministry of Industry and Trade"
+      },
+      "progress": "Checklist",
+      "count": "{met} / {total} items",
+      "result": {
+        "met": "Done",
+        "missing": "Missing",
+        "unknown": "Cannot be checked yet",
+        "manual": "Check by hand"
+      },
+      "reason": {
+        "draft": "a draft exists but is not published",
+        "not_registered": "waiting for the marketplace module"
+      },
+      "fix": "Fix",
+      "checklistVersion": "Checklist version {version}.",
+      "older": "Earlier version {version}:",
+      "reference": "Dossier number",
+      "submittedAt": "Submitted on",
+      "logo": "Logo link",
+      "decidedAt": "Result recorded",
+      "foot": {
+        "not_submitted": "Submit on the ministry's online portal, then record the submission here.",
+        "submitted": "When the ministry answers, record the result and the logo link here.",
+        "needs_supplement": "Add the missing documents, submit again, then record it here.",
+        "notified": "The \"notified\" logo shows in the website footer through the public endpoint.",
+        "registered": "The \"registered\" logo shows in the website footer through the public endpoint.",
+        "rejected": "Fix the reasons given by the ministry and submit a new dossier."
+      },
+      "download": "Download dossier",
+      "submit": {
+        "button": "Record submission",
+        "title": "Record the dossier submitted for {domain}",
+        "portal": "The dossier is submitted by a person on the ministry's portal; this only records it.",
+        "final": "A recorded submission cannot be undone; the dossier then waits for the ministry's answer.",
+        "missing": "{count, plural, one {# checklist item is still missing.} other {# checklist items are still missing.}}",
+        "submit": "Record submission",
+        "done": "Submission recorded for {domain}.",
+        "reference": "Dossier number on the portal",
+        "date": "Submitted on",
+        "ack": "I submitted this dossier on the ministry's portal"
+      },
+      "decide": {
+        "button": "Record result",
+        "title": "Result from the ministry for {domain}",
+        "intro": "Record what the ministry answered. A notified or registered website needs the logo link and image the ministry gave.",
+        "submit": "Save result",
+        "done": "Result recorded.",
+        "status": "Result",
+        "link": "Logo link",
+        "linkHint": "Starts with https://online.gov.vn/",
+        "image": "Logo image address"
+      }
+    },
+    "kyc": {
+      "title": "Verification profiles",
+      "about": "Sellers, live sellers and affiliates must have their identity verified before they sell. Profiles expire; the system reminds them to verify again.",
+      "filter": "Filter by status",
+      "all": "All",
+      "empty": "No profile in this list.",
+      "subject": "Subject",
+      "party": "Type",
+      "method": "Verification method",
+      "state": "Status",
+      "actions": "Actions",
+      "sent": "sent",
+      "missingDocuments": "Waiting · documents missing",
+      "expires": "Expires",
+      "human": "Approving and returning need a signed-in person with compliance.kyc.review; API keys and AI agents cannot decide.",
+      "gate": "Gate: a seller unit that is not verified cannot list products or sell live; the API answers with an error that says why.",
+      "status": {
+        "draft": "Draft",
+        "pending": "Waiting for review",
+        "verified": "Verified",
+        "rejected": "Returned",
+        "expired": "Expired",
+        "revoked": "Revoked"
+      },
+      "activity": {
+        "sell": "Selling",
+        "livestream": "Live selling",
+        "affiliate": "Affiliate"
+      },
+      "parties": {
+        "individual": "Individual",
+        "household_business": "Household business",
+        "organization": "Company"
+      },
+      "methods": {
+        "vneid": "VNeID through an eKYC provider",
+        "ekyc": "eKYC: document and face",
+        "business_registry": "Business registration and representative",
+        "manual": "Documents checked by hand"
+      },
+      "reasons": {
+        "documents_missing": "Documents missing",
+        "document_unreadable": "Document unreadable",
+        "name_mismatch": "Name does not match",
+        "duplicate_document": "Document already used by another profile",
+        "other": "Other reason"
+      },
+      "approve": {
+        "button": "Approve",
+        "title": "Approve {name}",
+        "sell": "The seller can list products and sell on the marketplace at once.",
+        "audit": "The approval is written to the audit log with your name.",
+        "expiry": "The verification expires after the period in the rule set; the seller is reminded to verify again.",
+        "submit": "Approve",
+        "done": "{name} is verified and can sell now."
+      },
+      "reject": {
+        "button": "Return with reason",
+        "title": "Return the profile of {name}",
+        "intro": "The seller receives the reason, fixes the profile and sends it again.",
+        "submit": "Return profile",
+        "done": "Profile of {name} returned.",
+        "reason": "Reason",
+        "choose": "Choose a reason",
+        "note": "Note for the seller",
+        "noteHint": "Needed when the reason is \"Other reason\"."
+      }
+    },
+    "privacy": {
+      "incident": {
+        "title": "Personal data incidents",
+        "about": "When personal data is leaked, lost or accessed without permission, the authority must be told within {hours} hours of discovery. The clock and the reminders come from the rule set.",
+        "status": {
+          "open": "Open",
+          "contained": "Contained",
+          "reported": "Reported",
+          "closed": "Closed"
+        },
+        "detected": "Discovered",
+        "due": "Report to the authority by",
+        "categories": "Data affected",
+        "reference": "Reference of the notice sent",
+        "steps": {
+          "contain": "Contain it and stop the leak",
+          "notify_authority": "Send the notice to the authority",
+          "notify_subjects": "Tell the people affected"
+        },
+        "do": {
+          "contain": "Mark contained",
+          "notify_authority": "Record notice to authority",
+          "notify_subjects": "Record people notified",
+          "close": "Close incident"
+        },
+        "done": {
+          "contain": "Marked contained.",
+          "notify_authority": "Notice to the authority recorded.",
+          "notify_subjects": "Notification of the people affected recorded.",
+          "close": "Incident closed; the record is kept for the legal period."
+        },
+        "points": {
+          "contain": "Record that the leak is stopped; the time is saved in the incident log.",
+          "notify_authority": "Enter the reference of the notice you sent to the authority. The deadline countdown stops.",
+          "notify_subjects": "Record that the people affected were told; the time is saved in the incident log.",
+          "close": "A closed incident cannot be reopened; open a new one if it happens again.",
+          "notReported": "The authority has not been notified yet."
+        },
+        "none": "No open incident",
+        "noneAbout": "When you record an incident, the {hours}-hour clock starts from the moment of discovery and the notice drafts are prepared.",
+        "open": {
+          "button": "Record an incident",
+          "title": "Record a personal data incident",
+          "intro": "The time of discovery is saved when you record the incident and cannot be changed later.",
+          "clock": "The {hours}-hour clock starts now.",
+          "notify": "Administrators and the person in charge of personal data are told at once.",
+          "submit": "Record and start the {hours}-hour clock",
+          "done": "Incident recorded; administrators were told.",
+          "description": "Short description",
+          "severity": "Severity",
+          "affected": "People affected (estimate)",
+          "affectedHint": "Leave empty if not known yet."
+        },
+        "kinds": {
+          "contact": "Contact details (email, phone)",
+          "address": "Addresses",
+          "order_history": "Purchase history",
+          "identity": "Identity documents"
+        },
+        "severity": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        },
+        "past": "{count, plural, one {# earlier incident} other {# earlier incidents}}",
+        "entries": {
+          "opened": "Incident recorded",
+          "contain": "Contained",
+          "notify_authority": "Authority notified",
+          "notify_subjects": "People affected notified",
+          "closed": "Closed"
+        }
+      },
+      "requests": {
+        "title": "Data subject requests",
+        "open": "Open requests",
+        "about": "People may ask to see, correct or delete their data and to withdraw consent. People with an account do it themselves; requests by other channels are handled in Records and personal data. Accounting records stay for the legal period even after a deletion request.",
+        "waiting": "Waiting for an answer",
+        "waitingSub": "Each has a deadline from the rule set",
+        "exports": "Self-service exports (30 days)",
+        "selfSub": "Run at once; shown for follow-up only",
+        "deletions": "Self-service deletions (30 days)",
+        "keepSub": "Accounting records are kept as the law requires"
+      }
+    },
+    "documents": {
+      "title": "Legal documents",
+      "manage": "Manage and publish",
+      "about": "Terms, policies, marketplace rules and seller contracts have versions. Who accepted which version is kept as evidence.",
+      "currentVersion": "Version {version} in effect from",
+      "acceptedOf": "{count} / {total} accepted",
+      "accepted": "{count} accepted",
+      "noVersion": "Not published yet",
+      "next": "version {version} from",
+      "notAccepted": "{count, plural, one {# has not accepted} other {# have not accepted}}",
+      "state": {
+        "current": "In effect",
+        "scheduled": "New version scheduled",
+        "none": "Not published"
+      },
+      "evidence": "Terms, marketplace rules and seller contracts are electronic contracts: each acceptance keeps the person, version, time and IP fingerprint as evidence. A new version never overwrites an old one."
+    },
+    "reports": {
+      "cases": "Violation reports and complaints",
+      "openCases": "Handle cases",
+      "about": "Counterfeit goods, infringed rights, prohibited content and consumer complaints, with their next deadline.",
+      "kinds": {
+        "ip_infringement": "Intellectual property",
+        "counterfeit": "Counterfeit",
+        "prohibited_goods": "Restricted goods",
+        "consumer_complaint": "Consumer complaint",
+        "other": "Other"
+      },
+      "hidden": "hidden while reviewed",
+      "visible": "still visible",
+      "respondBy": "Reply by",
+      "decideBy": "Decide by",
+      "status": {
+        "received": "Received",
+        "under_review": "Under review",
+        "awaiting_response": "Waiting for the respondent",
+        "decided": "Decided",
+        "closed": "Closed",
+        "withdrawn": "Withdrawn"
+      },
+      "flow": "Flow: receive the report, hide the target while reviewing, the respondent replies, then a person decides; each step has a deadline and is logged.",
+      "ai": "Content labelled as AI",
+      "openAi": "Check labels",
+      "aiPosts": "Posts and pages",
+      "aiPostsSub": "Marked ai_generated among the {limit} most recently edited",
+      "aiPostsNone": "The content module is not available to you",
+      "aiOther": "Products and image alt text",
+      "aiOtherSub": "With an AI label",
+      "aiLaw": "Content made or changed by AI is labelled when it is shown."
+    },
+    "records": {
+      "crumb": "Compliance · rule set {ruleset}",
+      "title": "Records and personal data",
+      "description": "Legal profile, register of processing purposes, retention, posting rules, versioned documents, cases, AI-labelled content and data subject requests. For the legal team and customer administrators.",
+      "export": "Export processing register",
+      "tabs": {
+        "label": "Record sections",
+        "profile": "Legal profile",
+        "purposes": "Processing purposes",
+        "retention": "Retention",
+        "posting": "Posting rules",
+        "documents": "Documents",
+        "cases": "Cases",
+        "ai": "AI labels",
+        "requests": "Subject requests"
+      },
+      "profile": {
+        "owner": "Owner: {name} (customer level)",
+        "about": "Used in the website footer, the required page templates and the dossier for the Ministry of Industry and Trade.",
+        "save": "Save profile",
+        "saved": "Saved; the footer and page templates use the new details.",
+        "entity": "Type of owner",
+        "entities": {
+          "company": "Company",
+          "household_business": "Household business",
+          "individual": "Individual"
+        },
+        "legalName": "Legal name",
+        "tradeName": "Trading name",
+        "taxCode": "Tax code",
+        "taxHint": "10 digits, or 10 digits, a dash and 3 digits.",
+        "registration": "Business registration number",
+        "representative": "Legal representative",
+        "representativeTitle": "Representative's title",
+        "province": "Province or city",
+        "commune": "Ward or commune",
+        "line": "Street address",
+        "phone": "Phone",
+        "email": "Email",
+        "contacts": "Contact channels",
+        "contactsAbout": "Shown on the website and in the dossier: where buyers send complaints and questions about personal data.",
+        "saveContacts": "Save channels",
+        "savedContacts": "Contact channels saved.",
+        "complaints": "Complaint channel",
+        "privacy": "Personal data contact",
+        "byUnit": "Profiles by unit",
+        "byUnitAbout": "Each seller on the marketplace has its own legal profile linked to its verification profile.",
+        "subject": "Owner",
+        "kyc": "Identity",
+        "updated": "Updated",
+        "seller": "seller",
+        "tenant": "customer level",
+        "kycStatus": {
+          "draft": "Not started",
+          "pending": "Waiting for review",
+          "verified": "Verified",
+          "rejected": "Returned",
+          "expired": "Expired",
+          "revoked": "Revoked"
+        }
+      },
+      "purposes": {
+        "title": "Purposes",
+        "about": "Why data is collected, the legal basis, the kinds of data and how long they are kept. The list is public on the website and feeds the processing register.",
+        "add": {
+          "button": "Add purpose",
+          "title": "Add a processing purpose",
+          "intro": "The new purpose shows in the public list at once. With the basis \"consent\", ask for consent before collecting.",
+          "submit": "Add purpose",
+          "done": "Purpose added; the public list is updated.",
+          "key": "Key",
+          "descriptionVi": "Description for people (Vietnamese)",
+          "descriptionEn": "Description for people (English)",
+          "basisHint": "Consent needs a record for each person, who can withdraw at any time."
+        },
+        "basis": "Legal basis",
+        "bases": {
+          "consent": "Consent",
+          "contract": "Performing a contract",
+          "legal_obligation": "Legal obligation",
+          "vital_interest": "Vital interest"
+        },
+        "categories": "Kinds of data",
+        "data": {
+          "name": "Name",
+          "contact": "Email, phone",
+          "address": "Address",
+          "tax": "Tax code",
+          "identity_last4": "Last 4 digits of the ID",
+          "order_history": "Purchase history",
+          "device_id": "Anonymous device ID"
+        },
+        "retention": "Kept for",
+        "retentions": {
+          "P13M": "13 months",
+          "P1Y": "1 year",
+          "P3Y": "3 years",
+          "P5Y": "5 years",
+          "P10Y": "10 years",
+          "until_withdrawn": "Until consent is withdrawn",
+          "kyc_validity": "As long as the verification is valid"
+        },
+        "purpose": "Purpose",
+        "state": "Status",
+        "actions": "Actions",
+        "source": {
+          "default": "default of the rule set",
+          "tenant": "added by you"
+        },
+        "consents": "{granted} consented, {withdrawn} withdrew",
+        "on": "In use",
+        "off": "Turned off",
+        "required": "Required by law",
+        "undo": "Undo",
+        "undone": "Change undone.",
+        "disable": "Turn off",
+        "disabled": "Turned off; data already collected is kept for its period, nothing new is collected.",
+        "enable": "Turn on",
+        "enabled": "Turned on.",
+        "consentNote": "When someone withdraws consent, marketing messages waiting for them are cancelled at once."
+      },
+      "retention": {
+        "forever": "Forever",
+        "years": "{count, plural, one {# year} other {# years}}",
+        "days": "{count} days",
+        "residency": "Data stored in",
+        "countries": {
+          "VN": "Vietnam"
+        },
+        "residencySub": "Set by the platform operator",
+        "toReview": "Items to review",
+        "toReviewSub": "Personal data kept forever or beyond the limit",
+        "title": "Retention by module",
+        "about": "Each module declares how long it keeps its data; the system compares it with the limits of the rule set.",
+        "data": "Data",
+        "category": "Category",
+        "keep": "Kept for",
+        "limit": "Limit",
+        "state": "Status",
+        "items": {
+          "forms_submissions": "Form submissions",
+          "auth_sessions": "Sign-in sessions and tokens",
+          "comments_ip_traces": "Comment IP traces",
+          "compliance_kyc_documents": "Uploaded ID documents",
+          "webhooks_deliveries": "Webhook deliveries",
+          "audit_events": "Audit log"
+        },
+        "categories": {
+          "basic": "Basic",
+          "sensitive": "Sensitive",
+          "security": "Security",
+          "accounting": "Accounting"
+        },
+        "review": "Review",
+        "ok": "Within limit",
+        "operator": "Retention is read from the server configuration and cannot be set per customer yet. Ask the operator to change the environment variable.",
+        "limits": "Limits in this table are sample values of the rule set."
+      },
+      "posting": {
+        "title": "Who may post",
+        "about": "Who may review products and sell live: anyone, people with a verified Vietnamese mobile number, or people with a verified identity.",
+        "comments": "Comments on posts:",
+        "commentsWhere": "Change in Comments › Settings",
+        "levels": {
+          "none": "No verification",
+          "phone": "Verified mobile number",
+          "identity": "Verified identity"
+        },
+        "save": "Save rules",
+        "saved": "Saved; applies from the next post.",
+        "reviews": "Product reviews",
+        "livestream": "Live selling",
+        "livestreamHint": "Live sellers must verify their identity from the date in the rule set (below).",
+        "maxAccounts": "Accounts per phone number",
+        "maxHint": "How many accounts one verified number may serve (1 to 10).",
+        "kycFrom": "Identity verification for selling and live selling is required from",
+        "buyers": "Buyer accounts",
+        "verified": {
+          "phone": "Verified mobile number",
+          "identity": "Verified identity"
+        },
+        "verifiedNote": {
+          "phone": "Comments and reviews are open to this group.",
+          "identity": "Includes live sellers and affiliates."
+        },
+        "guestsTitle": "Guests.",
+        "guests": "People who are not signed in can post only when the rule is \"No verification\". Sending SMS codes needs an SMS brandname connection in Settings › Partner connections."
+      },
+      "documents": {
+        "title": "Documents and versions",
+        "about": "A document is written as a page in Content; publishing copies an unchangeable snapshot with its effective date. A version that requires acceptance again blocks the related action (ordering, listing) until the person accepts.",
+        "noContent": "Published pages cannot be read (the content module is missing or you lack content.read), so no source page can be chosen.",
+        "document": "Document",
+        "audience": "For",
+        "version": "Latest version",
+        "accepted": "Accepted",
+        "state": "Status",
+        "actions": "Actions",
+        "audiences": {
+          "user": "Everyone",
+          "buyer": "Buyers",
+          "seller": "Sellers"
+        },
+        "versionFrom": "Version {version} from",
+        "reaccept": "must be accepted again",
+        "noReaccept": "no new acceptance needed",
+        "states": {
+          "current": "In effect",
+          "scheduled": "Waiting to take effect",
+          "none": "Not published"
+        },
+        "publish": {
+          "button": "Publish new version",
+          "title": "Publish a new version of {title}",
+          "intro": "The source page must be published.",
+          "snapshot": "The system copies an unchangeable snapshot of the page (content and SHA-256).",
+          "final": "A published version cannot be edited or deleted.",
+          "reacceptPoint": "If acceptance is required again, people are blocked from the related action until they accept.",
+          "submit": "Publish version",
+          "done": "Published; the new version takes effect on the chosen date.",
+          "source": "Source page",
+          "choose": "Choose a published page",
+          "noSources": "No published page yet: publish the page in Content first.",
+          "sourceHint": "Published pages read from Content.",
+          "locale": "Language",
+          "effective": "In effect from",
+          "reaccept": "People must accept again",
+          "reacceptHint": "Turn on when the change affects their rights.",
+          "ack": "I understand a published version cannot be changed"
+        },
+        "evidence": "{count, plural, one {# acceptance record} other {# acceptance records}}",
+        "versionShort": "v{version}",
+        "channels": {
+          "web": "Website",
+          "mobile_app": "Mobile app",
+          "api": "API",
+          "in_store": "In store"
+        },
+        "methods": {
+          "checkbox": "checkbox",
+          "click_wrap": "click to accept",
+          "signature": "signature"
+        },
+        "countNote": "Acceptance counts per version need an API; today the core only lists the evidence of each person.",
+        "evidenceLaw": "Each acceptance keeps the person, version, channel, time and SHA-256 of the version shown."
+      },
+      "cases": {
+        "title": "Cases",
+        "about": "Reports of infringed intellectual property, counterfeit or restricted goods, and consumer complaints. Acknowledge, reply and decision deadlines are counted in working days from the rule set.",
+        "filter": "Filter by status",
+        "all": "All",
+        "status": {
+          "received": "Received",
+          "under_review": "Under review",
+          "awaiting_response": "Waiting for the respondent",
+          "decided": "Decided",
+          "closed": "Closed",
+          "withdrawn": "Withdrawn"
+        },
+        "empty": "No case in this list.",
+        "hidden": "Target hidden",
+        "kinds": {
+          "ip_infringement": "Intellectual property",
+          "counterfeit": "Counterfeit",
+          "prohibited_goods": "Restricted goods",
+          "consumer_complaint": "Consumer complaint",
+          "other": "Other"
+        },
+        "reporter": "Reported by",
+        "reporters": {
+          "guest": "Guest",
+          "user": "Buyer",
+          "rights_holder": "Rights holder",
+          "authority": "Authority"
+        },
+        "respondent": "Respondent",
+        "respondBy": "Reply by",
+        "decidedAt": "Decided",
+        "decideBy": "Decide by",
+        "decision": "Decision",
+        "decisions": {
+          "upheld": "Upheld, keep hidden",
+          "partially_upheld": "Partly upheld",
+          "rejected": "Rejected, show again"
+        },
+        "trail": "{count, plural, one {# step in the log} other {# steps in the log}}",
+        "entries": {
+          "restricted": "Target hidden while reviewed",
+          "restored": "Target shown again",
+          "respondent_notified": "Respondent notified; reply deadline in working days"
+        },
+        "undo": "Undo",
+        "restored": "The target is visible again.",
+        "restrict": "Hide target",
+        "restrictedDone": "Target hidden while reviewed (event compliance.target_restricted).",
+        "notify": {
+          "button": "Notify respondent",
+          "title": "Notify {name}",
+          "mail": "The respondent receives an email with the report.",
+          "deadline": "The reply deadline is counted in working days from the rule set.",
+          "submit": "Send notice",
+          "done": "Respondent notified."
+        },
+        "decide": {
+          "button": "Decide",
+          "title": "Decide {reference}",
+          "final": "A decision cannot be undone.",
+          "human": "It needs your signed-in session; AI agents and API keys cannot decide.",
+          "parties": "Both parties receive the decision with your reason.",
+          "submit": "Record decision",
+          "done": "Decision recorded; both parties are told.",
+          "reason": "Reason given to both parties"
+        },
+        "human": "Hiding a target is not a final decision. Every step adds a line to the log that cannot be edited.",
+        "deadlines": "Deadlines per kind of case."
+      },
+      "ai": {
+        "posts": "Posts and pages marked as AI-generated",
+        "postsAbout": "Read from Content: entries marked ai_generated among the {limit} most recently edited. The core has no filter for this yet.",
+        "noContent": "The content module is not available to you.",
+        "noPosts": "No recent post or page is marked as AI-generated.",
+        "content": "Content",
+        "status": "Label",
+        "updated": "Updated",
+        "actions": "Actions",
+        "untitled": "Untitled",
+        "kinds": {
+          "post": "Post",
+          "page": "Page",
+          "product": "Product",
+          "media": "Media"
+        },
+        "generated": "AI-generated",
+        "statuses": {
+          "draft": "draft",
+          "published": "published",
+          "archived": "archived"
+        },
+        "open": "Open in editor",
+        "other": "Products and image alt text",
+        "otherAbout": "Labels on product descriptions and alt text written with AI help. Removing a label is written to the audit log with your name.",
+        "what": "Done by AI",
+        "reviewer": "Reviewer",
+        "label": "Label",
+        "notReviewed": "Not reviewed",
+        "labels": {
+          "ai_generated": "Label: AI-generated",
+          "ai_assisted": "Label: AI-assisted",
+          "removed": "Label removed"
+        },
+        "locked": "AI drafts are never published on their own",
+        "undo": "Undo",
+        "undone": "Label change undone.",
+        "remove": "Remove label",
+        "removed": "Label removed; recorded in the audit log.",
+        "restore": "Label again",
+        "restored": "Labelled as AI-assisted.",
+        "law": "Content made or changed by AI must carry a label when shown."
+      },
+      "requests": {
+        "exports": "Self-service exports (30 days)",
+        "exportsSub": "Run at once; shown for follow-up only",
+        "deletions": "Self-service deletions (30 days)",
+        "deletionsSub": "Evidence of acceptance is kept for its period",
+        "open": "Requests by other channels",
+        "openSub": "Open, each with a deadline",
+        "title": "Requests by other channels",
+        "add": {
+          "button": "Record request",
+          "title": "Record a data subject request",
+          "intro": "For requests by email, phone, in store or post. Verify the person before giving out any data.",
+          "submit": "Record request",
+          "done": "Request recorded; the deadline comes from the rule set.",
+          "subject": "Requester (email or phone)",
+          "subjectHint": "Used to verify the person and to look up their data.",
+          "note": "What they asked for"
+        },
+        "kind": "Request",
+        "kinds": {
+          "access": "See data",
+          "rectify": "Correct data",
+          "erase": "Delete data",
+          "withdraw": "Withdraw consent",
+          "object": "Object to processing"
+        },
+        "channel": "Channel",
+        "channels": {
+          "email": "Email",
+          "phone": "Phone",
+          "in_store": "In store",
+          "post": "Post"
+        },
+        "about": "People with an account export or delete their data themselves at once. Requests from people without an account, or by other channels, are recorded and answered here.",
+        "filter": "Filter by status",
+        "all": "All",
+        "status": {
+          "new": "Received",
+          "verifying": "Verifying the requester",
+          "in_progress": "In progress",
+          "done": "Answered",
+          "rejected": "Rejected with reason"
+        },
+        "empty": "No request in this list.",
+        "request": "Request",
+        "received": "Received",
+        "due": "Answer by",
+        "state": "Status",
+        "actions": "Actions",
+        "reason": "Reason: {reason}",
+        "do": {
+          "done": "Mark answered",
+          "verified": "Requester verified",
+          "reject": "Reject with reason"
+        },
+        "done": {
+          "done": "Answer recorded.",
+          "verified": "Verification recorded; work can start.",
+          "rejected": "Rejected; the requester receives the reason and how to complain."
+        },
+        "points": {
+          "done": "Record that the requester received the answer (an export is made by a job and sent as a link that expires).",
+          "accounting": "Accounting records are kept for the legal period even when deletion was asked.",
+          "verified": "Record that you checked the person is who they say they are.",
+          "reject": "The requester receives your reason and how to complain.",
+          "final": "An answered or rejected request cannot be reopened."
+        },
+        "rejectTitle": "Reject {reference}",
+        "rejectReason": "Reason",
+        "lookup": {
+          "title": "Look up and delete data by email",
+          "about": "These tools read and delete the real data each module keeps for an email address. Paste the requester's email there; it is never put in the page address.",
+          "none": "No module with data by email is available to you.",
+          "forms": "Forms: data by email",
+          "newsletter": "Newsletter: data by email",
+          "comments": "Comments: data by email",
+          "self": "My own data"
+        },
+        "deadlines": "Answer deadlines per kind of request (proposed rule)."
+      }
     }
   }
 }

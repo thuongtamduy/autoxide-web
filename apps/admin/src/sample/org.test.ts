@@ -120,7 +120,8 @@ describe("uỷ quyền mẫu", () => {
 describe("hồ sơ công khai mẫu", () => {
   it("mọi nút trừ gốc có hồ sơ; công khai thì cần đủ địa chỉ", async () => {
     const { data } = await listProfiles();
-    expect(data).toHaveLength(5);
+    // Trụ sở là gốc; sàn và người bán không có hồ sơ cửa hàng (bước 46).
+    expect(data).toHaveLength(6);
     const warehouse = must(data.find((p) => !p.public));
     const input = {
       public: true,

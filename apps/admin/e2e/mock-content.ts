@@ -566,3 +566,23 @@ export function seedPages(response: ServerResponse) {
   }
   return send(response, 204);
 }
+
+/**
+ * `POST /__content/legal`: thêm một trang đã đăng (nguồn của văn bản pháp lý) và một bài đã đăng
+ * mang `ai_generated`, để thử phân hệ Tuân thủ. Không có trong dữ liệu ban đầu để danh sách bài của
+ * `content.spec.ts` giữ nguyên.
+ */
+export function seedLegal(response: ServerResponse) {
+  const rules = newEntry({ title: "Quy chế Chợ Bếp Mộc", kind: "page", status: "published" });
+  rules.slug = "quy-che";
+  const post = newEntry({
+    title: "Cách chăm chảo gang mới mua",
+    status: "published",
+    ai_generated: true,
+  });
+  for (const entry of [rules, post]) {
+    contentEntries.push(entry);
+    keepRevision(entry, "initial");
+  }
+  return send(response, 204);
+}

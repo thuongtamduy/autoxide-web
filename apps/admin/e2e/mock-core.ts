@@ -27,6 +27,7 @@ import {
   contentPreview,
   contentRoutes,
   resetContent,
+  seedLegal,
   seedPages,
 } from "./mock-content.ts";
 import { ENGAGE_MODULES, engageRoutes, resetEngage } from "./mock-engage.ts";
@@ -216,6 +217,7 @@ const server = createServer(async (request, response) => {
   }
   if (route === "POST /__content/bump") return contentBump(request, response);
   if (route === "POST /__content/pages") return seedPages(response);
+  if (route === "POST /__content/legal") return seedLegal(response);
   // Nội dung tệp media: khách tải được tệp công khai (trang xem trước), như core.
   if (request.method === "GET" && mediaContent(response, url, caller(request) !== undefined))
     return;
