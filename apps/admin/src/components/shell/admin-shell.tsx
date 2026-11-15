@@ -33,6 +33,7 @@ import {
   type Workspace,
 } from "@/nav/nav";
 import { sampleDataEnabled } from "@/sample";
+import { shellCounts } from "@/work/server";
 
 // Khung chung của các trang cần đăng nhập (thiết kế quản trị 2): thanh bên, đầu trang, menu con,
 // thanh đáy điện thoại, bảng lệnh. Người dùng và sổ module lấy từ core; phiên không còn hợp lệ
@@ -60,6 +61,9 @@ export async function AdminShell({
     modules: modules?.map((m) => m.name) ?? null,
     sample: sampleDataEnabled(),
   };
+  // Số đếm cạnh tên màn (W-020): từ cùng sổ nguồn việc với hộp việc; chỉ không gian của khách có.
+  // Không `await`: khung hiện ngay, số đếm tới sau qua `Suspense` ở phía trình duyệt.
+  const counts = workspace === "tenant" ? shellCounts() : undefined;
   const shellGroups = (nav: NavGroup[]): ShellGroup[] =>
     visibleNav(viewer, nav).map((group) => ({
       id: group.id,
@@ -133,7 +137,9 @@ export async function AdminShell({
           collapse: t("shell.collapse"),
           expand: t("shell.expand"),
           collapseLabel: t("shell.collapseLabel"),
+          pending: t("shell.pending"),
         }}
+        {...(counts ? { counts } : {})}
       />
       <div className="frame">
         <header className="topbar">
@@ -189,7 +195,7 @@ export async function AdminShell({
             {initialsOf(who)}
           </button>
         </header>
-        <Subnav groups={groups} />
+        <Subnav groups={groups} {...(counts ? { counts } : {})} />
         <main className="content">{children}</main>
       </div>
 
@@ -251,7 +257,7 @@ export async function AdminShell({
             <Icon name="x" />
           </button>
         </div>
-        <AreasGrid groups={groups} />
+        <AreasGrid groups={groups} pending={t("shell.pending")} {...(counts ? { counts } : {})} />
         <div className="sheet-foot">
           <ThemeForm label={t("shell.theme")} names={themes} />
         </div>

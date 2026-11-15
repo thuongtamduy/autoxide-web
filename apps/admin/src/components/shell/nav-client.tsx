@@ -4,6 +4,7 @@
 // (nhóm, màn, nhãn đã dịch) do layout tính ở máy chủ rồi truyền xuống, không chứa token.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense, use } from "react";
 import { activePage, type NavGroup } from "@/nav/nav";
 import { Icon, type IconName } from "./icon";
 
@@ -12,6 +13,36 @@ export interface ShellPage {
   label: string;
   href: string;
   exact?: boolean;
+}
+
+/**
+ * Số việc đang chờ theo màn (W-020, `NavItem.counter` của bước 51). Máy chủ gửi một promise: khung hiện
+ * ngay, số đếm tới sau (React `use` trong `Suspense`), để một nguồn việc chậm không làm chậm mọi trang.
+ */
+export type ShellCounts = Promise<Record<string, number>>;
+
+/** Số cạnh tên màn; chưa có số hay số 0 thì không hiện gì. */
+function PageCount({ counts, id, on }: { counts: ShellCounts; id: string; on: boolean }) {
+  const value = use(counts)[id];
+  return value ? <span className={on ? "cnt hot" : "cnt"}>{value}</span> : null;
+}
+
+/**
+ * Chấm cạnh phân hệ có việc đang chờ (trừ Tổng quan: số của nó đã ở menu con). Chấm chỉ để nhìn
+ * (`aria-hidden`): số đếm đọc được nằm ở menu con và hộp việc, tên phân hệ trên thanh bên giữ nguyên.
+ */
+function GroupPip({
+  counts,
+  group,
+  title,
+}: {
+  counts: ShellCounts;
+  group: ShellGroup;
+  title: string;
+}) {
+  const values = use(counts);
+  if (group.id === "home" || !group.pages.some((page) => (values[page.id] ?? 0) > 0)) return null;
+  return <span className="pip" aria-hidden="true" title={title} />;
 }
 
 export interface ShellGroup {
@@ -33,9 +64,19 @@ export function Rail({
   labels,
   home = "/",
   tag,
+  counts,
 }: {
   groups: ShellGroup[];
-  labels: { home: string; collapse: string; expand: string; collapseLabel: string };
+  /** Số việc đang chờ theo màn (chỉ không gian của khách). */
+  counts?: ShellCounts;
+  labels: {
+    home: string;
+    collapse: string;
+    expand: string;
+    collapseLabel: string;
+    /** Nhãn cho chấm "có việc cần xử lý" cạnh phân hệ; bỏ trống thì không hiện chấm. */
+    pending?: string;
+  };
   /** Trang đầu của không gian (W-014): `/` cho không gian của khách, `/platform` cho nền tảng. */
   home?: string;
   /** Nhãn nhỏ cạnh tên (vd "Nền tảng") để biết đang ở mặt điều khiển, không phải của khách. */
@@ -73,6 +114,11 @@ export function Rail({
             >
               <Icon name={group.icon} />
               <span>{group.label}</span>
+              {counts && labels.pending ? (
+                <Suspense fallback={null}>
+                  <GroupPip counts={counts} group={group} title={labels.pending} />
+                </Suspense>
+              ) : null}
             </Link>
           );
         })}
@@ -88,7 +134,7 @@ export function Rail({
 }
 
 /** Menu con của phân hệ đang mở: các màn của phân hệ. Phân hệ chỉ có một màn thì không hiện. */
-export function Subnav({ groups }: { groups: ShellGroup[] }) {
+export function Subnav({ groups, counts }: { groups: ShellGroup[]; counts?: ShellCounts }) {
   const active = useActive(groups);
   if (!active || active.group.pages.length < 2) return null;
   const group = groups.find((g) => g.id === active.group.id);
@@ -106,6 +152,11 @@ export function Subnav({ groups }: { groups: ShellGroup[] }) {
             aria-current={on ? "page" : undefined}
           >
             {page.label}
+            {counts ? (
+              <Suspense fallback={null}>
+                <PageCount counts={counts} id={page.id} on={on} />
+              </Suspense>
+            ) : null}
           </Link>
         );
       })}
@@ -242,7 +293,15 @@ export function SellerBottomBar({
 }
 
 /** Bảng "Phân hệ" (điện thoại): lưới mọi phân hệ, phân hệ đang mở được tô. */
-export function AreasGrid({ groups }: { groups: ShellGroup[] }) {
+export function AreasGrid({
+  groups,
+  pending,
+  counts,
+}: {
+  groups: ShellGroup[];
+  pending?: string;
+  counts?: ShellCounts;
+}) {
   const active = useActive(groups);
   return (
     <div className="mods-grid">
@@ -259,6 +318,11 @@ export function AreasGrid({ groups }: { groups: ShellGroup[] }) {
           >
             <Icon name={group.icon} />
             <span>{group.label}</span>
+            {pending && counts ? (
+              <Suspense fallback={null}>
+                <GroupPip counts={counts} group={group} title={pending} />
+              </Suspense>
+            ) : null}
           </Link>
         );
       })}

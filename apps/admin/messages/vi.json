@@ -67,7 +67,8 @@
       "sellerShop": "Gian hàng của tôi",
       "sellerMoney": "Đối soát và chi trả",
       "orders": "Đơn hàng",
-      "stores": "Cửa hàng"
+      "stores": "Cửa hàng",
+      "work": "Việc và hoạt động"
     },
     "about": {
       "dashboard": "Lời chào và lối vào mọi phân hệ bạn dùng được.",
@@ -105,7 +106,8 @@
       "sellerShop": "Thông tin gian hàng, giao hàng, tài khoản nhận tiền, điểm vi phạm.",
       "sellerMoney": "Sao kê theo đơn, đợt chi, thuế khấu trừ thay.",
       "orders": "Đơn hàng, view đã lưu, đổi trả và hoàn tiền, bán tại quầy, giỏ hàng bỏ dở.",
-      "stores": "Nhận tại cửa hàng, ca thu ngân, đổi trả tại quầy, đánh giá sản phẩm."
+      "stores": "Nhận tại cửa hàng, ca thu ngân, đổi trả tại quầy, đánh giá sản phẩm.",
+      "work": "Việc đang chờ bạn từ mọi phân hệ, hoạt động gần đây, mục đã ghim và tuỳ chọn thông báo."
     }
   },
   "login": {
@@ -200,12 +202,49 @@
     "themeDark": "Tối",
     "themeSystem": "Theo máy",
     "account": "Tài khoản",
-    "accountMenu": "Menu tài khoản của {name}"
+    "accountMenu": "Menu tài khoản của {name}",
+    "pending": "Có việc cần xử lý"
   },
   "dashboard": {
     "hello": "Chào {name}",
     "description": "Mọi phân hệ bạn dùng được trên máy chủ này. Một phân hệ hiện ở đây khi module của nó đã cài và role của bạn có permission của nó.",
-    "nothing": "Bạn chưa dùng được phân hệ nào. Hãy nhờ quản trị viên gán một role có permission bạn cần."
+    "nothing": "Bạn chưa dùng được phân hệ nào. Hãy nhờ quản trị viên gán một role có permission bạn cần.",
+    "today": "{date} · giờ Việt Nam",
+    "greeting": {
+      "morning": "Chào buổi sáng, {name}",
+      "afternoon": "Chào buổi chiều, {name}",
+      "evening": "Chào buổi tối, {name}"
+    },
+    "quick": {
+      "post": "Bài viết mới",
+      "pos": "Đơn tại quầy"
+    },
+    "metrics": "Số liệu của các phân hệ",
+    "tasks": {
+      "title": "Việc cần làm",
+      "hint": "Gom từ mọi phân hệ bạn có quyền; xử lý xong ở nơi gốc thì việc tự rời danh sách.",
+      "empty": "Không còn việc nào đang chờ bạn.",
+      "more": "Xem tất cả {count} việc",
+      "all": "Mở hộp việc"
+    },
+    "setup": {
+      "title": "Các bước thiết lập",
+      "done": "{done} / {total} bước",
+      "about": "Những việc phải xong trước khi bán, theo luật và theo cấu hình của khách. Trạng thái tính từ dữ liệu: làm xong ở nơi gốc thì bước tự đánh dấu.",
+      "progress": "Tiến độ thiết lập"
+    },
+    "revenue": {
+      "title": "Doanh thu hôm nay theo nút",
+      "about": "Tổng tiền đã thu thành công từ 0:00 hôm nay (giờ Việt Nam), gồm thuế, chưa trừ hoàn tiền; đơn thu khi giao (COD) chỉ tính khi đã thu. Chỉ gồm các nút bạn được xem.",
+      "none": "Hôm nay chưa thu được khoản nào.",
+      "orders": "{count, plural, other {# đơn}}",
+      "lastDay": "Hôm nay chưa thu được khoản nào; dưới đây là ngày gần nhất có thu: {date}."
+    },
+    "activity": {
+      "title": "Hoạt động gần đây",
+      "all": "Xem tất cả"
+    },
+    "areas": "Phân hệ"
   },
   "account": {
     "title": "Tài khoản của tôi",
@@ -449,7 +488,10 @@
       "plans_billing_period_not_payable": "Kỳ thanh toán này đã trả hoặc đã huỷ.",
       "plans_override_not_found": "Không còn ghi đè này.",
       "plans_provisioning_not_found": "Không còn lượt cấp phát này.",
-      "plans_provisioning_not_failed": "Chỉ chạy lại được lượt cấp phát đã dừng lỗi."
+      "plans_provisioning_not_failed": "Chỉ chạy lại được lượt cấp phát đã dừng lỗi.",
+      "kernel_work_not_found": "Việc này không còn: bản ghi gốc đã được xử lý.",
+      "kernel_pin_not_found": "Mục ghim này không còn.",
+      "kernel_bulk_count_changed": "Số bản ghi khớp bộ lọc đã đổi từ lúc chạy thử. Chạy thử lại rồi mới chạy thật."
     },
     "fields": {
       "email": "Nhập một địa chỉ email hợp lệ.",
@@ -488,7 +530,9 @@
       "same_placement": "Chọn nơi khác với nơi khách đang ở.",
       "hours_max": "Chọn từ 1 tới 8 giờ.",
       "unknown_key": "Dùng khoá có trong danh mục của máy chủ cho loại này.",
-      "on_off": "Ghi on hoặc off."
+      "on_off": "Ghi on hoặc off.",
+      "work_snooze_invalid": "Chọn một thời điểm trong 30 ngày tới.",
+      "work_assignee_forbidden": "Người này không có quyền xử lý việc này."
     },
     "badgeNew": "Dữ liệu mẫu · chờ API mới",
     "badgeModule": "Dữ liệu mẫu · chờ module {module}"
@@ -9540,6 +9584,375 @@
       "statsTitle": "Phân bố sao",
       "statsHead": "{product} · {mean} ★ từ {total} đánh giá",
       "starLabel": "{n} sao"
+    }
+  },
+  "work": {
+    "crumb": "Tổng quan",
+    "title": "Việc và hoạt động",
+    "description": "Mọi việc đang chờ bạn, hoạt động gần đây, mục đã ghim và tuỳ chọn thông báo. Việc tính từ dữ liệu của từng phân hệ và tự rời danh sách khi xử lý xong ở nơi gốc.",
+    "tabs": {
+      "label": "Mục của Việc và hoạt động",
+      "work": "Việc cần làm",
+      "activity": "Hoạt động",
+      "pins": "Đã ghim",
+      "dryRun": "Xem trước thao tác",
+      "notifications": "Tuỳ chọn thông báo"
+    },
+    "box": {
+      "title": "Việc cần làm",
+      "about": "Gom từ mọi phân hệ bạn có quyền. Không có nút \"đánh dấu xong\": việc tự rời danh sách khi bản ghi gốc được xử lý.",
+      "filter": "Lọc theo trạng thái",
+      "areaFilter": "Lọc theo phân hệ",
+      "all": "Tất cả",
+      "open": "Đang chờ",
+      "assigned": "Đã giao việc",
+      "snoozed": "Đã hoãn",
+      "areaAll": "Mọi phân hệ",
+      "buckets": {
+        "overdue": "Quá hạn",
+        "today": "Hôm nay",
+        "soon": "Sắp tới"
+      },
+      "empty": "Không còn việc nào. Việc mới hiện ở đây khi các phân hệ có dữ liệu cần xử lý.",
+      "emptyFilter": "Không có việc nào khớp bộ lọc.",
+      "incomplete": "{count, plural, other {# nguồn việc không trả lời}}: {names}. Việc của nguồn đó chưa có trong danh sách; tải lại trang để thử lại.",
+      "sampleNote": "Việc có nhãn \"mẫu\" đọc từ dữ liệu mẫu của phân hệ chưa có API; bình luận, bài nộp biểu mẫu và bài chờ duyệt đọc từ core thật. Hoãn và giao việc giữ trong dữ liệu mẫu tới khi core có API.",
+      "blocking": "Gấp",
+      "due": {
+        "overdue": "Quá hạn {when}",
+        "due": "Hạn {when}",
+        "none": "Không có hạn"
+      },
+      "why": "Vì sao bạn thấy",
+      "whyText": "Bạn thấy việc này vì có quyền {permission} ở {scope}.",
+      "whyAny": "Bạn thấy việc này vì có quyền xử lý nó ở {scope}.",
+      "assignedTo": "Giao cho {name}",
+      "snoozedUntil": "Hoãn tới",
+      "sample": "mẫu",
+      "sampleTitle": "Dữ liệu mẫu · chờ API bước {step}: {endpoint}",
+      "snooze": "Hoãn",
+      "snoozeLabel": "Hoãn việc: {title}",
+      "snoozeTitle": "Hoãn việc",
+      "snoozeIntro": "«{title}» rời danh sách đang chờ tới giờ bạn chọn rồi hiện lại. Chỉ ẩn với bạn; người khác vẫn thấy.",
+      "snoozeWhen": "Hiện lại lúc",
+      "snoozeSubmit": "Hoãn",
+      "snoozeDone": "Đã hoãn việc",
+      "presets": {
+        "1h": "1 giờ nữa",
+        "3h": "3 giờ nữa",
+        "tomorrow": "9:00 sáng mai (giờ Việt Nam)",
+        "monday": "9:00 thứ Hai tới (giờ Việt Nam)"
+      },
+      "unsnooze": "Bỏ hoãn",
+      "unsnoozeLabel": "Bỏ hoãn: {title}",
+      "unsnoozeDone": "Việc đã hiện lại",
+      "assign": "Giao",
+      "assignLabel": "Giao việc: {title}",
+      "assignTitle": "Giao việc cho người khác",
+      "assignIntro": "«{title}» vẫn hiện ở đây tới khi xử lý xong ở nơi gốc; người nhận thấy việc được giao cho mình.",
+      "assignWho": "Giao cho",
+      "assignHint": "Chỉ liệt kê người có quyền xử lý việc này (theo role của họ).",
+      "assignNone": "Không giao ai",
+      "assignSubmit": "Giao việc",
+      "assignDone": "Đã giao việc",
+      "undo": "Hoàn tác",
+      "undone": "Đã hoàn tác"
+    },
+    "why": {
+      "tenant": "toàn bộ khách này",
+      "node": "{node} (nút và các nút con)"
+    },
+    "sources": {
+      "comments_pending": "Bình luận",
+      "forms_new_submissions": "Biểu mẫu",
+      "content_review": "Bài viết",
+      "orders_unconfirmed": "Đơn hàng",
+      "orders_returns_overdue": "Đổi trả",
+      "shipping_cod_mismatch": "Tiền thu hộ",
+      "inventory_below_minimum": "Tồn kho",
+      "compliance_website_dossier": "Website TMĐT",
+      "compliance_kyc_pending": "Định danh",
+      "compliance_incident_deadline": "Sự cố dữ liệu",
+      "invoices_rejected": "Hoá đơn điện tử",
+      "ledger_exceptions": "Đối soát",
+      "ledger_periods_closable": "Kỳ kế toán",
+      "marketplace_disputes_due": "Tranh chấp",
+      "kernel_approvals": "Lệnh chờ duyệt",
+      "tax_rate_expiring": "Thuế suất"
+    },
+    "items": {
+      "commentsPending": {
+        "title": "{count}{more, select, yes {+} other {}} bình luận chờ duyệt",
+        "detail": "Cũ nhất của {name}",
+        "act": "Duyệt"
+      },
+      "formsNew": {
+        "title": "{count}{more, select, yes {+} other {}} bài nộp mới ở biểu mẫu «{form}»",
+        "detail": "Biểu mẫu {key}",
+        "act": "Mở"
+      },
+      "contentReview": {
+        "title": "{count, plural, other {# bài chờ duyệt}}",
+        "detail": "Cũ nhất: «{title}»",
+        "act": "Xem"
+      },
+      "ordersUnconfirmed": {
+        "title": "{count, plural, other {# đơn chưa xác nhận}}",
+        "detail": "{where}",
+        "act": "Xử lý"
+      },
+      "returnsOverdue": {
+        "title": "{count, plural, other {# yêu cầu đổi trả quá hạn trả lời}}",
+        "detail": "Cũ nhất: {number} của đơn {order}",
+        "act": "Trả lời"
+      },
+      "inventoryLow": {
+        "title": "{count, plural, other {# dòng tồn dưới mức tối thiểu}}",
+        "detail": "{where}",
+        "act": "Xem tồn"
+      },
+      "websiteDossier": {
+        "sales": "{domain} chưa thông báo website bán hàng với Bộ Công Thương",
+        "platform": "{domain} chưa đăng ký sàn với Bộ Công Thương",
+        "detail": "{missing, plural, =0 {Đủ mục, còn chờ nộp hồ sơ} other {Còn thiếu # mục trước khi nộp hồ sơ}}",
+        "act": "Xem danh sách"
+      },
+      "kycPending": {
+        "title": "{count, plural, other {# hồ sơ định danh (KYC) chờ duyệt}}",
+        "detail": "Cũ nhất: {name}. Chưa xác thực thì chưa được bán.",
+        "act": "Mở hàng chờ"
+      },
+      "incident": {
+        "title": "Sự cố {reference} chưa báo cơ quan có thẩm quyền",
+        "detail": "Mức {severity, select, high {cao} medium {trung bình} other {thấp}}; hạn báo tính từ lúc phát hiện",
+        "act": "Mở"
+      },
+      "invoicesRejected": {
+        "title": "{count, plural, other {# hoá đơn điện tử bị trả lỗi}}",
+        "detail": "Sửa rồi gửi lại cùng số hoá đơn",
+        "act": "Mở"
+      },
+      "ledgerExceptions": {
+        "title": "{count, plural, other {# sai lệch đối soát chưa xử lý}}",
+        "detail": "Thanh toán hay sao kê chưa khớp sổ cái",
+        "act": "Đối soát"
+      },
+      "periodsClosable": {
+        "title": "{count, plural, other {# kỳ kế toán cần khoá}}",
+        "detail": "Kỳ cũ nhất còn mở: {month}",
+        "act": "Mở kỳ"
+      },
+      "codMismatch": {
+        "title": "Tiền thu hộ (COD) lệch {amount}",
+        "detail": "{count, plural, other {# dòng bảng kê chưa khớp sổ}}",
+        "act": "Đối soát"
+      },
+      "disputeDue": {
+        "title": "Tranh chấp {number} (đơn {order}) chờ sàn phân xử",
+        "detail": "Người bán {seller} · người mua đòi {claim}",
+        "act": "Phân xử"
+      },
+      "approval": {
+        "title": "Agent «{agent}» đề xuất: {summary}",
+        "detail": "Cần quyền {permission} để duyệt",
+        "act": "Xem và duyệt"
+      },
+      "taxExpiring": {
+        "title": "Mức thuế GTGT {percent}% sắp hết hiệu lực",
+        "detail": "{products, plural, other {# sản phẩm}} đang dùng nhóm thuế này; {next, select, none {chưa có mức kế tiếp} other {từ {from} áp dụng {next}%}}",
+        "act": "Mở biểu thuế"
+      }
+    },
+    "metrics": {
+      "labels": {
+        "orders_revenue_today": "Doanh thu hôm nay",
+        "orders_pending": "Đơn chờ xử lý",
+        "inventory_low_stock": "Sắp hết hàng",
+        "content_in_review": "Bài chờ duyệt",
+        "comments_pending": "Bình luận chờ duyệt",
+        "forms_new": "Bài nộp form chưa xử lý"
+      },
+      "revenueNote": "Gồm thuế, chưa trừ hoàn tiền",
+      "pendingNote": "Chờ nhận, đã xác nhận hay đang chuẩn bị",
+      "lowNote": "Dòng tồn dưới mức tối thiểu; {out, plural, other {# dòng}} đã hết",
+      "reviewNote": "Cũ nhất: «{title}»",
+      "reviewNone": "Không có bài nào chờ duyệt",
+      "commentsNote": "Trong hàng chờ kiểm duyệt",
+      "atLeast": "Ít nhất số này (một trang của core)",
+      "formsNote": "Ở {forms, plural, other {# biểu mẫu}}",
+      "real": "API thật · module {module}",
+      "realTitle": "Số đọc từ API của core"
+    },
+    "setup": {
+      "steps": {
+        "owner": "Thông tin chủ sở hữu, mã số thuế",
+        "pages": "Trang bắt buộc theo luật",
+        "moitNotify": "Thông báo website bán hàng với Bộ Công Thương",
+        "moitRegister": "Đăng ký sàn với Bộ Công Thương",
+        "payment": "Kết nối cổng thanh toán",
+        "einvoice": "Kết nối hoá đơn điện tử",
+        "sms": "Kết nối SMS xác thực số điện thoại",
+        "domain": "Tên miền đã xác minh"
+      },
+      "notes": {
+        "owner": "Thiếu tên pháp lý, mã số thuế hay địa chỉ",
+        "pages": "{missing, plural, other {Còn # trang chưa đăng}}",
+        "moit": "{domain}: {status, select, not_submitted {chưa nộp} submitted {đã nộp, chờ xác nhận} needs_changes {cần bổ sung} rejected {bị từ chối} other {chưa xong}}",
+        "notConnected": "Chưa kết nối",
+        "checkFailed": "Lần kiểm tra gần nhất bị lỗi",
+        "domain": "Chưa có tên miền nào đã xác minh"
+      },
+      "blocking": "Bắt buộc theo luật",
+      "do": "Làm",
+      "doLabel": "Làm: {step}",
+      "basis": "Bước có nhãn \"Bắt buộc theo luật\" phải xong trước khi bán (TMĐT: NĐ 52/2013, sửa bởi NĐ 85/2021 — cần đối chiếu văn bản gốc)."
+    },
+    "activity": {
+      "title": "Hoạt động gần đây",
+      "about": "Câu đọc được dựng từ nhật ký audit của core: ai làm gì, lúc nào. Đăng nhập và đổi mật khẩu là việc riêng của từng người, không hiện ở đây.",
+      "forbidden": "Cần quyền {permission} để xem hoạt động. Khi core có API hoạt động theo quyền đọc từng bản ghi (bước 51), mọi người sẽ thấy hoạt động trong phạm vi của mình.",
+      "empty": "Chưa có hoạt động nào.",
+      "unnamed": "không tên",
+      "actors": {
+        "someone": "Một người dùng",
+        "system": "Hệ thống",
+        "public": "Khách truy cập",
+        "key": "Một API key"
+      },
+      "actions": {
+        "auth_user_created": "{actor} tạo tài khoản người dùng",
+        "auth_user_updated": "{actor} sửa thông tin một người dùng",
+        "auth_user_disabled": "{actor} khoá một tài khoản",
+        "auth_user_deleted": "{actor} xoá một tài khoản",
+        "auth_user_roles_changed": "{actor} đổi role của một người dùng",
+        "auth_role_created": "{actor} tạo role «{what}»",
+        "auth_role_updated": "{actor} sửa role «{what}»",
+        "auth_role_deleted": "{actor} xoá một role",
+        "auth_api_key_created": "{actor} tạo API key «{what}»",
+        "auth_api_key_revoked": "{actor} thu hồi một API key",
+        "content_entry_created": "{actor} tạo bài «{what}»",
+        "content_entry_published": "{actor} đăng «{what}»",
+        "content_entry_unpublished": "{actor} gỡ «{what}» khỏi website",
+        "content_entry_archived": "{actor} lưu trữ «{what}»",
+        "content_entry_restored": "{actor} khôi phục «{what}»",
+        "content_entry_deleted": "{actor} xoá bài «{what}»",
+        "content_entry_moved": "{actor} chuyển trang «{what}»",
+        "content_review_requested": "{actor} gửi duyệt «{what}»",
+        "content_review_withdrawn": "{actor} rút yêu cầu duyệt «{what}»",
+        "content_schedule_created": "{actor} hẹn giờ đăng một bài",
+        "content_term_changed": "{actor} sửa danh mục hay thẻ bài viết",
+        "content_menu_changed": "{actor} sửa menu «{what}»",
+        "content_redirect_changed": "{actor} sửa một chuyển hướng",
+        "content_author_changed": "{actor} sửa tác giả «{what}»",
+        "media_item_uploaded": "{actor} tải lên «{what}»",
+        "media_item_updated": "{actor} sửa tệp «{what}»",
+        "media_item_trashed": "{actor} chuyển «{what}» vào thùng rác",
+        "media_item_restored": "{actor} khôi phục «{what}»",
+        "media_item_purged": "{actor} xoá hẳn một tệp",
+        "forms_form_created": "{actor} tạo biểu mẫu «{what}»",
+        "forms_form_updated": "{actor} sửa biểu mẫu «{what}»",
+        "forms_form_deleted": "{actor} xoá một biểu mẫu",
+        "forms_submission_received": "Có bài nộp biểu mẫu mới",
+        "forms_submission_status_changed": "{actor} đổi trạng thái một bài nộp",
+        "newsletter_campaign_created": "{actor} tạo chiến dịch bản tin «{what}»",
+        "newsletter_campaign_scheduled": "{actor} hẹn giờ gửi bản tin «{what}»",
+        "newsletter_campaign_sent": "Bản tin «{what}» đã gửi xong",
+        "newsletter_campaign_cancelled": "{actor} huỷ chiến dịch «{what}»",
+        "newsletter_subscribers_imported": "{actor} nhập danh sách người đăng ký",
+        "newsletter_subscription_confirmed": "Một người xác nhận đăng ký nhận bản tin",
+        "newsletter_subscription_unsubscribed": "Một người huỷ đăng ký nhận bản tin",
+        "comments_comment_created": "Có bình luận mới",
+        "comments_comment_status_changed": "{actor} kiểm duyệt một bình luận",
+        "comments_comment_published": "Một bình luận được đăng",
+        "comments_comment_deleted": "{actor} xoá một bình luận",
+        "comments_ban_created": "{actor} chặn một người bình luận",
+        "webhooks_endpoint_created": "{actor} thêm webhook «{what}»",
+        "webhooks_endpoint_updated": "{actor} sửa webhook «{what}»",
+        "webhooks_endpoint_deleted": "{actor} xoá một webhook"
+      }
+    },
+    "pins": {
+      "title": "Mục đã ghim",
+      "about": "View và bản ghi bạn ghim để mở nhanh. Ghim là của riêng bạn.",
+      "empty": "Chưa ghim mục nào.",
+      "kinds": {
+        "view": "View «{name}»",
+        "seller": "Người bán {name}",
+        "product": "Sản phẩm «{name}»",
+        "page": "{name}"
+      },
+      "open": "Mở",
+      "unpin": "Bỏ ghim",
+      "unpinLabel": "Bỏ ghim: {name}",
+      "unpinned": "Đã bỏ ghim",
+      "undo": "Hoàn tác",
+      "restored": "Đã ghim lại"
+    },
+    "dryRun": {
+      "title": "Chạy thử thao tác hàng loạt",
+      "about": "Thao tác hàng loạt chạy thử trước (dry-run): hệ thống cho biết từng bản ghi sẽ được áp dụng, bỏ qua hay lỗi, không ghi gì. Đồng ý thì mới chạy thật bằng job. Thao tác mẫu: đổi nhóm thuế của mọi sản phẩm trong một danh mục.",
+      "form": "Chọn thao tác để chạy thử",
+      "category": "Danh mục sản phẩm",
+      "tax": "Đổi sang nhóm thuế",
+      "preview": "Chạy thử",
+      "result": "Kết quả chạy thử: {category} → {tax}",
+      "filter": "Lọc theo kết quả",
+      "all": "Tất cả",
+      "outcomes": {
+        "ok": "Sẽ áp dụng",
+        "skipped": "Bỏ qua",
+        "failed": "Lỗi"
+      },
+      "notes": {
+        "ok": "Đổi sang {tax}",
+        "skipped": "Đã ở nhóm này",
+        "failed": "Không sửa được"
+      },
+      "product": "Sản phẩm",
+      "outcome": "Kết quả",
+      "reason": "Lý do",
+      "none": "Danh mục này chưa có sản phẩm nào.",
+      "codes": {
+        "already_set": "Đã ở nhóm thuế này",
+        "catalog_product_archived": "Sản phẩm đã lưu trữ, không sửa được"
+      },
+      "run": "Chạy thật",
+      "runTitle": "Chạy thật thao tác này?",
+      "runPoint1": "{count, plural, other {# sản phẩm}} chuyển sang nhóm «{tax}»; giá bán và đơn mới tính thuế theo nhóm mới ngay khi chạy xong.",
+      "runPoint2": "Chỉ chạy khi số sản phẩm khớp bộ lọc vẫn là {count} như lúc chạy thử; khác thì dừng và báo lại.",
+      "runPoint3": "Không có Hoàn tác cho cả lô: muốn đổi lại thì chạy một thao tác mới. Đơn đã đặt giữ thuế lúc đặt.",
+      "runSubmit": "Chạy thật",
+      "runDone": "Đã chạy xong thao tác",
+      "noWrite": "Cần quyền {permission} để chạy thật.",
+      "runs": "Lần chạy gần đây",
+      "runLine": "Đổi nhóm thuế sang «{tax}»",
+      "runCounts": "{ok} áp dụng · {skipped} bỏ qua · {failed} lỗi"
+    },
+    "notify": {
+      "title": "Nhận thông báo",
+      "about": "Chọn khi nào bạn nhận tin. Thông báo là tin gửi cho bạn; việc cần xử lý nằm ở hộp việc.",
+      "prefs": {
+        "mention": {
+          "label": "Khi có người nhắc tên tôi (@)",
+          "hint": "Trong ứng dụng và email"
+        },
+        "assigned": {
+          "label": "Khi được giao việc",
+          "hint": "Trong ứng dụng"
+        },
+        "approval": {
+          "label": "Khi agent gửi yêu cầu duyệt",
+          "hint": "Trong ứng dụng và email; yêu cầu hết hạn sau 24 giờ"
+        },
+        "digest": {
+          "label": "Bản tóm tắt hằng ngày",
+          "hint": "Email lúc 8:00 giờ Việt Nam"
+        }
+      },
+      "save": "Lưu tuỳ chọn",
+      "saved": "Đã lưu tuỳ chọn thông báo",
+      "languageTitle": "Ngôn ngữ của thông báo gửi chậm.",
+      "languageNote": "Thông báo gửi sau (email tóm tắt, nhắc việc) chưa biết ngôn ngữ của bạn vì core chưa lưu \"ngôn ngữ ưa thích\"; đã ghi ở chỗ thiếu API."
     }
   }
 }

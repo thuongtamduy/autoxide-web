@@ -67,7 +67,8 @@
       "sellerShop": "My shop",
       "sellerMoney": "Statements and payouts",
       "orders": "Orders",
-      "stores": "Stores"
+      "stores": "Stores",
+      "work": "Work and activity"
     },
     "about": {
       "dashboard": "Greeting and a way into every area you can use.",
@@ -105,7 +106,8 @@
       "sellerShop": "Shop details, delivery, payout account, penalty points.",
       "sellerMoney": "Statement per order, payouts, tax withheld.",
       "orders": "Orders, saved views, returns and refunds, counter sales, abandoned carts.",
-      "stores": "Store pickup, cashier shifts, returns at the counter, product reviews."
+      "stores": "Store pickup, cashier shifts, returns at the counter, product reviews.",
+      "work": "Work waiting for you from every area, recent activity, pinned items and notification settings."
     }
   },
   "login": {
@@ -200,12 +202,49 @@
     "themeDark": "Dark",
     "themeSystem": "System",
     "account": "Account",
-    "accountMenu": "Account menu of {name}"
+    "accountMenu": "Account menu of {name}",
+    "pending": "Has work to handle"
   },
   "dashboard": {
     "hello": "Hello, {name}",
     "description": "Every area you can use on this server. Areas appear here once their module is installed and your role grants their permission.",
-    "nothing": "No area is available to you yet. Ask an administrator to add a role with the permissions you need."
+    "nothing": "No area is available to you yet. Ask an administrator to add a role with the permissions you need.",
+    "today": "{date} · Vietnam time",
+    "greeting": {
+      "morning": "Good morning, {name}",
+      "afternoon": "Good afternoon, {name}",
+      "evening": "Good evening, {name}"
+    },
+    "quick": {
+      "post": "New post",
+      "pos": "Counter sale"
+    },
+    "metrics": "Figures from your areas",
+    "tasks": {
+      "title": "Work to do",
+      "hint": "Gathered from every area you have permission for; handle it where it came from and it leaves the list.",
+      "empty": "Nothing is waiting for you.",
+      "more": "See all {count} items",
+      "all": "Open the work box"
+    },
+    "setup": {
+      "title": "Setup steps",
+      "done": "{done} / {total} steps",
+      "about": "What must be done before selling, by law and by this customer's setup. States come from the data: finish a step where it lives and it is ticked here.",
+      "progress": "Setup progress"
+    },
+    "revenue": {
+      "title": "Today's revenue by unit",
+      "about": "Money collected since 00:00 today (Vietnam time), tax included, before refunds; cash on delivery counts once collected. Only units you can see.",
+      "none": "Nothing collected yet today.",
+      "orders": "{count, plural, one {# order} other {# orders}}",
+      "lastDay": "Nothing collected yet today; below is the latest day with money in: {date}."
+    },
+    "activity": {
+      "title": "Recent activity",
+      "all": "See all"
+    },
+    "areas": "Areas"
   },
   "account": {
     "title": "My account",
@@ -449,7 +488,10 @@
       "plans_billing_period_not_payable": "This period is already paid or void.",
       "plans_override_not_found": "This override no longer exists.",
       "plans_provisioning_not_found": "This provisioning run no longer exists.",
-      "plans_provisioning_not_failed": "Only a stopped provisioning run can be retried."
+      "plans_provisioning_not_failed": "Only a stopped provisioning run can be retried.",
+      "kernel_work_not_found": "This work item is gone: the record was handled where it came from.",
+      "kernel_pin_not_found": "This pin no longer exists.",
+      "kernel_bulk_count_changed": "The number of matching records changed since the dry run. Run the dry run again before running for real."
     },
     "fields": {
       "email": "Enter a valid email address.",
@@ -488,7 +530,9 @@
       "same_placement": "Choose a different place from where the customer is now.",
       "hours_max": "Choose 1 to 8 hours.",
       "unknown_key": "Use a key of the server catalog for this kind.",
-      "on_off": "Write on or off."
+      "on_off": "Write on or off.",
+      "work_snooze_invalid": "Pick a time within the next 30 days.",
+      "work_assignee_forbidden": "This person has no permission to handle this work."
     },
     "badgeNew": "Sample data · waiting for a new API",
     "badgeModule": "Sample data · waiting for the {module} module"
@@ -9540,6 +9584,375 @@
       "statsTitle": "Star ratings",
       "statsHead": "{product} · {mean} ★ from {total} reviews",
       "starLabel": "{n} stars"
+    }
+  },
+  "work": {
+    "crumb": "Overview",
+    "title": "Work and activity",
+    "description": "Everything waiting for you, recent activity, pinned items and notification settings. Work comes from each area's data and leaves the list once handled where it came from.",
+    "tabs": {
+      "label": "Sections of Work and activity",
+      "work": "Work to do",
+      "activity": "Activity",
+      "pins": "Pinned",
+      "dryRun": "Preview a bulk action",
+      "notifications": "Notification settings"
+    },
+    "box": {
+      "title": "Work to do",
+      "about": "Gathered from every area you have permission for. There is no \"mark as done\": an item leaves the list once its record is handled.",
+      "filter": "Filter by state",
+      "areaFilter": "Filter by area",
+      "all": "All",
+      "open": "Waiting",
+      "assigned": "Assigned",
+      "snoozed": "Snoozed",
+      "areaAll": "Every area",
+      "buckets": {
+        "overdue": "Overdue",
+        "today": "Today",
+        "soon": "Coming up"
+      },
+      "empty": "Nothing left. New work shows here when an area has data to handle.",
+      "emptyFilter": "No work matches the filter.",
+      "incomplete": "{count, plural, one {# work source did not answer} other {# work sources did not answer}}: {names}. Their work is missing from the list; reload the page to try again.",
+      "sampleNote": "Items tagged \"sample\" come from sample data of areas without an API yet; comments, form submissions and posts waiting for review come from the real core. Snoozing and assigning are kept in sample data until the core has the API.",
+      "blocking": "Urgent",
+      "due": {
+        "overdue": "Overdue {when}",
+        "due": "Due {when}",
+        "none": "No due date"
+      },
+      "why": "Why you see this",
+      "whyText": "You see this because you hold {permission} at {scope}.",
+      "whyAny": "You see this because you may handle it at {scope}.",
+      "assignedTo": "Assigned to {name}",
+      "snoozedUntil": "Snoozed until",
+      "sample": "sample",
+      "sampleTitle": "Sample data · waiting for the API of step {step}: {endpoint}",
+      "snooze": "Snooze",
+      "snoozeLabel": "Snooze: {title}",
+      "snoozeTitle": "Snooze work",
+      "snoozeIntro": "\"{title}\" leaves the waiting list until the time you pick, then comes back. Hidden for you only; others still see it.",
+      "snoozeWhen": "Bring back at",
+      "snoozeSubmit": "Snooze",
+      "snoozeDone": "Work snoozed",
+      "presets": {
+        "1h": "In 1 hour",
+        "3h": "In 3 hours",
+        "tomorrow": "9:00 tomorrow (Vietnam time)",
+        "monday": "9:00 next Monday (Vietnam time)"
+      },
+      "unsnooze": "Unsnooze",
+      "unsnoozeLabel": "Unsnooze: {title}",
+      "unsnoozeDone": "The work is back",
+      "assign": "Assign",
+      "assignLabel": "Assign: {title}",
+      "assignTitle": "Assign to someone else",
+      "assignIntro": "\"{title}\" stays here until it is handled where it came from; the assignee sees it was given to them.",
+      "assignWho": "Assign to",
+      "assignHint": "Only people who may handle this work (by their roles) are listed.",
+      "assignNone": "Nobody",
+      "assignSubmit": "Assign",
+      "assignDone": "Work assigned",
+      "undo": "Undo",
+      "undone": "Undone"
+    },
+    "why": {
+      "tenant": "this whole customer",
+      "node": "{node} (unit and units below)"
+    },
+    "sources": {
+      "comments_pending": "Comments",
+      "forms_new_submissions": "Forms",
+      "content_review": "Posts",
+      "orders_unconfirmed": "Orders",
+      "orders_returns_overdue": "Returns",
+      "shipping_cod_mismatch": "Cash on delivery",
+      "inventory_below_minimum": "Inventory",
+      "compliance_website_dossier": "E-commerce websites",
+      "compliance_kyc_pending": "Identity checks",
+      "compliance_incident_deadline": "Data incidents",
+      "invoices_rejected": "E-invoices",
+      "ledger_exceptions": "Reconciliation",
+      "ledger_periods_closable": "Accounting periods",
+      "marketplace_disputes_due": "Disputes",
+      "kernel_approvals": "Commands awaiting approval",
+      "tax_rate_expiring": "Tax rates"
+    },
+    "items": {
+      "commentsPending": {
+        "title": "{count}{more, select, yes {+} other {}} comments awaiting moderation",
+        "detail": "Oldest by {name}",
+        "act": "Moderate"
+      },
+      "formsNew": {
+        "title": "{count}{more, select, yes {+} other {}} new submissions on form \"{form}\"",
+        "detail": "Form {key}",
+        "act": "Open"
+      },
+      "contentReview": {
+        "title": "{count, plural, one {# post awaiting review} other {# posts awaiting review}}",
+        "detail": "Oldest: \"{title}\"",
+        "act": "Review"
+      },
+      "ordersUnconfirmed": {
+        "title": "{count, plural, one {# order not confirmed} other {# orders not confirmed}}",
+        "detail": "{where}",
+        "act": "Handle"
+      },
+      "returnsOverdue": {
+        "title": "{count, plural, one {# return request past its reply deadline} other {# return requests past their reply deadline}}",
+        "detail": "Oldest: {number} for order {order}",
+        "act": "Reply"
+      },
+      "inventoryLow": {
+        "title": "{count, plural, one {# stock line below its minimum} other {# stock lines below their minimum}}",
+        "detail": "{where}",
+        "act": "See stock"
+      },
+      "websiteDossier": {
+        "sales": "{domain} has not notified the Ministry of Industry and Trade as a sales website",
+        "platform": "{domain} is not registered as a marketplace with the Ministry of Industry and Trade",
+        "detail": "{missing, plural, =0 {All items met, waiting to file} one {# item missing before filing} other {# items missing before filing}}",
+        "act": "See the checklist"
+      },
+      "kycPending": {
+        "title": "{count, plural, one {# identity check (KYC) awaiting review} other {# identity checks (KYC) awaiting review}}",
+        "detail": "Oldest: {name}. No selling before verification.",
+        "act": "Open the queue"
+      },
+      "incident": {
+        "title": "Incident {reference} not yet reported to the authority",
+        "detail": "Severity {severity, select, high {high} medium {medium} other {low}}; the deadline runs from detection",
+        "act": "Open"
+      },
+      "invoicesRejected": {
+        "title": "{count, plural, one {# e-invoice rejected} other {# e-invoices rejected}}",
+        "detail": "Fix and resend with the same invoice number",
+        "act": "Open"
+      },
+      "ledgerExceptions": {
+        "title": "{count, plural, one {# reconciliation exception open} other {# reconciliation exceptions open}}",
+        "detail": "Payments or statements not matching the ledger",
+        "act": "Reconcile"
+      },
+      "periodsClosable": {
+        "title": "{count, plural, one {# accounting period to close} other {# accounting periods to close}}",
+        "detail": "Oldest open period: {month}",
+        "act": "Open periods"
+      },
+      "codMismatch": {
+        "title": "Cash on delivery off by {amount}",
+        "detail": "{count, plural, one {# statement line not matching the ledger} other {# statement lines not matching the ledger}}",
+        "act": "Reconcile"
+      },
+      "disputeDue": {
+        "title": "Dispute {number} (order {order}) awaiting the marketplace's decision",
+        "detail": "Seller {seller} · buyer claims {claim}",
+        "act": "Decide"
+      },
+      "approval": {
+        "title": "Agent \"{agent}\" proposes: {summary}",
+        "detail": "Approving needs {permission}",
+        "act": "Review and approve"
+      },
+      "taxExpiring": {
+        "title": "The {percent}% VAT rate expires soon",
+        "detail": "{products, plural, one {# product uses} other {# products use}} this tax group; {next, select, none {no next rate yet} other {{next}% applies from {from}}}",
+        "act": "Open tax rates"
+      }
+    },
+    "metrics": {
+      "labels": {
+        "orders_revenue_today": "Revenue today",
+        "orders_pending": "Orders to handle",
+        "inventory_low_stock": "Running low",
+        "content_in_review": "Posts awaiting review",
+        "comments_pending": "Comments awaiting moderation",
+        "forms_new": "Unread form submissions"
+      },
+      "revenueNote": "Tax included, before refunds",
+      "pendingNote": "Awaiting acceptance, confirmed or being prepared",
+      "lowNote": "Stock lines below their minimum; {out, plural, one {# line} other {# lines}} out of stock",
+      "reviewNote": "Oldest: \"{title}\"",
+      "reviewNone": "No post awaiting review",
+      "commentsNote": "In the moderation queue",
+      "atLeast": "At least this many (one page from the core)",
+      "formsNote": "On {forms, plural, one {# form} other {# forms}}",
+      "real": "Real API · module {module}",
+      "realTitle": "Read from the core's API"
+    },
+    "setup": {
+      "steps": {
+        "owner": "Owner details and tax code",
+        "pages": "Pages required by law",
+        "moitNotify": "Notify the Ministry of Industry and Trade of the sales website",
+        "moitRegister": "Register the marketplace with the Ministry of Industry and Trade",
+        "payment": "Connect a payment gateway",
+        "einvoice": "Connect e-invoicing",
+        "sms": "Connect SMS for phone verification",
+        "domain": "A verified domain"
+      },
+      "notes": {
+        "owner": "Legal name, tax code or address missing",
+        "pages": "{missing, plural, one {# page not published} other {# pages not published}}",
+        "moit": "{domain}: {status, select, not_submitted {not filed} submitted {filed, awaiting confirmation} needs_changes {changes requested} rejected {rejected} other {not done}}",
+        "notConnected": "Not connected",
+        "checkFailed": "The last check failed",
+        "domain": "No verified domain yet"
+      },
+      "blocking": "Required by law",
+      "do": "Do it",
+      "doLabel": "Do it: {step}",
+      "basis": "Steps marked \"Required by law\" must be done before selling (e-commerce: Decree 52/2013 as amended by Decree 85/2021 — check the original text)."
+    },
+    "activity": {
+      "title": "Recent activity",
+      "about": "Readable lines built from the core's audit log: who did what, and when. Sign-ins and password changes are personal and not shown here.",
+      "forbidden": "Seeing activity needs {permission}. Once the core lists activity by read permission on each record (step 51), everyone sees activity within their scope.",
+      "empty": "No activity yet.",
+      "unnamed": "untitled",
+      "actors": {
+        "someone": "A user",
+        "system": "The system",
+        "public": "A visitor",
+        "key": "An API key"
+      },
+      "actions": {
+        "auth_user_created": "{actor} created a user account",
+        "auth_user_updated": "{actor} edited a user",
+        "auth_user_disabled": "{actor} disabled an account",
+        "auth_user_deleted": "{actor} deleted an account",
+        "auth_user_roles_changed": "{actor} changed a user's roles",
+        "auth_role_created": "{actor} created the role \"{what}\"",
+        "auth_role_updated": "{actor} edited the role \"{what}\"",
+        "auth_role_deleted": "{actor} deleted a role",
+        "auth_api_key_created": "{actor} created the API key \"{what}\"",
+        "auth_api_key_revoked": "{actor} revoked an API key",
+        "content_entry_created": "{actor} created \"{what}\"",
+        "content_entry_published": "{actor} published \"{what}\"",
+        "content_entry_unpublished": "{actor} unpublished \"{what}\"",
+        "content_entry_archived": "{actor} archived \"{what}\"",
+        "content_entry_restored": "{actor} restored \"{what}\"",
+        "content_entry_deleted": "{actor} deleted \"{what}\"",
+        "content_entry_moved": "{actor} moved the page \"{what}\"",
+        "content_review_requested": "{actor} asked for a review of \"{what}\"",
+        "content_review_withdrawn": "{actor} withdrew the review request for \"{what}\"",
+        "content_schedule_created": "{actor} scheduled a post",
+        "content_term_changed": "{actor} edited categories or tags",
+        "content_menu_changed": "{actor} edited the menu \"{what}\"",
+        "content_redirect_changed": "{actor} edited a redirect",
+        "content_author_changed": "{actor} edited the author \"{what}\"",
+        "media_item_uploaded": "{actor} uploaded \"{what}\"",
+        "media_item_updated": "{actor} edited the file \"{what}\"",
+        "media_item_trashed": "{actor} moved \"{what}\" to the trash",
+        "media_item_restored": "{actor} restored \"{what}\"",
+        "media_item_purged": "{actor} deleted a file for good",
+        "forms_form_created": "{actor} created the form \"{what}\"",
+        "forms_form_updated": "{actor} edited the form \"{what}\"",
+        "forms_form_deleted": "{actor} deleted a form",
+        "forms_submission_received": "A new form submission arrived",
+        "forms_submission_status_changed": "{actor} changed a submission's state",
+        "newsletter_campaign_created": "{actor} created the campaign \"{what}\"",
+        "newsletter_campaign_scheduled": "{actor} scheduled the newsletter \"{what}\"",
+        "newsletter_campaign_sent": "The newsletter \"{what}\" was sent",
+        "newsletter_campaign_cancelled": "{actor} cancelled the campaign \"{what}\"",
+        "newsletter_subscribers_imported": "{actor} imported subscribers",
+        "newsletter_subscription_confirmed": "Someone confirmed a newsletter subscription",
+        "newsletter_subscription_unsubscribed": "Someone unsubscribed from a newsletter",
+        "comments_comment_created": "A new comment arrived",
+        "comments_comment_status_changed": "{actor} moderated a comment",
+        "comments_comment_published": "A comment was published",
+        "comments_comment_deleted": "{actor} deleted a comment",
+        "comments_ban_created": "{actor} blocked a commenter",
+        "webhooks_endpoint_created": "{actor} added the webhook \"{what}\"",
+        "webhooks_endpoint_updated": "{actor} edited the webhook \"{what}\"",
+        "webhooks_endpoint_deleted": "{actor} deleted a webhook"
+      }
+    },
+    "pins": {
+      "title": "Pinned items",
+      "about": "Views and records you pinned to open quickly. Pins are yours only.",
+      "empty": "Nothing pinned yet.",
+      "kinds": {
+        "view": "View \"{name}\"",
+        "seller": "Seller {name}",
+        "product": "Product \"{name}\"",
+        "page": "{name}"
+      },
+      "open": "Open",
+      "unpin": "Unpin",
+      "unpinLabel": "Unpin: {name}",
+      "unpinned": "Unpinned",
+      "undo": "Undo",
+      "restored": "Pinned again"
+    },
+    "dryRun": {
+      "title": "Dry-run a bulk action",
+      "about": "Bulk actions run as a dry run first: the system says which records would change, be skipped or fail, and writes nothing. Agree, and it runs for real as a job. Sample action: change the tax group of every product in a category.",
+      "form": "Choose the action to dry-run",
+      "category": "Product category",
+      "tax": "Change to tax group",
+      "preview": "Dry run",
+      "result": "Dry run: {category} → {tax}",
+      "filter": "Filter by outcome",
+      "all": "All",
+      "outcomes": {
+        "ok": "Will apply",
+        "skipped": "Skipped",
+        "failed": "Fails"
+      },
+      "notes": {
+        "ok": "Change to {tax}",
+        "skipped": "Already in this group",
+        "failed": "Cannot be changed"
+      },
+      "product": "Product",
+      "outcome": "Outcome",
+      "reason": "Reason",
+      "none": "This category has no products yet.",
+      "codes": {
+        "already_set": "Already in this tax group",
+        "catalog_product_archived": "Archived products cannot be changed"
+      },
+      "run": "Run for real",
+      "runTitle": "Run this action for real?",
+      "runPoint1": "{count, plural, one {# product moves} other {# products move}} to the group \"{tax}\"; prices and new orders use the new group as soon as the run ends.",
+      "runPoint2": "It runs only if the number of matching products is still {count}, as in the dry run; otherwise it stops and tells you.",
+      "runPoint3": "There is no undo for the whole batch: run a new action to change it back. Orders already placed keep the tax of when they were placed.",
+      "runSubmit": "Run for real",
+      "runDone": "The action has run",
+      "noWrite": "Running for real needs {permission}.",
+      "runs": "Recent runs",
+      "runLine": "Change tax group to \"{tax}\"",
+      "runCounts": "{ok} applied · {skipped} skipped · {failed} failed"
+    },
+    "notify": {
+      "title": "Notifications",
+      "about": "Choose when you hear about things. Notifications are messages to you; work to handle lives in the work box.",
+      "prefs": {
+        "mention": {
+          "label": "When someone mentions me (@)",
+          "hint": "In the app and by email"
+        },
+        "assigned": {
+          "label": "When work is assigned to me",
+          "hint": "In the app"
+        },
+        "approval": {
+          "label": "When an agent asks for approval",
+          "hint": "In the app and by email; requests expire after 24 hours"
+        },
+        "digest": {
+          "label": "Daily summary",
+          "hint": "Email at 8:00 Vietnam time"
+        }
+      },
+      "save": "Save settings",
+      "saved": "Notification settings saved",
+      "languageTitle": "Language of delayed notifications.",
+      "languageNote": "Notifications sent later (summary emails, reminders) do not know your language yet, because the core does not store a \"preferred language\"; listed as a missing API."
     }
   }
 }

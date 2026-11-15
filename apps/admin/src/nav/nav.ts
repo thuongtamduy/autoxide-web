@@ -79,6 +79,11 @@ export interface NavPage {
    * mẫu, không đòi module đã cài (module chưa có trong core), vẫn theo permission.
    */
   sample?: { step: string };
+  /**
+   * Số đếm cạnh tên màn (`NavItem.counter` của bước 51, W-020): id các nguồn việc của `src/work/` cộng
+   * lại; `"work"` = số việc đang chờ của hộp việc. Chỉ để hiện số, không đổi cách lọc menu.
+   */
+  counter?: "work" | readonly string[];
 }
 
 export interface NavGroup {
@@ -90,7 +95,15 @@ export interface NavGroup {
 
 /** Thứ tự cố định, theo 12 phân hệ của bản thiết kế. Chỉ ghi màn đã có trong ứng dụng này. */
 export const NAV: NavGroup[] = [
-  { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
+  {
+    id: "home",
+    icon: "home",
+    pages: [
+      { id: "dashboard", href: "/", exact: true },
+      // Việc và hoạt động (W-020): hộp việc gom từ mọi phân hệ, hoạt động gần đây, ghim, thông báo.
+      { id: "work", href: "/work", counter: "work" },
+    ],
+  },
   {
     // Bán hàng: theo bản thiết kế gồm Đơn hàng, Vận chuyển, Cửa hàng, Kênh bán. Đơn hàng và Cửa hàng
     // (bước 45, W-017), Vận chuyển (bước 44, W-015) dựng bằng dữ liệu mẫu vì core chưa có module
@@ -103,6 +116,7 @@ export const NAV: NavGroup[] = [
         href: "/sales/orders",
         permission: [ORDERS_READ, ORDERS_RETURNS_MANAGE, ORDERS_POS_SELL],
         sample: { step: "45" },
+        counter: ["orders.unconfirmed", "orders.returns_overdue"],
       },
       {
         id: "shipping",
@@ -115,6 +129,7 @@ export const NAV: NavGroup[] = [
           SHIPPING_CARRIERS_MANAGE,
         ],
         sample: { step: "44" },
+        counter: ["shipping.cod_mismatch"],
       },
       {
         id: "stores",
@@ -146,6 +161,7 @@ export const NAV: NavGroup[] = [
         href: "/catalog/inventory",
         permission: INVENTORY_READ,
         sample: { step: "42" },
+        counter: ["inventory.below_minimum"],
       },
     ],
   },
@@ -167,6 +183,7 @@ export const NAV: NavGroup[] = [
         href: "/marketing/forms",
         module: "forms",
         permission: [FORMS_READ, FORMS_EXPORT],
+        counter: ["forms.new_submissions"],
       },
       {
         id: "newsletter",
@@ -179,6 +196,7 @@ export const NAV: NavGroup[] = [
         href: "/marketing/comments",
         module: "comments",
         permission: [COMMENTS_READ, COMMENTS_MANAGE, COMMENTS_EXPORT],
+        counter: ["comments.pending"],
       },
     ],
   },
@@ -186,7 +204,13 @@ export const NAV: NavGroup[] = [
     id: "content",
     icon: "posts",
     pages: [
-      { id: "entries", href: "/content", module: "content", permission: CONTENT_READ },
+      {
+        id: "entries",
+        href: "/content",
+        module: "content",
+        permission: CONTENT_READ,
+        counter: ["content.review"],
+      },
       { id: "structure", href: "/content/structure", module: "content", permission: CONTENT_READ },
       // Menu của website là module `menus` riêng (chưa có trong core): dữ liệu mẫu (W-006).
       { id: "menus", href: "/content/menus", permission: MENUS_READ, sample: { step: "menus" } },
@@ -204,6 +228,7 @@ export const NAV: NavGroup[] = [
         href: "/market",
         permission: MARKET_PERMISSIONS,
         sample: { step: "46" },
+        counter: ["marketplace.disputes_due"],
       },
     ],
   },
@@ -218,6 +243,12 @@ export const NAV: NavGroup[] = [
         href: "/finance",
         permission: FINANCE_PERMISSIONS,
         sample: { step: "36" },
+        counter: [
+          "invoices.rejected",
+          "ledger.exceptions",
+          "ledger.periods_closable",
+          "tax.rate_expiring",
+        ],
       },
     ],
   },
@@ -241,6 +272,11 @@ export const NAV: NavGroup[] = [
         href: "/compliance",
         permission: [LEGAL_READ, KYC_READ, PRIVACY_READ, DOCUMENTS_READ, CASES_READ],
         sample: { step: "37" },
+        counter: [
+          "compliance.website_dossier",
+          "compliance.kyc_pending",
+          "compliance.incident_deadline",
+        ],
       },
       {
         id: "complianceRecords",
@@ -262,7 +298,7 @@ export const NAV: NavGroup[] = [
         permission: [MODULES_READ, WEBHOOKS_MANAGE, AUDIT_READ],
       },
       // API key là của riêng người đăng nhập: ai cũng tạo được cho mình (core giới hạn theo quyền).
-      { id: "apiKeys", href: "/settings/api-keys" },
+      { id: "apiKeys", href: "/settings/api-keys", counter: ["kernel.approvals"] },
       {
         id: "developers",
         href: "/settings/developers",

@@ -46,7 +46,7 @@ export type FieldSpec =
       defaultValue?: string;
     })
   | (Base & { kind: "textarea"; defaultValue?: string })
-  | (Base & { kind: "check" })
+  | (Base & { kind: "check"; defaultChecked?: boolean })
   | (Base & { kind: "checks"; options: readonly { value: string; label: string }[] })
   | { kind: "hidden"; name: string; value: string };
 
@@ -69,10 +69,13 @@ export function FormDialog({
   undoAction,
   undoLabel,
   undoDone,
+  ariaLabel,
 }: {
   action: Action;
   fields: readonly FieldSpec[];
   label: string;
+  /** Tên đầy đủ của nút mở (nhãn ngắn lặp lại trên nhiều dòng). */
+  ariaLabel?: string;
   title: string;
   intro?: string;
   points?: readonly string[];
@@ -87,6 +90,7 @@ export function FormDialog({
   return (
     <Dialog
       label={label}
+      ariaLabel={ariaLabel}
       title={title}
       triggerClass={triggerClass}
       intro={
@@ -219,7 +223,10 @@ function DialogField({ field, state }: { field: FieldSpec; state: DialogState })
             name={field.name}
             value={option.value}
             label={option.label}
-            defaultChecked={chosen.has(option.value)}
+            defaultChecked={
+              chosen.has(option.value) ||
+              (field.kind === "check" && value === undefined && field.defaultChecked === true)
+            }
             {...(field.kind === "check" && field.hint ? { hint: field.hint } : {})}
             aria-invalid={error ? true : undefined}
           />

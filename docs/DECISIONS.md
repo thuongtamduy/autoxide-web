@@ -802,3 +802,70 @@ mình, bản thiết kế dùng thanh bên rút gọn riêng; giữ trạng thá
 sự thật, duyệt KYC ở Tuân thủ không đổi được tình trạng bán; "Xem như người bán" bằng cách cấp tạm
 `marketplace.sell` — trộn quyền thử với quyền thật, đúng điều giao việc yêu cầu tránh; thêm người bán
 "Đồ Gỗ Mộc Lan" vào cây mẫu — đổi số liệu của Cây tổ chức và Tuân thủ đã có test.
+
+## W-020 · Tổng quan và màn "Việc và hoạt động"; sổ nguồn việc mô phỏng bước 51 của core — 2026-11-15 — agent quyết
+
+Quyết định:
+
+- **Sổ nguồn việc ở `src/work/`**, theo đúng hình dạng của đặc tả bước 51 của core (`WorkSource`,
+  `WorkItem` kèm `key` / `reason` của P10, `SummaryMetric`, `SetupStep`) để khi core có
+  `GET /api/v1/kernel/work`, `/work/counts`, `/summary`, `/setup`, `GET /api/v1/audit/activity` thì chỉ
+  thay phần đọc:
+  - `types.ts` (kiểu), `registry.ts` (hàm thuần: lọc theo permission / module / dữ liệu mẫu, hạn thời
+    gian mỗi nguồn 2 giây, nguồn lỗi hay chậm thì bỏ và ghi `incomplete` — giao diện báo "một nguồn
+    không trả lời" thay vì hỏng cả hộp; sắp theo mức gấp rồi hạn; nhóm Quá hạn / Hôm nay / Sắp tới theo
+    giờ Việt Nam; gắn trạng thái hoãn / giao; số đếm theo màn);
+  - `sources.ts` (16 nguồn). Đọc **API thật**: bình luận chờ duyệt (`comments`), bài nộp form mới
+    (`forms`), bài chờ duyệt (`content`, lọc `review_requested_at` trên một trang bản nháp vì core chưa có
+    tham số). Đọc **dữ liệu mẫu** của phân hệ: đơn chờ nhận (không gồm đơn của người bán trên sàn), đổi trả
+    quá hạn trả lời, tồn dưới mức tối thiểu, website chưa thông báo / đăng ký Bộ Công Thương (chặn bán),
+    KYC chờ, sự cố chưa báo cơ quan (hạn 72 giờ), hoá đơn bị trả lỗi, sai lệch đối soát, kỳ cần khoá, COD
+    lệch, tranh chấp chờ sàn phân xử, lệnh agent chờ duyệt (lọc theo permission của từng lệnh), thuế suất
+    sắp hết hiệu lực. Việc tính từ dữ liệu: xử lý xong ở màn gốc thì việc tự biến mất, không có "đánh dấu
+    xong";
+  - `metrics.ts` (6 số: doanh thu hôm nay, đơn chờ xử lý, sắp hết hàng — mẫu; bài chờ duyệt, bình luận
+    chờ duyệt, bài nộp chưa xử lý — thật), `setup.ts` (8 bước theo mô hình, bước pháp lý chặn bán đánh
+    dấu; bước không áp dụng cho khách thì bỏ), `activity.ts` (câu hoạt động từ nhật ký audit thật),
+    `revenue.ts`, `format.ts`, `server.ts` (đọc một lần mỗi request bằng `cache` của React).
+  - Ba lần đọc core của nguồn thật dùng chung cho hộp việc, số đếm menu và ô số liệu.
+  - Hạn gợi ý cho việc không có hạn trong dữ liệu (đơn chờ nhận 24 giờ theo `acceptance_hours` dự kiến,
+    bình luận 1 ngày, bài nộp và bài chờ duyệt 2 ngày) nằm ở `sources.ts`; core sẽ để mỗi module tự khai.
+- **Số đếm trên menu**: `NavPage.counter` (chỉ thêm; `"work"` hay danh sách id nguồn), như
+  `NavItem.counter` của bước 51. Khung (`AdminShell`, chỉ không gian của khách) tính số qua
+  `shellCounts`; menu con hiện số cạnh tên màn, thanh bên và bảng "Phân hệ" hiện chấm cạnh phân hệ có việc
+  (chấm chỉ để nhìn, `aria-hidden`: tên phân hệ không đổi). Cách lọc menu không đổi. Lỗi khi đếm không
+  bao giờ làm hỏng khung. Khung không chờ số: máy chủ gửi một promise, số hiện sau qua `use` trong
+  `Suspense`; số giữ 10 giây trong bộ nhớ theo người xem (như cache số đếm của core, D-190), vì khung
+  dựng lại ở mọi trang và mọi lần prefetch. Hộp việc và Tổng quan luôn đọc mới.
+- **Dựng sẵn kho dữ liệu mẫu lúc khởi động** (`src/instrumentation.ts` → `src/sample/warm.ts`, chỉ khi
+  bật dữ liệu mẫu): số đếm làm mọi trang đọc dữ liệu mẫu của nhiều phân hệ; không dựng sẵn thì trang đầu
+  sau khi khởi động dựng hết các kho và chậm hẳn (e2e của màn Menu hỏng vì token hết hạn giữa chừng). Lỗi
+  lúc dựng sẵn bị bỏ qua: kho tự dựng ở lần đọc đầu như trước.
+- **Màn "Việc và hoạt động"** `/work`, nhóm `home` sau "Bảng điều khiển", mở được cho mọi người đã đăng
+  nhập (mỗi người thấy việc theo permission của mình). Tab là đường dẫn con: Việc cần làm (`/work`, chip
+  trạng thái `?state=` và phân hệ `?area=`), Hoạt động (`/work/activity`, đọc thật `GET /api/v1/audit`, cần
+  `audit.read`), và ba tab chỉ có khi bật dữ liệu mẫu: Đã ghim (`pins`), Xem trước thao tác (`dry-run`),
+  Tuỳ chọn thông báo (`notifications`).
+- Trên mỗi việc: nút xử lý (link tới màn gốc, đã lọc sẵn), **Hoãn** (1 giờ, 3 giờ, 9:00 sáng mai, 9:00 thứ
+  Hai tới — giờ Việt Nam; tối đa 30 ngày) và **Giao** (chỉ liệt kê người dùng của core có permission của
+  nguồn theo role của họ; không đọc được danh sách người dùng thì chỉ giao cho mình). Cả hai có Hoàn tác,
+  giữ trong `src/sample/work.ts` (bảng `kernel_work_states` của P10, của riêng từng người), "vì sao bạn
+  thấy" nêu permission và nút. Ghim (chưa có trong lộ trình của core) và tuỳ chọn thông báo (bước 37 / 52)
+  cũng ở đó.
+- **Xem trước thao tác hàng loạt** (`src/sample/bulk.ts`, bước 51 P8): chạy thử là GET trên địa chỉ, không
+  ghi gì; chạy thật hỏi lại, nêu hệ quả, gửi `expected_count` — số khớp đổi thì 409
+  `kernel.bulk_count_changed`. Thao tác mẫu đổi nhóm thuế của sản phẩm trong một danh mục, đổi thật dữ liệu
+  của `sample/catalog.ts`.
+- **Tổng quan** `/`: lời chào theo giờ Việt Nam, số liệu (mỗi ô ghi nguồn: "API thật · module …" hay nhãn
+  dữ liệu mẫu), hộp việc rút gọn (8 việc gấp nhất chưa hoãn, "Xem tất cả"), các bước thiết lập, doanh thu
+  hôm nay theo nút (tiền thu thành công từ 0:00 giờ Việt Nam; hôm nay chưa thu thì hiện ngày gần nhất có thu
+  và ghi rõ ngày đó), hoạt động gần đây và lối vào các phân hệ (nay gồm cả màn dữ liệu mẫu khi bật).
+- Chỉ thêm vào component chung: `Dialog` / `FormDialog` nhận `ariaLabel` (nút "Hoãn", "Giao" lặp trên
+  nhiều dòng có tên đầy đủ); ô `check` của `FormDialog` / `InlineForm` nhận `defaultChecked`.
+
+Lý do: chủ dự án giao dựng màn theo bản thiết kế `Main` và `Work` và đặc tả bước 51; mô phỏng đúng kiểu
+của core để thay bằng API dễ, và để số đếm menu, hộp việc, ô số liệu cùng một nguồn.
+
+Đã cân nhắc: một bảng việc riêng trong dữ liệu mẫu — sai thiết kế của core (việc tính từ dữ liệu, tự biến
+mất); đếm trên menu bằng một lời gọi riêng mỗi màn — nhiều lời gọi, số menu và hộp việc lệch nhau; lấy
+hoạt động gần đây từ dữ liệu mẫu — core đã có nhật ký audit thật, không thay API có sẵn bằng mẫu (W-006).

@@ -1682,3 +1682,30 @@
 .ax .event-group summary:hover {
   background: var(--hover);
 }
+
+/* Số việc đang chờ trên menu (W-020): số cạnh tên màn, chấm cạnh phân hệ có việc */
+.ax .cnt.hot {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .ri .pip,
+.ax .mod .pip {
+  position: absolute;
+  top: 7px;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.ax .mod {
+  position: relative;
+}
+@media (min-width: 1280px) {
+  .ax:not(:has(.railmini:checked)) .ri .pip {
+    position: static;
+    margin-left: auto;
+    box-shadow: none;
+  }
+}

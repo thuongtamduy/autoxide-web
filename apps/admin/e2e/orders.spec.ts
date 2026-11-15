@@ -25,7 +25,8 @@ test("đơn hàng: số đếm khớp, view, hỏi bằng lời, xác nhận hà
   await expect(page.getByText("Sample data · waiting for API step 45").first()).toBeVisible();
   // Đơn hàng đứng đầu nhóm Bán hàng, rồi Vận chuyển, rồi Cửa hàng.
   const sub = page.getByRole("navigation", { name: "Sales", exact: true });
-  await expect(sub.getByRole("link")).toHaveText(["Orders", "Shipping", "Stores"]);
+  // Màn có việc đang chờ mang số đếm cạnh tên (W-020).
+  await expect(sub.getByRole("link")).toHaveText([/^Orders\s*\d*$/, /^Shipping\s*\d*$/, "Stores"]);
 
   // View "Chờ xử lý": số trên chip bằng số đơn khớp.
   await page.getByRole("link", { name: /^Pending\s+37$/ }).click();

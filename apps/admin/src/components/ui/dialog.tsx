@@ -14,9 +14,12 @@ export function Dialog({
   intro,
   triggerClass = "btn sm",
   hideTrigger = false,
+  ariaLabel,
   children,
 }: {
   label: string;
+  /** Tên đầy đủ của nút mở khi nhãn ngắn lặp lại trên nhiều dòng (vd "Hoãn việc: …"). */
+  ariaLabel?: string | undefined;
   title: string;
   intro?: ReactNode;
   triggerClass?: string;
@@ -35,6 +38,7 @@ export function Dialog({
         type="button"
         className={triggerClass}
         aria-haspopup="dialog"
+        aria-label={ariaLabel}
         hidden={hideTrigger}
         onClick={() => {
           setRound((n) => n + 1);
