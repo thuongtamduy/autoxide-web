@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,11 @@ export function LoginForm({
           <Button type="submit" name="intent" value={mfa ? "code" : "password"} disabled={pending}>
             {mfa ? t("verify") : t("submit")}
           </Button>
+          {mfa ? null : (
+            <Link className="text-sm underline" href="/forgot-password">
+              {t("forgot")}
+            </Link>
+          )}
           {mfa && (
             <Button
               type="submit"

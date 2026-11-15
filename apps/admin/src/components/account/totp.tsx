@@ -8,11 +8,11 @@ import {
   regenerateRecoveryCodes,
   startTotp,
 } from "@/app/(admin)/account/actions";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "@/components/ui/form";
+import { useToast } from "@/components/ui/toast";
 import type { QrPath } from "@/lib/qr";
-import { Dialog } from "./dialog";
-import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "./form";
 import { RecoveryCodes } from "./recovery-codes";
-import { useToast } from "./toast";
 
 /**
  * Nút của mục "Xác thực hai bước". Cả ba hộp thoại luôn được dựng (chỉ ẩn nút): bật xong thì

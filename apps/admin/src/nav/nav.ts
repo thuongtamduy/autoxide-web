@@ -7,6 +7,7 @@
 // không bày ra màn mà người dùng mở vào chỉ thấy lỗi. Khi core có sổ điều hướng (bước 51,
 // `Module::navigation`) thì lấy danh sách này từ core thay cho file này.
 import type { IconName } from "@/components/shell/icon";
+import { ROLES_READ, USERS_READ } from "@/lib/permissions";
 
 export interface NavPage {
   /** Khoá của nhãn trong `messages/*.json` → `nav.pages.<id>`. */
@@ -14,10 +15,18 @@ export interface NavPage {
   href: string;
   /** Module của core phải có mặt; bỏ trống = màn của chính giao diện. */
   module?: string;
-  /** Permission cần để xem màn; bỏ trống = mọi người đã đăng nhập. */
-  permission?: string;
+  /**
+   * Permission cần để xem màn; bỏ trống = mọi người đã đăng nhập. Một danh sách = có một trong
+   * số đó là đủ (màn nhiều tab, mỗi tab một permission).
+   */
+  permission?: string | readonly string[];
   /** Chỉ đúng đường dẫn này mới tính là đang mở (trang gốc "/"). */
   exact?: boolean;
+  /**
+   * Màn dựng bằng dữ liệu mẫu, chờ API của bước `step` của core (W-006): chỉ hiện khi bật dữ liệu
+   * mẫu, không đòi module đã cài (module chưa có trong core), vẫn theo permission.
+   */
+  sample?: { step: string };
 }
 
 export interface NavGroup {
@@ -30,6 +39,14 @@ export interface NavGroup {
 /** Thứ tự cố định, theo 12 phân hệ của bản thiết kế. Chỉ ghi màn đã có trong ứng dụng này. */
 export const NAV: NavGroup[] = [
   { id: "home", icon: "home", pages: [{ id: "dashboard", href: "/", exact: true }] },
+  {
+    id: "org",
+    icon: "org",
+    pages: [
+      // Không ghi `module`: không có module `auth` thì không đăng nhập được vào trang này.
+      { id: "access", href: "/org/access", permission: [USERS_READ, ROLES_READ] },
+    ],
+  },
   {
     id: "settings",
     icon: "gear",
@@ -53,11 +70,23 @@ export interface Viewer {
   permissions: readonly string[];
   /** Tên các module đã cài trên core; `null` khi người dùng không được xem sổ module. */
   modules: readonly string[] | null;
+  /** Đang bật dữ liệu mẫu (`AUTOXIDE_WEB_SAMPLE_DATA`); tắt thì màn dữ liệu mẫu không hiện. */
+  sample?: boolean;
+}
+
+/** Người này có permission `wanted` (hoặc một trong danh sách). */
+export function holds(viewer: Viewer, wanted: string | readonly string[]): boolean {
+  if (viewer.allPermissions) return true;
+  const list = typeof wanted === "string" ? [wanted] : wanted;
+  return list.some((name) => viewer.permissions.includes(name));
 }
 
 function canSee(page: NavPage, viewer: Viewer): boolean {
-  if (page.permission && !viewer.allPermissions && !viewer.permissions.includes(page.permission)) {
+  if (page.permission && !holds(viewer, page.permission)) {
     return false;
+  }
+  if (page.sample) {
+    return viewer.sample === true;
   }
   // Không xem được sổ module thì không biết module nào đã cài: tin vào permission (core có
   // module đó thì người dùng mới có permission của nó).

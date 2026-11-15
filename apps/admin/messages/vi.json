@@ -8,16 +8,19 @@
     "language": "Ngôn ngữ",
     "groups": {
       "home": "Tổng quan",
-      "settings": "Cài đặt"
+      "settings": "Cài đặt",
+      "org": "Tổ chức"
     },
     "pages": {
       "dashboard": "Bảng điều khiển",
       "modules": "Module",
-      "account": "Tài khoản của tôi"
+      "account": "Tài khoản của tôi",
+      "access": "Người dùng và role"
     },
     "about": {
       "dashboard": "Lời chào và lối vào mọi phân hệ bạn dùng được.",
-      "modules": "Các module đã cài trên máy chủ này: permission, event, job, migration."
+      "modules": "Các module đã cài trên máy chủ này: permission, event, job, migration.",
+      "access": "Tài khoản, role và permission; lời mời, uỷ quyền, hồ sơ cửa hàng, quyền vào hỗ trợ."
     }
   },
   "login": {
@@ -35,7 +38,8 @@
     "invalidCode": "Hãy nhập mã.",
     "mfaExpired": "Bước đăng nhập đã hết hạn. Hãy đăng nhập lại.",
     "unreachable": "Máy chủ Autoxide không trả lời. Hãy thử lại sau chốc lát.",
-    "deleted": "Tài khoản của bạn đã bị xoá và bạn đã được đăng xuất."
+    "deleted": "Tài khoản của bạn đã bị xoá và bạn đã được đăng xuất.",
+    "forgot": "Quên mật khẩu?"
   },
   "modules": {
     "title": "Module",
@@ -88,6 +92,10 @@
     "failed": "Không tải được trang. Hãy thử lại; nếu vẫn lỗi, kiểm tra máy chủ Autoxide có đang chạy không.",
     "retry": "Thử lại"
   },
+  "form": {
+    "fix": "{count, plural, other {Còn # ô cần sửa.}}",
+    "cancel": "Huỷ"
+  },
   "shell": {
     "home": "Quản trị Autoxide, về tổng quan",
     "areas": "Phân hệ",
@@ -123,10 +131,6 @@
       "security": "Đăng nhập và bảo mật",
       "sessions": "Phiên đăng nhập",
       "data": "Dữ liệu của tôi"
-    },
-    "form": {
-      "fix": "{count, plural, other {Còn # ô cần sửa.}}",
-      "cancel": "Huỷ"
     },
     "required": {
       "field": "Hãy điền ô này.",
@@ -286,6 +290,399 @@
       "mismatch": "Đây không phải email của bạn. Hãy gõ đúng {email}.",
       "password": "Mật khẩu hiện tại",
       "submit": "Xoá vĩnh viễn"
+    }
+  },
+  "sample": {
+    "badge": "Dữ liệu mẫu · chờ API bước {step}",
+    "missing": "Core chưa có: {endpoint}. Thay đổi ở đây chỉ giữ trong bộ nhớ, mất khi khởi động lại ứng dụng.",
+    "tab": "mẫu",
+    "off": "Dữ liệu mẫu đang tắt (AUTOXIDE_WEB_SAMPLE_DATA).",
+    "codes": {
+      "validation_failed": "Có ô chưa hợp lệ.",
+      "auth_invitation_not_found": "Lời mời này không còn.",
+      "auth_invitation_invalid": "Lời mời này đã được dùng, đã bị thu hồi hoặc đã hết hạn.",
+      "auth_delegation_not_found": "Uỷ quyền này không còn.",
+      "auth_delegation_not_active": "Uỷ quyền này không còn hiệu lực.",
+      "organizations_unit_not_found": "Nút này không còn.",
+      "auth_support_grant_not_found": "Lần cấp này không còn.",
+      "auth_support_grant_not_active": "Lần cấp này đã hết hiệu lực."
+    },
+    "fields": {
+      "email": "Nhập một địa chỉ email hợp lệ.",
+      "unknown": "Chọn một giá trị trong danh sách.",
+      "required": "Hãy điền ô này.",
+      "time": "Nhập giờ dạng 08:00.",
+      "past": "Chọn một ngày trong tương lai.",
+      "min_one": "Chọn ít nhất một.",
+      "length_10_500": "Viết từ 10 đến 500 ký tự."
+    }
+  },
+  "access": {
+    "crumb": "Tổ chức · tài khoản, role, lời mời, uỷ quyền, quyền vào hỗ trợ",
+    "title": "Người dùng và role",
+    "description": "Ai đăng nhập được và mỗi người được làm gì. Role là một bộ permission; người có nhiều role thì có mọi permission của các role đó.",
+    "pages": "Trang",
+    "first": "Trang đầu",
+    "next": "Trang sau",
+    "tabs": {
+      "label": "Các phần",
+      "users": "Người dùng",
+      "roles": "Role",
+      "invitations": "Lời mời",
+      "delegations": "Uỷ quyền",
+      "public": "Hồ sơ công khai",
+      "support": "Quyền vào hỗ trợ"
+    },
+    "required": {
+      "field": "Hãy điền ô này.",
+      "email": "Nhập địa chỉ email.",
+      "name": "Nhập tên hiển thị.",
+      "password": "Nhập mật khẩu.",
+      "confirm_email": "Gõ lại địa chỉ email để xác nhận.",
+      "role_name": "Đặt tên cho role.",
+      "org": "Chọn một nút.",
+      "reason": "Ghi lý do.",
+      "display_name": "Nhập tên hiện trên website.",
+      "role": "Chọn một role.",
+      "roles": "Chọn ít nhất một role."
+    },
+    "status": {
+      "active": "Đang dùng",
+      "disabled": "Đã khoá",
+      "unverified": "Chưa xác minh email"
+    },
+    "users": {
+      "title": "Người dùng",
+      "search": "Tìm người dùng",
+      "searchHint": "Email hoặc tên…",
+      "find": "Tìm",
+      "clear": "Bỏ lọc",
+      "noMatch": "Không có người dùng nào khớp “{search}”.",
+      "empty": "Chưa có người dùng nào.",
+      "user": "Người dùng",
+      "roles": "Role",
+      "status": "Trạng thái",
+      "created": "Ngày tạo",
+      "noRoles": "Chưa có role"
+    },
+    "create": {
+      "open": "Tạo người dùng",
+      "title": "Tạo người dùng",
+      "intro": "Tài khoản mới chưa có role nào: gán role ở trang kế tiếp. Core gửi thư xác minh tới email mới.",
+      "email": "Email",
+      "emailHint": "Cũng là tên đăng nhập.",
+      "name": "Tên hiển thị",
+      "password": "Mật khẩu (không bắt buộc)",
+      "passwordHint": "12 đến 128 ký tự. Để trống thì người đó tự đặt qua thư đặt lại mật khẩu, hoặc bạn đặt mật khẩu đầu tiên sau.",
+      "submit": "Tạo người dùng",
+      "done": "Đã tạo người dùng. Gán role ở dưới."
+    },
+    "user": {
+      "notFound": "Không có người dùng nào có id này. Có thể tài khoản đã bị xoá.",
+      "back": "Mọi người dùng",
+      "breadcrumb": "Về danh sách",
+      "email": "Email",
+      "verifiedOn": "Xác minh ngày",
+      "updated": "Sửa lần cuối",
+      "name": "Tên hiển thị",
+      "rename": "Lưu tên",
+      "renamed": "Đã lưu tên.",
+      "status": {
+        "title": "Trạng thái",
+        "since": "Khoá từ",
+        "activeHint": "Đăng nhập và dùng API được.",
+        "enable": "Mở khoá",
+        "disable": "Khoá",
+        "disableTitle": "Khoá tài khoản {who}?",
+        "disableNow": "Người đó bị đăng xuất ở mọi nơi, access token ngừng chạy ngay.",
+        "disableKeep": "Tài khoản, role và dữ liệu vẫn còn; chỉ không đăng nhập được cho tới khi mở khoá.",
+        "disableUndo": "Bạn mở khoá lại được bất cứ lúc nào.",
+        "disableSubmit": "Khoá tài khoản",
+        "enabled": "Đã mở khoá tài khoản.",
+        "disabled": "Đã khoá tài khoản; người đó bị đăng xuất ở mọi nơi."
+      },
+      "roles": {
+        "title": "Role",
+        "about": "Lưu là thay toàn bộ role của người này. Thay đổi có hiệu lực ở request kế tiếp của họ.",
+        "legend": "Role của người dùng này",
+        "everything": "Mọi permission, kể cả permission thêm sau.",
+        "noDescription": "Chưa có mô tả.",
+        "save": "Lưu role",
+        "saved": "Đã lưu role."
+      },
+      "delete": {
+        "open": "Xoá",
+        "title": "Xoá tài khoản {who}?",
+        "goesNow": "Tài khoản và các cách đăng nhập của nó bị xoá ngay.",
+        "goesLater": "Dữ liệu các module khác giữ cho người này bị xoá ngay sau đó.",
+        "noUndo": "Không hoàn tác được. Chỉ muốn chặn đăng nhập thì khoá tài khoản.",
+        "confirm": "Gõ {email} để xác nhận",
+        "submit": "Xoá tài khoản",
+        "mismatch": "Gõ đúng {email}.",
+        "done": "Đã xoá tài khoản.",
+        "row": "Xoá tài khoản",
+        "meta": "Xoá tài khoản và mọi thứ nó sở hữu. Cần có mọi permission người đó có."
+      }
+    },
+    "admin": {
+      "title": "Thao tác của quản trị viên",
+      "about": "Thao tác trên tài khoản của người khác. Kiểm ai đang yêu cầu trước khi dùng.",
+      "reset": {
+        "title": "Gửi thư đặt lại mật khẩu",
+        "meta": "Người đó tự chọn mật khẩu mới qua link (dùng được 30 phút). Quản trị viên không thay được mật khẩu đã có.",
+        "open": "Gửi thư đặt lại",
+        "sent": "Nếu tài khoản đang dùng, thư đặt lại mật khẩu đang tới {email}."
+      },
+      "password": {
+        "row": "Đặt mật khẩu đầu tiên",
+        "meta": "Chỉ cho tài khoản tạo mà chưa có mật khẩu.",
+        "open": "Đặt mật khẩu",
+        "title": "Mật khẩu đầu tiên cho {who}",
+        "intro": "Chỉ dùng được khi tài khoản chưa có mật khẩu. Muốn đổi mật khẩu đã có thì gửi thư đặt lại mật khẩu.",
+        "password": "Mật khẩu",
+        "rule": "12 đến 128 ký tự.",
+        "submit": "Đặt mật khẩu",
+        "done": "Đã đặt mật khẩu; người đó đăng nhập được bằng mật khẩu này."
+      },
+      "sessions": {
+        "row": "Đăng xuất mọi thiết bị",
+        "meta": "Kết thúc mọi phiên của người này trên mọi thiết bị.",
+        "open": "Đăng xuất mọi thiết bị",
+        "title": "Đăng xuất {who} ở mọi thiết bị?",
+        "now": "Mọi phiên kết thúc; mỗi thiết bị phải đăng nhập lại.",
+        "tokens": "Access token đã cấp vẫn chạy tới khi hết hạn (mặc định 15 phút).",
+        "keepOut": "Muốn chặn hẳn thì khoá tài khoản.",
+        "submit": "Đăng xuất mọi thiết bị",
+        "done": "{count, plural, =0 {Người đó không có phiên nào.} other {Đã kết thúc # phiên.}}"
+      },
+      "mfa": {
+        "row": "Tắt xác thực hai bước",
+        "meta": "Cho người mất thiết bị có ứng dụng xác thực.",
+        "open": "Tắt xác thực hai bước",
+        "title": "Tắt xác thực hai bước cho {who}?",
+        "effect": "Người đó đăng nhập chỉ bằng mật khẩu, rồi cài lại trên thiết bị mới.",
+        "check": "Chắc chắn yêu cầu đúng là của họ: sau đó ai biết mật khẩu cũng đăng nhập được.",
+        "submit": "Tắt xác thực hai bước",
+        "done": "Đã tắt xác thực hai bước cho tài khoản này."
+      }
+    },
+    "roles": {
+      "title": "Role",
+      "create": "Tạo role",
+      "about": "Mở một role để xem và sửa permission. Role admin dựng sẵn có mọi permission và không sửa được.",
+      "role": "Role",
+      "permissions": "Permission",
+      "kind": "Loại",
+      "every": "Mọi permission",
+      "count": "{count, plural, =0 {Chưa có permission} other {# permission}}",
+      "builtin": "Dựng sẵn",
+      "custom": "Tạo ở đây"
+    },
+    "role": {
+      "deleted": "Đã xoá role.",
+      "created": "Đã tạo role.",
+      "saved": "Đã lưu role.",
+      "breadcrumb": "Về danh sách role",
+      "back": "Mọi role",
+      "newTitle": "Tạo role",
+      "notFound": "Không có role nào có id này. Có thể role đã bị xoá.",
+      "builtinNote": "Role dựng sẵn: cấp mọi permission, kể cả permission do module mới thêm sau. Không sửa hay xoá được, và luôn phải còn ít nhất một người dùng đang dùng giữ role này.",
+      "name": "Tên",
+      "nameHint": "Chữ thường, chữ số, _ và -, bắt đầu bằng chữ. Ví dụ: editor.",
+      "description": "Mô tả (không bắt buộc)",
+      "permissions": "Permission",
+      "chosen": "Đã chọn {count} / {total}",
+      "find": "Tìm permission",
+      "findHint": "Tìm theo tên hoặc việc nó cho làm…",
+      "groupCount": "{on}/{total}",
+      "selectGroup": "Chọn hết {module}",
+      "clearGroup": "Bỏ hết {module}",
+      "unknown": "Không còn module nào cung cấp.",
+      "noMatch": "Không có permission nào khớp “{query}”.",
+      "save": "Lưu role",
+      "create": "Tạo role",
+      "readOnly": "Bạn xem được role này nhưng không sửa được (cần auth.roles.manage).",
+      "delete": {
+        "open": "Xoá role",
+        "title": "Xoá role {name}?",
+        "holders": "Mọi người đang giữ role này mất các permission của nó ở request kế tiếp.",
+        "noUndo": "Không hoàn tác được.",
+        "submit": "Xoá role"
+      }
+    },
+    "invitations": {
+      "invite": "Mời nhân sự",
+      "inviteTitle": "Mời nhân sự",
+      "inviteIntro": "Người được mời nhận link dùng một lần, hết hạn sau 7 ngày. Chưa có tài khoản thì đặt mật khẩu hoặc thêm passkey khi chấp nhận.",
+      "sent": "Đã gửi lời mời; theo dõi ở danh sách này.",
+      "email": "Email",
+      "name": "Tên (không bắt buộc)",
+      "unit": "Nút",
+      "roles": "Role",
+      "noRoles": "Bạn không xem được role (auth.roles.read).",
+      "depth": "Độ sâu của mỗi permission đi theo role, không chọn ở đây. Bạn chỉ mời được với role có permission bạn đang giữ ở nút đó.",
+      "submit": "Gửi lời mời",
+      "title": "Lời mời",
+      "about": "Lời mời đang chờ, đã chấp nhận, hết hạn hay bị thu hồi. Cần permission auth.invitations.manage ở nút được mời vào.",
+      "filter": "Lọc theo trạng thái",
+      "all": "Tất cả",
+      "status": {
+        "pending": "Chờ chấp nhận",
+        "expired": "Hết hạn",
+        "accepted": "Đã chấp nhận",
+        "revoked": "Đã thu hồi"
+      },
+      "empty": "Không có lời mời nào ở trạng thái này.",
+      "roleAt": "Role · nút",
+      "by": "Người mời",
+      "expiresAt": "Hết hạn",
+      "state": "Trạng thái",
+      "actions": "Thao tác",
+      "resend": "Gửi lại",
+      "resendLabel": "Gửi lại lời mời tới {email}",
+      "resent": "Đã gửi lại tới {email}; link cũ hết hiệu lực.",
+      "revoke": "Thu hồi",
+      "revokeTitle": "Thu hồi lời mời gửi {email}?",
+      "revokeLink": "Link trong thư ngừng dùng được ngay.",
+      "revokeAgain": "Muốn mời lại sau thì gửi lời mời mới.",
+      "revokeSubmit": "Thu hồi lời mời",
+      "revoked": "Đã thu hồi lời mời."
+    },
+    "delegations": {
+      "create": "Uỷ quyền mới",
+      "createTitle": "Uỷ quyền cho khách con",
+      "createIntro": "Ai giữ role này ở gốc của bạn sẽ làm việc được ở khách con với đúng các permission đó. Khách con thấy uỷ quyền nhưng không thu hồi được.",
+      "created": "Đã uỷ quyền; event ghi ở cả hai khách.",
+      "child": "Khách con",
+      "role": "Role của bạn",
+      "expires": "Hết hạn (không bắt buộc)",
+      "expiresHint": "Để trống: không hạn. Hết hạn vào cuối ngày đó (giờ UTC).",
+      "reason": "Lý do",
+      "reasonHint": "10 đến 500 ký tự; cả hai khách thấy trong nhật ký audit.",
+      "submit": "Uỷ quyền",
+      "title": "Uỷ quyền đi",
+      "auditStrong": "Audit ở cả hai phía.",
+      "audit": "Mỗi lần nhân sự của bạn vào khách con bằng uỷ quyền, event được ghi ở khách con và chép về bên bạn, để hai bên cùng tra được.",
+      "unit": "Nút ở khách con",
+      "expiresAt": "Hết hạn",
+      "state": "Trạng thái",
+      "actions": "Thao tác",
+      "noExpiry": "Không hạn",
+      "status": {
+        "active": "Đang hiệu lực",
+        "expired": "Hết hạn",
+        "revoked": "Đã thu hồi"
+      },
+      "revoke": "Thu hồi",
+      "revokeTitle": "Thu hồi {role} ở {child}?",
+      "revokeNow": "Phiên đang mở bằng uỷ quyền này mất quyền ở request kế tiếp.",
+      "revokeAudit": "Lần thu hồi được ghi ở cả hai khách.",
+      "revokeSubmit": "Thu hồi uỷ quyền",
+      "revoked": "Đã thu hồi uỷ quyền."
+    },
+    "public": {
+      "units": "Nút",
+      "about": "Thông tin cửa hàng hiện trên website: tên, địa chỉ, giờ mở cửa, nhận tại quầy. Chỉ nút bật công khai mới hiện; không lộ thành viên hay cài đặt nội bộ.",
+      "unit": "Nút",
+      "state": "Trạng thái",
+      "type": {
+        "tenant": "khách hàng",
+        "region": "vùng",
+        "store": "cửa hàng",
+        "warehouse": "kho"
+      },
+      "pickupShort": "nhận tại quầy",
+      "on": "Công khai",
+      "off": "Không công khai",
+      "readOnly": "Bạn xem được hồ sơ nhưng không sửa được (cần {permission}).",
+      "saved": "Đã lưu; trang cửa hàng trên website cập nhật trong vài phút.",
+      "isPublic": "Hiện trên website",
+      "isPublicHint": "Tắt thì nút biến khỏi danh sách cửa hàng.",
+      "displayName": "Tên hiển thị",
+      "province": "Tỉnh / thành phố",
+      "choose": "Chọn…",
+      "provinceHint": "Địa chỉ theo danh mục đơn vị hành chính sau sáp nhập 2025: tỉnh / thành rồi phường / xã, không còn quận / huyện.",
+      "commune": "Phường / xã",
+      "line": "Số nhà, đường",
+      "opens": "Mở cửa",
+      "closes": "Đóng cửa",
+      "hoursHint": "Cùng giờ mọi ngày. Giờ riêng từng ngày và ngày nghỉ đặc biệt cần API.",
+      "pickup": "Nhận hàng tại quầy",
+      "pickupHint": "Người mua chọn cửa hàng này lúc thanh toán.",
+      "save": "Lưu hồ sơ"
+    },
+    "support": {
+      "allowTitle": "Cho phép vào để hỗ trợ",
+      "isOn": "Nhân sự nền tảng được vào khi bạn báo lỗi.",
+      "isOff": "Chỉ yêu cầu của cơ quan có thẩm quyền (có số văn bản) mới được cấp.",
+      "revokeNoteTitle": "Thu hồi từ phía bạn",
+      "revokeNote": "Bước 34 của core chỉ cho nhà vận hành thu hồi. Nút \"Thu hồi\" dưới đây theo API đề xuất: bạn là bên kiểm soát dữ liệu nên nên tự kết thúc được quyền vào.",
+      "grants": "Các lần cấp và lần vào",
+      "staff": "Nhân sự nền tảng",
+      "basis": "Căn cứ, lý do",
+      "time": "Thời gian",
+      "state": "Trạng thái",
+      "actions": "Thao tác",
+      "basisKind": {
+        "support": "Hỗ trợ",
+        "legal_request": "Yêu cầu của cơ quan"
+      },
+      "visits": "{count} lần vào",
+      "until": "tới",
+      "status": {
+        "active": "Còn hạn",
+        "expired": "Hết hạn",
+        "revoked": "Đã thu hồi"
+      },
+      "revoke": "Thu hồi",
+      "revokeTitle": "Thu hồi quyền vào của {name}?",
+      "revokeNow": "Phiên hỗ trợ mất quyền ở request kế tiếp.",
+      "revokeAudit": "Lần thu hồi được ghi vào nhật ký audit của bạn.",
+      "revokeSubmit": "Thu hồi ngay",
+      "revoked": "Đã thu hồi quyền vào.",
+      "saved": "Đã lưu; lần cấp mới theo cài đặt này.",
+      "allow": "Nhân sự nền tảng được vào khi bạn báo lỗi",
+      "allowHint": "Tắt thì chỉ yêu cầu của cơ quan có thẩm quyền (có số văn bản) mới được cấp, và vẫn được ghi ở đây.",
+      "save": "Lưu"
+    }
+  },
+  "public": {
+    "verify": {
+      "title": "Xác minh email",
+      "noToken": "Link này thiếu phần mã. Mở lại link trong thư, hoặc xin thư mới.",
+      "toAccount": "Tới Tài khoản của tôi",
+      "doneTitle": "Đã xác minh email",
+      "done": "Đã xác minh {email}. Nếu bạn vừa đổi địa chỉ thì từ giờ đăng nhập bằng địa chỉ này.",
+      "continue": "Tiếp tục",
+      "description": "Xác nhận địa chỉ này là của bạn.",
+      "invalidHint": "Đăng nhập rồi gửi thư xác minh mới ở Tài khoản của tôi.",
+      "submit": "Xác minh email của tôi"
+    },
+    "forgot": {
+      "required": "Nhập địa chỉ email.",
+      "doneTitle": "Xem hộp thư",
+      "done": "Nếu có tài khoản dùng địa chỉ {email}, thư có link chọn mật khẩu mới đang trên đường tới. Link dùng được 30 phút.",
+      "back": "Về trang đăng nhập",
+      "title": "Quên mật khẩu?",
+      "description": "Nhập email của tài khoản; chúng tôi gửi link để chọn mật khẩu mới.",
+      "email": "Email",
+      "submit": "Gửi link"
+    },
+    "reset": {
+      "required": "Nhập mật khẩu mới.",
+      "repeatRequired": "Gõ lại mật khẩu mới.",
+      "mismatch": "Hai mật khẩu không giống nhau.",
+      "title": "Chọn mật khẩu mới",
+      "noToken": "Link này thiếu phần mã. Xin link mới.",
+      "again": "Xin link mới",
+      "doneTitle": "Đã đổi mật khẩu",
+      "done": "Đã đổi mật khẩu và đăng xuất bạn ở mọi nơi. Đăng nhập bằng mật khẩu mới.",
+      "signIn": "Đăng nhập",
+      "description": "Link trong thư dùng được một lần, trong 30 phút.",
+      "password": "Mật khẩu mới",
+      "rule": "12 đến 128 ký tự.",
+      "repeat": "Nhập lại mật khẩu mới",
+      "submit": "Đổi mật khẩu"
     }
   }
 }

@@ -1,8 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { PasswordDialog } from "@/components/account/password-dialog";
-import { AccountTabs } from "@/components/account/tabs";
-import { ToastProvider } from "@/components/account/toast";
+import { PageTabs } from "@/components/ui/page-tabs";
+import { ToastProvider } from "@/components/ui/toast";
 import { getMe } from "@/lib/viewer";
 
 // Màn "Tài khoản của tôi": việc của chính người đang đăng nhập, không cần permission nào.
@@ -29,7 +29,7 @@ export default async function AccountLayout({ children }: { children: ReactNode 
             <PasswordDialog triggerClass="btn" />
           </div>
         </section>
-        <AccountTabs tabs={tabs} label={t("tabs.label")} />
+        <PageTabs tabs={tabs} label={t("tabs.label")} />
         {children}
       </div>
     </ToastProvider>

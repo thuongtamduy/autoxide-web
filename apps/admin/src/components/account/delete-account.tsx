@@ -3,8 +3,8 @@
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
 import { deleteAccount } from "@/app/(admin)/account/actions";
-import { Dialog } from "./dialog";
-import { DialogButtons, Field, FormAlert, useFocusInvalid } from "./form";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogButtons, Field, FormAlert, useFocusInvalid } from "@/components/ui/form";
 
 /** Xoá tài khoản: nêu rõ hệ quả, gõ lại email và mật khẩu để xác nhận. */
 export function DeleteAccountDialog({ email }: { email: string }) {

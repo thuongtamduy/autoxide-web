@@ -48,6 +48,10 @@ function toLogin(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Mọi trang trừ trang đăng nhập, tài nguyên tĩnh và file của Next.js.
-  matcher: ["/((?!login|_next/static|_next/image|favicon.ico|robots.txt).*)"],
+  // Mọi trang trừ trang không cần đăng nhập (đăng nhập; xác minh email, quên và đặt lại mật khẩu
+  // mở từ link trong thư), tài nguyên tĩnh và file của Next.js. Mỗi tên kết thúc bằng `$` hoặc
+  // `/`, để `/login-x` hay `/verify-emails` vẫn qua proxy. `proxy.test.ts` kiểm danh sách này.
+  matcher: [
+    "/((?!(?:login|verify-email|forgot-password|reset-password)(?:/|$)|_next/static|_next/image|favicon.ico|robots.txt).*)",
+  ],
 };

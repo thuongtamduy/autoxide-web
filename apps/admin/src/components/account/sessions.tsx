@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 import { useActionState } from "react";
 import { endOtherSessions, endSession } from "@/app/(admin)/account/actions";
-import { Dialog } from "./dialog";
-import { DialogButtons, FormAlert, useOnDone, useSubmit } from "./form";
-import { useToast } from "./toast";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogButtons, FormAlert, useOnDone, useSubmit } from "@/components/ui/form";
+import { useToast } from "@/components/ui/toast";
 
 /** Đăng xuất một thiết bị khác ngay trên dòng của nó. */
 export function EndSessionButton({ id, device }: { id: string; device: string }) {

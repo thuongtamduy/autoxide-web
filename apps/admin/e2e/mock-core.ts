@@ -6,6 +6,8 @@
 // - viewer@example.com / viewer password — thiếu `kernel.modules.read`;
 // - mfa@example.com / mfa password — cần mã 123456 ở bước hai.
 //
+// Quản trị người dùng, role và trang công khai của link trong thư: `mock-access.ts`.
+//
 // Mã của app xác thực luôn là 123456. Access token chỉ sống 31 giây (cookie của trang quản trị
 // hết sau 1 giây), để test đi qua đường làm mới token. `GET /__stats` trả số lần làm mới;
 // `POST /__reset` đưa mọi thứ về ban đầu (tài khoản, phiên, passkey, xác thực hai bước);
@@ -13,32 +15,32 @@
 
 import { randomBytes, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import type { components, Me } from "@autoxide/sdk";
+import type { Me } from "@autoxide/sdk";
 import { KERNEL, NOTES } from "../src/test/fixtures.ts";
-
-type Schemas = components["schemas"];
+import { ADMIN_ROLE, accessRoutes, publicRoutes, resetAccess } from "./mock-access.ts";
+import {
+  type Account,
+  empty,
+  json,
+  problem,
+  type Schemas,
+  send,
+  text,
+  wrongCode,
+  wrongPassword,
+} from "./mock-http.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
 const CODE = "123456";
 const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 
-type Account = {
-  id: string;
-  email: string;
-  name: string;
-  password: string;
-  canReadModules: boolean;
-  mfa: boolean;
-  recoveryCodes: string[];
-  totpPending: boolean;
-  verified: boolean;
-  passkeys: Schemas["PasskeyResponse"][];
-  credentialIds: string[];
-  deleted: boolean;
-};
-
 function seed(): Account[] {
-  const make = (email: string, password: string, canReadModules: boolean, mfa: boolean) => ({
+  const make = (
+    email: string,
+    password: string,
+    canReadModules: boolean,
+    mfa: boolean,
+  ): Account => ({
     id: randomUUID(),
     email,
     name: email.split("@")[0] ?? email,
@@ -51,6 +53,11 @@ function seed(): Account[] {
     passkeys: [],
     credentialIds: [],
     deleted: false,
+    disabledAt: null,
+    roleIds: canReadModules && !mfa ? [ADMIN_ROLE] : [],
+    hasPassword: true,
+    createdAt: "2026-11-12T00:00:00Z",
+    updatedAt: "2026-11-12T00:00:00Z",
   });
   return [
     make("admin@example.com", "admin password", true, false),
@@ -109,60 +116,10 @@ function endSession(id: string) {
   }
 }
 
-function send(response: ServerResponse, status: number, body?: unknown) {
-  response.writeHead(status, { "Content-Type": "application/json" });
-  response.end(body === undefined ? undefined : JSON.stringify(body));
-}
-
-function empty(response: ServerResponse, status: 202 | 204) {
-  response.writeHead(status);
-  response.end();
-}
-
-function problem(
-  response: ServerResponse,
-  status: number,
-  code: string,
-  detail: string,
-  errors?: Schemas["ProblemField"][],
-) {
-  send(response, status, {
-    type: "about:blank",
-    title: "Error",
-    status,
-    code,
-    detail,
-    ...(errors ? { errors } : {}),
-  } satisfies Schemas["Problem"]);
-}
-
-function wrongPassword(response: ServerResponse) {
-  problem(response, 400, "auth.wrong_password", "The current password is incorrect.");
-}
-
-function wrongCode(response: ServerResponse) {
-  problem(response, 422, "validation_failed", "The request has invalid fields.", [
-    { field: "code", code: "invalid", detail: "is not a current code from your app" },
-  ]);
-}
-
-async function json(request: IncomingMessage): Promise<Record<string, unknown>> {
-  let text = "";
-  for await (const chunk of request) {
-    text += chunk;
-  }
-  return text ? JSON.parse(text) : {};
-}
-
-function text(body: Record<string, unknown>, key: string): string {
-  const value = body[key];
-  return typeof value === "string" ? value : "";
-}
-
 function caller(request: IncomingMessage): Session | undefined {
   const token = request.headers.authorization?.replace(/^Bearer /, "");
   const session = token ? access.get(token) : undefined;
-  return session && !session.account.deleted ? session : undefined;
+  return session && !session.account.deleted && !session.account.disabledAt ? session : undefined;
 }
 
 function recoveryCodes(): string[] {
@@ -226,6 +183,7 @@ const server = createServer(async (request, response) => {
     sessions.clear();
     ceremonies.clear();
     refreshes = 0;
+    resetAccess();
     return send(response, 204);
   }
   if (route === "POST /__sessions") {
@@ -238,7 +196,7 @@ const server = createServer(async (request, response) => {
   if (route === "POST /api/v1/auth/login") {
     const body = await json(request);
     const account = accounts.find(
-      (a) => !a.deleted && a.email === body.email && a.password === body.password,
+      (a) => !a.deleted && !a.disabledAt && a.email === body.email && a.password === body.password,
     );
     if (!account) {
       return problem(
@@ -295,6 +253,8 @@ const server = createServer(async (request, response) => {
     return empty(response, 204);
   }
 
+  if (await publicRoutes(request, response, route, () => accounts)) return;
+
   const session = caller(request);
   if (!session) {
     return problem(response, 401, "auth.invalid_token", "Sign in.");
@@ -316,6 +276,19 @@ const server = createServer(async (request, response) => {
   if (url.pathname.startsWith("/api/v1/auth/me/") || url.pathname === "/api/v1/auth/me") {
     return mine(request, response, url, route, account);
   }
+  const handled = await accessRoutes(
+    request,
+    response,
+    url,
+    () => accounts,
+    (created) => accounts.push(created),
+    (target) => {
+      const ended = [...sessions.values()].filter((s) => s.account === target);
+      for (const s of ended) endSession(s.id);
+      return ended.length;
+    },
+  );
+  if (handled) return;
   if (url.pathname.startsWith("/api/v1/kernel/modules")) {
     if (!account.canReadModules) {
       return problem(

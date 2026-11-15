@@ -31,6 +31,8 @@ export default defineConfig({
       url: `http://localhost:${APP_PORT}/login`,
       env: {
         AUTOXIDE_API_URL: `http://127.0.0.1:${CORE_PORT}`,
+        // Bản build chạy như production (dữ liệu mẫu mặc định tắt): bật để thử cả các màn mẫu.
+        AUTOXIDE_WEB_SAMPLE_DATA: "true",
         PORT: String(APP_PORT),
         HOSTNAME: "localhost",
       },

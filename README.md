@@ -24,6 +24,21 @@ Screens so far:
   email or password, two-step sign-in with an authenticator app and recovery codes, passkeys,
   the devices signed in to your account, downloading your data and deleting your account. Every
   signed-in account can open it; no permission is needed.
+- **Organization › Users and roles**: find and page through user accounts with their roles and
+  status; create an account, rename, disable or enable it, give it roles, set its first
+  password, send it a password-reset mail, sign it out everywhere, turn off its two-step
+  sign-in or delete it (each risky action asks first and says what happens). Roles: create and
+  change them with a permission picker grouped by module, with search; the built-in `admin` role
+  is read-only. Needs `auth.users.read` or `auth.roles.read`; changes need
+  `auth.users.manage` / `auth.roles.manage`.
+- **Pages opened from mail** (no sign-in needed): `/verify-email` confirms an email address,
+  `/forgot-password` asks for a password-reset mail and `/reset-password` chooses the new
+  password. Point the core's mail links here (see [Mail links](#mail-links)).
+
+Parts of the design the core has no API for yet (invitations, delegation, public store profiles,
+support access) are shown with **sample data**, marked "Sample data · waiting for API step N".
+They show only when `AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes
+there are kept in the app's memory and lost on restart.
 
 Works with Autoxide core **v0.12.0** or newer.
 
@@ -54,6 +69,23 @@ Open <http://localhost:3000> and sign in with your core account.
 | ----------------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
 | `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Only this app's server calls it; browsers never do. |
 | `AUTOXIDE_WEB_SECURE_COOKIES` | `true` in production    | Send session cookies only over HTTPS. Turn it off only when serving over plain HTTP.        |
+| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false` in production   | Show screens and tabs that use sample data while the core has no API for them.              |
+
+### Mail links
+
+The core sends verification and password-reset mails. Set these two variables **on the core**
+so the links in those mails open this app (replace the address with where this app is served):
+
+```bash
+AUTOXIDE_AUTH_EMAIL_VERIFICATION_URL=https://admin.example.com/verify-email?token={token}
+AUTOXIDE_AUTH_PASSWORD_RESET_URL=https://admin.example.com/reset-password?token={token}
+```
+
+The core puts the token where `{token}` is. Without them, the mails contain the token and tell the
+reader to call the API. During development the core writes mail as `.eml` files to
+`AUTOXIDE_MAIL_FILE_DIR` (default `data/mail`) when no SMTP server is set; open the link from
+there. Opening a verification link does nothing until the person presses "Confirm my email",
+so mail scanners that open every link do not use up the token.
 
 ### Production
 

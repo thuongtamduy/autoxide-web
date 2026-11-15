@@ -8,16 +8,19 @@
     "language": "Language",
     "groups": {
       "home": "Overview",
-      "settings": "Settings"
+      "settings": "Settings",
+      "org": "Organization"
     },
     "pages": {
       "dashboard": "Dashboard",
       "modules": "Modules",
-      "account": "My account"
+      "account": "My account",
+      "access": "Users and roles"
     },
     "about": {
       "dashboard": "Greeting and a way into every area you can use.",
-      "modules": "Modules installed on this server: permissions, events, jobs, migrations."
+      "modules": "Modules installed on this server: permissions, events, jobs, migrations.",
+      "access": "Accounts, roles and permissions; invitations, delegation, store profiles and support access."
     }
   },
   "login": {
@@ -35,7 +38,8 @@
     "invalidCode": "Enter the code.",
     "mfaExpired": "The sign-in step expired. Sign in again.",
     "unreachable": "The Autoxide server does not answer. Try again in a moment.",
-    "deleted": "Your account was deleted and you were signed out."
+    "deleted": "Your account was deleted and you were signed out.",
+    "forgot": "Forgot your password?"
   },
   "modules": {
     "title": "Modules",
@@ -88,6 +92,10 @@
     "failed": "The page could not be loaded. Try again; if it keeps failing, check that the Autoxide server is running.",
     "retry": "Try again"
   },
+  "form": {
+    "fix": "{count, plural, one {One field needs fixing.} other {# fields need fixing.}}",
+    "cancel": "Cancel"
+  },
   "shell": {
     "home": "Autoxide admin, go to the overview",
     "areas": "Areas",
@@ -123,10 +131,6 @@
       "security": "Sign-in and security",
       "sessions": "Sessions",
       "data": "My data"
-    },
-    "form": {
-      "fix": "{count, plural, one {One field needs fixing.} other {# fields need fixing.}}",
-      "cancel": "Cancel"
     },
     "required": {
       "field": "Fill in this field.",
@@ -286,6 +290,399 @@
       "mismatch": "This is not your email. Type {email} exactly.",
       "password": "Current password",
       "submit": "Delete for good"
+    }
+  },
+  "sample": {
+    "badge": "Sample data · waiting for API step {step}",
+    "missing": "Not in the core yet: {endpoint}. Changes here are kept in memory only and are lost when the app restarts.",
+    "tab": "sample",
+    "off": "Sample data is turned off (AUTOXIDE_WEB_SAMPLE_DATA).",
+    "codes": {
+      "validation_failed": "The request has invalid fields.",
+      "auth_invitation_not_found": "This invitation no longer exists.",
+      "auth_invitation_invalid": "This invitation was already used, revoked or has expired.",
+      "auth_delegation_not_found": "This delegation no longer exists.",
+      "auth_delegation_not_active": "This delegation is no longer active.",
+      "organizations_unit_not_found": "This unit no longer exists.",
+      "auth_support_grant_not_found": "This grant no longer exists.",
+      "auth_support_grant_not_active": "This grant is no longer in effect."
+    },
+    "fields": {
+      "email": "Enter a valid email address.",
+      "unknown": "Choose one of the listed values.",
+      "required": "Fill in this field.",
+      "time": "Enter a time such as 08:00.",
+      "past": "Choose a date in the future.",
+      "min_one": "Choose at least one.",
+      "length_10_500": "Write 10 to 500 characters."
+    }
+  },
+  "access": {
+    "crumb": "Organization · accounts, roles, invitations, delegation, support access",
+    "title": "Users and roles",
+    "description": "Who can sign in and what each person may do. A role is a set of permissions; a person with several roles has every permission of all of them.",
+    "pages": "Pages",
+    "first": "First page",
+    "next": "Next page",
+    "tabs": {
+      "label": "Sections",
+      "users": "Users",
+      "roles": "Roles",
+      "invitations": "Invitations",
+      "delegations": "Delegation",
+      "public": "Public profiles",
+      "support": "Support access"
+    },
+    "required": {
+      "field": "Fill in this field.",
+      "email": "Enter an email address.",
+      "name": "Enter a display name.",
+      "password": "Enter a password.",
+      "confirm_email": "Type the email address to confirm.",
+      "role_name": "Give the role a name.",
+      "org": "Choose a unit.",
+      "reason": "Say why.",
+      "display_name": "Enter the name shown on the website.",
+      "role": "Choose a role.",
+      "roles": "Choose at least one role."
+    },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "unverified": "Email not verified"
+    },
+    "users": {
+      "title": "Users",
+      "search": "Find users",
+      "searchHint": "Email or name…",
+      "find": "Find",
+      "clear": "Clear",
+      "noMatch": "No user matches “{search}”.",
+      "empty": "No users yet.",
+      "user": "User",
+      "roles": "Roles",
+      "status": "Status",
+      "created": "Created",
+      "noRoles": "No role"
+    },
+    "create": {
+      "open": "New user",
+      "title": "New user",
+      "intro": "The account starts without a role: give it roles on the next page. A mail asking to confirm the address goes to the new email.",
+      "email": "Email",
+      "emailHint": "Also the sign-in name.",
+      "name": "Display name",
+      "password": "Password (optional)",
+      "passwordHint": "12 to 128 characters. Leave empty to let the person set it through a password-reset mail, or set a first password later.",
+      "submit": "Create user",
+      "done": "User created. Give them roles below."
+    },
+    "user": {
+      "notFound": "No user has this id. The account may have been deleted.",
+      "back": "All users",
+      "breadcrumb": "Back to the list",
+      "email": "Email",
+      "verifiedOn": "Verified on",
+      "updated": "Last changed",
+      "name": "Display name",
+      "rename": "Save name",
+      "renamed": "Name saved.",
+      "status": {
+        "title": "Status",
+        "since": "Disabled since",
+        "activeHint": "Can sign in and use the API.",
+        "enable": "Enable",
+        "disable": "Disable",
+        "disableTitle": "Disable {who}?",
+        "disableNow": "They are signed out everywhere and their access tokens stop working at once.",
+        "disableKeep": "The account, its roles and its data stay; they cannot sign in until enabled again.",
+        "disableUndo": "You can enable the account again at any time.",
+        "disableSubmit": "Disable account",
+        "enabled": "Account enabled.",
+        "disabled": "Account disabled; they were signed out everywhere."
+      },
+      "roles": {
+        "title": "Roles",
+        "about": "Saving replaces every role of this person. Changes apply on their next request.",
+        "legend": "Roles of this user",
+        "everything": "Every permission, including ones added later.",
+        "noDescription": "No description.",
+        "save": "Save roles",
+        "saved": "Roles saved."
+      },
+      "delete": {
+        "open": "Delete",
+        "title": "Delete {who}?",
+        "goesNow": "The account and its sign-in methods are deleted now.",
+        "goesLater": "Data other modules keep for this person is deleted shortly after.",
+        "noUndo": "This cannot be undone. To only stop them from signing in, disable the account instead.",
+        "confirm": "Type {email} to confirm",
+        "submit": "Delete account",
+        "mismatch": "Type {email} exactly.",
+        "done": "The account was deleted.",
+        "row": "Delete the account",
+        "meta": "Removes the account and everything it owns. Needs every permission the person has."
+      }
+    },
+    "admin": {
+      "title": "Administrator actions",
+      "about": "Actions on someone else's account. Check who is asking before using them.",
+      "reset": {
+        "title": "Send a password-reset mail",
+        "meta": "The person chooses a new password from the link (valid 30 minutes). Administrators cannot replace an existing password.",
+        "open": "Send reset mail",
+        "sent": "If the account is active, a reset mail is on its way to {email}."
+      },
+      "password": {
+        "row": "Set a first password",
+        "meta": "Only for an account created without a password.",
+        "open": "Set password",
+        "title": "First password for {who}",
+        "intro": "Works only when the account has no password yet. To change an existing password, send a password-reset mail.",
+        "password": "Password",
+        "rule": "12 to 128 characters.",
+        "submit": "Set password",
+        "done": "Password set; they can sign in with it."
+      },
+      "sessions": {
+        "row": "Sign out everywhere",
+        "meta": "Ends every session of this person on every device.",
+        "open": "Sign out everywhere",
+        "title": "Sign {who} out everywhere?",
+        "now": "Every session ends; each device must sign in again.",
+        "tokens": "An access token already issued keeps working until it expires (15 minutes by default).",
+        "keepOut": "To keep them out for good, disable the account instead.",
+        "submit": "Sign out everywhere",
+        "done": "{count, plural, =0 {They had no session.} one {Ended # session.} other {Ended # sessions.}}"
+      },
+      "mfa": {
+        "row": "Turn off two-step sign-in",
+        "meta": "For a person who lost the device with their authenticator app.",
+        "open": "Turn off two-step",
+        "title": "Turn off two-step sign-in for {who}?",
+        "effect": "They sign in with the password alone, then can set up a new device.",
+        "check": "Make sure the request really comes from them: anyone who knows the password can then sign in.",
+        "submit": "Turn off two-step sign-in",
+        "done": "Two-step sign-in is off for this account."
+      }
+    },
+    "roles": {
+      "title": "Roles",
+      "create": "New role",
+      "about": "Open a role to see and change its permissions. The built-in admin role grants every permission and cannot be changed.",
+      "role": "Role",
+      "permissions": "Permissions",
+      "kind": "Kind",
+      "every": "Every permission",
+      "count": "{count, plural, =0 {No permission} one {# permission} other {# permissions}}",
+      "builtin": "Built in",
+      "custom": "Created here"
+    },
+    "role": {
+      "deleted": "Role deleted.",
+      "created": "Role created.",
+      "saved": "Role saved.",
+      "breadcrumb": "Back to roles",
+      "back": "All roles",
+      "newTitle": "New role",
+      "notFound": "No role has this id. It may have been deleted.",
+      "builtinNote": "Built-in role: it grants every permission, including permissions added later by new modules. It cannot be changed or deleted, and at least one active user must keep it.",
+      "name": "Name",
+      "nameHint": "Lowercase letters, digits, _ and -, starting with a letter. Example: editor.",
+      "description": "Description (optional)",
+      "permissions": "Permissions",
+      "chosen": "{count} of {total} chosen",
+      "find": "Find permissions",
+      "findHint": "Find by name or what it allows…",
+      "groupCount": "{on}/{total}",
+      "selectGroup": "Choose all of {module}",
+      "clearGroup": "Clear {module}",
+      "unknown": "No longer offered by any module.",
+      "noMatch": "No permission matches “{query}”.",
+      "save": "Save role",
+      "create": "Create role",
+      "readOnly": "You can see this role but not change it (needs auth.roles.manage).",
+      "delete": {
+        "open": "Delete role",
+        "title": "Delete the role {name}?",
+        "holders": "Everyone who has this role loses its permissions on their next request.",
+        "noUndo": "This cannot be undone.",
+        "submit": "Delete role"
+      }
+    },
+    "invitations": {
+      "invite": "Invite staff",
+      "inviteTitle": "Invite staff",
+      "inviteIntro": "The person gets a one-time link, valid 7 days. Without an account they set a password or add a passkey when accepting.",
+      "sent": "Invitation sent; follow it in this list.",
+      "email": "Email",
+      "name": "Name (optional)",
+      "unit": "Unit",
+      "roles": "Roles",
+      "noRoles": "You cannot read roles (auth.roles.read).",
+      "depth": "How far each permission reaches is set by the role, not here. You can only invite with roles whose permissions you hold at that unit.",
+      "submit": "Send invitation",
+      "title": "Invitations",
+      "about": "Pending, accepted, expired or revoked invitations. Needs auth.invitations.manage at the unit invited to.",
+      "filter": "Filter by status",
+      "all": "All",
+      "status": {
+        "pending": "Pending",
+        "expired": "Expired",
+        "accepted": "Accepted",
+        "revoked": "Revoked"
+      },
+      "empty": "No invitation in this status.",
+      "roleAt": "Role · unit",
+      "by": "Invited by",
+      "expiresAt": "Expires",
+      "state": "Status",
+      "actions": "Actions",
+      "resend": "Resend",
+      "resendLabel": "Resend the invitation to {email}",
+      "resent": "Sent again to {email}; the old link stopped working.",
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke the invitation to {email}?",
+      "revokeLink": "The link in the mail stops working at once.",
+      "revokeAgain": "To invite them later, send a new invitation.",
+      "revokeSubmit": "Revoke invitation",
+      "revoked": "Invitation revoked."
+    },
+    "delegations": {
+      "create": "New delegation",
+      "createTitle": "Delegate to a child customer",
+      "createIntro": "Whoever holds this role at your root can work in the child customer with exactly those permissions. The child sees the delegation but cannot revoke it.",
+      "created": "Delegated; the event is recorded at both customers.",
+      "child": "Child customer",
+      "role": "Your role",
+      "expires": "Expires (optional)",
+      "expiresHint": "Empty: no end date. Ends at the end of that day (UTC).",
+      "reason": "Reason",
+      "reasonHint": "10 to 500 characters; both customers see it in their audit log.",
+      "submit": "Delegate",
+      "title": "Outgoing delegation",
+      "auditStrong": "Audited on both sides.",
+      "audit": "Each time your staff enter a child customer through a delegation, the event is recorded there and copied back to you, so both sides can look it up.",
+      "unit": "Unit at the child",
+      "expiresAt": "Expires",
+      "state": "Status",
+      "actions": "Actions",
+      "noExpiry": "No end date",
+      "status": {
+        "active": "Active",
+        "expired": "Expired",
+        "revoked": "Revoked"
+      },
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke {role} at {child}?",
+      "revokeNow": "Sessions opened through it lose their permissions on the next request.",
+      "revokeAudit": "The revocation is recorded at both customers.",
+      "revokeSubmit": "Revoke delegation",
+      "revoked": "Delegation revoked."
+    },
+    "public": {
+      "units": "Units",
+      "about": "What the website shows about each store: name, address, opening hours, pickup. Only units marked public appear; members and internal settings never do.",
+      "unit": "Unit",
+      "state": "Status",
+      "type": {
+        "tenant": "customer",
+        "region": "region",
+        "store": "store",
+        "warehouse": "warehouse"
+      },
+      "pickupShort": "pickup",
+      "on": "Public",
+      "off": "Not public",
+      "readOnly": "You can see these profiles but not change them (needs {permission}).",
+      "saved": "Saved; the store page on the website updates in a few minutes.",
+      "isPublic": "Show on the website",
+      "isPublicHint": "Off: the unit disappears from the list of stores.",
+      "displayName": "Name shown",
+      "province": "Province or city",
+      "choose": "Choose…",
+      "provinceHint": "Address follows the administrative units after the 2025 merger: province or city, then ward or commune (no district).",
+      "commune": "Ward or commune",
+      "line": "Street address",
+      "opens": "Opens",
+      "closes": "Closes",
+      "hoursHint": "Same hours every day. Hours per day and special closing days need the API.",
+      "pickup": "Pickup at the counter",
+      "pickupHint": "Buyers can choose this store at checkout.",
+      "save": "Save profile"
+    },
+    "support": {
+      "allowTitle": "Access for support",
+      "isOn": "Platform staff may enter to help when you report a problem.",
+      "isOff": "Only requests from a competent authority (with a document number) can be granted.",
+      "revokeNoteTitle": "Revoking from your side",
+      "revokeNote": "Step 34 of the core only lets the platform operator revoke a grant. The Revoke button below follows the proposed API: you control the data, so you should be able to end access yourself.",
+      "grants": "Grants and visits",
+      "staff": "Platform staff",
+      "basis": "Basis and reason",
+      "time": "Time",
+      "state": "Status",
+      "actions": "Actions",
+      "basisKind": {
+        "support": "Support",
+        "legal_request": "Request of an authority"
+      },
+      "visits": "{count, plural, one {# visit} other {# visits}}",
+      "until": "until",
+      "status": {
+        "active": "In effect",
+        "expired": "Expired",
+        "revoked": "Revoked"
+      },
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke access for {name}?",
+      "revokeNow": "Their support session loses its permissions on the next request.",
+      "revokeAudit": "The revocation is recorded in your audit log.",
+      "revokeSubmit": "Revoke now",
+      "revoked": "Access revoked.",
+      "saved": "Saved; new grants follow this setting.",
+      "allow": "Platform staff may enter when you report a problem",
+      "allowHint": "Off: only requests from a competent authority (with a document number) can be granted, and those are still recorded here.",
+      "save": "Save"
+    }
+  },
+  "public": {
+    "verify": {
+      "title": "Confirm your email",
+      "noToken": "This link is incomplete. Open the link from the mail again, or ask for a new mail.",
+      "toAccount": "Go to My account",
+      "doneTitle": "Email confirmed",
+      "done": "{email} is confirmed. If you asked to change your address, sign in with this one from now on.",
+      "continue": "Continue",
+      "description": "Confirm that this address belongs to you.",
+      "invalidHint": "Sign in and send a new verification mail from My account.",
+      "submit": "Confirm my email"
+    },
+    "forgot": {
+      "required": "Enter your email address.",
+      "doneTitle": "Check your mail",
+      "done": "If an account has the address {email}, a mail with a link to choose a new password is on its way. The link works for 30 minutes.",
+      "back": "Back to sign in",
+      "title": "Forgot your password?",
+      "description": "Enter the email of your account; we send a link to choose a new password.",
+      "email": "Email",
+      "submit": "Send the link"
+    },
+    "reset": {
+      "required": "Enter the new password.",
+      "repeatRequired": "Type the new password again.",
+      "mismatch": "The two passwords differ.",
+      "title": "Choose a new password",
+      "noToken": "This link is incomplete. Ask for a new one.",
+      "again": "Ask for a new link",
+      "doneTitle": "Password changed",
+      "done": "Your password was changed and you were signed out everywhere. Sign in with the new password.",
+      "signIn": "Sign in",
+      "description": "The link from the mail works once, for 30 minutes.",
+      "password": "New password",
+      "rule": "12 to 128 characters.",
+      "repeat": "New password again",
+      "submit": "Change password"
     }
   }
 }
