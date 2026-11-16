@@ -64,7 +64,7 @@ has no API for yet use sample data the same way. Sample data shows only when
 app's memory and lost on restart. The sample records agree across screens (an order, its
 shipment, its ledger entries and its invoice are the same order).
 
-Works with Autoxide core from commit `11bbef0` of its `main` branch or newer (the next release,
+Works with Autoxide core from commit `fb3ba06` of its `main` branch or newer (the next release,
 v0.15.0, will include it).
 
 ## Requirements

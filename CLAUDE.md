@@ -15,6 +15,7 @@ và CON TRỎ.
 - Core là nguồn sự thật: kiểm quyền, kiểm dữ liệu, thông báo lỗi đều do core làm. Giao diện chỉ
   hiện. Thiếu API thì thêm ở core (theo luật của core) trước, rồi sinh lại SDK.
 - Repo công khai: viết mọi thứ với giả định người lạ sẽ đọc. Secret không bao giờ vào git.
+- **Đang ở đâu, làm gì tiếp** → [`docs/NEXT.md`](docs/NEXT.md); nợ của core → [`docs/backend-debt.md`](docs/backend-debt.md).
 
 ## Luật cứng
 
