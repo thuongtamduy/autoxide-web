@@ -214,7 +214,9 @@
     "themeSystem": "Theo máy",
     "account": "Tài khoản",
     "accountMenu": "Menu tài khoản của {name}",
-    "pending": "Có việc cần xử lý"
+    "pending": "Có việc cần xử lý",
+    "readOnlyTitle": "Không gian này đang chỉ đọc.",
+    "readOnlyBody": "Bạn vẫn đăng nhập, xem và xuất được dữ liệu, nhưng mọi thay đổi bị từ chối cho tới khi nhà vận hành nền tảng cho ghi lại."
   },
   "dashboard": {
     "hello": "Chào {name}",
@@ -4550,6 +4552,7 @@
         "dedicated": "Database riêng",
         "shared": "Dùng chung",
         "migration": "Chờ migration",
+        "readOnly": "Chỉ đọc",
         "attention": "Cần chú ý"
       },
       "col": {
@@ -4576,7 +4579,18 @@
       "modules": "{count, plural, other {# module}}",
       "singleMode": "Bản cài này chạy một khách (AUTOXIDE_TENANCY_MODE=single): khách nền tảng là khách duy nhất, chưa thêm khách mới được tới khi core cho phép nhiều khách.",
       "sampleRow": "mẫu",
-      "sampleRowHint": "Chỉ có trong dữ liệu mẫu (vd từ luồng cấp phát mẫu của bước 35); core không có khách này."
+      "sampleRowHint": "Chỉ có trong dữ liệu mẫu (vd từ luồng cấp phát mẫu của bước 35); core không có khách này.",
+      "filterForm": "Lọc kết hợp",
+      "filterReadOnly": "Chỉ đọc",
+      "anyWrite": "Chỉ đọc hay không",
+      "onlyReadOnly": "Chỉ khách chỉ đọc",
+      "onlyWritable": "Chỉ khách ghi được",
+      "filterKind": "Loại placement",
+      "anyKind": "Mọi loại placement",
+      "filterSchema": "Trạng thái migration",
+      "anySchema": "Mọi trạng thái migration",
+      "apply": "Áp dụng",
+      "clear": "Bỏ lọc"
     },
     "tenant": {
       "back": "Khách hàng",
@@ -4728,7 +4742,7 @@
       "suspend": "Tạm khoá hẳn",
       "suspendTitle": "Tạm khoá hẳn {tenant}?",
       "suspendStops": "Mọi API và trang website của khách trả 403 tenant_suspended, kể cả đăng nhập.",
-      "suspendNotReadOnly": "Khác chỉ đọc (thuê bao chưa trả): khách không đăng nhập, không xem, không xuất được dữ liệu.",
+      "suspendNotReadOnly": "Khác chỉ đọc: khách không đăng nhập, không xem, không xuất được dữ liệu.",
       "suspendAudit": "Lý do được ghi vào nhật ký audit.",
       "suspendUndo": "Mở lại được bất cứ lúc nào.",
       "suspendAck": "Tôi hiểu {tenant} sẽ ngừng phục vụ hoàn toàn",
@@ -4748,7 +4762,9 @@
       "pendingAbout": "Các phần này của một khách đến cùng bước 34, 35 của core và API mới ghi ở bảng thiếu API; mặt điều khiển mẫu chỉ hiện chúng cho khách mẫu.",
       "reactivateTitle": "Mở lại {tenant}?",
       "reactivateBack": "Mọi request vào khách này chạy lại (máy chủ khác thấy thay đổi sau vài giây).",
-      "files": "Nơi lưu file"
+      "files": "Nơi lưu file",
+      "settings": "Cấu hình của khách này",
+      "settingsAbout": "Cấu hình nghiệp vụ module nhận theo khách (ngôn ngữ, kiểm duyệt bình luận, thời hạn giữ bài gửi form…). Để trống thì dùng cấu hình chung của máy chủ; máy chủ của khách dùng giá trị mới trong AUTOXIDE_TENANCY_CACHE_SECONDS. Quản trị viên của khách cũng tự đổi được."
     },
     "provision": {
       "button": "Cấp phát khách mới",
@@ -5140,6 +5156,25 @@
       "noKey": "Chưa lưu khoá truy cập",
       "unreadable": "Không đọc được",
       "unreadableHint": "Không giải mã được cấu hình đã lưu bằng AUTOXIDE_SECRET_KEY hiện tại: thao tác file của khách trên placement này sẽ lỗi. Đặt lại bằng autoxide placement storage."
+    },
+    "readOnly": {
+      "badge": "Chỉ đọc",
+      "title": "Chỉ đọc",
+      "about": "Đặt khách sang chỉ đọc, vd khi đang xem xét hay trước khi đóng tài khoản: nhân sự của khách vẫn đăng nhập, xem và xuất được dữ liệu, nhưng mọi thay đổi bị từ chối. Khác tạm khoá, không có gì bị ẩn đi.",
+      "isOn": "Khách này đang chỉ đọc: nhân sự vẫn đăng nhập, xem và xuất dữ liệu; mọi thay đổi bị từ chối với 403 tenant_read_only.",
+      "turnOn": "Đặt chỉ đọc",
+      "turnOff": "Cho ghi lại",
+      "onTitle": "Đặt {tenant} sang chỉ đọc?",
+      "onKeeps": "Nhân sự của khách vẫn đăng nhập, xem và xuất được dữ liệu; website vẫn hiện nội dung đã đăng.",
+      "onBlocks": "Mọi thay đổi (bán hàng, đăng bài, sửa, cài đặt) bị từ chối với 403 tenant_read_only.",
+      "onJobs": "Job và event đã xếp hàng vẫn chạy.",
+      "onNotSuspend": "Đây không phải tạm khoá: tạm khoá chặn mọi request, kể cả đăng nhập.",
+      "onUndo": "Cho ghi lại được bất cứ lúc nào.",
+      "onDone": "{tenant} đã chuyển sang chỉ đọc.",
+      "offTitle": "Cho {tenant} ghi lại?",
+      "offWrites": "Nhân sự của khách sửa được dữ liệu từ request kế tiếp.",
+      "offJobs": "Không mất gì trong lúc chỉ đọc; thay đổi đã bị từ chối thì phải làm lại.",
+      "offDone": "{tenant} đã ghi được trở lại."
     }
   },
   "catalog": {

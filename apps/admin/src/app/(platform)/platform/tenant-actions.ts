@@ -1,7 +1,7 @@
 "use server";
 
 // Server Action của mặt điều khiển nền tảng gọi core THẬT (bước 33): tạo khách, đổi tên, tạm khoá /
-// mở lại, dời khách sang placement khác (W-032). Core kiểm permission (`kernel.tenants.manage`,
+// mở lại, bật / tắt chỉ đọc (D-296), dời khách sang placement khác (W-032). Core kiểm permission (`kernel.tenants.manage`,
 // `kernel.tenants.move`) và người gọi thuộc khách nền tảng; ở đây chỉ kiểm ô bắt buộc để báo sớm và
 // gom mọi lỗi một lần. Việc của bước 35 trở đi (cấp phát, gói, xuất dữ liệu) vẫn là dữ liệu mẫu ở
 // `actions.ts`.
@@ -72,6 +72,17 @@ export async function suspendCoreTenant(state: FormState, formData: FormData): P
   return patchTenant(state, formData, { status: "suspended" }, []);
 }
 
+/**
+ * Bật / tắt chỉ đọc (`read_only`, D-296 của core; `mode` là `on` hay `off`): khách vẫn đăng nhập,
+ * xem, xuất dữ liệu; mọi lệnh ghi bị từ chối `403 tenant_read_only`. Độc lập với tạm khoá.
+ */
+export async function setCoreTenantReadOnly(
+  state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  return patchTenant(state, formData, { read_only: text(formData, "mode") === "on" }, []);
+}
+
 /** Mở lại khách đang tạm khoá. */
 export async function resumeCoreTenant(state: FormState, formData: FormData): Promise<FormState> {
   return patchTenant(state, formData, { status: "active" }, []);
@@ -110,7 +121,7 @@ export async function startMove(state: DialogState, formData: FormData): Promise
 async function patchTenant(
   state: FormState,
   formData: FormData,
-  body: { name?: string; status?: string },
+  body: { name?: string; status?: string; read_only?: boolean },
   fields: readonly string[],
 ): Promise<FormState> {
   const id = text(formData, "tenant_id") || text(formData, "id");

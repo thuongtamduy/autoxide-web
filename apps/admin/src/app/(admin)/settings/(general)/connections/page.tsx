@@ -1,12 +1,11 @@
 import { ApiError, type components } from "@autoxide/sdk";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { removeTenantSetting, setTenantSetting } from "@/app/(admin)/settings/actions";
 import { MessagePanel } from "@/components/message-panel";
 import { SampleBadge } from "@/components/sample-badge";
 import { ConnectionDialog } from "@/components/settings/sample-forms";
-import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
-import { FormDialog } from "@/components/ui/form-dialog";
+import { TenantSettingsList } from "@/components/settings/tenant-settings";
+import { InlineAction } from "@/components/ui/confirm";
 import { Time } from "@/components/ui/time";
 import { isForbidden, load } from "@/lib/core";
 import { formatCount } from "@/lib/format";
@@ -80,69 +79,7 @@ export default async function ConnectionsPage() {
           </h2>
         </div>
         <p className="fhint">{t("tenant.about")}</p>
-        <div className="card">
-          {settings.length === 0 ? <p className="empty">{t("tenant.empty")}</p> : null}
-          {settings.map((setting) => (
-            <div className="item" key={setting.name} data-testid={`tset-${setting.name}`}>
-              <div className="item-main">
-                <span className="item-title mono">{setting.name}</span>
-                <span className="item-meta">{setting.description}</span>
-                <span className="item-meta">
-                  {setting.is_set ? (
-                    <>
-                      {setting.secret ? t("isSet") : <span className="mono">{setting.value}</span>}
-                      {setting.updated_at ? (
-                        <>
-                          {" · "}
-                          {t("tenant.updated")} <Time value={setting.updated_at} />
-                        </>
-                      ) : null}
-                    </>
-                  ) : (
-                    t("tenant.default")
-                  )}
-                </span>
-              </div>
-              <span className={setting.is_set ? "badge b-ok" : "badge b-draft"}>
-                <span className="dot" />
-                {setting.is_set ? t("state.set") : t("state.unset")}
-              </span>
-              <span className="item-acts">
-                <FormDialog
-                  action={setTenantSetting}
-                  label={setting.is_set ? t("change") : t("tenant.set")}
-                  ariaLabel={t("tenant.setLabel", { name: setting.name })}
-                  title={t("tenant.formTitle", { name: setting.name })}
-                  intro={setting.secret ? t("tenant.secretIntro") : setting.description}
-                  submit={t("tenant.save")}
-                  done={t("tenant.saved", { name: setting.name })}
-                  fields={[
-                    { kind: "hidden", name: "name", value: setting.name },
-                    { kind: "hidden", name: "secret", value: setting.secret ? "1" : "0" },
-                    {
-                      kind: setting.secret ? "password" : "text",
-                      name: "value",
-                      label: t("tenant.value"),
-                      mono: true,
-                      ...(setting.secret ? {} : { defaultValue: setting.value ?? "" }),
-                    },
-                  ]}
-                />
-                {setting.is_set ? (
-                  <ConfirmAction
-                    action={removeTenantSetting}
-                    id={setting.name}
-                    label={t("tenant.remove")}
-                    title={t("tenant.removeTitle", { name: setting.name })}
-                    points={[t("tenant.removeDefault")]}
-                    submit={t("tenant.remove")}
-                    done={t("tenant.removed", { name: setting.name })}
-                  />
-                ) : null}
-              </span>
-            </div>
-          ))}
-        </div>
+        <TenantSettingsList settings={settings} />
       </section>
 
       <section className="block" aria-labelledby="ai-h">

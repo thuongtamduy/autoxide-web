@@ -205,7 +205,16 @@ export async function AdminShell({
           </button>
         </header>
         <Subnav groups={groups} {...(counts ? { counts } : {})} />
-        <main className="content">{children}</main>
+        <main className="content">
+          {/* Khách của người đăng nhập đang chỉ đọc (D-296 của core): báo trước, để lệnh ghi bị từ
+              chối (`403 tenant_read_only`, hiện `detail` của core) không làm người dùng bất ngờ. */}
+          {current?.read_only ? (
+            <p className="note warn" role="status" data-testid="read-only-banner">
+              <b>{t("shell.readOnlyTitle")}</b> {t("shell.readOnlyBody")}
+            </p>
+          ) : null}
+          {children}
+        </main>
       </div>
 
       {platform ? (

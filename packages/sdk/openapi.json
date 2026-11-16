@@ -818,7 +818,7 @@
             "description": "Content settings an interface needs.",
             "properties": {
               "default_locale": {
-                "description": "Language of a new entry when none is given.",
+                "description": "Language of a new entry when none is given: the tenant's `content.default_locale`,\notherwise the server's `AUTOXIDE_CONTENT_DEFAULT_LOCALE`.",
                 "example": "en",
                 "type": "string"
               },
@@ -834,7 +834,7 @@
                 "type": "array"
               },
               "locales": {
-                "description": "Languages entries may be written in (`AUTOXIDE_CONTENT_LOCALES`), the default first.",
+                "description": "Languages entries may be written in: the tenant's `content.locales` setting, otherwise\nthe server's `AUTOXIDE_CONTENT_LOCALES`.",
                 "example": [
                   "en",
                   "vi"
@@ -921,7 +921,7 @@
                 "type": "array"
               },
               "alt_locales": {
-                "description": "Languages of `alt` translations (`AUTOXIDE_MEDIA_ALT_LOCALES`): show one alt field per\nlanguage.",
+                "description": "Languages of `alt` translations: the tenant's `media.alt_locales` setting, otherwise the\nserver's `AUTOXIDE_MEDIA_ALT_LOCALES`. Show one alt field per language.",
                 "example": [
                   "en",
                   "vi"
@@ -2360,6 +2360,10 @@
             "description": "Whether this is the platform tenant (the operator's own).",
             "type": "boolean"
           },
+          "read_only": {
+            "description": "Read-only: data can be read but every change is refused with `403 tenant_read_only`.",
+            "type": "boolean"
+          },
           "slug": {
             "type": "string"
           },
@@ -3580,6 +3584,10 @@
               },
               "platform": {
                 "description": "Whether this is the platform tenant (the operator's own).",
+                "type": "boolean"
+              },
+              "read_only": {
+                "description": "Read-only: data can be read but every change is refused with `403 tenant_read_only`.",
                 "type": "boolean"
               },
               "slug": {
@@ -6849,6 +6857,17 @@
                 "format": "date-time",
                 "type": "string"
               },
+              "expanded": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TenantExpanded",
+                    "description": "Related records asked for with `expand` in `GET /api/v1/kernel/tenants`; absent otherwise."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "id": {
                 "format": "uuid",
                 "type": "string"
@@ -6869,13 +6888,17 @@
                 "example": "main",
                 "type": "string"
               },
+              "read_only": {
+                "description": "Read-only: its data can be read (and its users can sign in and export), but every change\nis refused with `403 tenant_read_only`. Independent of `status`.",
+                "type": "boolean"
+              },
               "slug": {
                 "description": "Short name: lower-case letters, digits and `-`; unique on the platform.",
                 "example": "acme",
                 "type": "string"
               },
               "status": {
-                "description": "`provisioning`, `active`, `suspended`, `maintenance` or `moving`.",
+                "description": "`provisioning`, `active`, `suspended` (every request is refused with\n`403 tenant_suspended`), `maintenance` or `moving`.",
                 "example": "active",
                 "type": "string"
               },
@@ -14174,6 +14197,17 @@
                   "format": "date-time",
                   "type": "string"
                 },
+                "expanded": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TenantExpanded",
+                      "description": "Related records asked for with `expand` in `GET /api/v1/kernel/tenants`; absent otherwise."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "id": {
                   "format": "uuid",
                   "type": "string"
@@ -14194,13 +14228,17 @@
                   "example": "main",
                   "type": "string"
                 },
+                "read_only": {
+                  "description": "Read-only: its data can be read (and its users can sign in and export), but every change\nis refused with `403 tenant_read_only`. Independent of `status`.",
+                  "type": "boolean"
+                },
                 "slug": {
                   "description": "Short name: lower-case letters, digits and `-`; unique on the platform.",
                   "example": "acme",
                   "type": "string"
                 },
                 "status": {
-                  "description": "`provisioning`, `active`, `suspended`, `maintenance` or `moving`.",
+                  "description": "`provisioning`, `active`, `suspended` (every request is refused with\n`403 tenant_suspended`), `maintenance` or `moving`.",
                   "example": "active",
                   "type": "string"
                 },
@@ -18033,6 +18071,17 @@
             "format": "date-time",
             "type": "string"
           },
+          "expanded": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TenantExpanded",
+                "description": "Related records asked for with `expand` in `GET /api/v1/kernel/tenants`; absent otherwise."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "format": "uuid",
             "type": "string"
@@ -18053,13 +18102,17 @@
             "example": "main",
             "type": "string"
           },
+          "read_only": {
+            "description": "Read-only: its data can be read (and its users can sign in and export), but every change\nis refused with `403 tenant_read_only`. Independent of `status`.",
+            "type": "boolean"
+          },
           "slug": {
             "description": "Short name: lower-case letters, digits and `-`; unique on the platform.",
             "example": "acme",
             "type": "string"
           },
           "status": {
-            "description": "`provisioning`, `active`, `suspended`, `maintenance` or `moving`.",
+            "description": "`provisioning`, `active`, `suspended` (every request is refused with\n`403 tenant_suspended`), `maintenance` or `moving`.",
             "example": "active",
             "type": "string"
           },
@@ -18089,8 +18142,15 @@
               "null"
             ]
           },
+          "read_only": {
+            "description": "`true`: the tenant can only read (its users still sign in and export their data), every\nchange is refused with `403 tenant_read_only`; `false`: writable again. Independent of\n`status`. The platform tenant cannot be made read-only.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "status": {
-            "description": "`active` or `suspended`.",
+            "description": "`active` or `suspended`. A suspended tenant refuses every request, reads included.",
             "example": "suspended",
             "type": [
               "string",
@@ -18194,6 +18254,37 @@
           "name",
           "value"
         ],
+        "type": "object"
+      },
+      "TenantExpanded": {
+        "description": "Related records of a tenant, asked for with `expand`.",
+        "properties": {
+          "placement": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Placement",
+                "description": "The placement that keeps the tenant's data (`expand=placement`); `null` when not asked for."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subscription": {
+            "description": "The tenant's subscription (`expand=subscription`). Always `null` for now: subscriptions\ncome with the plans module (step 35); without it no tenant has one.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "usage": {
+            "description": "The tenant's use of its plan's limits (`expand=usage`). Always `null` for now, like\n`subscription`.",
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       },
       "TenantMove": {
@@ -19615,7 +19706,7 @@
     }
   },
   "info": {
-    "description": "REST API of Autoxide.\n\n## Conventions\n\nEvery endpoint follows the same rules, so learning one endpoint teaches all of them.\n\n- **Success**: a single result is `{\"data\": …}`; a list is `{\"data\": […], \"pagination\": {\"limit\", \"next_cursor\"}}`. Creating a record answers `201` with a `Location` header pointing to it.\n- **Errors**: always RFC 9457 Problem Details (`application/problem+json`). Branch on the stable `code` field, never on `detail`. Validation problems list every invalid field of the request in `errors`, all at once.\n- **Lists**: accept `limit` (1–200, default 50), `order` (`desc` or `asc`, by creation time) and `cursor`. Some lists also take `sort` to order by another field, and their own filters. To get the next page, pass `pagination.next_cursor` as `cursor` with the same `order`, `sort` and filters; `null` means last page.\n- **Authentication**: endpoints that need it list the `bearer` security scheme. Send `Authorization: Bearer <access token>`. A `401` response carries `WWW-Authenticate: Bearer`; its `code` says whether the token is missing, invalid or expired. Public endpoints list an empty requirement next to `bearer`: they work without a token, and a sent token must still be valid.\n- **Retries**: send `Idempotency-Key: <a random UUID>` with `POST`, `PUT`, `PATCH` and `DELETE`. Repeating the same request with the same key within 24 hours returns the first result (marked `Idempotent-Replayed: true`) instead of doing it twice; a different request with a used key gets `422`, and a repeat while the first is still running gets `409`.\n- **Concurrent edits**: reading a single record returns its version in `ETag`. Send it back in `If-Match` when changing the record: if someone changed it in between, the answer is `412` (code `precondition_failed`) instead of silently overwriting their change. Without `If-Match` the change is made anyway, except on endpoints that say `If-Match` is required: those answer `428` (code `precondition_required`).\n- **Caching**: send the `ETag` you have in `If-None-Match` when reading again; if nothing changed the answer is `304 Not Modified` with no body.\n- **Deprecation**: an endpoint being retired is marked `deprecated` here and answers with `Deprecation` (RFC 9745), `Sunset` (RFC 8594, the removal date) and `Link: <…>; rel=\"successor-version\"` headers. Move to the successor before the sunset date.\n- **Language**: send `Accept-Language` (e.g. `vi`) to get the `detail` of errors in that language; English (`en`) by default and for unsupported languages. Responses carry `Content-Language`. Codes never change with the language.\n- **Rate limits**: too many requests from one address are answered with `429` (code `rate_limited`) and a `Retry-After` header giving the seconds to wait.\n- **Request id**: every response carries `x-request-id`. Send your own to correlate calls; quote it when reporting a problem.\n- **IDs** are UUIDv7 strings; **timestamps** are UTC in RFC 3339; **money** is an integer amount in the smallest currency unit plus a currency code.",
+    "description": "REST API of Autoxide.\n\n## Conventions\n\nEvery endpoint follows the same rules, so learning one endpoint teaches all of them.\n\n- **Success**: a single result is `{\"data\": …}`; a list is `{\"data\": […], \"pagination\": {\"limit\", \"next_cursor\"}}`. Creating a record answers `201` with a `Location` header pointing to it.\n- **Errors**: always RFC 9457 Problem Details (`application/problem+json`). Branch on the stable `code` field, never on `detail`. Validation problems list every invalid field of the request in `errors`, all at once.\n- **Lists**: accept `limit` (1–200, default 50), `order` (`desc` or `asc`, by creation time) and `cursor`. Some lists also take `sort` to order by another field, and their own filters. To get the next page, pass `pagination.next_cursor` as `cursor` with the same `order`, `sort` and filters; `null` means last page.\n- **Authentication**: endpoints that need it list the `bearer` security scheme. Send `Authorization: Bearer <access token>`. A `401` response carries `WWW-Authenticate: Bearer`; its `code` says whether the token is missing, invalid or expired. Public endpoints list an empty requirement next to `bearer`: they work without a token, and a sent token must still be valid.\n- **Retries**: send `Idempotency-Key: <a random UUID>` with `POST`, `PUT`, `PATCH` and `DELETE`. Repeating the same request with the same key within 24 hours returns the first result (marked `Idempotent-Replayed: true`) instead of doing it twice; a different request with a used key gets `422`, and a repeat while the first is still running gets `409`.\n- **Concurrent edits**: reading a single record returns its version in `ETag`. Send it back in `If-Match` when changing the record: if someone changed it in between, the answer is `412` (code `precondition_failed`) instead of silently overwriting their change. Without `If-Match` the change is made anyway, except on endpoints that say `If-Match` is required: those answer `428` (code `precondition_required`).\n- **Caching**: send the `ETag` you have in `If-None-Match` when reading again; if nothing changed the answer is `304 Not Modified` with no body.\n- **Deprecation**: an endpoint being retired is marked `deprecated` here and answers with `Deprecation` (RFC 9745), `Sunset` (RFC 8594, the removal date) and `Link: <…>; rel=\"successor-version\"` headers. Move to the successor before the sunset date.\n- **Language**: send `Accept-Language` (e.g. `vi`) to get the `detail` of errors in that language; English (`en`) by default and for unsupported languages. Responses carry `Content-Language`. Codes never change with the language.\n- **Rate limits**: too many requests from one address are answered with `429` (code `rate_limited`) and a `Retry-After` header giving the seconds to wait.\n- **Tenant state**: any endpoint of a tenant may answer `403` with code `tenant_suspended` (the tenant is suspended: nothing works, reads included), `403` with code `tenant_read_only` (the tenant can only read for now: `GET` works, as do sign-in, exports and links from mails; other changes are refused; MCP tools that are not read-only too) or `503` with code `tenant_maintenance` and a `Retry-After` header.\n- **Request id**: every response carries `x-request-id`. Send your own to correlate calls; quote it when reporting a problem.\n- **IDs** are UUIDv7 strings; **timestamps** are UTC in RFC 3339; **money** is an integer amount in the smallest currency unit plus a currency code.",
     "title": "Autoxide API",
     "version": "0.14.0"
   },
@@ -27442,7 +27533,7 @@
     },
     "/api/v1/comments/public/settings": {
       "get": {
-        "description": "No sign-in needed. Limits and switches a website needs to show the comment box.",
+        "description": "No sign-in needed. Limits and switches a website needs to show the comment box, for the\ntenant of the request (its own `comments.max_links` when it set one).",
         "operationId": "comments_get_comment_settings",
         "parameters": [
           {
@@ -27468,6 +27559,16 @@
               }
             },
             "description": "The settings."
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No tenant could be told for the request; code `tenant_required`."
           },
           "default": {
             "content": {
@@ -38724,7 +38825,7 @@
     },
     "/api/v1/kernel/client-config": {
       "get": {
-        "description": "No sign-in needed. Values the server's operator set (or the defaults), by module: languages,\npath prefixes, upload limits, the public address… — so an interface does not guess the\nserver's defaults. They change only when the server restarts with new settings.",
+        "description": "No sign-in needed. Values the server's operator set (or the defaults), by module: languages,\npath prefixes, upload limits, the public address… — so an interface does not guess the\nserver's defaults. When the request names a tenant (its domain, the `Autoxide-Tenant` header\nor a credential), values that tenant set for itself replace the server's (e.g. the languages\nof `content` and of `media` alt texts, see `GET /api/v1/kernel/settings`).",
         "operationId": "kernel_get_client_config",
         "parameters": [
           {
@@ -38751,6 +38852,16 @@
             },
             "description": "The settings, by module."
           },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The tenant of the request is suspended; code `tenant_suspended`."
+          },
           "500": {
             "content": {
               "application/problem+json": {
@@ -38760,6 +38871,16 @@
               }
             },
             "description": "Unexpected server error."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The tenant of the request is under maintenance; code `tenant_maintenance`."
           },
           "default": {
             "content": {
@@ -38772,6 +38893,12 @@
             "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
           }
         },
+        "security": [
+          {},
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Get the settings an interface needs.",
         "tags": [
           "kernel"
@@ -39947,7 +40074,7 @@
             }
           },
           {
-            "description": "Only tenants in this state.",
+            "description": "Only tenants in this state: `provisioning`, `active`, `suspended`, `maintenance` or\n`moving`.",
             "in": "query",
             "name": "status",
             "required": false,
@@ -39962,6 +40089,64 @@
             "required": false,
             "schema": {
               "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only read-only tenants (`true`) or writable ones (`false`).",
+            "in": "query",
+            "name": "read_only",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only tenants whose placement is of this kind: `shared` or `dedicated`.",
+            "example": "dedicated",
+            "in": "query",
+            "name": "placement_kind",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only tenants whose placement is in this state: `ready`, `behind` (migrations pending) or\n`migrating`.",
+            "example": "behind",
+            "in": "query",
+            "name": "schema_state",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only tenants whose subscription is in this state: `trialing`, `active`, `past_due`,\n`suspended`, `canceled` or `deleted`. Subscriptions come with the plans module (step 35);\nwithout it no tenant has one, so the page is empty.",
+            "example": "past_due",
+            "in": "query",
+            "name": "subscription_status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "`true`: only tenants close to a limit of their plan. Limits come with the plans module\n(step 35); without it no tenant has limits, so the page is empty. `false` filters nothing.",
+            "in": "query",
+            "name": "near_limit",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Related records to add to each tenant under `expanded`, comma-separated: `placement`,\n`subscription`, `usage`. Fetched for the whole page at once.",
+            "example": "placement,subscription",
+            "in": "query",
+            "name": "expand",
+            "required": false,
+            "schema": {
               "type": "string"
             }
           },
@@ -40697,6 +40882,370 @@
         ],
         "x-permissions": [
           "kernel.tenants.read"
+        ]
+      }
+    },
+    "/api/v1/kernel/tenants/{id}/settings": {
+      "get": {
+        "description": "Requires `kernel.tenants.read` and an account of the platform tenant. Like\n`GET /api/v1/kernel/settings`, for the tenant in the path: every setting the installed modules\ntake per tenant and whether that tenant has set it. Values of secret settings are never\nreturned.",
+        "operationId": "kernel_list_settings_of_tenant",
+        "parameters": [
+          {
+            "description": "Id or slug of the tenant.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TenantSettingState"
+                }
+              }
+            },
+            "description": "Every setting, sorted by name."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; code `unauthorized` or the code of the authentication module."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No such tenant; code `tenant_not_found`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List a tenant's settings (platform staff).",
+        "tags": [
+          "kernel"
+        ],
+        "x-permissions": [
+          "kernel.tenants.read"
+        ]
+      }
+    },
+    "/api/v1/kernel/tenants/{id}/settings/{name}": {
+      "delete": {
+        "description": "Requires `kernel.tenants.manage` and an account of the platform tenant. The server-wide\nconfiguration applies to that tenant again. Removing a setting the tenant never set changes\nnothing.",
+        "operationId": "kernel_delete_setting_of_tenant",
+        "parameters": [
+          {
+            "description": "Id or slug of the tenant.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Name of the setting.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The setting is unset (or never was)."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; code `unauthorized` or the code of the authentication module."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No such tenant; code `tenant_not_found`."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The tenant is being moved to another placement; code `tenant_moving`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No module takes this setting; code `tenant_setting_unknown`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a setting of a tenant (platform staff).",
+        "tags": [
+          "kernel"
+        ],
+        "x-permissions": [
+          "kernel.tenants.manage"
+        ]
+      },
+      "put": {
+        "description": "Requires `kernel.tenants.manage` and an account of the platform tenant. Like\n`PUT /api/v1/kernel/settings/{name}`, for the tenant in the path: creates or replaces the\nvalue; sending it again is safe. The tenant's servers use the new value within\n`AUTOXIDE_TENANCY_CACHE_SECONDS`.",
+        "operationId": "kernel_set_setting_of_tenant",
+        "parameters": [
+          {
+            "description": "Id or slug of the tenant.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Name of the setting, `<module>.<key>`, e.g. `comments.max_links`.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantSettingValue"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_TenantSettingState"
+                }
+              }
+            },
+            "description": "The setting as stored (without a secret value)."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; code `unauthorized` or the code of the authentication module."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No such tenant; code `tenant_not_found`."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The tenant is being moved to another placement; code `tenant_moving`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No module takes this setting (code `tenant_setting_unknown`) or the value is not valid for it; see `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set a setting of a tenant (platform staff).",
+        "tags": [
+          "kernel"
+        ],
+        "x-permissions": [
+          "kernel.tenants.manage"
         ]
       }
     },
@@ -43399,7 +43948,7 @@
         ]
       },
       "put": {
-        "description": "Requires `media.write`. The item's `alt` stays the default; readers in `locale` get this\ntext instead (e.g. a bilingual storefront). `locale` must be one of the languages the server\nlists in `AUTOXIDE_MEDIA_ALT_LOCALES`. `If-Match` is required. To draft the text with AI,\nuse `POST /api/v1/media/{id}/alt-suggestions` with the same `locale`, then send it here.",
+        "description": "Requires `media.write`. The item's `alt` stays the default; readers in `locale` get this\ntext instead (e.g. a bilingual storefront). `locale` must be one of the tenant's languages\nfor alt texts (its `media.alt_locales` setting, otherwise the server's\n`AUTOXIDE_MEDIA_ALT_LOCALES`; see `GET /api/v1/kernel/client-config`). `If-Match` is required. To draft the text with AI,\nuse `POST /api/v1/media/{id}/alt-suggestions` with the same `locale`, then send it here.",
         "operationId": "media_set_media_alt_translation",
         "parameters": [
           {

@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Tenant } from "@/sample/platform-data";
+import type { Placement, Tenant } from "@/sample/platform-data";
 import {
+  coreTenantFilter,
   daysUntil,
   MAIN_PLACEMENT_ID,
-  matchesFilter,
+  matchesQuery,
   mergePlacements,
   mergeTenants,
   moveFinished,
@@ -11,8 +12,11 @@ import {
   moveTargets,
   needsAttention,
   orderTree,
+  parseTenantQuery,
   roughAge,
+  sameQuery,
   type TenantRow,
+  tenantQueryHref,
 } from "./platform";
 
 const tenant = (id: string, name: string, parent_id: string | null = null): Tenant => ({
@@ -67,6 +71,38 @@ describe("ghép khách và placement của core với dữ liệu mẫu", () => 
     });
   });
 
+  it("placement đi kèm sổ khách (`expand=placement`), cờ chỉ đọc của core; khách mẫu ghi được", () => {
+    const eu = { ...main, id: "p-eu", name: "eu-db", kind: "dedicated", schema_state: "behind" };
+    const [own, other] = mergeTenants(
+      [{ ...core, placement: "eu-db", read_only: true, expanded: { placement: eu } }],
+      // Danh sách placement không có `eu-db`: placement lấy từ `expanded`, không tra theo tên.
+      [main],
+      [tenant("s", "Khách mẫu")],
+      [
+        {
+          ...fromSample(eu),
+          location: "Frankfurt",
+        },
+      ],
+    );
+    expect(own).toMatchObject({ read_only: true, placement_id: "p-eu" });
+    expect(own?.placement).toMatchObject({
+      name: "eu-db",
+      kind: "dedicated",
+      schema_state: "behind",
+      location: "Frankfurt",
+      source: "core",
+    });
+    expect(other).toMatchObject({ source: "sample", read_only: false, placement: null });
+    // Không có `expanded` (đọc một khách lẻ): tra theo tên, `placement` để trống.
+    const [plain] = mergeTenants([core], [main], null);
+    expect(plain).toMatchObject({
+      read_only: false,
+      placement_id: MAIN_PLACEMENT_ID,
+      placement: null,
+    });
+  });
+
   it("tắt dữ liệu mẫu: chỉ dữ liệu của core, trường mới để trống", () => {
     const [only] = mergeTenants([core], [main], null);
     expect(only).toMatchObject({ source: "core", business_model: null, primary_domain: null });
@@ -88,6 +124,23 @@ describe("ghép khách và placement của core với dữ liệu mẫu", () => 
     expect(plain?.storage).toBeNull();
   });
 });
+
+/** Placement mẫu có cùng id với placement của core (trường mới để trống). */
+function fromSample(p: { id: string; name: string }): Placement {
+  return {
+    id: p.id,
+    name: p.name,
+    kind: "dedicated",
+    backend: "postgres",
+    schema_state: "behind",
+    schema_checked_at: null,
+    created_at: "",
+    updated_at: "",
+    pending_migrations: [],
+    location: "",
+    control: false,
+  };
+}
 
 describe("dời khách", () => {
   it("các bước của lượt dời: đã qua, đang ở, chưa tới; xong thì mọi bước đã qua", () => {
@@ -128,7 +181,7 @@ describe("sổ khách hàng", () => {
 
   it("lọc: database riêng, chờ migration, cần chú ý", () => {
     const row: TenantRow = {
-      tenant: { ...tenant("a", "A"), source: "core" },
+      tenant: { ...tenant("a", "A"), source: "core", read_only: false, placement: null },
       placement: {
         id: "p",
         name: "pool-2",
@@ -147,9 +200,11 @@ describe("sổ khách hàng", () => {
       nearest: { key: "catalog.products", unit: "count", used: 90, max: 100, over_limit: false },
       children: 0,
     };
-    expect(matchesFilter(row, "shared")).toBe(true);
-    expect(matchesFilter(row, "dedicated")).toBe(false);
-    expect(matchesFilter(row, "migration")).toBe(true);
+    expect(matchesQuery(row, { placement_kind: "shared" })).toBe(true);
+    expect(matchesQuery(row, { placement_kind: "dedicated" })).toBe(false);
+    expect(matchesQuery(row, { schema_state: "behind" })).toBe(true);
+    expect(matchesQuery(row, { schema_state: "behind", read_only: true })).toBe(false);
+    expect(matchesQuery(row, { read_only: false, attention: true })).toBe(true);
     expect(needsAttention(row)).toBe(true);
     expect(
       needsAttention({
@@ -157,6 +212,41 @@ describe("sổ khách hàng", () => {
         nearest: { key: "catalog.products", unit: "count", used: 10, max: 100, over_limit: false },
       }),
     ).toBe(false);
+    // Khách chỉ đọc luôn cần để ý.
+    expect(
+      needsAttention({
+        ...row,
+        tenant: { ...row.tenant, read_only: true },
+        nearest: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("bộ lọc trên địa chỉ: đọc, bỏ giá trị lạ, phần gửi core, địa chỉ gọn", () => {
+    const query = parseTenantQuery({
+      read_only: "true",
+      placement_kind: "dedicated",
+      schema_state: "nope",
+      attention: "true",
+    });
+    expect(query).toEqual({ read_only: true, placement_kind: "dedicated", attention: true });
+    // "Cần để ý" ghép dữ liệu mẫu nên không gửi core.
+    expect(coreTenantFilter(query)).toEqual({ read_only: true, placement_kind: "dedicated" });
+    expect(coreTenantFilter(parseTenantQuery({ read_only: "false" }))).toEqual({
+      read_only: false,
+    });
+    expect(coreTenantFilter({})).toEqual({});
+    expect(tenantQueryHref(query)).toBe(
+      "/platform?read_only=true&placement_kind=dedicated&attention=true",
+    );
+    expect(tenantQueryHref(parseTenantQuery({ read_only: "false" }))).toBe(
+      "/platform?read_only=false",
+    );
+    expect(tenantQueryHref({})).toBe("/platform");
+    expect(
+      sameQuery({ schema_state: "behind" }, parseTenantQuery({ schema_state: "behind" })),
+    ).toBe(true);
+    expect(sameQuery({}, { attention: true })).toBe(false);
   });
 
   it("đếm ngày còn lại và tuổi gần đúng", () => {

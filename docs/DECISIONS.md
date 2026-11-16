@@ -1654,6 +1654,43 @@ trị trên tên miền riêng của khách.
 Đã cân nhắc: danh sách khách để chọn — core không công bố danh sách khách cho người chưa đăng nhập (lộ khách
 hàng của nền tảng); gõ khách vào địa chỉ trang (`/t/acme/login`) — phải đổi mọi đường dẫn của trang quản trị.
 
+## W-035 · Khách chỉ đọc, lọc sổ khách và cấu hình theo khách dùng API thật của core (D-296) — 2026-11-16 — agent quyết
+
+Quyết định:
+
+- **SDK sinh lại** từ `openapi.json` của core có D-296 (bước 33, thiết kế 2). `CORE_VERSION` tạm trỏ commit
+  của nhánh core; ghim lại theo commit của `main` khi core merge.
+- **Sổ khách lọc ở core.** Bộ lọc nằm trên địa chỉ trang: `read_only`, `placement_kind` (`shared` /
+  `dedicated`), `schema_state` (`ready` / `behind` / `migrating`) gửi nguyên cho `GET /kernel/tenants`;
+  `attention=true` ("cần để ý") ghép thuê bao, hạn mức mẫu nên lọc ở giao diện. Chip là lối tắt
+  (`?filter=` cũ bỏ: "Chờ migration" thành `schema_state=behind`, thêm chip "Chỉ đọc"); form GET ba ô
+  chọn để kết hợp. Không lọc gì thì dùng lại sổ đã đọc cho KPI, không gọi thêm; có lọc thì một lời gọi
+  kèm tham số. Khách chỉ có trong dữ liệu mẫu lọc theo cùng luật (`matchesQuery`, hàm thuần có test).
+  Không dựng lọc thuê bao (`subscription_status`, `near_limit`): core trả rỗng tới bước 35.
+- **Placement đi kèm sổ khách** (`expand=placement`): bảng hiện loại, engine, trạng thái migration từ
+  `expanded.placement`, không tra theo tên. `GET /kernel/placements` vẫn gọi một lần cho KPI, form thêm
+  khách, đích dời và đội database.
+- **Chỉ đọc tách khỏi tạm khoá.** Trang chi tiết khách có khối "Chỉ đọc" (bật / tắt bằng
+  `PATCH /kernel/tenants/{id}` `read_only`, kèm `If-Match`), hộp xác nhận nêu hệ quả (vẫn đăng nhập, xem,
+  xuất; mọi thay đổi bị `403 tenant_read_only`; job và event vẫn chạy; không phải tạm khoá); nhãn "Chỉ
+  đọc" ở chi tiết và sổ khách; khách nền tảng không có khối này. "Chỉ đọc" của màn Thuê bao mẫu là
+  trạng thái thuê bao của bước 35 (D-296 giữ riêng với cờ của nhà vận hành) nên vẫn là dữ liệu mẫu.
+- **Cấu hình theo khách cho nhân sự nền tảng** dùng lại đúng danh sách cài đặt của màn Kết nối đối tác
+  (`TenantSettingsList`); Server Action `setTenantSetting` / `removeTenantSetting` nhận thêm `tenant_id`
+  thì gọi `…/kernel/tenants/{id}/settings/{name}`. Lỗi 422 của core hiện dưới ô "Giá trị".
+- **Khách của người đăng nhập chỉ đọc** (`CurrentTenant.read_only`): dải báo ở đầu nội dung của khung
+  trang quản trị. Lệnh ghi bị từ chối hiện `detail` của core qua đường lỗi chung (`data-code`).
+- **`getClientConfig` gọi bằng token khi đã đăng nhập** để nhận cấu hình của khách mình (ngôn ngữ nội
+  dung, `media.alt_locales`… khách tự đặt); lỗi (token hết hạn, khách tạm khoá) thì gọi lại như khách;
+  vẫn `null` khi core không trả lời (`readClientConfig`, có test).
+
+Lý do: dùng API core vừa có thay cho lọc toàn sổ ở giao diện; giữ một cách sửa cấu hình theo khách cho
+cả hai phía; trang quản trị đặt sau một tên miền chung không gửi header khách cho người đã đăng nhập
+(W-034) nên chỉ credential cho core biết khách.
+
+Đã cân nhắc: bỏ chip, chỉ giữ form — mất lối tắt một lần bấm đang quen; lọc "cần để ý" ở core — core
+chưa có thuê bao, giao diện còn dữ liệu mẫu của bước 35.
+
 ## W-036 · Website: link tuyệt đối theo tên miền đang mở khi không đặt địa chỉ cố định — 2026-11-16 — agent quyết
 
 Quyết định: `AUTOXIDE_STOREFRONT_URL` trống thì gốc của link tuyệt đối (`canonical`, Open Graph, sitemap, RSS,

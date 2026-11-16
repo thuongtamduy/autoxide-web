@@ -64,7 +64,10 @@ import { fireEvent, resetSettings, settingsRoutes, startLoginCeremony } from "./
 import { storefrontRoutes } from "./mock-storefront.ts";
 import {
   knownTenant,
+  ownClientConfig,
+  ownReadOnly,
   resetTenants,
+  setOwnTenant,
   setTenancy,
   tenancyMode,
   tenantRoutes,
@@ -302,6 +305,7 @@ const server = createServer(async (request, response) => {
     return send(response, 204);
   }
   if (route === "POST /__tenancy") return setTenancy(request, response);
+  if (route === "POST /__own-tenant") return setOwnTenant(request, response);
   if (route === "POST /__domains/dns") return setDnsRecord(request, response);
   if (route === "POST /__webhooks/fire") {
     return fireEvent(request, response);
@@ -444,9 +448,12 @@ const server = createServer(async (request, response) => {
   }
 
   if (await publicRoutes(request, response, route, () => accounts)) return;
-  // Cấu hình cho giao diện: công khai, như core.
+  // Cấu hình cho giao diện: công khai, như core. Kèm credential thì theo khách của người đó (D-296):
+  // giá trị khách tự đặt thay giá trị chung; token sai thì 401 như core.
   if (route === "GET /api/v1/kernel/client-config") {
-    return send(response, 200, { data: CLIENT_CONFIG });
+    if (!request.headers.authorization) return send(response, 200, { data: CLIENT_CONFIG });
+    if (!caller(request)) return problem(response, 401, "auth.invalid_token", "Sign in.");
+    return send(response, 200, { data: ownClientConfig(CLIENT_CONFIG) });
   }
   // Tài liệu OpenAPI là công khai, như core.
   if (route === "GET /api/v1/openapi.json") {
@@ -475,6 +482,16 @@ const server = createServer(async (request, response) => {
     return problem(response, 401, "auth.invalid_token", "Sign in.");
   }
   const account = session.account;
+  // Khách của người đăng nhập chỉ đọc (D-296): mọi lệnh ghi bị từ chối, như `ensure_writable` của
+  // core (đăng nhập, refresh, đăng xuất đã trả lời ở trên).
+  if (ownReadOnly() && !["GET", "HEAD", "OPTIONS"].includes(request.method ?? "GET")) {
+    return problem(
+      response,
+      403,
+      "tenant_read_only",
+      "This tenant is read-only for now: its data can be read and exported, but not changed. Contact the service provider.",
+    );
+  }
   if (route === "GET /api/v1/auth/me") {
     return send(response, 200, {
       data: {

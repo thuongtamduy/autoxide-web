@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import {
   renameTenant,
   resumeCoreTenant,
+  setCoreTenantReadOnly,
   startMove,
   suspendCoreTenant,
 } from "@/app/(platform)/platform/tenant-actions";
@@ -18,6 +19,7 @@ import {
 import { MovePlanForm, MovePoll } from "@/components/platform/move";
 import { PlacementStorageView } from "@/components/platform/storage";
 import { SampleBadge } from "@/components/sample-badge";
+import { TenantSettingsList } from "@/components/settings/tenant-settings";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -31,6 +33,7 @@ import { sampleDataEnabled } from "@/sample";
 import { PLATFORM_TENANT_ID, type TenantStatus } from "@/sample/platform-data";
 
 type CoreTenant = components["schemas"]["Tenant"];
+type TenantSetting = components["schemas"]["TenantSettingState"];
 type TenantMove = components["schemas"]["TenantMove"];
 type TenantMovePlan = components["schemas"]["TenantMovePlan"];
 
@@ -44,20 +47,23 @@ export interface MoveSearch {
 const PENDING =
   "GET /api/v1/plans/tenants/{id}/subscription, …/usage, …/overrides (bước 35); GET/POST /api/v1/auth/support-grants (bước 34); mới: POST /api/v1/kernel/tenants/{id}/exports";
 
-// Chi tiết một khách của core (bước 33, W-027, W-032): tên, trạng thái, nơi lưu (kèm nơi lưu file
-// của placement), cây khách; đổi tên, tạm khoá / mở lại bằng `PATCH /kernel/tenants/{id}` kèm
-// `If-Match`; dời sang placement khác (`POST …/move`: chạy thử trước, rồi chạy thật bằng job, theo dõi
+// Chi tiết một khách của core (bước 33, W-027, W-032, W-035): tên, trạng thái, nơi lưu (kèm nơi lưu
+// file của placement), cây khách, cấu hình theo khách (`…/tenants/{id}/settings`); đổi tên, tạm khoá
+// / mở lại, bật / tắt chỉ đọc bằng `PATCH /kernel/tenants/{id}` kèm `If-Match`; dời sang placement khác (`POST …/move`: chạy thử trước, rồi chạy thật bằng job, theo dõi
 // ở `GET …/moves/{move_id}`). Thuê bao, hạn mức, xuất dữ liệu và quyền vào hỗ trợ chưa có API
 // (bước 34, 35 và mục "mới" của bảng thiếu API).
 export async function CoreTenantView({
   tenant,
   etag,
   data,
+  settings,
   search,
 }: {
   tenant: CoreTenant;
   etag: string | null;
   data: PlatformData;
+  /** Cấu hình theo khách của khách này; `null` khi core từ chối đọc. */
+  settings: TenantSetting[] | null;
   search: MoveSearch;
 }) {
   const t = await getTranslations("platform");
@@ -69,6 +75,7 @@ export async function CoreTenantView({
   const parent = data.tenants.find((x) => x.id === tenant.parent_id) ?? null;
   const children = data.tenants.filter((x) => x.parent_id === tenant.id && x.source === "core");
   const tag = { tenant_id: tenant.id, etag: etag ?? "" };
+  const readOnly = tenant.read_only === true;
   return (
     <div className="page">
       <Back href="/platform" label={t("tenant.back")} />
@@ -111,6 +118,11 @@ export async function CoreTenantView({
             className={TENANT_BADGE[status] ?? "badge"}
             label={t.has(`tenantStatus.${status}`) ? t(`tenantStatus.${status}`) : status}
           />
+          {readOnly ? (
+            <span data-testid="read-only-badge">
+              <StatusBadge className="badge b-warn" label={t("readOnly.badge")} />
+            </span>
+          ) : null}
         </div>
         <div className="card padded">
           <Facts
@@ -209,6 +221,16 @@ export async function CoreTenantView({
         </section>
       </div>
 
+      {settings ? (
+        <section className="block" aria-labelledby="pf-t-settings">
+          <h2 id="pf-t-settings" className="h2">
+            {t("tenant.settings")}
+          </h2>
+          <p className="fhint">{t("tenant.settingsAbout")}</p>
+          <TenantSettingsList settings={settings} tenantId={tenant.id} editable={manage} />
+        </section>
+      ) : null}
+
       {mover && !platform ? (
         <MoveSection tenant={tenant} status={status} data={data} search={search} />
       ) : null}
@@ -222,6 +244,47 @@ export async function CoreTenantView({
             <SampleBadge step="35" endpoint={PENDING} />
           </div>
           <p className="fhint">{t("tenant.pendingAbout")}</p>
+        </section>
+      ) : null}
+
+      {manage && !platform ? (
+        <section className="block" aria-labelledby="pf-t-ro">
+          <h2 id="pf-t-ro" className="h2">
+            {t("readOnly.title")}
+          </h2>
+          <div className="card padded pf-stack" data-testid="read-only-block">
+            <p className="fhint">{readOnly ? t("readOnly.isOn") : t("readOnly.about")}</p>
+            <div className="eg-acts">
+              {readOnly ? (
+                <ConfirmButton
+                  action={setCoreTenantReadOnly}
+                  fields={{ ...tag, mode: "off" }}
+                  label={t("readOnly.turnOff")}
+                  title={t("readOnly.offTitle", { tenant: tenant.name })}
+                  points={[t("readOnly.offWrites"), t("readOnly.offJobs")]}
+                  submit={t("readOnly.turnOff")}
+                  done={t("readOnly.offDone", { tenant: tenant.name })}
+                  danger={false}
+                />
+              ) : (
+                <ConfirmButton
+                  action={setCoreTenantReadOnly}
+                  fields={{ ...tag, mode: "on" }}
+                  label={t("readOnly.turnOn")}
+                  title={t("readOnly.onTitle", { tenant: tenant.name })}
+                  points={[
+                    t("readOnly.onKeeps"),
+                    t("readOnly.onBlocks"),
+                    t("readOnly.onJobs"),
+                    t("readOnly.onNotSuspend"),
+                    t("readOnly.onUndo"),
+                  ]}
+                  submit={t("readOnly.turnOn")}
+                  done={t("readOnly.onDone", { tenant: tenant.name })}
+                />
+              )}
+            </div>
+          </div>
         </section>
       ) : null}
 
