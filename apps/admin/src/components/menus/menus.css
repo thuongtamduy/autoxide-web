@@ -34,6 +34,28 @@
   align-items: center;
   gap: 8px 12px;
 }
+.ax .mn-diff {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px 16px;
+}
+.ax .mn-diffcol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.ax .mn-diffrow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+.ax .mn-diffnote {
+  grid-column: 1 / -1;
+  margin: 0;
+}
 .ax .mn-issues {
   flex: 1 1 100%;
   margin: 0;

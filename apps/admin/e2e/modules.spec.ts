@@ -154,7 +154,7 @@ test("khung: Ctrl K tìm không dấu rồi mở màn; điện thoại có thanh
   await expect(page).toHaveURL(/:\d+\/$/);
 
   await page.keyboard.press("Control+k");
-  const search = page.getByRole("searchbox", { name: "Find a page or an area…" });
+  const search = page.getByRole("searchbox", { name: "Find a page, a post, a file or a person…" });
   await expect(search).toBeFocused();
   await search.fill("general set");
   await page.keyboard.press("Enter");

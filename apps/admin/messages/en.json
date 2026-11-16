@@ -208,9 +208,9 @@
     "search": "Search and run commands",
     "searchShort": "Search",
     "searchHint": "Search all areas…",
-    "searchPlaceholder": "Find a page or an area…",
+    "searchPlaceholder": "Find a page, a post, a file or a person…",
     "goTo": "Go to",
-    "noMatch": "No page matches. Try the name of an area, such as \"modules\".",
+    "noMatch": "Nothing matches. Try the name of an area, such as \"modules\", or two letters of a title.",
     "quickNav": "Quick navigation",
     "close": "Close",
     "theme": "Appearance",
@@ -237,6 +237,20 @@
       },
       "retry": "Try again",
       "signOut": "Sign out"
+    },
+    "createNew": "Create new",
+    "create": {
+      "newPost": "New post",
+      "newPage": "New page",
+      "newCampaign": "New newsletter campaign",
+      "newRole": "New role"
+    },
+    "results": {
+      "title": "Results",
+      "searching": "Searching…",
+      "untitled": "(untitled)",
+      "media": "Media file",
+      "user": "User"
     }
   },
   "dashboard": {
@@ -1667,7 +1681,8 @@
         "unpublish": "Unpublish"
       },
       "aiReviewed": "AI content reviewed",
-      "entryGone": "(post not found)"
+      "entryGone": "(post not found)",
+      "colActions": "Actions"
     },
     "status": {
       "draft": "Draft",
@@ -1886,7 +1901,6 @@
       "introPage": "Readers will see the draft as it is now, under its parent page.",
       "savesFirst": "Your unsaved changes are saved first.",
       "nothingNew": "The published version already matches the draft.",
-      "seoErrors": "The SEO check found problems to fix. You can still publish.",
       "reviewRequired": "Confirm that you read and reviewed the parts written by AI.",
       "whenInvalid": "Pick a date and time in the future.",
       "scheduled": "Scheduled",
@@ -1901,7 +1915,28 @@
       "schedule": "Schedule",
       "publishNow": "Publish now",
       "scheduleUnpublish": "Schedule take-down",
-      "scheduleUnpublishIntro": "The entry is taken down at that time (its address answers 404)."
+      "scheduleUnpublishIntro": "The entry is taken down at that time (its address answers 404).",
+      "checks": {
+        "label": "Before publishing",
+        "unavailable": "The pre-publish check is not available right now. You can still publish.",
+        "when": "Checked when you opened the post; save and reopen it to check again. You can publish anyway.",
+        "title": {
+          "ok": "No other post has this title",
+          "problem": "{count, plural, one {Another post has the same title} other {# posts have the same title}}"
+        },
+        "alt": {
+          "ok": "Images have alt text",
+          "problem": "{count, plural, one {# image has no alt text} other {# images have no alt text}}"
+        },
+        "translation": {
+          "ok": "No translation is missing",
+          "problem": "{count, plural, one {A translation is missing; you can publish it later} other {# translations are missing; you can publish them later}}"
+        },
+        "seo": {
+          "ok": "Search engine details are complete",
+          "problem": "{count, plural, one {# search engine detail to review (SEO tab)} other {# search engine details to review (SEO tab)}}"
+        }
+      }
     },
     "preview": {
       "open": "Preview",
@@ -1968,6 +2003,13 @@
       "website": "Website",
       "owner": "Owned by {owner}: people there and in parent units can edit it.",
       "moved": "Now on {domain}"
+    },
+    "approve": {
+      "open": "Approve and publish",
+      "openFor": "Approve and publish: {title}",
+      "title": "Approve and publish “{title}”?",
+      "intro": "Readers will see this draft as it is now. Open the post first if you have not read it.",
+      "submit": "Approve and publish"
     }
   },
   "media": {
@@ -2615,7 +2657,34 @@
       "findPlaceholder": "Title or slug",
       "unknownObject": "{id} (not among the records read)",
       "refSampleHint": "Sample records show how the editor will work once the core has this kind; saving is refused by the core for now.",
-      "badgeZone": "Dates are in Vietnam time."
+      "badgeZone": "Dates are in Vietnam time.",
+      "diff": {
+        "show": "Show differences",
+        "hide": "Hide differences",
+        "theirs": "Their version (on the server)",
+        "mine": "Yours (not saved)",
+        "none": "No changes.",
+        "clash": "You both changed: {items}. Load the new version, then redo your part on these items.",
+        "noClash": "You did not change the same items. Load the new version, then redo your changes.",
+        "kinds": {
+          "added": "Added",
+          "edited": "Changed",
+          "moved": "Moved",
+          "removed": "Removed"
+        },
+        "fields": {
+          "label": "label",
+          "url": "address",
+          "ref": "target",
+          "auto_children": "automatic sub-items",
+          "auto_children_limit": "sub-item limit",
+          "icon": "icon",
+          "highlight": "highlight",
+          "badge": "badge",
+          "feature": "featured item"
+        },
+        "loading": "Loading the new version…"
+      }
     },
     "preview": {
       "title": "Storefront preview",

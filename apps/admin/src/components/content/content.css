@@ -530,6 +530,30 @@
   padding-top: 10px;
   border-top: 1px solid var(--line);
 }
+/* Kiểm trước khi đăng */
+.ax .ce-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .ce-checks > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ax .ce-checks > li[data-state="ok"] > .ic {
+  color: var(--ok);
+}
+.ax .ce-checks > li[data-state="warning"] > .ic {
+  color: var(--warn);
+}
+.ax .ce-checks > li[data-state="error"] > .ic {
+  color: var(--bad);
+}
+
 .ax .ce-revs {
   display: flex;
   flex-direction: column;

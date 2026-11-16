@@ -279,3 +279,87 @@ export function pathOf(
   }
   return parts.join(" › ");
 }
+
+// ---------------------------------------------------------------- Khác biệt giữa hai bản
+
+/** Một thay đổi của một mục giữa hai bản menu (so theo `id` của mục). */
+export interface MenuChange {
+  kind: "added" | "edited" | "moved" | "removed";
+  id: string;
+  /** Trường đã đổi (chỉ với `edited`). */
+  fields: string[];
+}
+
+const COMPARED = [
+  "label",
+  "url",
+  "ref",
+  "auto_children",
+  "auto_children_limit",
+  "icon",
+  "highlight",
+  "badge",
+  "feature",
+] as const;
+
+/** Cha của mỗi mục (`null` ở gốc) theo cây phẳng. */
+function parents(rows: readonly FlatItem[]): Map<string, string | null> {
+  const out = new Map<string, string | null>();
+  const stack: FlatItem[] = [];
+  for (const row of rows) {
+    while (stack.length > 0 && (stack[stack.length - 1]?.depth ?? 0) >= row.depth) stack.pop();
+    out.set(row.id, stack[stack.length - 1]?.id ?? null);
+    stack.push(row);
+  }
+  return out;
+}
+
+/**
+ * Thay đổi từ `before` sang `after` (thiết kế "Menu": xem khác biệt khi lưu bị 412). Mục chuyển chỗ khi
+ * đổi cha hay đổi thứ tự giữa các anh em có ở cả hai bản — thêm hay xoá một mục khác không làm các mục
+ * còn lại bị coi là chuyển chỗ.
+ */
+export function menuChanges(before: readonly FlatItem[], after: readonly FlatItem[]): MenuChange[] {
+  const old = new Map(before.map((row) => [row.id, row]));
+  const now = new Set(after.map((row) => row.id));
+  const oldParents = parents(before);
+  const newParents = parents(after);
+  // Thứ tự trong từng cha, chỉ tính các mục có ở cả hai bản và giữ nguyên cha: mục khác đến, đi hay
+  // đổi cha không làm anh em còn lại bị coi là chuyển chỗ.
+  const stays = (id: string) =>
+    old.has(id) && now.has(id) && oldParents.get(id) === newParents.get(id);
+  const order = (rows: readonly FlatItem[], parentOf: Map<string, string | null>) => {
+    const seen = new Map<string | null, number>();
+    const out = new Map<string, number>();
+    for (const row of rows) {
+      if (!stays(row.id)) continue;
+      const parent = parentOf.get(row.id) ?? null;
+      const n = seen.get(parent) ?? 0;
+      out.set(row.id, n);
+      seen.set(parent, n + 1);
+    }
+    return out;
+  };
+  const oldOrder = order(before, oldParents);
+  const newOrder = order(after, newParents);
+  const changes: MenuChange[] = [];
+  for (const row of after) {
+    const was = old.get(row.id);
+    if (!was) {
+      changes.push({ kind: "added", id: row.id, fields: [] });
+      continue;
+    }
+    const fields = COMPARED.filter((f) => JSON.stringify(was[f]) !== JSON.stringify(row[f]));
+    if (fields.length > 0) changes.push({ kind: "edited", id: row.id, fields: [...fields] });
+    else if (
+      oldParents.get(row.id) !== newParents.get(row.id) ||
+      oldOrder.get(row.id) !== newOrder.get(row.id)
+    ) {
+      changes.push({ kind: "moved", id: row.id, fields: [] });
+    }
+  }
+  for (const row of before) {
+    if (!now.has(row.id)) changes.push({ kind: "removed", id: row.id, fields: [] });
+  }
+  return changes;
+}

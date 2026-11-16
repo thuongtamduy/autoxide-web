@@ -25,7 +25,7 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 - [x] Thanh báo mất kết nối (16/11)
 - [ ] `loading.tsx` (khung xám) cho các màn chính — S mỗi màn
 - [x] Trang riêng thay cả khung khi khách bị tạm khoá (`403 tenant_suspended`) hay bảo trì / đang dời (`503 tenant_maintenance`) — API (16/11)
-- [ ] Bảng lệnh Ctrl K tìm cả dữ liệu (bài viết, media, người dùng) và nhóm "Tạo mới" — API, M
+- [x] Bảng lệnh Ctrl K tìm cả dữ liệu (bài viết, media, người dùng) và nhóm "Tạo mới" — API (16/11)
 - [ ] Chuông thông báo (Hộp thư / Đã lưu / Xong) — mẫu, M
 - [ ] Trang tổng quan của từng phân hệ — mẫu, L
 - [ ] Phân hệ "Báo cáo" (bán hàng, tồn kho và giá vốn, gộp cửa hàng, xuất dữ liệu) — mẫu, L
@@ -52,10 +52,10 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 
 ### Nội dung, tiếp thị
 
-- [ ] Danh sách bài: nút "Duyệt và đăng" trên dòng chờ duyệt (`POST /content/entries/{id}/publish`) — API, M
-- [ ] Hộp Đăng bài: danh sách kiểm trước khi đăng (SEO, alt ảnh, bản dịch) — API, M
+- [x] Danh sách bài: nút "Duyệt và đăng" trên dòng chờ duyệt (`POST /content/entries/{id}/publish`) — API (16/11)
+- [x] Hộp Đăng bài: danh sách kiểm trước khi đăng (gom từ `seo-check` của core) — API (16/11)
 - [ ] Trình soạn: xem trước theo khổ máy — S–M
-- [ ] Menu: xem khác biệt khi lưu bị 412 (`GET /menus/{id}`) — API, M
+- [x] Menu: xem khác biệt khi lưu bị 412 (bản của họ / bản của bạn / mục trùng) — API (16/11)
 - [x] Bản tin: dải số tổng — đã có ở tab Danh sách (cộng `subscriptions` của `GET /newsletter/lists`)
 - [ ] Media: "Đang dùng ở" (cần core), lọc thiếu alt theo ngôn ngữ — M / S
 - [ ] Menu: bộ chọn website theo tên miền — mẫu, S–M

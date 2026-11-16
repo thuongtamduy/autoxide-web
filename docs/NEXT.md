@@ -9,7 +9,7 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
 - SDK ghim core ở commit `fb3ba06` của `main` (bước 33 của core tới D-297: đa khách, tên miền riêng, dời khách, chỉ
   đọc, cấu hình theo khách, nhóm `connection`). Core `main` mới nhất (`f62f5a2`) chỉ thêm ghi chú tài liệu, OpenAPI
-  không đổi: SDK không cần sinh lại. Quyết định mới nhất của repo này: W-042.
+  không đổi: SDK không cần sinh lại. Quyết định mới nhất của repo này: W-043.
 - Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
   hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị
   khi khách chỉ đọc: dải báo hiện, lưu cài đặt và lưu bài bị từ chối với thông báo `tenant_read_only` của core.
@@ -20,6 +20,8 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
   D-301) và giao bám sát mà không chờ core. Sổ chỗ lệch: [`design-gaps.md`](design-gaps.md) — **việc chính của các
   đợt tới là làm hết sổ này**. Đã làm: trạng thái toàn khung, tên khách, đăng nhập bằng passkey, nhân bản role (W-042).
   Core `main` mới nhất `beabc25`: OpenAPI không đổi.
+- Đợt 6: xong nhóm "core đã có API" của sổ thiết kế (W-043): Ctrl K tìm dữ liệu, duyệt và đăng ở danh sách, kiểm
+  trước khi đăng, khác biệt khi menu bị 412. Đã thử với core thật. Kế tiếp: khu tài khoản người mua của website (mẫu).
 - Đợt 4: core `main` vẫn ở `10d6c49`. Rà mọi form: 8 form `onSubmit` đặt thẳng trên trang khoá nút gửi tới khi trang
   chạy JavaScript (W-041); thêm form mới loại này thì dùng `useHydrated()` và thêm trang vào `before-hydration.spec.ts`.
 - Gate đầy đủ xanh ở commit cuối của đợt này.

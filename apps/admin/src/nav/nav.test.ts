@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { destinations, filterDestinations } from "@/components/shell/command-palette";
+import { destinations, filterDestinations } from "@/components/shell/command-items";
 import { fold } from "@/lib/fold";
 import { initialsOf } from "@/lib/initials";
 import { isTheme, themeClass } from "@/lib/theme";

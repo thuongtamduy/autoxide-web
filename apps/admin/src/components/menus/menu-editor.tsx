@@ -26,9 +26,11 @@ import {
   MAX_ITEMS,
   MAX_LABEL,
   MENU_ICONS,
+  type MenuChange,
   type MenuIcon,
   type MenuRef,
   type MoveResult,
+  menuChanges,
   moveDown,
   moveUp,
   outdent,
@@ -102,7 +104,12 @@ interface Issue {
 }
 
 type Outcome =
-  | { type: "conflict"; detail: string }
+  | {
+      type: "conflict";
+      detail: string;
+      /** Đã nhận bản mới của máy chủ (để so khác biệt); `false` khi vừa bị 412 và đang đọc lại. */
+      loaded: boolean;
+    }
   | { type: "issues"; list: Issue[]; server: Problem | null }
   | { type: "error"; problem: Problem }
   | null;
@@ -149,8 +156,14 @@ export function MenuEditor({
   // của người khác mà bản nháp đang có thay đổi chưa lưu thì không bao giờ ghi đè: giữ bản nháp, báo
   // xung đột, người dùng tự bấm "Tải bản mới".
   const [seen, setSeen] = useState({ etag: initialEtag, base });
+  // Bản mà bản nháp đang dựa vào (lần nhận cuối từ máy chủ): khi xung đột, so nó với bản mới của người
+  // khác và với bản nháp để hiện "khác biệt" như thiết kế.
+  const [origin, setOrigin] = useState(base);
+  const [showDiff, setShowDiff] = useState(false);
   const accept = () => {
     setRows(base);
+    setOrigin(base);
+    setShowDiff(false);
     setEtag(initialEtag);
     if (base.some((row) => row.id === selected)) return;
     const at = selected?.startsWith(NEW_ITEM_PREFIX) ? rows.findIndex((r) => r.id === selected) : 0;
@@ -164,7 +177,7 @@ export function MenuEditor({
       accept();
       if (!own) setOutcome(null);
     } else {
-      setOutcome({ type: "conflict", detail: "remote" });
+      setOutcome({ type: "conflict", detail: "remote", loaded: true });
     }
   }
   const dirty = JSON.stringify(rows) !== JSON.stringify(base);
@@ -277,7 +290,9 @@ export function MenuEditor({
       }
       const problem = result.problem;
       if (problem.code === "precondition_failed") {
-        setOutcome({ type: "conflict", detail: problem.detail });
+        setOutcome({ type: "conflict", detail: problem.detail, loaded: false });
+        // Đọc bản mới nhất của máy chủ (giữ bản nháp) để xem khác biệt.
+        router.refresh();
         return;
       }
       if (problem.status === 422 && problem.errors && problem.errors.length > 0) {
@@ -324,6 +339,7 @@ export function MenuEditor({
             disabled={!dirty || pending}
             onClick={() => {
               setRows(base);
+              setOrigin(base);
               setOutcome(null);
             }}
           >
@@ -342,18 +358,41 @@ export function MenuEditor({
             <b>{t("conflictTitle")}</b>{" "}
             {outcome.detail === "remote" ? t("conflictRemote") : t("conflictText")}
           </span>
-          <button
-            type="button"
-            className="btn sm"
-            onClick={() => {
-              // Bỏ bản nháp, nhận bản máy chủ đang có rồi đọc lại bản mới nhất.
-              accept();
-              setOutcome(null);
-              router.refresh();
-            }}
-          >
-            {t("reload")}
-          </button>
+          <span className="headacts">
+            <button
+              type="button"
+              className="btn sm"
+              aria-expanded={showDiff}
+              onClick={() => setShowDiff(!showDiff)}
+            >
+              {showDiff ? t("diff.hide") : t("diff.show")}
+            </button>
+            <button
+              type="button"
+              className="btn sm pri"
+              onClick={() => {
+                // Bỏ bản nháp, nhận bản máy chủ đang có rồi đọc lại bản mới nhất.
+                accept();
+                setOutcome(null);
+                router.refresh();
+              }}
+            >
+              {t("reload")}
+            </button>
+          </span>
+          {showDiff ? (
+            <ConflictDiff
+              theirs={outcome.loaded ? menuChanges(origin, base) : null}
+              mine={menuChanges(origin, rows)}
+              labelOf={(id, side) => {
+                // Mỗi cột gọi mục bằng nhãn của chính bản đó; mục đã xoá thì nhãn của bản gốc.
+                const row =
+                  (side === "theirs" ? base : rows).find((r) => r.id === id) ??
+                  origin.find((r) => r.id === id);
+                return row ? labelOf(row) : id;
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
       {outcome?.type === "error" ? (
@@ -1057,5 +1096,58 @@ function StorefrontPreview({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Khác biệt khi lưu bị từ chối vì người khác vừa lưu (thiết kế "Menu", 412): cột bản của họ, cột bản
+ * nháp của bạn (cùng so với bản bạn bắt đầu sửa), và mục cả hai cùng đụng tới.
+ */
+function ConflictDiff({
+  theirs,
+  mine,
+  labelOf,
+}: {
+  /** `null` khi đang đọc bản mới của máy chủ. */
+  theirs: MenuChange[] | null;
+  mine: MenuChange[];
+  labelOf: (id: string, side: "theirs" | "mine") => string;
+}) {
+  const t = useTranslations("menus.editor.diff");
+  const clash = mine.filter((change) => theirs?.some((other) => other.id === change.id));
+  const column = (side: "theirs" | "mine", list: MenuChange[] | null) => (
+    <div className="mn-diffcol" data-testid={`diff-${side}`}>
+      <span className="cap">{t(side)}</span>
+      {list === null ? (
+        <span className="fhint" role="status">
+          {t("loading")}
+        </span>
+      ) : null}
+      {list?.length === 0 ? <span className="fhint">{t("none")}</span> : null}
+      {list?.map((change) => (
+        <span key={`${change.kind}:${change.id}`} className="mn-diffrow">
+          <span className="mtag">{t(`kinds.${change.kind}`)}</span>
+          <span>
+            {labelOf(change.id, side)}
+            {change.fields.length > 0
+              ? `: ${change.fields.map((field) => t(`fields.${field}`)).join(", ")}`
+              : ""}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+  return (
+    <div className="mn-diff">
+      {column("theirs", theirs)}
+      {column("mine", mine)}
+      {theirs === null ? null : (
+        <p className="fhint mn-diffnote" data-testid="diff-clash">
+          {clash.length > 0
+            ? t("clash", { items: clash.map((change) => labelOf(change.id, "mine")).join(", ") })
+            : t("noClash")}
+        </p>
+      )}
+    </div>
   );
 }

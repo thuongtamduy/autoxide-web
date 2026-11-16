@@ -208,9 +208,9 @@
     "search": "Tìm và chạy lệnh",
     "searchShort": "Tìm",
     "searchHint": "Tìm trong mọi phân hệ…",
-    "searchPlaceholder": "Tìm màn hay phân hệ…",
+    "searchPlaceholder": "Tìm màn, bài viết, tệp hay người…",
     "goTo": "Đi tới",
-    "noMatch": "Không thấy màn nào khớp. Thử gõ tên phân hệ, ví dụ \"module\".",
+    "noMatch": "Không có gì khớp. Thử tên một phân hệ, như \"module\", hay hai chữ của tiêu đề.",
     "quickNav": "Điều hướng nhanh",
     "close": "Đóng",
     "theme": "Giao diện",
@@ -237,6 +237,20 @@
       },
       "retry": "Thử lại",
       "signOut": "Đăng xuất"
+    },
+    "createNew": "Tạo mới",
+    "create": {
+      "newPost": "Bài viết mới",
+      "newPage": "Trang mới",
+      "newCampaign": "Chiến dịch bản tin mới",
+      "newRole": "Role mới"
+    },
+    "results": {
+      "title": "Kết quả",
+      "searching": "Đang tìm…",
+      "untitled": "(chưa có tiêu đề)",
+      "media": "Tệp media",
+      "user": "Người dùng"
     }
   },
   "dashboard": {
@@ -1667,7 +1681,8 @@
         "unpublish": "Gỡ đăng"
       },
       "aiReviewed": "Đã duyệt nội dung AI",
-      "entryGone": "(không tìm thấy bài)"
+      "entryGone": "(không tìm thấy bài)",
+      "colActions": "Thao tác"
     },
     "status": {
       "draft": "Bản nháp",
@@ -1886,7 +1901,6 @@
       "introPage": "Người đọc sẽ thấy bản nháp như hiện tại, dưới trang cha của nó.",
       "savesFirst": "Thay đổi chưa lưu sẽ được lưu trước.",
       "nothingNew": "Bản đã đăng đã giống bản nháp.",
-      "seoErrors": "Kiểm SEO thấy lỗi cần sửa. Bạn vẫn đăng được.",
       "reviewRequired": "Xác nhận bạn đã đọc và duyệt phần do AI viết.",
       "whenInvalid": "Chọn ngày giờ trong tương lai.",
       "scheduled": "Đã hẹn giờ",
@@ -1901,7 +1915,28 @@
       "schedule": "Hẹn giờ",
       "publishNow": "Đăng ngay",
       "scheduleUnpublish": "Hẹn giờ gỡ",
-      "scheduleUnpublishIntro": "Bài sẽ được gỡ vào giờ đó (địa chỉ trả 404)."
+      "scheduleUnpublishIntro": "Bài sẽ được gỡ vào giờ đó (địa chỉ trả 404).",
+      "checks": {
+        "label": "Kiểm trước khi đăng",
+        "unavailable": "Chưa kiểm được trước khi đăng lúc này. Bạn vẫn đăng được.",
+        "when": "Kiểm lúc mở bài; lưu rồi mở lại bài để kiểm lại. Vẫn đăng được.",
+        "title": {
+          "ok": "Không bài nào trùng tiêu đề",
+          "problem": "{count, plural, other {Có # bài trùng tiêu đề}}"
+        },
+        "alt": {
+          "ok": "Ảnh trong bài có alt",
+          "problem": "{count, plural, other {# ảnh chưa có alt}}"
+        },
+        "translation": {
+          "ok": "Không thiếu bản dịch nào",
+          "problem": "{count, plural, other {Thiếu # bản dịch; đăng riêng sau được}}"
+        },
+        "seo": {
+          "ok": "Thông tin cho máy tìm kiếm đã đủ",
+          "problem": "{count, plural, other {# mục cho máy tìm kiếm cần xem (tab SEO)}}"
+        }
+      }
     },
     "preview": {
       "open": "Xem trước",
@@ -1968,6 +2003,13 @@
       "website": "Website",
       "owner": "Thuộc {owner}: người ở nút đó và nút cha sửa được.",
       "moved": "Đã chuyển sang {domain}"
+    },
+    "approve": {
+      "open": "Duyệt và đăng",
+      "openFor": "Duyệt và đăng: {title}",
+      "title": "Duyệt và đăng “{title}”?",
+      "intro": "Người đọc sẽ thấy bản nháp như hiện tại. Chưa đọc bài thì mở bài trước.",
+      "submit": "Duyệt và đăng"
     }
   },
   "media": {
@@ -2615,7 +2657,34 @@
       "findPlaceholder": "Tiêu đề hay slug",
       "unknownObject": "{id} (không có trong các đối tượng đã đọc)",
       "refSampleHint": "Đối tượng mẫu cho thấy trình sửa sẽ chạy thế nào khi core có loại này; hiện core từ chối khi lưu.",
-      "badgeZone": "Ngày theo giờ Việt Nam."
+      "badgeZone": "Ngày theo giờ Việt Nam.",
+      "diff": {
+        "show": "Xem khác biệt",
+        "hide": "Ẩn khác biệt",
+        "theirs": "Bản của họ (trên máy chủ)",
+        "mine": "Bản của bạn (chưa lưu)",
+        "none": "Không có thay đổi.",
+        "clash": "Cả hai cùng sửa: {items}. Tải bản mới rồi làm lại phần của bạn ở các mục này.",
+        "noClash": "Hai bên không sửa trùng mục nào. Tải bản mới rồi làm lại các thay đổi của bạn.",
+        "kinds": {
+          "added": "Thêm",
+          "edited": "Sửa",
+          "moved": "Chuyển",
+          "removed": "Xoá"
+        },
+        "fields": {
+          "label": "nhãn",
+          "url": "đường dẫn",
+          "ref": "đích",
+          "auto_children": "tự lấy mục con",
+          "auto_children_limit": "giới hạn mục con",
+          "icon": "biểu tượng",
+          "highlight": "kiểu nổi bật",
+          "badge": "nhãn nổi bật",
+          "feature": "ô gợi ý"
+        },
+        "loading": "Đang đọc bản mới…"
+      }
     },
     "preview": {
       "title": "Xem trước mặt tiền",
