@@ -1188,7 +1188,8 @@
       "added": "Đã thêm tên miền. Hãy tạo bản ghi TXT.",
       "addSubmit": "Thêm tên miền",
       "unitTitle": "Dùng một tên miền cho một cửa hàng hay chi nhánh",
-      "unitAbout": "Gắn tên miền với một cửa hàng hay chi nhánh trong tổ chức (website của nhánh đó trả lời trên tên miền này) sẽ có ở bước 34 của core."
+      "unitAbout": "Core đã cho gắn tên miền với một cửa hàng hay chi nhánh của tổ chức (để website của chi nhánh đó trả lời trên tên miền ấy), nhưng cây tổ chức thì tới bước 34 của core mới có. Trước đó mọi tên miền thuộc cả không gian làm việc.",
+      "node": "Dành cho nút tổ chức"
     },
     "connections": {
       "agentNote": "Agent không ghi được secret: không có tool MCP nào đặt hay đọc secret. Kiểm tra kết nối, lần dùng cuối và lỗi gần nhất cần API mới (ghi ở danh sách chỗ thiếu API).",
@@ -1261,7 +1262,10 @@
         "remove": "Gỡ",
         "removeTitle": "Gỡ {name}?",
         "removeDefault": "Cấu hình chung của máy chủ áp dụng lại từ request kế tiếp.",
-        "removed": "Đã gỡ {name}; dùng cấu hình chung của máy chủ."
+        "removed": "Đã gỡ {name}; dùng cấu hình chung của máy chủ.",
+        "connectionGroup": "Kết nối đối tác",
+        "connectionAbout": "Tài khoản với dịch vụ bên ngoài (máy chủ thư, nhà cung cấp AI, cổng thanh toán…). Secret được lưu mã hoá và không bao giờ hiện lại.",
+        "businessGroup": "Cấu hình nghiệp vụ"
       }
     },
     "jobs": {

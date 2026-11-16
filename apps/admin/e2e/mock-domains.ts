@@ -116,6 +116,7 @@ export async function domainRoutes(
         value: `autoxide-verify=${randomBytes(24).toString("base64url")}`,
       },
       failed_checks: 0,
+      org_id: null,
       verified_at: null,
       last_checked_at: null,
       check_error: null,
@@ -159,6 +160,27 @@ export async function domainRoutes(
         found.updated_at = now;
       }
     }
+    send(response, 200, { data: public_(found) } satisfies Schemas["Data_TenantDomain"]);
+    return true;
+  }
+  if (!match[2] && method === "PATCH") {
+    // Gắn tên miền với nút (D-297 của core): chưa có module `organizations` (bước 34) nên core chỉ
+    // nhận `null`; thiếu `org_id` hay nêu một nút → 422 lỗi ô `org_id`.
+    const body = await json(request);
+    if (!("org_id" in body) || body.org_id !== null) {
+      problem(response, 422, "validation_failed", "The request has invalid fields.", [
+        {
+          field: "org_id",
+          code: "org_id" in body ? "unsupported" : "required",
+          detail:
+            "org_id" in body
+              ? "this installation has no organization tree yet; only `null` is accepted"
+              : "is required; send `null` to detach",
+        },
+      ]);
+      return true;
+    }
+    found.org_id = null;
     send(response, 200, { data: public_(found) } satisfies Schemas["Data_TenantDomain"]);
     return true;
   }

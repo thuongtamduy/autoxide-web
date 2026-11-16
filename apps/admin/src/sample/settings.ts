@@ -133,7 +133,7 @@ export type ConnectionId = "mail" | "sms" | "payment" | "einvoice";
 
 /** Một cài đặt theo khách (`GET /api/v1/kernel/settings`): secret không bao giờ trả giá trị. */
 export interface TenantSetting {
-  /** `<module>.<khoá>`, vd `mail.smtp_url`. */
+  /** `<module>.connection.<loại>.<trường>` (D-297 của core), vd `mail.connection.smtp.url`. */
   name: string;
   secret: boolean;
   is_set: boolean;
@@ -222,23 +222,23 @@ export const CONNECTION_SETTINGS: Record<
   { name: string; secret: boolean; required: boolean }[]
 > = {
   mail: [
-    { name: "mail.smtp_url", secret: true, required: true },
-    { name: "mail.from", secret: false, required: true },
+    { name: "mail.connection.smtp.url", secret: true, required: true },
+    { name: "mail.connection.smtp.from", secret: false, required: true },
   ],
   sms: [
-    { name: "sms.provider", secret: false, required: true },
-    { name: "sms.brandname", secret: false, required: true },
-    { name: "sms.api_key", secret: true, required: true },
+    { name: "sms.connection.gateway.provider", secret: false, required: true },
+    { name: "sms.connection.gateway.brandname", secret: false, required: true },
+    { name: "sms.connection.gateway.api_key", secret: true, required: true },
   ],
   payment: [
-    { name: "payment.provider", secret: false, required: true },
-    { name: "payment.merchant_id", secret: false, required: true },
-    { name: "payment.secret_key", secret: true, required: true },
+    { name: "payments.connection.gateway.provider", secret: false, required: true },
+    { name: "payments.connection.gateway.merchant_id", secret: false, required: true },
+    { name: "payments.connection.gateway.secret_key", secret: true, required: true },
   ],
   einvoice: [
-    { name: "invoices.einvoice_provider", secret: false, required: true },
-    { name: "invoices.einvoice_username", secret: false, required: true },
-    { name: "invoices.einvoice_certificate", secret: true, required: true },
+    { name: "invoices.connection.einvoice.provider", secret: false, required: true },
+    { name: "invoices.connection.einvoice.username", secret: false, required: true },
+    { name: "invoices.connection.einvoice.certificate", secret: true, required: true },
   ],
 };
 
@@ -365,35 +365,40 @@ function seed(): Store {
       {
         id: "mail",
         settings: [
-          setting("mail.smtp_url", true, "set", 13),
-          setting("mail.from", false, "Bếp Mộc <no-reply@example.com>", 13),
+          setting("mail.connection.smtp.url", true, "set", 13),
+          setting("mail.connection.smtp.from", false, "Bếp Mộc <no-reply@example.com>", 13),
         ],
         last_check: { at: at(-2 * HOUR), ok: true, error: null },
       },
       {
         id: "sms",
         settings: [
-          setting("sms.provider", false, null, null),
-          setting("sms.brandname", false, null, null),
-          setting("sms.api_key", true, null, null),
+          setting("sms.connection.gateway.provider", false, null, null),
+          setting("sms.connection.gateway.brandname", false, null, null),
+          setting("sms.connection.gateway.api_key", true, null, null),
         ],
         last_check: null,
       },
       {
         id: "payment",
         settings: [
-          setting("payment.provider", false, "Đối tác thu hộ (mẫu)", 250),
-          setting("payment.merchant_id", false, "[MÃ NGƯỜI BÁN MẪU]", 250),
-          setting("payment.secret_key", true, "set", 250),
+          setting("payments.connection.gateway.provider", false, "Đối tác thu hộ (mẫu)", 250),
+          setting("payments.connection.gateway.merchant_id", false, "[MÃ NGƯỜI BÁN MẪU]", 250),
+          setting("payments.connection.gateway.secret_key", true, "set", 250),
         ],
         last_check: { at: at(-HOUR), ok: true, error: null },
       },
       {
         id: "einvoice",
         settings: [
-          setting("invoices.einvoice_provider", false, "Nhà cung cấp hoá đơn (mẫu)", 300),
-          setting("invoices.einvoice_username", false, "[TÀI KHOẢN MẪU]", 300),
-          setting("invoices.einvoice_certificate", true, "set", 300),
+          setting(
+            "invoices.connection.einvoice.provider",
+            false,
+            "Nhà cung cấp hoá đơn (mẫu)",
+            300,
+          ),
+          setting("invoices.connection.einvoice.username", false, "[TÀI KHOẢN MẪU]", 300),
+          setting("invoices.connection.einvoice.certificate", true, "set", 300),
         ],
         last_check: {
           at: at(-3 * HOUR),

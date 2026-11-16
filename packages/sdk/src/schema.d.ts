@@ -2941,7 +2941,14 @@ export interface paths {
         delete: operations["kernel_remove_tenant_domain"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Attach a domain to a node of the organization tree.
+         * @description Requires `kernel.domains.manage`. Sets which node of the tenant's organization tree the domain
+         *     belongs to (`org_id`), e.g. a store that has its own site; `null` attaches it to the tenant as
+         *     a whole. The node must belong to the current tenant. The domain's status and its 7-day
+         *     verification deadline do not change. Sending the current value changes nothing.
+         */
+        patch: operations["kernel_update_tenant_domain"];
         trace?: never;
     };
     "/api/v1/kernel/domains/{id}/verify": {
@@ -3042,7 +3049,8 @@ export interface paths {
          * List this tenant's settings.
          * @description Requires `kernel.settings.manage`. Every setting the installed modules take per tenant, with
          *     whether this tenant has set it; unset ones use the server-wide configuration. Values of
-         *     secret settings are never returned.
+         *     secret settings are never returned. `?group=connection` lists only the connections to partner
+         *     services, named `<module>.connection.<kind>.<field>`.
          */
         get: operations["kernel_list_tenant_settings"];
         put?: never;
@@ -3064,7 +3072,8 @@ export interface paths {
         /**
          * Set one of this tenant's settings.
          * @description Requires `kernel.settings.manage`. Creates or replaces the value; sending it again is safe.
-         *     A secret value is stored encrypted and the answer does not contain it.
+         *     A secret value is stored encrypted and the answer does not contain it. The former name of a
+         *     renamed setting is still accepted; the answer carries the current name.
          */
         put: operations["kernel_set_tenant_setting"];
         post?: never;
@@ -3211,7 +3220,7 @@ export interface paths {
          * @description Requires `kernel.tenants.read` and an account of the platform tenant. Like
          *     `GET /api/v1/kernel/settings`, for the tenant in the path: every setting the installed modules
          *     take per tenant and whether that tenant has set it. Values of secret settings are never
-         *     returned.
+         *     returned. `?group=connection` lists only the connections to partner services.
          */
         get: operations["kernel_list_settings_of_tenant"];
         put?: never;
@@ -7700,6 +7709,12 @@ export interface components {
                  * @description Last time the DNS record was looked up.
                  */
                 last_checked_at?: string | null;
+                /**
+                 * Format: uuid
+                 * @description Node of the tenant's organization tree the domain belongs to (e.g. one store's own
+                 *     site); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.
+                 */
+                org_id?: string | null;
                 /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
                 record: components["schemas"]["TenantDomainRecord"];
                 /**
@@ -7811,10 +7826,17 @@ export interface components {
             /** @description A setting the installed modules take per tenant, and its state in the current tenant. */
             data: {
                 description: string;
+                /**
+                 * @description Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a
+                 *     partner service (mail server, AI provider, payment gateway…). `null`: no group.
+                 * @example connection
+                 */
+                group?: string | null;
                 /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
                 is_set: boolean;
                 /**
-                 * @description `<module>.<key>`, e.g. `mail.smtp_url`.
+                 * @description `<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named
+                 *     `<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.
                  * @example kernel.public_url
                  */
                 name: string;
@@ -8283,10 +8305,17 @@ export interface components {
         Data_Vec_TenantSettingState: {
             data: {
                 description: string;
+                /**
+                 * @description Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a
+                 *     partner service (mail server, AI provider, payment gateway…). `null`: no group.
+                 * @example connection
+                 */
+                group?: string | null;
                 /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
                 is_set: boolean;
                 /**
-                 * @description `<module>.<key>`, e.g. `mail.smtp_url`.
+                 * @description `<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named
+                 *     `<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.
                  * @example kernel.public_url
                  */
                 name: string;
@@ -11118,6 +11147,12 @@ export interface components {
                  * @description Last time the DNS record was looked up.
                  */
                 last_checked_at?: string | null;
+                /**
+                 * Format: uuid
+                 * @description Node of the tenant's organization tree the domain belongs to (e.g. one store's own
+                 *     site); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.
+                 */
+                org_id?: string | null;
                 /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
                 record: components["schemas"]["TenantDomainRecord"];
                 /**
@@ -12792,6 +12827,12 @@ export interface components {
              * @description Last time the DNS record was looked up.
              */
             last_checked_at?: string | null;
+            /**
+             * Format: uuid
+             * @description Node of the tenant's organization tree the domain belongs to (e.g. one store's own
+             *     site); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.
+             */
+            org_id?: string | null;
             /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
             record: components["schemas"]["TenantDomainRecord"];
             /**
@@ -12808,6 +12849,15 @@ export interface components {
             updated_at: string;
             /** Format: date-time */
             verified_at?: string | null;
+        };
+        /** @description Where a domain belongs in the tenant's organization tree. */
+        TenantDomainChanges: {
+            /**
+             * Format: uuid
+             * @description Id of a node of the tenant's organization tree (e.g. one store, for its own site), or
+             *     `null` for the tenant as a whole. Required: send `null` explicitly to detach.
+             */
+            org_id: string | null;
         };
         /** @description The DNS record that proves the tenant owns the domain. */
         TenantDomainRecord: {
@@ -12954,10 +13004,17 @@ export interface components {
         /** @description A setting the installed modules take per tenant, and its state in the current tenant. */
         TenantSettingState: {
             description: string;
+            /**
+             * @description Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a
+             *     partner service (mail server, AI provider, payment gateway…). `null`: no group.
+             * @example connection
+             */
+            group?: string | null;
             /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
             is_set: boolean;
             /**
-             * @description `<module>.<key>`, e.g. `mail.smtp_url`.
+             * @description `<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named
+             *     `<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.
              * @example kernel.public_url
              */
             name: string;
@@ -25644,6 +25701,92 @@ export interface operations {
             };
         };
     };
+    kernel_update_tenant_domain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the domain. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantDomainChanges"];
+            };
+        };
+        responses: {
+            /** @description The domain after the change. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantDomain"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant has no such domain; code `tenant_domain_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The domain was removed; code `tenant_domain_revoked`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `org_id` is missing or not a node of this tenant (no installed module keeps an organization tree: only `null` is accepted); see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     kernel_verify_tenant_domain: {
         parameters: {
             query?: never;
@@ -25872,7 +26015,15 @@ export interface operations {
     };
     kernel_list_tenant_settings: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Only settings of this group, e.g. `connection` (connections to partner services: mail
+                 *     server, AI provider…). Omit for every setting; a group no setting is in gives an empty
+                 *     list.
+                 * @example connection
+                 */
+                group?: string;
+            };
             header?: {
                 /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
                 "Accept-Language"?: string;
@@ -25882,7 +26033,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Every setting, sorted by name. */
+            /** @description Every setting (of the group, when one is given), sorted by name. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -26615,7 +26766,15 @@ export interface operations {
     };
     kernel_list_settings_of_tenant: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Only settings of this group, e.g. `connection` (connections to partner services: mail
+                 *     server, AI provider…). Omit for every setting; a group no setting is in gives an empty
+                 *     list.
+                 * @example connection
+                 */
+                group?: string;
+            };
             header?: {
                 /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
                 "Accept-Language"?: string;
@@ -26628,7 +26787,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Every setting, sorted by name. */
+            /** @description Every setting (of the group, when one is given), sorted by name. */
             200: {
                 headers: {
                     [name: string]: unknown;

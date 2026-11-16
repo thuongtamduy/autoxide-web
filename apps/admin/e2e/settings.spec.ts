@@ -276,12 +276,23 @@ test("cài đặt của khách (core thật): đặt, secret không hiện lại
   await expect(toast(page)).toHaveText("Saved kernel.public_url.");
   await expect(url).toContainText("https://shop.example");
 
-  const smtp = page.getByTestId("tset-mail.smtp_url");
-  await smtp.getByRole("button", { name: "Set mail.smtp_url" }).click();
+  // Kết nối đối tác (nhóm `connection` của core) đứng riêng một khối, trước cấu hình nghiệp vụ.
+  await expect(
+    page.getByTestId("tset-connections").getByTestId("tset-mail.connection.smtp.from"),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("tset-business").getByTestId("tset-kernel.public_url"),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("tset-connections").getByTestId("tset-kernel.public_url"),
+  ).toHaveCount(0);
+
+  const smtp = page.getByTestId("tset-mail.connection.smtp.url");
+  await smtp.getByRole("button", { name: "Set mail.connection.smtp.url" }).click();
   await expect(dialog(page).getByLabel("Value")).toHaveAttribute("type", "password");
   await dialog(page).getByLabel("Value").fill("smtp://user:secret@mail.example:587");
   await dialog(page).getByRole("button", { name: "Save" }).click();
-  await expect(toast(page)).toHaveText("Saved mail.smtp_url.");
+  await expect(toast(page)).toHaveText("Saved mail.connection.smtp.url.");
   await expect(smtp).toContainText("set");
   await expect(page.getByText("secret@mail.example")).toHaveCount(0);
 
@@ -372,9 +383,14 @@ test("tên miền: một khách thì giải thích; nhiều khách thì thêm, b
 test("dữ liệu mẫu: kết nối đối tác có AI thật, job chạy lại", async ({ page }) => {
   await signIn(page, "/settings/connections");
   await expect(page.getByTestId("ai-status")).toContainText("Off");
+  // Thư đã có cài đặt thật của core (`mail.connection.smtp.…`): bản mẫu của nó không hiện nữa.
+  await expect(page.getByTestId("conn-mail")).toHaveCount(0);
   const sms = page.getByTestId("conn-sms");
   await sms.getByRole("button", { name: /Set up|Change/ }).click();
-  await expect(dialog(page).getByLabel("sms.api_key")).toHaveAttribute("type", "password");
+  await expect(dialog(page).getByLabel("sms.connection.gateway.api_key")).toHaveAttribute(
+    "type",
+    "password",
+  );
 
   await page.goto("/settings/jobs");
   await expect(page.locator(".note.warn")).toContainText("autoxide jobs");

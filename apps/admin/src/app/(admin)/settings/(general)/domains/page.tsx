@@ -178,6 +178,11 @@ export default async function DomainsPage() {
                                 })}
                               </span>
                             ) : null}
+                            {domain.org_id ? (
+                              <span className="sub" data-testid="domain-node">
+                                {t("node")} <span className="mono">{domain.org_id}</span>
+                              </span>
+                            ) : null}
                             {domain.check_error ? (
                               <span className="sub" data-testid="check-error">
                                 {t("checkError", { reason: domain.check_error })}
@@ -221,7 +226,7 @@ export default async function DomainsPage() {
             <h2 id="domains-unit-h" className="h2">
               {t("unitTitle")}
             </h2>
-            <SampleBadge step="34" endpoint="PATCH /api/v1/kernel/domains/{id} {org_id}" />
+            <SampleBadge step="34" endpoint="GET /api/v1/organizations/nodes" />
           </div>
           <p className="fhint">{t("unitAbout")}</p>
         </section>

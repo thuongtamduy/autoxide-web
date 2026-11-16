@@ -93,26 +93,26 @@ describe("kết nối đối tác mẫu", () => {
     const mail = must((await listConnections()).data.find((c) => c.id === "mail"));
     expect(mail.settings.find((s) => s.secret)?.value).toBeNull();
     const kept = await saveConnection("mail", {
-      "mail.from": "a@example.com",
-      "mail.smtp_url": "",
+      "mail.connection.smtp.from": "a@example.com",
+      "mail.connection.smtp.url": "",
     });
-    expect(kept.ok && kept.data.settings.find((s) => s.name === "mail.smtp_url")?.is_set).toBe(
-      true,
-    );
+    expect(
+      kept.ok && kept.data.settings.find((s) => s.name === "mail.connection.smtp.url")?.is_set,
+    ).toBe(true);
   });
 
   it("thiếu ô bắt buộc thì báo từng ô; đủ thì kiểm tra đạt", async () => {
-    const bad = await saveConnection("sms", { "sms.provider": "x" });
+    const bad = await saveConnection("sms", { "sms.connection.gateway.provider": "x" });
     expect(!bad.ok && bad.problem.errors?.map((e) => e.field)).toEqual([
-      "sms.brandname",
-      "sms.api_key",
+      "sms.connection.gateway.brandname",
+      "sms.connection.gateway.api_key",
     ]);
     const before = await testConnection("sms");
     expect(before.ok && before.data.last_check?.ok).toBe(false);
     await saveConnection("sms", {
-      "sms.provider": "x",
-      "sms.brandname": "BEPMOC",
-      "sms.api_key": "k",
+      "sms.connection.gateway.provider": "x",
+      "sms.connection.gateway.brandname": "BEPMOC",
+      "sms.connection.gateway.api_key": "k",
     });
     const after = await testConnection("sms");
     expect(after.ok && after.data.last_check?.ok).toBe(true);
@@ -122,9 +122,9 @@ describe("kết nối đối tác mẫu", () => {
     const still = await testConnection("einvoice");
     expect(still.ok && still.data.last_check?.ok).toBe(false);
     await saveConnection("einvoice", {
-      "invoices.einvoice_provider": "p",
-      "invoices.einvoice_username": "u",
-      "invoices.einvoice_certificate": "new",
+      "invoices.connection.einvoice.provider": "p",
+      "invoices.connection.einvoice.username": "u",
+      "invoices.connection.einvoice.certificate": "new",
     });
     const fixed = await testConnection("einvoice");
     expect(fixed.ok && fixed.data.last_check?.ok).toBe(true);

@@ -1705,3 +1705,25 @@ Lý do: W-033 cho một website phục vụ nhiều cửa hàng theo tên miền
 
 Đã cân nhắc: tra tên miền chính của khách từ core — core chưa công bố (hồ sơ công khai, bước 34) và tốn một lời gọi
 mỗi trang; tin `Host` không kiểm — chỉ nhận tên máy đúng dạng, và Caddy chỉ cấp chứng chỉ cho tên miền đã xác minh.
+
+## W-037 · Kết nối đối tác tách khỏi cấu hình nghiệp vụ; tên miền hiện nút đã gắn (D-297 của core) — 2026-11-16 — agent quyết
+
+Quyết định:
+
+- **Cài đặt theo khách chia hai khối theo `group` của core**: nhóm `connection` ("Kết nối đối tác": máy chủ thư,
+  nhà cung cấp AI…) đứng trước, phần còn lại là "Cấu hình nghiệp vụ". Một lời gọi `GET /kernel/settings` rồi chia ở
+  giao diện (`splitSettings`, `src/lib/tenant-settings.ts`), không gọi `?group=` hai lần. Chỉ có một loại thì một
+  khối như cũ. Áp cho cả Cài đặt › Kết nối đối tác và trang chi tiết khách của nền tảng (cùng `TenantSettingsList`).
+- **Tên cài đặt không viết cứng**: giao diện hiện tên core trả, nên việc core đổi `mail.smtp_url` →
+  `mail.connection.smtp.url`… không cần sửa code. Dữ liệu mẫu của kết nối chưa có ở core (SMS, cổng thanh toán, hoá
+  đơn điện tử) đổi tên theo quy ước mới `<module>.connection.<loại>.<trường>`.
+- **Kết nối core đã nhận thật thì bản mẫu của nó không hiện**: có cài đặt `mail.connection.…` thì bỏ dòng "Email"
+  mẫu (W-006: không thay API có sẵn bằng dữ liệu mẫu).
+- **Tên miền**: hiện nút tổ chức đã gắn (`org_id`) khi có. Chưa dựng form gắn: core chỉ nhận `null` tới khi có cây
+  tổ chức (bước 34); khối giải thích ghi rõ điều đó.
+
+Lý do: người quản trị tìm "kết nối đối tác" ở một chỗ, tách khỏi các công tắc nghiệp vụ; core là nguồn sự thật về
+tên và nhóm.
+
+Đã cân nhắc: gom cài đặt của một kết nối thành một form nhiều ô (như bản mẫu) — chờ `POST /settings/{name}/test`
+của core (bước 51) để form có nút kiểm tra thật.

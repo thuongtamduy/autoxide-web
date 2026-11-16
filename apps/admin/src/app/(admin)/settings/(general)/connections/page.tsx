@@ -10,6 +10,7 @@ import { Time } from "@/components/ui/time";
 import { isForbidden, load } from "@/lib/core";
 import { formatCount } from "@/lib/format";
 import { AI_VIEW, TENANT_SETTINGS_MANAGE } from "@/lib/permissions";
+import { connectionKind } from "@/lib/tenant-settings";
 import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 import { type Connection, listConnections } from "@/sample/settings";
@@ -45,6 +46,14 @@ function connectionState(connection: Connection): "set" | "unset" | "error" {
   return connection.settings.some((s) => s.is_set) ? "set" : "unset";
 }
 
+/** Module của core sẽ nhận từng kết nối mẫu (tên cài đặt `<module>.connection.…`). */
+const SAMPLE_MODULE: Record<Connection["id"], string> = {
+  mail: "mail",
+  sms: "sms",
+  payment: "payments",
+  einvoice: "invoices",
+};
+
 const BADGE = { set: "badge b-ok", unset: "badge b-draft", error: "badge b-bad" } as const;
 
 // Tab "Kết nối đối tác": cài đặt theo khách THẬT của core (`GET/PUT/DELETE /kernel/settings`, bước 33
@@ -70,6 +79,10 @@ export default async function ConnectionsPage() {
     tenantSettings(),
   ]);
   if (settings === null) notFound();
+  // Kết nối core đã nhận thật (vd `mail.connection.smtp.…`, D-297) thì không hiện bản mẫu của nó:
+  // dữ liệu mẫu chỉ dành cho phần core chưa có (W-006).
+  const real = new Set(settings.map((s) => connectionKind(s.name)?.split(".")[0]));
+  const samples = connections?.filter((c) => !real.has(SAMPLE_MODULE[c.id])) ?? null;
   return (
     <div className="blocks">
       <section className="block" aria-labelledby="tset-h">
@@ -141,8 +154,8 @@ export default async function ConnectionsPage() {
         <p className="fhint">{t("ai.about")}</p>
       </section>
 
-      {connections ? <p className="note warn">{t("agentNote")}</p> : null}
-      {connections ? (
+      {samples?.length ? <p className="note warn">{t("agentNote")}</p> : null}
+      {samples?.length ? (
         <section className="block" aria-labelledby="conn-h">
           <div className="block-head">
             <h2 id="conn-h" className="h2">
@@ -155,7 +168,7 @@ export default async function ConnectionsPage() {
           </div>
           <p className="fhint">{t("about")}</p>
           <div className="card">
-            {connections.map((connection) => {
+            {samples.map((connection) => {
               const state = connectionState(connection);
               const name = t(`names.${connection.id}`);
               return (

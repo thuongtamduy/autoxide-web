@@ -6964,6 +6964,14 @@
                   "null"
                 ]
               },
+              "org_id": {
+                "description": "Node of the tenant's organization tree the domain belongs to (e.g. one store's own\nsite); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.",
+                "format": "uuid",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "record": {
                 "$ref": "#/components/schemas/TenantDomainRecord",
                 "description": "The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`."
@@ -7192,12 +7200,20 @@
               "description": {
                 "type": "string"
               },
+              "group": {
+                "description": "Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a\npartner service (mail server, AI provider, payment gateway…). `null`: no group.",
+                "example": "connection",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "is_set": {
                 "description": "Whether this tenant has set it; otherwise the server-wide configuration applies.",
                 "type": "boolean"
               },
               "name": {
-                "description": "`<module>.<key>`, e.g. `mail.smtp_url`.",
+                "description": "`<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named\n`<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.",
                 "example": "kernel.public_url",
                 "type": "string"
               },
@@ -8289,12 +8305,20 @@
                 "description": {
                   "type": "string"
                 },
+                "group": {
+                  "description": "Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a\npartner service (mail server, AI provider, payment gateway…). `null`: no group.",
+                  "example": "connection",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "is_set": {
                   "description": "Whether this tenant has set it; otherwise the server-wide configuration applies.",
                   "type": "boolean"
                 },
                 "name": {
-                  "description": "`<module>.<key>`, e.g. `mail.smtp_url`.",
+                  "description": "`<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named\n`<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.",
                   "example": "kernel.public_url",
                   "type": "string"
                 },
@@ -14312,6 +14336,14 @@
                     "null"
                   ]
                 },
+                "org_id": {
+                  "description": "Node of the tenant's organization tree the domain belongs to (e.g. one store's own\nsite); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.",
+                  "format": "uuid",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "record": {
                   "$ref": "#/components/schemas/TenantDomainRecord",
                   "description": "The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`."
@@ -18197,6 +18229,14 @@
               "null"
             ]
           },
+          "org_id": {
+            "description": "Node of the tenant's organization tree the domain belongs to (e.g. one store's own\nsite); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.",
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "record": {
             "$ref": "#/components/schemas/TenantDomainRecord",
             "description": "The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`."
@@ -18227,6 +18267,24 @@
           "failed_checks",
           "created_at",
           "updated_at"
+        ],
+        "type": "object"
+      },
+      "TenantDomainChanges": {
+        "additionalProperties": false,
+        "description": "Where a domain belongs in the tenant's organization tree.",
+        "properties": {
+          "org_id": {
+            "description": "Id of a node of the tenant's organization tree (e.g. one store, for its own site), or\n`null` for the tenant as a whole. Required: send `null` explicitly to detach.",
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "org_id"
         ],
         "type": "object"
       },
@@ -18497,12 +18555,20 @@
           "description": {
             "type": "string"
           },
+          "group": {
+            "description": "Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a\npartner service (mail server, AI provider, payment gateway…). `null`: no group.",
+            "example": "connection",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "is_set": {
             "description": "Whether this tenant has set it; otherwise the server-wide configuration applies.",
             "type": "boolean"
           },
           "name": {
-            "description": "`<module>.<key>`, e.g. `mail.smtp_url`.",
+            "description": "`<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named\n`<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.",
             "example": "kernel.public_url",
             "type": "string"
           },
@@ -39333,6 +39399,141 @@
         "x-permissions": [
           "kernel.domains.manage"
         ]
+      },
+      "patch": {
+        "description": "Requires `kernel.domains.manage`. Sets which node of the tenant's organization tree the domain\nbelongs to (`org_id`), e.g. a store that has its own site; `null` attaches it to the tenant as\na whole. The node must belong to the current tenant. The domain's status and its 7-day\nverification deadline do not change. Sending the current value changes nothing.",
+        "operationId": "kernel_update_tenant_domain",
+        "parameters": [
+          {
+            "description": "Id of the domain.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantDomainChanges"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_TenantDomain"
+                }
+              }
+            },
+            "description": "The domain after the change."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; code `unauthorized` or the code of the authentication module."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `kernel.domains.manage`; code `permission_denied`."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The tenant has no such domain; code `tenant_domain_not_found`."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The domain was removed; code `tenant_domain_revoked`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`org_id` is missing or not a node of this tenant (no installed module keeps an organization tree: only `null` is accepted); see `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach a domain to a node of the organization tree.",
+        "tags": [
+          "kernel"
+        ],
+        "x-permissions": [
+          "kernel.domains.manage"
+        ]
       }
     },
     "/api/v1/kernel/domains/{id}/verify": {
@@ -39685,9 +39886,19 @@
     },
     "/api/v1/kernel/settings": {
       "get": {
-        "description": "Requires `kernel.settings.manage`. Every setting the installed modules take per tenant, with\nwhether this tenant has set it; unset ones use the server-wide configuration. Values of\nsecret settings are never returned.",
+        "description": "Requires `kernel.settings.manage`. Every setting the installed modules take per tenant, with\nwhether this tenant has set it; unset ones use the server-wide configuration. Values of\nsecret settings are never returned. `?group=connection` lists only the connections to partner\nservices, named `<module>.connection.<kind>.<field>`.",
         "operationId": "kernel_list_tenant_settings",
         "parameters": [
+          {
+            "description": "Only settings of this group, e.g. `connection` (connections to partner services: mail\nserver, AI provider…). Omit for every setting; a group no setting is in gives an empty\nlist.",
+            "example": "connection",
+            "in": "query",
+            "name": "group",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
             "in": "header",
@@ -39710,7 +39921,7 @@
                 }
               }
             },
-            "description": "Every setting, sorted by name."
+            "description": "Every setting (of the group, when one is given), sorted by name."
           },
           "401": {
             "content": {
@@ -39856,7 +40067,7 @@
         ]
       },
       "put": {
-        "description": "Requires `kernel.settings.manage`. Creates or replaces the value; sending it again is safe.\nA secret value is stored encrypted and the answer does not contain it.",
+        "description": "Requires `kernel.settings.manage`. Creates or replaces the value; sending it again is safe.\nA secret value is stored encrypted and the answer does not contain it. The former name of a\nrenamed setting is still accepted; the answer carries the current name.",
         "operationId": "kernel_set_tenant_setting",
         "parameters": [
           {
@@ -40887,7 +41098,7 @@
     },
     "/api/v1/kernel/tenants/{id}/settings": {
       "get": {
-        "description": "Requires `kernel.tenants.read` and an account of the platform tenant. Like\n`GET /api/v1/kernel/settings`, for the tenant in the path: every setting the installed modules\ntake per tenant and whether that tenant has set it. Values of secret settings are never\nreturned.",
+        "description": "Requires `kernel.tenants.read` and an account of the platform tenant. Like\n`GET /api/v1/kernel/settings`, for the tenant in the path: every setting the installed modules\ntake per tenant and whether that tenant has set it. Values of secret settings are never\nreturned. `?group=connection` lists only the connections to partner services.",
         "operationId": "kernel_list_settings_of_tenant",
         "parameters": [
           {
@@ -40895,6 +41106,16 @@
             "in": "path",
             "name": "id",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only settings of this group, e.g. `connection` (connections to partner services: mail\nserver, AI provider…). Omit for every setting; a group no setting is in gives an empty\nlist.",
+            "example": "connection",
+            "in": "query",
+            "name": "group",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -40921,7 +41142,7 @@
                 }
               }
             },
-            "description": "Every setting, sorted by name."
+            "description": "Every setting (of the group, when one is given), sorted by name."
           },
           "401": {
             "content": {

@@ -12,7 +12,7 @@
 //   `GET …/moves/{id}`. Khách nền tảng không dời được (`tenant_move_platform`);
 // - placement `eu-db` có nơi lưu file riêng (S3, chỉ phần không bí mật) để thử `storage`;
 // - cài đặt bí mật không bao giờ trả giá trị. Ngoài `kernel.public_url` (như core), có thêm
-//   `mail.smtp_url` (bí mật) để thử cách hiện secret, và cấu hình nghiệp vụ của D-296 (kiểm giá trị
+//   `mail.connection.smtp.url` (bí mật, nhóm `connection`, tên cũ `mail.smtp_url` vẫn nhận — D-297) để thử cách hiện secret, và cấu hình nghiệp vụ của D-296 (kiểm giá trị
 //   như core: 422 `validation_failed`, lỗi ở ô `value`). Mỗi khách một bộ giá trị; nhân sự nền tảng
 //   đặt cho khách bất kỳ ở `…/tenants/{id}/settings…` (khách `moving` → 409 `tenant_moving`);
 // - sổ khách lọc `read_only`, `placement_kind`, `schema_state`; `subscription_status`, `near_limit=true`
@@ -96,7 +96,15 @@ const moderation: Check = (value) =>
     ? null
     : "must be `pre`, `first_time` or `post`";
 
-const SETTINGS: { name: string; description: string; secret: boolean; check?: Check }[] = [
+/** `formerly`: tên cũ core vẫn nhận ở `PUT` / `DELETE` (D-297), response mang tên mới. */
+const SETTINGS: {
+  name: string;
+  description: string;
+  secret: boolean;
+  group?: "connection";
+  formerly?: string;
+  check?: Check;
+}[] = [
   {
     name: "kernel.public_url",
     description:
@@ -104,9 +112,18 @@ const SETTINGS: { name: string; description: string; secret: boolean; check?: Ch
     secret: false,
   },
   {
-    name: "mail.smtp_url",
+    name: "mail.connection.smtp.url",
     description: "SMTP server of this tenant, with its password.",
     secret: true,
+    group: "connection",
+    formerly: "mail.smtp_url",
+  },
+  {
+    name: "mail.connection.smtp.from",
+    description: "Sender of this tenant's mail, like `Shop <no-reply@shop.example>`.",
+    secret: false,
+    group: "connection",
+    formerly: "mail.from",
   },
   {
     name: "comments.max_links",
@@ -203,6 +220,7 @@ function state(setting: (typeof SETTINGS)[number], tenant = own): SettingState {
   return {
     name: setting.name,
     description: setting.description,
+    group: setting.group ?? null,
     secret: setting.secret,
     is_set: stored !== undefined,
     value: stored && !setting.secret ? stored.value : null,
@@ -754,7 +772,7 @@ async function settingRoute(
     return true;
   }
   const name = decodeURIComponent(raw);
-  const setting = SETTINGS.find((s) => s.name === name);
+  const setting = SETTINGS.find((s) => s.name === name || s.formerly === name);
   if (!setting) {
     problem(response, 422, "tenant_setting_unknown", `No module takes the setting \`${name}\`.`);
     return true;
