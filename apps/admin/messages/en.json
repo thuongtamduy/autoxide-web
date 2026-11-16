@@ -137,7 +137,12 @@
     "workspace": "Workspace",
     "workspaceHint": "The short name of your organization on this server, for example acme. Ask whoever invited you.",
     "workspaceNeeded": "This server hosts several workspaces. Enter yours to sign in.",
-    "invalidWorkspace": "A workspace is its short name (letters, digits and hyphens) or its ID."
+    "invalidWorkspace": "A workspace is its short name (letters, digits and hyphens) or its ID.",
+    "passkey": "Sign in with a passkey",
+    "passkeyUnsupported": "This browser cannot use passkeys. Sign in with your password.",
+    "passkeyCancelled": "Passkey sign-in was cancelled.",
+    "passkeyFailed": "The passkey could not be used. Try again, or sign in with your password.",
+    "passkeyExpired": "The passkey request expired. Try again."
   },
   "modules": {
     "title": "Modules",
@@ -216,7 +221,23 @@
     "accountMenu": "Account menu of {name}",
     "pending": "Has work to handle",
     "readOnlyTitle": "This workspace is read-only.",
-    "readOnlyBody": "You can sign in, view and export data, but changes are refused until the platform operator makes it writable again."
+    "readOnlyBody": "You can sign in, view and export data, but changes are refused until the platform operator makes it writable again.",
+    "offline": {
+      "title": "Connection lost.",
+      "body": "Trying to reconnect. You can still read what is on screen; changes you send are retried safely when the connection is back."
+    },
+    "blocked": {
+      "suspended": {
+        "title": "This workspace is suspended",
+        "body": "The platform operator has suspended this workspace: no page or API works until it is resumed. Contact your service provider to learn why."
+      },
+      "maintenance": {
+        "title": "Under maintenance",
+        "body": "This workspace is being upgraded or moved to another database. It will be back shortly; nothing you sent is lost."
+      },
+      "retry": "Try again",
+      "signOut": "Sign out"
+    }
   },
   "dashboard": {
     "hello": "Hello, {name}",
@@ -767,6 +788,7 @@
       "breadcrumb": "Back to roles",
       "back": "All roles",
       "newTitle": "New role",
+      "copyTitle": "Copy of {name}",
       "notFound": "No role has this id. It may have been deleted.",
       "builtinNote": "Built-in role: it grants every permission, including permissions added later by new modules. It cannot be changed or deleted, and at least one active user must keep it.",
       "name": "Name",
@@ -783,6 +805,7 @@
       "noMatch": "No permission matches “{query}”.",
       "save": "Save role",
       "create": "Create role",
+      "copy": "Duplicate",
       "readOnly": "You can see this role but not change it (needs auth.roles.manage).",
       "delete": {
         "open": "Delete role",

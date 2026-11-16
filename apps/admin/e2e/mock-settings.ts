@@ -47,6 +47,11 @@ export function startLoginCeremony(): Schemas["CeremonyResponse"] {
   return { ceremony_id: id, options: options as unknown as Record<string, never> };
 }
 
+/** Kết thúc một nghi thức (dùng một lần): `true` khi id đang chờ. */
+export function finishLoginCeremony(id: string): boolean {
+  return loginCeremonies.delete(id);
+}
+
 let endpoints: Endpoint[] = [];
 let deliveries = new Map<string, Delivery[]>();
 let keys: ApiKey[] = [];

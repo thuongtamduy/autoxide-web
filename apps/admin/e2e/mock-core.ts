@@ -60,12 +60,19 @@ import {
 } from "./mock-http.ts";
 import { mediaContent, mediaRoutes, resetMedia } from "./mock-media.ts";
 import { bumpMenu, MENUS_MODULE, menusRoutes, publicMenu, resetMenus } from "./mock-menus.ts";
-import { fireEvent, resetSettings, settingsRoutes, startLoginCeremony } from "./mock-settings.ts";
+import {
+  finishLoginCeremony,
+  fireEvent,
+  resetSettings,
+  settingsRoutes,
+  startLoginCeremony,
+} from "./mock-settings.ts";
 import { storefrontRoutes } from "./mock-storefront.ts";
 import {
   knownTenant,
   ownClientConfig,
   ownReadOnly,
+  ownStatus,
   resetTenants,
   setOwnTenant,
   setTenancy,
@@ -405,6 +412,31 @@ const server = createServer(async (request, response) => {
   if (route === "POST /api/v1/auth/login/passkey/options") {
     return send(response, 200, { data: startLoginCeremony() });
   }
+  // Đăng nhập bằng passkey: passkey nhận ra tài khoản (không cần email), không hỏi thêm mã; như
+  // core, nghi thức dùng một lần, passkey lạ → 401 `auth.passkey_sign_in_failed`.
+  if (route === "POST /api/v1/auth/login/passkey") {
+    const body = await json(request);
+    if (!finishLoginCeremony(text(body, "ceremony_id"))) {
+      return problem(response, 400, "auth.invalid_passkey_ceremony", "Start again.");
+    }
+    const credential = body.credential as { id?: unknown } | undefined;
+    const owner = accounts.find(
+      (a) =>
+        !a.deleted && typeof credential?.id === "string" && a.credentialIds.includes(credential.id),
+    );
+    if (!owner) {
+      return problem(
+        response,
+        401,
+        "auth.passkey_sign_in_failed",
+        "The passkey is not one of yours, or its answer is not valid.",
+      );
+    }
+    if (owner.disabledAt) {
+      return problem(response, 403, "auth.user_disabled", "This account is disabled.");
+    }
+    return send(response, 200, issue(startSession(owner, userAgent, "passkey", country)));
+  }
   if (route === "POST /api/v1/auth/login/mfa") {
     const body = await json(request);
     const token = text(body, "mfa_token");
@@ -482,6 +514,24 @@ const server = createServer(async (request, response) => {
     return problem(response, 401, "auth.invalid_token", "Sign in.");
   }
   const account = session.account;
+  // Khách bị tạm khoá hay đang bảo trì: mọi route bị từ chối, như `ensure_serving` của core.
+  if (ownStatus() === "suspended") {
+    return problem(
+      response,
+      403,
+      "tenant_suspended",
+      "This tenant is suspended. Contact the service provider.",
+    );
+  }
+  if (ownStatus() === "maintenance") {
+    response.setHeader("Retry-After", "30");
+    return problem(
+      response,
+      503,
+      "tenant_maintenance",
+      "The data of this tenant is under maintenance. Retry in 30 seconds.",
+    );
+  }
   // Khách của người đăng nhập chỉ đọc (D-296): mọi lệnh ghi bị từ chối, như `ensure_writable` của
   // core (đăng nhập, refresh, đăng xuất đã trả lời ở trên).
   if (ownReadOnly() && !["GET", "HEAD", "OPTIONS"].includes(request.method ?? "GET")) {

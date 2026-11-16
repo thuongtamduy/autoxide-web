@@ -21,6 +21,8 @@
 // - `read_only` (D-296) độc lập với `status`, khách nền tảng không chỉ đọc được (422 ô `read_only`);
 // - `POST /__own-tenant {"read_only": true}`: người đăng nhập thuộc một khách thường đang chỉ đọc
 //   (`GET /kernel/tenant`); mock-core từ chối mọi lệnh ghi của họ bằng 403 `tenant_read_only`.
+//   `{"status": "suspended" | "maintenance"}`: mọi route có đăng nhập trả 403 `tenant_suspended` /
+//   503 `tenant_maintenance`, như `ensure_serving` của core.
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { type Account, empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
@@ -321,6 +323,11 @@ export function knownTenant(raw: string): boolean {
   return tenants.some((x) => x.id === raw || x.slug === raw);
 }
 
+/** Trạng thái khách của người đăng nhập (`suspended`, `maintenance` chặn mọi route, như `ensure_serving`). */
+export function ownStatus(): string {
+  return tenants.find((x) => x.id === own)?.status ?? "active";
+}
+
 /** Khách của người đăng nhập đang chỉ đọc: mock-core từ chối mọi lệnh ghi (như `ensure_writable`). */
 export function ownReadOnly(): boolean {
   return tenants.find((x) => x.id === own)?.read_only === true;
@@ -355,25 +362,26 @@ export function ownClientConfig(
 }
 
 /**
- * `POST /__own-tenant {"read_only": true}`: người đăng nhập thuộc khách thường `acme-ro` đang chỉ
- * đọc; `false` thì về khách nền tảng.
+ * `POST /__own-tenant {"read_only"?: bool, "status"?: "suspended" | "maintenance", "customer"?: bool}`:
+ * người đăng nhập thuộc khách thường `acme-ro` (tên "Acme Read-only") với cờ chỉ đọc và trạng thái đã
+ * nêu; không nêu gì (hay `read_only: false`) thì về khách nền tảng.
  */
 export async function setOwnTenant(request: IncomingMessage, response: ServerResponse) {
   const body = await json(request);
-  if (body.read_only === true) {
-    if (!tenants.some((x) => x.id === CUSTOMER_TENANT)) {
-      tenants.push({
-        id: CUSTOMER_TENANT,
-        slug: "acme-ro",
-        name: "Acme Read-only",
-        status: "active",
-        placement: "main",
-        parent_id: null,
-        read_only: true,
-        created_at: "2026-11-03T00:00:00Z",
-        updated_at: "2026-11-03T00:00:00Z",
-      });
-    }
+  const status = body.status === "suspended" || body.status === "maintenance" ? body.status : null;
+  if (body.read_only === true || status !== null || body.customer === true) {
+    tenants = tenants.filter((x) => x.id !== CUSTOMER_TENANT);
+    tenants.push({
+      id: CUSTOMER_TENANT,
+      slug: "acme-ro",
+      name: "Acme Read-only",
+      status: status ?? "active",
+      placement: "main",
+      parent_id: null,
+      read_only: body.read_only === true,
+      created_at: "2026-11-03T00:00:00Z",
+      updated_at: "2026-11-03T00:00:00Z",
+    });
     own = CUSTOMER_TENANT;
   } else {
     own = PLATFORM_TENANT;

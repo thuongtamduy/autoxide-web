@@ -1,3 +1,4 @@
+import { ApiError } from "@autoxide/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
@@ -21,6 +22,7 @@ import { newsSeen } from "@/help/flags";
 import { myFlags } from "@/help/server";
 import { initialsOf } from "@/lib/initials";
 import { MARKETPLACE_SELL } from "@/lib/market";
+import { tenantBlock } from "@/lib/tenant-state";
 import { getCurrentTenant, getMe, getModules } from "@/lib/viewer";
 import {
   ACCOUNT_PAGE,
@@ -37,6 +39,8 @@ import {
 } from "@/nav/nav";
 import { sampleDataEnabled } from "@/sample";
 import { shellCounts } from "@/work/server";
+import { OfflineBanner } from "./offline-banner";
+import { TenantBlocked } from "./tenant-blocked";
 import "@/components/help/help.css";
 
 // Khung chung của các trang cần đăng nhập (thiết kế quản trị 2): thanh bên, đầu trang, menu con,
@@ -58,7 +62,18 @@ export async function AdminShell({
   children: ReactNode;
 }) {
   const t = await getTranslations();
-  const [me, modules, current] = await Promise.all([getMe(), getModules(), getCurrentTenant()]);
+  let loaded: Awaited<ReturnType<typeof loadViewer>>;
+  try {
+    loaded = await loadViewer();
+  } catch (error) {
+    // Khách bị tạm khoá hay đang bảo trì: mọi lời gọi đều bị từ chối, thay cả khung bằng trang báo.
+    const block = tenantBlock(error);
+    if (block && error instanceof ApiError) {
+      return <TenantBlocked block={block} detail={error.problem.detail} />;
+    }
+    throw error;
+  }
+  const [me, modules, current] = loaded;
   const viewer: Viewer = {
     allPermissions: me.all_permissions,
     permissions: me.permissions,
@@ -173,11 +188,25 @@ export async function AdminShell({
             </Link>
           ) : (
             <Link href="/" className="ctx" aria-label={t("shell.home")}>
-              <span className="tav">AX</span>
-              <span className="ell" style={{ fontWeight: 600 }}>
-                {t("app.name")}{" "}
-                <span style={{ color: "var(--ink-3)", fontWeight: 400 }}>{t("app.admin")}</span>
-              </span>
+              {/* Core nhiều khách: tên khách đang làm việc (`GET /kernel/tenant`), như thiết kế. Một khách
+                  thì tên ứng dụng như trước. Bộ chọn nút tổ chức chờ cây tổ chức (bước 34). */}
+              {current?.mode === "multi" ? (
+                <>
+                  <span className="tav">{initialsOf(current.name)}</span>
+                  <span className="ell" style={{ fontWeight: 600 }} data-testid="tenant-name">
+                    {current.name}{" "}
+                    <span style={{ color: "var(--ink-3)", fontWeight: 400 }}>{t("app.admin")}</span>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="tav">AX</span>
+                  <span className="ell" style={{ fontWeight: 600 }}>
+                    {t("app.name")}{" "}
+                    <span style={{ color: "var(--ink-3)", fontWeight: 400 }}>{t("app.admin")}</span>
+                  </span>
+                </>
+              )}
             </Link>
           )}
           <button
@@ -208,6 +237,7 @@ export async function AdminShell({
         <main className="content">
           {/* Khách của người đăng nhập đang chỉ đọc (D-296 của core): báo trước, để lệnh ghi bị từ
               chối (`403 tenant_read_only`, hiện `detail` của core) không làm người dùng bất ngờ. */}
+          <OfflineBanner />
           {current?.read_only ? (
             <p className="note warn" role="status" data-testid="read-only-banner">
               <b>{t("shell.readOnlyTitle")}</b> {t("shell.readOnlyBody")}
@@ -389,4 +419,9 @@ function ThemeForm({
       ))}
     </form>
   );
+}
+
+/** Người đăng nhập, sổ module và khách của request, đọc song song. */
+function loadViewer() {
+  return Promise.all([getMe(), getModules(), getCurrentTenant()]);
 }

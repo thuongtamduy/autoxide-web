@@ -24,11 +24,14 @@ export interface EditedRole {
 export function RoleEditor({
   catalog,
   role,
+  template,
   etag = null,
   editable,
 }: {
   catalog: readonly PermissionInfo[];
   role?: EditedRole;
+  /** Tạo role mới điền sẵn từ một role có sẵn (nút "Nhân bản"); bỏ qua khi có `role`. */
+  template?: Omit<EditedRole, "id">;
   etag?: string | null;
   editable: boolean;
 }) {
@@ -36,11 +39,12 @@ export function RoleEditor({
   const hydrated = useHydrated();
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
-  const [name, setName] = useState(role?.name ?? "");
-  const [description, setDescription] = useState(role?.description ?? "");
-  const [chosen, setChosen] = useState<Set<string>>(() => new Set(role?.permissions ?? []));
+  const start = role ?? template;
+  const [name, setName] = useState(start?.name ?? "");
+  const [description, setDescription] = useState(start?.description ?? "");
+  const [chosen, setChosen] = useState<Set<string>>(() => new Set(start?.permissions ?? []));
   // Hằng số ổn định cho bộ chọn (mảng mới mỗi lần render làm nó nhóm lại vô ích).
-  const extra = useMemo(() => role?.permissions ?? [], [role?.permissions]);
+  const extra = useMemo(() => start?.permissions ?? [], [start?.permissions]);
   const [state, submit, pending] = useSubmit(role ? updateRole : createRole, () =>
     toast(t("saved")),
   );

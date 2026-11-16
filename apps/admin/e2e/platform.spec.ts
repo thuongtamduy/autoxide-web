@@ -16,7 +16,7 @@ async function signIn(page: Page, path: string) {
   await page.goto(`/login?next=${encodeURIComponent(path)}`);
   await page.getByLabel("Email").fill("admin@example.com");
   await page.getByLabel("Password").fill("admin password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${path.replace(/[/?]/g, "\\$&")}$`));
 }
 
@@ -417,4 +417,46 @@ test("khách của người đăng nhập chỉ đọc (D-296): dải báo ở k
   await request.post(`${CORE}/__own-tenant`, { data: { read_only: false } });
   await page.reload();
   await expect(page.getByTestId("read-only-banner")).toHaveCount(0);
+});
+
+test("trạng thái toàn khung: tên khách ở góc trái; tạm khoá, bảo trì thay cả khung; mất kết nối", async ({
+  page,
+  context,
+  request,
+}) => {
+  // Core nhiều khách, người đăng nhập thuộc khách thường: góc trái hiện tên khách.
+  // (Đăng nhập trước: ở chế độ nhiều khách form đăng nhập còn hỏi không gian làm việc.)
+  await signIn(page, "/content");
+  await expect(page.getByTestId("tenant-name")).toHaveCount(0);
+  await request.post(`${CORE}/__tenancy`, { data: { mode: "multi" } });
+  await request.post(`${CORE}/__own-tenant`, { data: { customer: true } });
+  await page.reload();
+  await expect(page.getByTestId("tenant-name")).toContainText("Acme Read-only");
+
+  // Mất mạng: thanh báo ở đầu nội dung, có mạng lại thì tắt.
+  await context.setOffline(true);
+  await expect(page.getByTestId("offline-banner")).toContainText("Connection lost.");
+  await context.setOffline(false);
+  await expect(page.getByTestId("offline-banner")).toHaveCount(0);
+
+  // Bảo trì: trang báo thay cả khung, câu của core, nút thử lại.
+  await request.post(`${CORE}/__own-tenant`, { data: { status: "maintenance" } });
+  await page.reload();
+  const maintenance = page.getByTestId("tenant-maintenance");
+  await expect(maintenance).toContainText("Under maintenance");
+  await expect(maintenance).toContainText("Retry in 30 seconds.");
+  await request.post(`${CORE}/__own-tenant`, { data: { customer: true } });
+  await maintenance.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByTestId("tenant-name")).toBeVisible();
+
+  // Tạm khoá: chỉ còn đăng xuất.
+  await request.post(`${CORE}/__own-tenant`, { data: { status: "suspended" } });
+  await page.reload();
+  const suspended = page.getByTestId("tenant-suspended");
+  await expect(suspended).toContainText("This workspace is suspended");
+  await expect(suspended).toContainText("Contact the service provider.");
+  await suspended.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await request.post(`${CORE}/__own-tenant`, { data: { read_only: false } });
+  await request.post(`${CORE}/__tenancy`, { data: { mode: "single" } });
 });

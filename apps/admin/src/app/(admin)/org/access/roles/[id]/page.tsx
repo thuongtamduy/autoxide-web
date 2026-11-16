@@ -68,7 +68,12 @@ export default async function RolePage(props: PageProps<"/org/access/roles/[id]"
             {role.name}
           </h2>
           {manage && !role.all_permissions ? (
-            <DeleteRoleDialog id={role.id} name={role.name} />
+            <>
+              <Link className="btn sm" href={`/org/access/roles/new?from=${role.id}`}>
+                {t("access.role.copy")}
+              </Link>
+              <DeleteRoleDialog id={role.id} name={role.name} />
+            </>
           ) : null}
         </div>
         {role.all_permissions ? (

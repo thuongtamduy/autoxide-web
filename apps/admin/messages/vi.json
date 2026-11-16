@@ -137,7 +137,12 @@
     "workspace": "Không gian làm việc",
     "workspaceHint": "Tên ngắn của tổ chức bạn trên máy chủ này, ví dụ acme. Hỏi người đã mời bạn.",
     "workspaceNeeded": "Máy chủ này có nhiều không gian làm việc. Nhập không gian của bạn để đăng nhập.",
-    "invalidWorkspace": "Không gian làm việc là tên ngắn (chữ, số và dấu gạch ngang) hoặc ID của nó."
+    "invalidWorkspace": "Không gian làm việc là tên ngắn (chữ, số và dấu gạch ngang) hoặc ID của nó.",
+    "passkey": "Đăng nhập bằng passkey",
+    "passkeyUnsupported": "Trình duyệt này không dùng được passkey. Hãy đăng nhập bằng mật khẩu.",
+    "passkeyCancelled": "Đã huỷ đăng nhập bằng passkey.",
+    "passkeyFailed": "Không dùng được passkey. Thử lại, hoặc đăng nhập bằng mật khẩu.",
+    "passkeyExpired": "Yêu cầu passkey đã hết hạn. Thử lại."
   },
   "modules": {
     "title": "Module",
@@ -216,7 +221,23 @@
     "accountMenu": "Menu tài khoản của {name}",
     "pending": "Có việc cần xử lý",
     "readOnlyTitle": "Không gian này đang chỉ đọc.",
-    "readOnlyBody": "Bạn vẫn đăng nhập, xem và xuất được dữ liệu, nhưng mọi thay đổi bị từ chối cho tới khi nhà vận hành nền tảng cho ghi lại."
+    "readOnlyBody": "Bạn vẫn đăng nhập, xem và xuất được dữ liệu, nhưng mọi thay đổi bị từ chối cho tới khi nhà vận hành nền tảng cho ghi lại.",
+    "offline": {
+      "title": "Mất kết nối.",
+      "body": "Đang thử kết nối lại. Bạn vẫn đọc được dữ liệu đang hiện; thay đổi gửi đi sẽ được gửi lại an toàn khi có mạng."
+    },
+    "blocked": {
+      "suspended": {
+        "title": "Không gian làm việc đã bị tạm khoá",
+        "body": "Nhà vận hành nền tảng đã tạm khoá không gian này: mọi trang và API ngừng phục vụ cho tới khi được mở lại. Liên hệ nhà cung cấp dịch vụ để biết lý do."
+      },
+      "maintenance": {
+        "title": "Đang bảo trì",
+        "body": "Không gian này đang được nâng cấp hoặc chuyển sang database khác, sẽ trở lại sau ít phút; dữ liệu bạn đã gửi không mất."
+      },
+      "retry": "Thử lại",
+      "signOut": "Đăng xuất"
+    }
   },
   "dashboard": {
     "hello": "Chào {name}",
@@ -767,6 +788,7 @@
       "breadcrumb": "Về danh sách role",
       "back": "Mọi role",
       "newTitle": "Tạo role",
+      "copyTitle": "Bản sao của {name}",
       "notFound": "Không có role nào có id này. Có thể role đã bị xoá.",
       "builtinNote": "Role dựng sẵn: cấp mọi permission, kể cả permission do module mới thêm sau. Không sửa hay xoá được, và luôn phải còn ít nhất một người dùng đang dùng giữ role này.",
       "name": "Tên",
@@ -783,6 +805,7 @@
       "noMatch": "Không có permission nào khớp “{query}”.",
       "save": "Lưu role",
       "create": "Tạo role",
+      "copy": "Nhân bản",
       "readOnly": "Bạn xem được role này nhưng không sửa được (cần auth.roles.manage).",
       "delete": {
         "open": "Xoá role",

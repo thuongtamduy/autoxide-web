@@ -15,7 +15,7 @@ async function signIn(page: Page, path: string, email = "admin@example.com") {
   await page
     .getByLabel("Password")
     .fill(email.startsWith("viewer") ? "viewer password" : "admin password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
 const dialog = (page: Page) => page.locator("dialog[open]");
@@ -237,6 +237,22 @@ test("role: dựng sẵn chỉ xem; tạo bằng bộ chọn permission, sửa, 
   // Lưu lần nữa với ETag mới (trang tải lại sau lần lưu trước): không bị 412.
   await page.getByRole("button", { name: "Save role" }).click();
   await expect(toast(page)).toHaveText("Role saved.");
+
+  // Nhân bản: form tạo điền sẵn mô tả và permission, tên thêm `-copy`; tạo như role mới.
+  const original = page.url();
+  await page.getByRole("link", { name: "Duplicate" }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Copy of support" })).toBeVisible();
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("support-copy");
+  await expect(page.getByLabel("Description (optional)")).toHaveValue("Answers customers");
+  await expect(page.getByTestId("chosen-count")).toHaveText("2 of 8 chosen");
+  await page.getByRole("button", { name: "Create role" }).click();
+  await expect(page).toHaveURL(/\/org\/access\/roles\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { level: 2, name: "support-copy" })).toBeVisible();
+  await expect(page.getByTestId("chosen-count")).toHaveText("2 of 8 chosen");
+  await page.getByRole("button", { name: "Delete role" }).click();
+  await dialog(page).getByRole("button", { name: "Delete role" }).click();
+  await expect(page).toHaveURL(/\/org\/access\/roles$/);
+  await page.goto(original);
 
   await page.getByRole("button", { name: "Delete role" }).click();
   await expect(dialog(page)).toContainText("loses its permissions on their next request");
