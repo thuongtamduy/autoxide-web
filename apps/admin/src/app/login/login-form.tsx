@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
-import { type LoginState, submitLogin } from "./actions";
+import { useHydrated } from "@/lib/hydrated";
+import { ceremonyErrorKey, passkeySignInSupported, requestOptionsJson } from "@/lib/webauthn";
+import { finishPasskeyLogin, type LoginState, startPasskeyLogin, submitLogin } from "./actions";
 
 /**
  * Form đăng nhập hai bước. Action là server action trần nên form vẫn gửi được khi trình
@@ -28,6 +30,49 @@ export function LoginForm({
     ...(workspace ? { askWorkspace: true, workspace } : {}),
   });
   const mfa = state.step === "mfa";
+  const hydrated = useHydrated();
+  // Đăng nhập bằng passkey (thiết kế "Đăng nhập"): không cần email, passkey tự nhận ra tài khoản.
+  // Lỗi của nó hiện thay lỗi của form; core nhiều khách chưa biết khách thì hiện ô "Không gian làm việc".
+  const [passkey, setPasskey] = useState<{ error: string; code: string } | null>(null);
+  const [passkeyAsk, setPasskeyAsk] = useState(false);
+  const [signing, startSigning] = useTransition();
+  const askWorkspace = state.askWorkspace || passkeyAsk;
+  const shown = passkey ?? (state.error ? { error: state.error, code: state.code } : null);
+  const signInWithPasskey = () => {
+    setPasskey(null);
+    if (!passkeySignInSupported()) {
+      setPasskey({ error: t("passkeyUnsupported"), code: "login.webauthn_unsupported" });
+      return;
+    }
+    const typed = document.getElementById("workspace");
+    const workspace = typed instanceof HTMLInputElement ? typed.value : null;
+    startSigning(async () => {
+      const started = await startPasskeyLogin(workspace);
+      if (started.askWorkspace) setPasskeyAsk(true);
+      if (started.options === undefined) {
+        setPasskey({ error: started.error ?? t("passkeyFailed"), code: started.code ?? "" });
+        return;
+      }
+      let credential: unknown;
+      try {
+        const publicKey = PublicKeyCredential.parseRequestOptionsFromJSON(
+          requestOptionsJson(started.options),
+        );
+        const signed = await navigator.credentials.get({ publicKey });
+        if (!(signed instanceof PublicKeyCredential)) throw new Error("no credential");
+        credential = signed.toJSON();
+      } catch (error) {
+        const why = ceremonyErrorKey(error) === "cancelled" ? "cancelled" : "failed";
+        setPasskey({
+          error: t(why === "cancelled" ? "passkeyCancelled" : "passkeyFailed"),
+          code: `login.webauthn_${why}`,
+        });
+        return;
+      }
+      // Thành công thì máy chủ chuyển trang (`redirect`); chỉ quay lại đây khi core từ chối.
+      setPasskey(await finishPasskeyLogin(credential, next));
+    });
+  };
   return (
     <>
       <CardHeader>
@@ -72,10 +117,10 @@ export function LoginForm({
                   type="password"
                   autoComplete="current-password"
                   required
-                  autoFocus={Boolean(state.email) && !state.askWorkspace}
+                  autoFocus={Boolean(state.email) && !askWorkspace}
                 />
               </div>
-              {state.askWorkspace ? (
+              {askWorkspace ? (
                 <div className="grid gap-1.5">
                   <Label htmlFor="workspace">{t("workspace")}</Label>
                   <Input
@@ -95,14 +140,24 @@ export function LoginForm({
               ) : null}
             </>
           )}
-          {state.error && (
-            <p role="alert" data-code={state.code} className="text-sm text-danger">
-              {state.error}
+          {shown && (
+            <p role="alert" data-code={shown.code} className="text-sm text-danger">
+              {shown.error}
             </p>
           )}
           <Button type="submit" name="intent" value={mfa ? "code" : "password"} disabled={pending}>
             {mfa ? t("verify") : t("submit")}
           </Button>
+          {mfa ? null : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={signInWithPasskey}
+              disabled={!hydrated || pending || signing}
+            >
+              {t("passkey")}
+            </Button>
+          )}
           {mfa ? null : (
             <Link className="text-sm underline" href="/forgot-password">
               {t("forgot")}

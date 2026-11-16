@@ -99,7 +99,7 @@ test("đặt lại mật khẩu: token sai, hai ô khác nhau, luật của core
   await page.getByRole("link", { name: "Sign in" }).click();
   await page.getByLabel("Email").fill("viewer@example.com");
   await page.getByLabel("Password").fill("a brand new password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByTestId("me")).toHaveText("viewer@example.com");
 });
 

@@ -1787,3 +1787,24 @@ Không đổi: form dùng `useSubmit` (`action={run}`, hàm của trình duyệt
 
 Lý do: form `onSubmit` bấm sớm bị trình duyệt gửi kiểu GET — form tra dữ liệu theo email đưa email lên thanh địa chỉ,
 lịch sử trình duyệt và log của máy chủ (dữ liệu cá nhân); các form khác mất chữ đã gõ mà không báo.
+
+## W-042 · Bám bản thiết kế mới: sổ chỗ lệch, trạng thái toàn khung, đăng nhập bằng passkey, nhân bản role — 2026-11-16 — agent quyết
+
+Quyết định:
+
+- **Sổ chỗ lệch thiết kế** `docs/design-gaps.md`: đối chiếu hai bản thiết kế chủ dự án gửi (artifact trang quản trị và
+  website, trang "Thiết kế 2") với code, mỗi chỗ một dòng kèm API hay mẫu và công. Làm theo thứ tự: chỗ core đã có API
+  trước, rồi chỗ dựng bằng mẫu (W-006). Chỗ cần core thì ghi vào mục "Đã gửi core" và vào bảng của core.
+- **Trạng thái toàn khung**: khung quản trị bắt lỗi khi đọc người đăng nhập; `403 tenant_suspended` và
+  `503 tenant_maintenance` (core trả mã này cả khi khách đang dời hay đang cấp phát) thay cả khung bằng trang báo riêng
+  (`TenantBlocked`: câu của core; bảo trì có "Thử lại", cả hai có "Đăng xuất"). Hàm thuần `tenantBlock`
+  (`src/lib/tenant-state.ts`, có test). Thanh báo mất kết nối theo sự kiện `online` / `offline` của trình duyệt.
+- **Tên khách ở góc trên trái** khi core chạy nhiều khách (`GET /kernel/tenant`); một khách thì giữ tên ứng dụng.
+- **Đăng nhập bằng passkey** ở `/login`: không cần email; id nghi thức trong cookie `httpOnly` (như thêm passkey);
+  core nhiều khách chưa biết khách thì hiện ô "Không gian làm việc" như đăng nhập bằng mật khẩu.
+- **Nhân bản role**: `/org/access/roles/new?from=<id>` điền sẵn mô tả và permission, tên thêm `-copy`.
+
+Lý do: chủ dự án gửi bản thiết kế và giao bám sát nó mà không chờ core (16/11).
+
+Đã cân nhắc: thanh báo bảo trì trong khung (thiết kế vẽ như dải báo) — core từ chối mọi lời gọi khi bảo trì nên khung
+không dựng được, trang thay cả khung là cách duy nhất cho thấy được câu báo.

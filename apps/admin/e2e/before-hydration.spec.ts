@@ -14,7 +14,7 @@ test("tắt JavaScript: nút gửi của form đặt thẳng trên trang bị kh
   await page.goto("/login");
   await page.getByLabel("Email").fill("admin@example.com");
   await page.getByLabel("Password").fill("admin password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).not.toHaveURL(/\/login/);
 
   const bare = await browser.newContext({

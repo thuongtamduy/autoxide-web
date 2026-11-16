@@ -17,7 +17,7 @@ async function signIn(page: Page, path = "/account") {
   await page.goto(`/login?next=${encodeURIComponent(path)}`);
   await page.getByLabel("Email").fill("admin@example.com");
   await page.getByLabel("Password").fill("admin password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${path.replace(/\//g, "\\/")}$`));
 }
 
@@ -213,11 +213,28 @@ test("passkey: thêm qua WebAuthn của trình duyệt, hiện trong danh sách,
   );
   await page.keyboard.press("Escape");
 
+  // Đăng nhập bằng passkey vừa thêm: không gõ email hay mật khẩu, về đúng trang đã mở.
+  await context.clearCookies();
+  await page.goto("/login?next=%2Faccount%2Fsecurity");
+  await page.getByRole("button", { name: "Sign in with a passkey" }).click();
+  await expect(page).toHaveURL(/\/account\/security$/);
+  await expect(rows.first()).toContainText("Work laptop");
+
   await rows.first().getByRole("button", { name: "Remove" }).click();
   await expect(dialog(page)).toContainText('Remove the passkey "Work laptop"?');
   await dialog(page).getByRole("button", { name: "Remove" }).click();
   await expect(toast(page)).toHaveText("Passkey removed.");
   await expect(page.getByText("No passkey yet.")).toBeVisible();
+
+  // Passkey đã gỡ ở core không đăng nhập được nữa: báo câu của core, giữ ở trang đăng nhập.
+  await context.clearCookies();
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Sign in with a passkey" }).click();
+  await expect(page.locator("form [role=alert]")).toHaveAttribute(
+    "data-code",
+    "auth.passkey_sign_in_failed",
+  );
+  await expect(page).toHaveURL(/\/login/);
 });
 
 test("tài khoản chưa có mật khẩu: xin thư đặt mật khẩu đầu tiên; xoá tài khoản chỉ sang đặt mật khẩu", async ({
@@ -322,7 +339,7 @@ test("dữ liệu: tải về qua máy chủ; xoá tài khoản cần gõ đúng
   }
   await page.getByLabel("Email").fill("admin@example.com");
   await page.getByLabel("Password").fill("admin password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.locator("p[role=alert]")).toHaveAttribute(
     "data-code",
     "auth.invalid_credentials",
@@ -360,7 +377,7 @@ test("core nhiều khách: đăng nhập hỏi không gian làm việc, nhớ ch
     await expect(page.getByLabel("Workspace")).toHaveCount(0);
     await page.getByLabel("Email").fill("admin@example.com");
     await page.getByLabel("Password").fill("admin password");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
     const alert = page.locator("form [role=alert]");
     await expect(alert).toHaveAttribute("data-code", "tenant_required");
     await expect(alert).toHaveText("This server hosts several workspaces. Enter yours to sign in.");
@@ -368,18 +385,18 @@ test("core nhiều khách: đăng nhập hỏi không gian làm việc, nhớ ch
 
     await page.getByLabel("Workspace").fill("acme shop");
     await page.getByLabel("Password").fill("admin password");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(alert).toHaveAttribute("data-code", "validation_failed");
     await expect(page.getByLabel("Workspace")).toHaveValue("acme shop");
 
     await page.getByLabel("Workspace").fill("nowhere");
     await page.getByLabel("Password").fill("admin password");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(alert).toHaveAttribute("data-code", "tenant_not_found");
 
     await page.getByLabel("Workspace").fill(" Default ");
     await page.getByLabel("Password").fill("admin password");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page).toHaveURL(/\/$/);
     // Khách nằm trong cookie httpOnly của máy chủ, trình duyệt không đọc được bằng script.
     const saved = (await context.cookies()).find((c) => c.name === "ax_tenant");

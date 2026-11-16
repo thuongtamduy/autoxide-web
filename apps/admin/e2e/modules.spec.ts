@@ -9,7 +9,7 @@ test.beforeEach(async ({ request }) => {
 async function signIn(page: Page, email: string, password: string) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
 test("chưa đăng nhập thì về trang đăng nhập, xong thì quay lại trang đã mở", async ({ page }) => {
@@ -137,11 +137,11 @@ test("thiếu permission thì báo rõ permission cần có", async ({ page }) =
 test("đổi sang tiếng Việt, kể cả thông báo lỗi của core", async ({ page }) => {
   await page.goto("/login");
   await page.getByRole("button", { name: "Tiếng Việt" }).click();
-  await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Đăng nhập", exact: true })).toBeVisible();
 
   await page.getByLabel("Email").fill("admin@example.com");
   await page.getByLabel("Mật khẩu").fill("sai");
-  await page.getByRole("button", { name: "Đăng nhập" }).click();
+  await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
 
   await expect(page.locator("p[role=alert]")).toHaveText("Email hoặc mật khẩu không đúng.");
 });

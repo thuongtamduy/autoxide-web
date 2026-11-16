@@ -14,7 +14,7 @@ async function signIn(page: Page, path: string) {
   await page.goto(`/login?next=${encodeURIComponent(path)}`);
   await page.getByLabel("Email").fill("admin@example.com");
   await page.getByLabel("Password").fill("admin password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
 const dialog = (page: Page) => page.locator("dialog[open]");

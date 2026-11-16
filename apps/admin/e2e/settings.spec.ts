@@ -16,7 +16,7 @@ async function signIn(page: Page, path: string, email = "admin@example.com") {
   await page
     .getByLabel("Password")
     .fill(email.startsWith("viewer") ? "viewer password" : "admin password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
 const dialog = (page: Page) => page.locator("dialog[open]");
@@ -229,7 +229,7 @@ test("API key: xác nhận bằng passkey hay mã của app; quản trị viên 
   await page.goto("/login?next=%2Fsettings%2Fapi-keys%2Fnew");
   await page.getByLabel("Email").fill("mfa@example.com");
   await page.getByLabel("Password").fill("mfa password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Code").fill("123456");
   await page.getByRole("button", { name: "Verify" }).click();
   await expect(page).toHaveURL(/\/settings\/api-keys\/new$/);

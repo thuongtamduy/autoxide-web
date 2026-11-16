@@ -7,7 +7,14 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { anonymousClient } from "@/lib/core";
 import { adminTenantSetting, secureCookies } from "@/lib/env";
-import { MFA_COOKIE, mfaCookie, safeNext, tokenCookies } from "@/lib/session";
+import {
+  MFA_COOKIE,
+  mfaCookie,
+  PASSKEY_COOKIE,
+  passkeyCookie,
+  safeNext,
+  tokenCookies,
+} from "@/lib/session";
 import { asksForWorkspace, normalizeWorkspace, TENANT_COOKIE } from "@/lib/tenant";
 import { applyThemeCookie, savedTheme } from "@/lib/theme-sync";
 
@@ -193,4 +200,109 @@ export async function submitLogin(state: LoginState, formData: FormData): Promis
     default:
       return signIn(state, formData);
   }
+}
+
+/** Bước 1 đăng nhập bằng passkey: kết quả cho trình duyệt (options, hay lỗi để hiện). */
+export type PasskeyLoginStart = {
+  options?: unknown;
+  error?: string;
+  code?: string;
+  /** Core nhiều khách chưa biết khách: hiện ô "Không gian làm việc" như đăng nhập bằng mật khẩu. */
+  askWorkspace?: boolean;
+};
+
+/**
+ * Bước 1 đăng nhập bằng passkey (`POST /auth/login/passkey/options`): không cần email — passkey tự
+ * nhận ra tài khoản. Id nghi thức nằm trong cookie `httpOnly` cho bước 2, không xuống trình duyệt.
+ * `workspace`: ô "Không gian làm việc" nếu đang hiện (nhớ như khi đăng nhập bằng mật khẩu).
+ */
+export async function startPasskeyLogin(workspace: string | null): Promise<PasskeyLoginStart> {
+  const t = await getTranslations("login");
+  const store = await cookies();
+  if (workspace !== null) {
+    const normalized = normalizeWorkspace(workspace);
+    if (normalized === null) {
+      return { error: t("invalidWorkspace"), code: "validation_failed", askWorkspace: true };
+    }
+    if (normalized) {
+      store.set(TENANT_COOKIE, normalized, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: secureCookies(),
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    } else {
+      store.delete(TENANT_COOKIE);
+    }
+  }
+  let result: Awaited<ReturnType<typeof callPasskeyOptions>>;
+  try {
+    result = await callPasskeyOptions();
+  } catch {
+    return { error: t("unreachable"), code: "core_unreachable" };
+  }
+  const { data, error, response } = result;
+  if (data) {
+    const cookie = passkeyCookie(data.data.ceremony_id, secureCookies());
+    store.set(cookie.name, cookie.value, cookie.options);
+    return { options: data.data.options };
+  }
+  const failure = toApiError(response, error);
+  if (asksForWorkspace(failure.code) && !adminTenantSetting()) {
+    return {
+      error: workspace ? failure.problem.detail : t("workspaceNeeded"),
+      code: failure.code,
+      askWorkspace: true,
+    };
+  }
+  return { error: failure.problem.detail, code: failure.code };
+}
+
+async function callPasskeyOptions() {
+  const client = await anonymousClient();
+  return client.POST("/api/v1/auth/login/passkey/options");
+}
+
+/**
+ * Bước 2: câu trả lời của authenticator (`credential.toJSON()`) → core kiểm và cấp token (cookie
+ * `httpOnly` như đăng nhập bằng mật khẩu), rồi chuyển tới `next`. Lỗi thì trả câu để hiện.
+ */
+export async function finishPasskeyLogin(
+  credential: unknown,
+  next: string,
+): Promise<{ error: string; code: string }> {
+  const t = await getTranslations("login");
+  const store = await cookies();
+  const ceremonyId = store.get(PASSKEY_COOKIE)?.value;
+  if (!ceremonyId) {
+    return { error: t("passkeyExpired"), code: "auth.invalid_passkey_ceremony" };
+  }
+  if (typeof credential !== "object" || credential === null) {
+    return { error: t("passkeyFailed"), code: "validation_failed" };
+  }
+  let result: Awaited<ReturnType<typeof callPasskeyLogin>>;
+  try {
+    result = await callPasskeyLogin(ceremonyId, credential as Record<string, never>);
+  } catch {
+    return { error: t("unreachable"), code: "core_unreachable" };
+  }
+  store.delete(PASSKEY_COOKIE);
+  const { data, error, response } = result;
+  if (data) {
+    for (const cookie of tokenCookies(data.data, secureCookies())) {
+      store.set(cookie.name, cookie.value, cookie.options);
+    }
+    await restoreTheme(store, data.data.access_token);
+    redirect(safeNext(next));
+  }
+  const failure = toApiError(response, error);
+  return { error: failure.problem.detail, code: failure.code };
+}
+
+async function callPasskeyLogin(ceremonyId: string, credential: Record<string, never>) {
+  const client = await anonymousClient();
+  return client.POST("/api/v1/auth/login/passkey", {
+    body: { ceremony_id: ceremonyId, credential },
+  });
 }
