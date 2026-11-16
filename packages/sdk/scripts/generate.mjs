@@ -8,7 +8,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const CORE_VERSION = "27380c935e843e421e83be37466983522ae08be7";
+const CORE_VERSION = "11bbef0aa1d1a290fc9247d9b32ec732f1f93b88";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const source =
   process.env.AUTOXIDE_OPENAPI ??

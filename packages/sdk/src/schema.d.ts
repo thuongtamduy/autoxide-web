@@ -196,6 +196,7 @@ export interface paths {
          *     keys, passkeys, two-step sign-in and pending tokens removed. When no other account took
          *     the old address meanwhile, the email goes back to it and a mail to choose a new password
          *     is sent there (in the language of `Accept-Language`); otherwise ask an administrator.
+         *     Needs no tenant header: the token names its tenant.
          */
         post: operations["auth_report_email_change"];
         delete?: never;
@@ -218,7 +219,7 @@ export interface paths {
          * @description Needs no sign-in: the token proves the mail was received. When the token was sent
          *     for a new address (`POST /api/v1/auth/me/email`), the account's email becomes that
          *     address; sign in with it from now on. Every other verification token of the
-         *     account stops working.
+         *     account stops working. Needs no tenant header: the token names its tenant.
          */
         post: operations["auth_confirm_email_verification"];
         delete?: never;
@@ -242,7 +243,9 @@ export interface paths {
          *     two-step sign-in on, answers 202 instead: send the `mfa_token` and a code to
          *     `POST /api/v1/auth/login/mfa`. The same error answers an unknown email and a
          *     wrong password. After several failed attempts the email is locked for a while,
-         *     even for the right password.
+         *     even for the right password. On a server with several tenants, sign in on the
+         *     tenant's domain or with the `Autoxide-Tenant` header; the tokens returned name
+         *     their tenant, so later requests need neither.
          */
         post: operations["auth_login"];
         delete?: never;
@@ -264,7 +267,8 @@ export interface paths {
          * Finish signing in with a code from the authenticator app or a recovery code.
          * @description Send the `mfa_token` from `POST /api/v1/auth/login` within its `expires_in`
          *     seconds. Each `mfa_token` allows five wrong codes; wrong codes also count
-         *     towards the sign-in lock of the email.
+         *     towards the sign-in lock of the email. Needs no tenant header: the `mfa_token`
+         *     names its tenant.
          */
         post: operations["auth_login_mfa"];
         delete?: never;
@@ -326,7 +330,8 @@ export interface paths {
         /**
          * Sign out: end the session of a refresh token.
          * @description Every refresh token of the session stops working; access tokens already issued
-         *     keep working until they expire. Safe to repeat.
+         *     keep working until they expire. Safe to repeat. Needs no tenant header: the
+         *     refresh token names its tenant.
          */
         post: operations["auth_logout"];
         delete?: never;
@@ -715,7 +720,8 @@ export interface paths {
         /**
          * Choose a new password with the token from the reset mail.
          * @description Signs the account out everywhere; every other reset token of the account stops
-         *     working. Then sign in with the new password.
+         *     working. Then sign in with the new password. Needs no tenant header: the token
+         *     names its tenant.
          */
         post: operations["auth_confirm_password_reset"];
         delete?: never;
@@ -758,7 +764,8 @@ export interface paths {
         /**
          * Exchange a refresh token for a new pair of tokens.
          * @description The refresh token sent is used up. Sending a used refresh token again ends the
-         *     whole session (it may have been stolen): sign in again.
+         *     whole session (it may have been stolen): sign in again. Needs no tenant header:
+         *     the refresh token names its tenant (a header of another tenant makes it invalid).
          */
         post: operations["auth_refresh"];
         delete?: never;
@@ -1381,7 +1388,8 @@ export interface paths {
         /**
          * Stop reply mails (public).
          * @description The page at `AUTOXIDE_COMMENTS_UNSUBSCRIBE_URL` sends the token of the link in a reply mail
-         *     here. Takes effect at once.
+         *     here. Takes effect at once. The token tells the tenant: the call works on any host of the
+         *     API, without `Autoxide-Tenant`.
          */
         post: operations["comments_unsubscribe_comment_replies"];
         delete?: never;
@@ -1403,7 +1411,8 @@ export interface paths {
          * Confirm an address for reply mails (public).
          * @description The page at `AUTOXIDE_COMMENTS_VERIFY_URL` sends the token of the mail link here (a `POST`,
          *     so mail scanners opening the link change nothing). From then on, the address gets a mail
-         *     when that comment receives a shown reply.
+         *     when that comment receives a shown reply. The token tells the tenant: the call works on any
+         *     host of the API, without `Autoxide-Tenant`.
          */
         post: operations["comments_verify_comment_email"];
         delete?: never;
@@ -2171,6 +2180,7 @@ export interface paths {
          * Read a draft through a preview link (public).
          * @description No sign-in needed: the signed token is the permission. Returns the content of the latest
          *     draft, without the internal fields of the admin view. Answers with `Cache-Control: no-store`.
+         *     Needs no tenant header: the token names its tenant.
          */
         get: operations["content_get_public_content_preview"];
         put?: never;
@@ -2238,6 +2248,28 @@ export interface paths {
          * @description No sign-in needed. Follow `next_cursor` (up to 200 per page) to get them all.
          */
         get: operations["content_list_public_content_sitemap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/public/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List categories and tags that have published posts (public).
+         * @description No sign-in needed. Only terms with at least one published post in `locale` are listed, each
+         *     with that count, so a blog can show its topics and the size of each; follow `next_cursor`
+         *     for more. Get a term's posts with `GET /api/v1/content/public/posts?term_id=`.
+         */
+        get: operations["content_list_public_content_terms"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2836,6 +2868,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/kernel/domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List this tenant's domains.
+         * @description Requires `kernel.domains.manage`. Domains added to the tenant, with their status and the DNS
+         *     record that verifies them; removed domains are not listed. Newest first unless `order=asc`.
+         */
+        get: operations["kernel_list_tenant_domains"];
+        put?: never;
+        /**
+         * Add a domain to this tenant.
+         * @description Requires `kernel.domains.manage`. The domain starts `pending`: set the returned DNS `record`
+         *     (TXT `_autoxide-challenge.<domain>`) at your DNS provider, then call
+         *     `POST /domains/{id}/verify` (pending domains are also checked every 10 minutes for 7 days).
+         *     Point the domain itself (A/AAAA or CNAME) at the platform's server. Adding a domain the tenant
+         *     already has returns it unchanged; retry safely with an `Idempotency-Key` header.
+         */
+        post: operations["kernel_add_tenant_domain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/domains/allowed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tell whether a domain may get a TLS certificate.
+         * @description No sign-in needed. For the `ask` URL of a reverse proxy that issues certificates on demand
+         *     (Caddy `on_demand_tls`): `200` when the domain is a verified domain of an active tenant,
+         *     `404` otherwise. Answers from a short cache; counted by the per-address rate limit.
+         */
+        get: operations["kernel_check_tenant_domain_allowed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/domains/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a domain from this tenant.
+         * @description Requires `kernel.domains.manage`. The domain becomes `revoked`: requests to it no longer reach
+         *     the tenant (other servers follow within `AUTOXIDE_TENANCY_CACHE_SECONDS`) and no new TLS
+         *     certificate is issued for it. Removing it again changes nothing.
+         */
+        delete: operations["kernel_remove_tenant_domain"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/domains/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a domain now.
+         * @description Requires `kernel.domains.manage`. Looks up the domain's TXT record right away and returns the
+         *     new status: `verified` when the record holds the expected value, otherwise still `pending`
+         *     with the reason in `check_error`. A `failed` domain can be verified again this way.
+         */
+        post: operations["kernel_verify_tenant_domain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/kernel/modules": {
         parameters: {
             query?: never;
@@ -3021,6 +3148,52 @@ export interface paths {
          *     `AUTOXIDE_TENANCY_CACHE_SECONDS`). The platform tenant cannot be suspended.
          */
         patch: operations["kernel_update_tenant"];
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a tenant to another placement.
+         * @description Requires `kernel.tenants.move` and an account of the platform tenant (not one entered with
+         *     `Autoxide-Tenant`). With `dry_run` (the default) nothing changes: the answer lists what blocks
+         *     the move and the rows of the tenant that would be copied. With `"dry_run": false` the tenant
+         *     answers `503 tenant_maintenance` while a background job copies its data, switches it to the new
+         *     placement and deletes the old copy; follow it at the `Location` of the answer. Sending the same
+         *     move again resumes one that stopped half-way.
+         */
+        post: operations["kernel_move_tenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}/moves/{move_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a move of a tenant.
+         * @description Requires `kernel.tenants.read` and an account of the platform tenant. `state` goes `copying` →
+         *     `copied` → `switched` → `done` (or `aborted`); `error` tells why a run stopped.
+         */
+        get: operations["kernel_get_tenant_move"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/me/flags": {
@@ -3825,7 +3998,8 @@ export interface paths {
          * @description No sign-in needed. The confirmation mail links to the website's page
          *     (`AUTOXIDE_NEWSLETTER_CONFIRM_URL`); the page sends the token here with `POST` — opening the
          *     link alone (as mail scanners do) changes nothing. A link works once, within
-         *     `AUTOXIDE_NEWSLETTER_CONFIRM_HOURS`.
+         *     `AUTOXIDE_NEWSLETTER_CONFIRM_HOURS`. The token tells the tenant: the call works on any host of
+         *     the API, without `Autoxide-Tenant`.
          */
         post: operations["newsletter_confirm_newsletter_subscription"];
         delete?: never;
@@ -3865,14 +4039,16 @@ export interface paths {
         /**
          * Get the preferences of a subscriber (public).
          * @description No sign-in needed: the token comes from a campaign mail (the footer links to
-         *     `AUTOXIDE_NEWSLETTER_PREFERENCES_URL`). Reading changes nothing.
+         *     `AUTOXIDE_NEWSLETTER_PREFERENCES_URL`). Reading changes nothing. The token tells the tenant:
+         *     the call works on any host of the API, without `Autoxide-Tenant`.
          */
         get: operations["newsletter_get_newsletter_preferences"];
         /**
          * Change the preferences of a subscriber (public).
          * @description No sign-in needed: the token comes from a campaign mail. Unsubscribing takes effect at
          *     once. Subscribing to a public list confirms it at once (the token proves the inbox), with
-         *     the source `preferences` as proof of consent.
+         *     the source `preferences` as proof of consent. The token tells the tenant: the call works on
+         *     any host of the API, without `Autoxide-Tenant`.
          */
         put: operations["newsletter_update_newsletter_preferences"];
         post?: never;
@@ -3927,7 +4103,8 @@ export interface paths {
          * Unsubscribe with one click (public).
          * @description No sign-in needed. The `List-Unsubscribe` header of every campaign mail points here; mail
          *     apps send `POST` with the form body `List-Unsubscribe=One-Click` (RFC 8058). Unsubscribes
-         *     the address from the list of that mail at once. The answer is the same for any token.
+         *     the address from the list of that mail at once. The answer is the same for any token. The
+         *     token tells the tenant: the link works on any host of the API, without `Autoxide-Tenant`.
          */
         post: operations["newsletter_unsubscribe_newsletter"];
         delete?: never;
@@ -4296,6 +4473,11 @@ export interface components {
              */
             tokens_today: number;
         };
+        /** @description A domain that may get a TLS certificate. */
+        AllowedTenantDomain: {
+            /** @example shop.example */
+            domain: string;
+        };
         /** @description What the alt text is for. */
         AltRequest: {
             /**
@@ -4366,8 +4548,10 @@ export interface components {
              */
             permissions: string[];
             /**
-             * @description The first characters of the key, to recognize it.
-             * @example axk_3q9ZbXcV
+             * @description A few characters of the key, to recognize it: `axk1_…` and the first 8 characters of the
+             *     key's random part (after the tenant part). Keys created in older versions (`axk_…`) show
+             *     their first 12 characters.
+             * @example axk1_…3q9ZbXcV
              */
             prefix: string;
         };
@@ -4674,8 +4858,9 @@ export interface components {
                  */
                 max_body_bytes: number;
                 /**
-                 * @description Path prefix of posts on the website (`AUTOXIDE_CONTENT_POST_PATH_PREFIX`), e.g. `/blog/`.
-                 * @example /blog/
+                 * @description First segment of the address of every post (`AUTOXIDE_CONTENT_POST_PATH_PREFIX`), without
+                 *     slashes: `blog` gives posts at `/blog/<slug>`.
+                 * @example blog
                  */
                 post_path_prefix: string;
             };
@@ -4872,8 +5057,9 @@ export interface components {
             status: components["schemas"]["CommentStatus"];
             target_id: string;
             /**
-             * @description Title of the target (e.g. the post's title), from the module that owns it; absent when
-             *     that kind has no lookup or the target is not public now.
+             * @description Title of the target (e.g. the post's title), from the module that owns it. Only given while
+             *     the target is public: for a draft, unpublished or deleted target (or a kind with no
+             *     lookup) the field is absent and only `target_type` and `target_id` identify it.
              */
             target_title?: string | null;
             target_type: string;
@@ -4899,7 +5085,7 @@ export interface components {
         };
         /** @description A token from a mail link. */
         CommentMailToken: {
-            /** @description The `token` of the link. */
+            /** @description The `token` of the link, exactly as received (it may contain a `.`). */
             token: string;
         };
         /** @description The display name of a signed-in user. */
@@ -5061,7 +5247,10 @@ export interface components {
         };
         /** @description The token of a confirmation link. */
         ConfirmBody: {
-            /** @description The `{token}` of the link in the confirmation mail. */
+            /**
+             * @description The `{token}` of the link in the confirmation mail, exactly as received (it may contain a
+             *     `.`).
+             */
             token: string;
         };
         /** @description The lists confirmed. */
@@ -5331,9 +5520,11 @@ export interface components {
         /** @description A new API key, with its secret. The secret is shown only here. */
         CreatedApiKeyResponse: components["schemas"]["ApiKeyResponse"] & {
             /**
-             * @description The key. Send it as `Authorization: Bearer <key>`. Store it now: it cannot be
-             *     shown again.
-             * @example axk_3q9ZbXcV…
+             * @description The key. Send it as `Authorization: Bearer <key>`; no other header is needed: the key
+             *     names its tenant. Store it now: it cannot be shown again. Shape: `axk1_`, the tenant ID
+             *     (32 lowercase hex digits), `_`, then a random part. Keys created in older versions start
+             *     with `axk_` and keep working.
+             * @example axk1_0193c5c0d2f87b2a9e4f6a1b2c3d4e5f_3q9ZbXcV…
              */
             key: string;
         };
@@ -5395,6 +5586,14 @@ export interface components {
                  * @description Tokens used today (UTC), text and embeddings together.
                  */
                 tokens_today: number;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_AllowedTenantDomain: {
+            /** @description A domain that may get a TLS certificate. */
+            data: {
+                /** @example shop.example */
+                domain: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -5685,8 +5884,9 @@ export interface components {
                 status: components["schemas"]["CommentStatus"];
                 target_id: string;
                 /**
-                 * @description Title of the target (e.g. the post's title), from the module that owns it; absent when
-                 *     that kind has no lookup or the target is not public now.
+                 * @description Title of the target (e.g. the post's title), from the module that owns it. Only given while
+                 *     the target is public: for a draft, unpublished or deleted target (or a kind with no
+                 *     lookup) the field is absent and only `target_type` and `target_id` identify it.
                  */
                 target_title?: string | null;
                 target_type: string;
@@ -5860,9 +6060,11 @@ export interface components {
             /** @description A new API key, with its secret. The secret is shown only here. */
             data: components["schemas"]["ApiKeyResponse"] & {
                 /**
-                 * @description The key. Send it as `Authorization: Bearer <key>`. Store it now: it cannot be
-                 *     shown again.
-                 * @example axk_3q9ZbXcV…
+                 * @description The key. Send it as `Authorization: Bearer <key>`; no other header is needed: the key
+                 *     names its tenant. Store it now: it cannot be shown again. Shape: `axk1_`, the tenant ID
+                 *     (32 lowercase hex digits), `_`, then a random part. Keys created in older versions start
+                 *     with `axk_` and keep working.
+                 * @example axk1_0193c5c0d2f87b2a9e4f6a1b2c3d4e5f_3q9ZbXcV…
                  */
                 key: string;
             };
@@ -7404,6 +7606,138 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_TenantDomain: {
+            /** @description A domain of the tenant: requests to a verified domain reach this tenant. */
+            data: {
+                /** @description Why the last lookup did not verify the domain. */
+                check_error?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                /**
+                 * @description Lower case, without port or trailing dot; international names in punycode.
+                 * @example shop.example
+                 */
+                domain: string;
+                /**
+                 * Format: int32
+                 * @description Daily checks in a row of the verified domain that did not find the DNS record; at 3 the
+                 *     domain becomes `failed`. Keep the record in place: one successful check resets it to 0.
+                 */
+                failed_checks: number;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: date-time
+                 * @description Last time the DNS record was looked up.
+                 */
+                last_checked_at?: string | null;
+                /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
+                record: components["schemas"]["TenantDomainRecord"];
+                /**
+                 * @description `pending` (waits for the DNS record), `verified`, or `failed` (not verified within 7
+                 *     days, or a verified domain whose record was missing at 3 daily checks in a row: fix the
+                 *     record and verify again).
+                 * @example pending
+                 */
+                status: string;
+                /**
+                 * Format: date-time
+                 * @description When the status last changed; a `pending` domain fails 7 days after it.
+                 */
+                updated_at: string;
+                /** Format: date-time */
+                verified_at?: string | null;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TenantMove: {
+            /** @description A move of a tenant to another placement. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** @description Why the last run stopped, when it did; running the move again resumes it. */
+                error?: string | null;
+                /** Format: date-time */
+                finished_at?: string | null;
+                /** @example main */
+                from: string;
+                /** Format: uuid */
+                id: string;
+                keep_source: boolean;
+                /**
+                 * Format: int64
+                 * @description Sum of `tables[].rows`.
+                 */
+                rows: number;
+                /**
+                 * @description `copying` (the tenant answers `503`), `copied`, `switched` (the tenant works from `to`;
+                 *     the old placement is being cleaned), `done` or `aborted`.
+                 * @example done
+                 */
+                state: string;
+                /** @description Rows copied per table (after `copied`). */
+                tables: components["schemas"]["TenantTableRows"][];
+                /** Format: uuid */
+                tenant_id: string;
+                /** @example acme-db */
+                to: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TenantMovePlan: {
+            /** @description What a move would do (dry run). Nothing is changed. */
+            data: {
+                /** @description What must be fixed first; empty when the move can run. */
+                blocking: components["schemas"]["TenantMoveBlocker"][];
+                /**
+                 * Format: int64
+                 * @description Files of the tenant that would be copied to the file storage of `to`; `0` when both
+                 *     placements keep files in the same storage (nothing to copy).
+                 */
+                files: number;
+                /**
+                 * @description Placement that keeps the tenant's data now.
+                 * @example main
+                 */
+                from: string;
+                keep_source: boolean;
+                /** @description `true` when nothing blocks the move (`blocking` is empty). */
+                ready: boolean;
+                /**
+                 * Format: uuid
+                 * @description An interrupted move to `to` that a real run resumes.
+                 */
+                resumes?: string | null;
+                /**
+                 * Format: int64
+                 * @description Sum of `tables[].rows`.
+                 */
+                rows: number;
+                /**
+                 * Format: int64
+                 * @description Seconds the tenant answers `503 tenant_maintenance` before copying starts (other servers
+                 *     see the move and requests in progress finish); copying takes longer for many rows.
+                 */
+                settle_seconds: number;
+                /** @description Rows of the tenant that would be copied, per table, in copy order. */
+                tables: components["schemas"]["TenantTableRows"][];
+                /**
+                 * @description Slug of the tenant.
+                 * @example acme
+                 */
+                tenant: string;
+                /** Format: uuid */
+                tenant_id: string;
+                /**
+                 * @description Placement the data would move to.
+                 * @example acme-db
+                 */
+                to: string;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_TenantSettingState: {
             /** @description A setting the installed modules take per tenant, and its state in the current tenant. */
             data: {
@@ -7750,6 +8084,7 @@ export interface components {
                 name: string;
                 /** @description `ready`, `behind` (migrations pending: its tenants answer `503`) or `migrating`. */
                 schema_state: string;
+                storage?: components["schemas"]["PlacementStorage"] | null;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -8595,8 +8930,9 @@ export interface components {
              */
             response_status?: number | null;
             /**
-             * @description `pending`, `delivered` or `failed`.
-             * @example delivered
+             * @description `pending` (sending or waiting for a retry), `succeeded` or `failed` (gave up) — the same values
+             *     as a delivery's `status`.
+             * @example succeeded
              */
             status: string;
         };
@@ -9147,6 +9483,15 @@ export interface components {
              */
             slug: string;
         };
+        /** @description A domain to add to the tenant. */
+        NewTenantDomain: {
+            /**
+             * @description The domain, e.g. `shop.example` (punycode for international names). Not an IP address,
+             *     `localhost` or the platform's own domain.
+             * @example shop.example
+             */
+            domain: string;
+        };
         /** @description One mail of a campaign to the person. */
         NewsletterDelivery: {
             /** Format: uuid */
@@ -9275,8 +9620,10 @@ export interface components {
                  */
                 permissions: string[];
                 /**
-                 * @description The first characters of the key, to recognize it.
-                 * @example axk_3q9ZbXcV
+                 * @description A few characters of the key, to recognize it: `axk1_…` and the first 8 characters of the
+                 *     key's random part (after the tenant part). Keys created in older versions (`axk_…`) show
+                 *     their first 12 characters.
+                 * @example axk1_…3q9ZbXcV
                  */
                 prefix: string;
             }[];
@@ -9501,8 +9848,9 @@ export interface components {
                 status: components["schemas"]["CommentStatus"];
                 target_id: string;
                 /**
-                 * @description Title of the target (e.g. the post's title), from the module that owns it; absent when
-                 *     that kind has no lookup or the target is not public now.
+                 * @description Title of the target (e.g. the post's title), from the module that owns it. Only given while
+                 *     the target is public: for a draft, unpublished or deleted target (or a kind with no
+                 *     lookup) the field is absent and only `target_type` and `target_id` identify it.
                  */
                 target_title?: string | null;
                 target_type: string;
@@ -10247,6 +10595,19 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_PublicTermCount: {
+            /** @description The items of this page, in the requested order. */
+            data: (components["schemas"]["PublicTerm"] & {
+                /**
+                 * Format: int64
+                 * @description Published posts in `locale` that carry the term.
+                 * @example 12
+                 */
+                posts: number;
+            })[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_RedirectResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
@@ -10656,6 +11017,51 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_TenantDomain: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /** @description Why the last lookup did not verify the domain. */
+                check_error?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                /**
+                 * @description Lower case, without port or trailing dot; international names in punycode.
+                 * @example shop.example
+                 */
+                domain: string;
+                /**
+                 * Format: int32
+                 * @description Daily checks in a row of the verified domain that did not find the DNS record; at 3 the
+                 *     domain becomes `failed`. Keep the record in place: one successful check resets it to 0.
+                 */
+                failed_checks: number;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: date-time
+                 * @description Last time the DNS record was looked up.
+                 */
+                last_checked_at?: string | null;
+                /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
+                record: components["schemas"]["TenantDomainRecord"];
+                /**
+                 * @description `pending` (waits for the DNS record), `verified`, or `failed` (not verified within 7
+                 *     days, or a verified domain whose record was missing at 3 daily checks in a row: fix the
+                 *     record and verify again).
+                 * @example pending
+                 */
+                status: string;
+                /**
+                 * Format: date-time
+                 * @description When the status last changed; a `pending` domain fails 7 days after it.
+                 */
+                updated_at: string;
+                /** Format: date-time */
+                verified_at?: string | null;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_TermResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
@@ -10898,6 +11304,31 @@ export interface components {
             name: string;
             /** @description `ready`, `behind` (migrations pending: its tenants answer `503`) or `migrating`. */
             schema_state: string;
+            storage?: components["schemas"]["PlacementStorage"] | null;
+        };
+        /** @description Where a placement keeps its tenants' files. Access keys are never shown. */
+        PlacementStorage: {
+            /**
+             * @description Bucket (`s3`).
+             * @example acme-files
+             */
+            bucket?: string | null;
+            /** @description Whether an access key is stored (`s3`); its value is never shown. */
+            credentials: boolean;
+            /** @description Directory on the server (`local`). */
+            dir?: string | null;
+            /** @description Address of the S3-compatible service (`s3`); `null` for Amazon S3. */
+            endpoint?: string | null;
+            /**
+             * @description `local` (a directory on the server), `s3` (an S3 or S3-compatible bucket), or
+             *     `unreadable` (the stored settings cannot be decrypted with the configured secret key).
+             * @example s3
+             */
+            kind: string;
+            /** @description Folder inside the bucket (`s3`). */
+            prefix?: string | null;
+            /** @description Region of the bucket (`s3`). */
+            region?: string | null;
         };
         /** @description A comment just posted, for its author. */
         PostedComment: components["schemas"]["PublicComment"] & {
@@ -11412,6 +11843,15 @@ export interface components {
             slug: string;
             /** @description `category` or `tag`. */
             taxonomy: string;
+        };
+        /** @description A category or tag with the number of its published posts. */
+        PublicTermCount: components["schemas"]["PublicTerm"] & {
+            /**
+             * Format: int64
+             * @description Published posts in `locale` that carry the term.
+             * @example 12
+             */
+            posts: number;
         };
         /** @description A category or tag as readers see it. */
         PublicTermPage: components["schemas"]["PublicTerm"] & {
@@ -12239,6 +12679,175 @@ export interface components {
              */
             status?: string | null;
         };
+        /** @description A domain of the tenant: requests to a verified domain reach this tenant. */
+        TenantDomain: {
+            /** @description Why the last lookup did not verify the domain. */
+            check_error?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * @description Lower case, without port or trailing dot; international names in punycode.
+             * @example shop.example
+             */
+            domain: string;
+            /**
+             * Format: int32
+             * @description Daily checks in a row of the verified domain that did not find the DNS record; at 3 the
+             *     domain becomes `failed`. Keep the record in place: one successful check resets it to 0.
+             */
+            failed_checks: number;
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date-time
+             * @description Last time the DNS record was looked up.
+             */
+            last_checked_at?: string | null;
+            /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
+            record: components["schemas"]["TenantDomainRecord"];
+            /**
+             * @description `pending` (waits for the DNS record), `verified`, or `failed` (not verified within 7
+             *     days, or a verified domain whose record was missing at 3 daily checks in a row: fix the
+             *     record and verify again).
+             * @example pending
+             */
+            status: string;
+            /**
+             * Format: date-time
+             * @description When the status last changed; a `pending` domain fails 7 days after it.
+             */
+            updated_at: string;
+            /** Format: date-time */
+            verified_at?: string | null;
+        };
+        /** @description The DNS record that proves the tenant owns the domain. */
+        TenantDomainRecord: {
+            /**
+             * @description Full name of the record.
+             * @example _autoxide-challenge.shop.example
+             */
+            name: string;
+            /**
+             * @description Always `TXT`.
+             * @example TXT
+             */
+            type: string;
+            /**
+             * @description Exact value of the record.
+             * @example autoxide-verify=6Jx1rYqQe2m3Vb0nC5tWk8sLp4dZa7Hf
+             */
+            value: string;
+        };
+        /** @description A move of a tenant to another placement. */
+        TenantMove: {
+            /** Format: date-time */
+            created_at: string;
+            /** @description Why the last run stopped, when it did; running the move again resumes it. */
+            error?: string | null;
+            /** Format: date-time */
+            finished_at?: string | null;
+            /** @example main */
+            from: string;
+            /** Format: uuid */
+            id: string;
+            keep_source: boolean;
+            /**
+             * Format: int64
+             * @description Sum of `tables[].rows`.
+             */
+            rows: number;
+            /**
+             * @description `copying` (the tenant answers `503`), `copied`, `switched` (the tenant works from `to`;
+             *     the old placement is being cleaned), `done` or `aborted`.
+             * @example done
+             */
+            state: string;
+            /** @description Rows copied per table (after `copied`). */
+            tables: components["schemas"]["TenantTableRows"][];
+            /** Format: uuid */
+            tenant_id: string;
+            /** @example acme-db */
+            to: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Why the move cannot run now. */
+        TenantMoveBlocker: {
+            /**
+             * @description Stable code, the same as the error a real run would answer.
+             * @example tenant_move_schema_differs
+             */
+            code: string;
+            message: string;
+        };
+        /** @description What a move would do (dry run). Nothing is changed. */
+        TenantMovePlan: {
+            /** @description What must be fixed first; empty when the move can run. */
+            blocking: components["schemas"]["TenantMoveBlocker"][];
+            /**
+             * Format: int64
+             * @description Files of the tenant that would be copied to the file storage of `to`; `0` when both
+             *     placements keep files in the same storage (nothing to copy).
+             */
+            files: number;
+            /**
+             * @description Placement that keeps the tenant's data now.
+             * @example main
+             */
+            from: string;
+            keep_source: boolean;
+            /** @description `true` when nothing blocks the move (`blocking` is empty). */
+            ready: boolean;
+            /**
+             * Format: uuid
+             * @description An interrupted move to `to` that a real run resumes.
+             */
+            resumes?: string | null;
+            /**
+             * Format: int64
+             * @description Sum of `tables[].rows`.
+             */
+            rows: number;
+            /**
+             * Format: int64
+             * @description Seconds the tenant answers `503 tenant_maintenance` before copying starts (other servers
+             *     see the move and requests in progress finish); copying takes longer for many rows.
+             */
+            settle_seconds: number;
+            /** @description Rows of the tenant that would be copied, per table, in copy order. */
+            tables: components["schemas"]["TenantTableRows"][];
+            /**
+             * @description Slug of the tenant.
+             * @example acme
+             */
+            tenant: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /**
+             * @description Placement the data would move to.
+             * @example acme-db
+             */
+            to: string;
+        };
+        /** @description Where to move the tenant's data. */
+        TenantMoveRequest: {
+            /**
+             * @description Only report what the move would do, changing nothing. Defaults to `true`: send `false` to
+             *     move.
+             * @default true
+             */
+            dry_run: boolean;
+            /**
+             * @description Keep the tenant's data at the old placement as a backup copy (its queued jobs and events
+             *     are removed there so nothing runs twice). Defaults to `false`: the old copy is deleted.
+             */
+            keep_source?: boolean;
+            /**
+             * @description Name of the placement (database) to move the data to.
+             * @example acme-db
+             */
+            to: string;
+        };
         /** @description A setting the installed modules take per tenant, and its state in the current tenant. */
         TenantSettingState: {
             description: string;
@@ -12263,6 +12872,13 @@ export interface components {
              * @example https://shop.example
              */
             value: string;
+        };
+        /** @description Rows of the tenant in one table. */
+        TenantTableRows: {
+            /** Format: int64 */
+            rows: number;
+            /** @example notes_note */
+            table: string;
         };
         /** @description The name of a term in one language, and its parent. Omitted fields stay as they are. */
         TermFields: {
@@ -12441,7 +13057,7 @@ export interface components {
         UnsubscribeRequest: {
             /** @description Stop mails about every comment followed with this address, not just this one. */
             all?: boolean;
-            /** @description The `token` of the link in a reply mail. */
+            /** @description The `token` of the link in a reply mail, exactly as received (it may contain a `.`). */
             token: string;
         };
         /** @description The answer to an unsubscription: always the same. */
@@ -21695,6 +22311,71 @@ export interface operations {
             };
         };
     };
+    content_list_public_content_terms: {
+        parameters: {
+            query: {
+                /**
+                 * @description Language of the posts counted, and of the names returned (the default language when a
+                 *     term is not translated).
+                 * @example vi
+                 */
+                locale: string;
+                /** @description `category` or `tag`; omitted: both. */
+                taxonomy?: components["schemas"]["Taxonomy"];
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of terms with their post counts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PublicTermCount"];
+                };
+            };
+            /** @description A parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     content_get_public_content_term: {
         parameters: {
             query: {
@@ -24558,6 +25239,345 @@ export interface operations {
             };
         };
     };
+    kernel_list_tenant_domains: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the tenant's domains. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_TenantDomain"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A paging parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_add_tenant_domain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTenantDomain"];
+            };
+        };
+        responses: {
+            /** @description The domain, with the DNS record to set. */
+            201: {
+                headers: {
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantDomain"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Another tenant has the domain (`tenant_domain_taken`), or the installation runs one tenant (`tenant_single_mode`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not a usable domain; code `tenant_domain_invalid`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_check_tenant_domain_allowed: {
+        parameters: {
+            query: {
+                /** @description The domain, as the TLS server sees it (e.g. `shop.example`). */
+                domain: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The domain is verified and its tenant is active. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_AllowedTenantDomain"];
+                };
+            };
+            /** @description The `domain` parameter is missing; code `bad_request`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not a verified domain of an active tenant; code `tenant_domain_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too many requests from this address; code `rate_limited`. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_remove_tenant_domain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the domain. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The domain is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant has no such domain; code `tenant_domain_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_verify_tenant_domain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the domain. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The domain after the lookup. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantDomain"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant has no such domain; code `tenant_domain_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     kernel_list_modules: {
         parameters: {
             query?: never;
@@ -25241,6 +26261,176 @@ export interface operations {
             };
             /** @description A value is invalid; see `errors`. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_move_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantMoveRequest"];
+            };
+        };
+        responses: {
+            /** @description Dry run: what the move would do; nothing changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantMovePlan"];
+                };
+            };
+            /** @description The move started (or a stopped one resumed) in the background; `Location` is its status. */
+            201: {
+                headers: {
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantMove"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.move` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant or placement; code `tenant_not_found` or `tenant_placement_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The move cannot run now; code `tenant_move_platform`, `tenant_move_same_placement`, `tenant_move_not_active`, `tenant_move_running`, `tenant_move_unfinished`, `tenant_move_schema_differs`, `tenant_move_same_database` or `tenant_placement_behind`. A dry run lists every reason. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A database cannot be reached; code `tenant_move_unreachable`. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_tenant_move: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+                /** @description Id of the move. */
+                move_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The move. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantMove"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant or move; code `tenant_not_found` or `tenant_move_not_found`. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29697,7 +30887,7 @@ export interface operations {
     newsletter_get_newsletter_preferences: {
         parameters: {
             query?: {
-                /** @description The token in the links of a campaign mail. */
+                /** @description The token in the links of a campaign mail, exactly as received (it may contain a `.`). */
                 token?: string;
             };
             header?: {
@@ -29750,7 +30940,7 @@ export interface operations {
     newsletter_update_newsletter_preferences: {
         parameters: {
             query?: {
-                /** @description The token in the links of a campaign mail. */
+                /** @description The token in the links of a campaign mail, exactly as received (it may contain a `.`). */
                 token?: string;
             };
             header?: {
@@ -29883,7 +31073,7 @@ export interface operations {
     newsletter_unsubscribe_newsletter: {
         parameters: {
             query?: {
-                /** @description The token in the links of a campaign mail. */
+                /** @description The token in the links of a campaign mail, exactly as received (it may contain a `.`). */
                 token?: string;
             };
             header?: {

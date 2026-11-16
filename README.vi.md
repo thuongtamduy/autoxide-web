@@ -54,7 +54,7 @@ liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định b�
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).
 
-Chạy với core Autoxide từ commit `27380c9` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
+Chạy với core Autoxide từ commit `11bbef0` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
 sẽ có).
 
 ## Cần có
