@@ -90,11 +90,12 @@ Open <http://localhost:3000> and sign in with your core account.
 
 ### Configuration
 
-| Variable                      | Default                 | Meaning                                                                                     |
-| ----------------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
-| `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Only this app's server calls it; browsers never do. |
-| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` in production    | Send session cookies only over HTTPS. Turn it off only when serving over plain HTTP.        |
-| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false` in production   | Show screens and tabs that use sample data while the core has no API for them.              |
+| Variable                      | Default                 | Meaning                                                                                                                                                                                                                                                        |
+| ----------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Only this app's server calls it; browsers never do.                                                                                                                                                                    |
+| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` in production    | Send session cookies only over HTTPS. Turn it off only when serving over plain HTTP.                                                                                                                                                                           |
+| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false` in production   | Show screens and tabs that use sample data while the core has no API for them.                                                                                                                                                                                 |
+| `AUTOXIDE_ADMIN_TENANT`       | empty                   | Only for a core with several tenants: the slug or ID of the one tenant this admin is for. Empty: the sign-in form asks for the workspace when the core needs it (remembered for next time), or the core picks the tenant by the domain the admin is served on. |
 
 ### Mail links
 

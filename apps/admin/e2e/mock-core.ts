@@ -62,7 +62,13 @@ import { mediaContent, mediaRoutes, resetMedia } from "./mock-media.ts";
 import { bumpMenu, MENUS_MODULE, menusRoutes, publicMenu, resetMenus } from "./mock-menus.ts";
 import { fireEvent, resetSettings, settingsRoutes, startLoginCeremony } from "./mock-settings.ts";
 import { storefrontRoutes } from "./mock-storefront.ts";
-import { resetTenants, setTenancy, tenantRoutes } from "./mock-tenants.ts";
+import {
+  knownTenant,
+  resetTenants,
+  setTenancy,
+  tenancyMode,
+  tenantRoutes,
+} from "./mock-tenants.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
 const CODE = "123456";
@@ -354,6 +360,22 @@ const server = createServer(async (request, response) => {
     return;
   if (route === "GET /api/v1/content/public/preview") return contentPreview(response, url);
   if (route === "POST /api/v1/auth/login") {
+    // Chế độ nhiều khách: đăng nhập phải nêu khách (header hay tên miền), như core (bước 33). Tài
+    // khoản giả đều thuộc khách nền tảng (`default`).
+    if (tenancyMode() === "multi") {
+      const tenant = request.headers["autoxide-tenant"];
+      if (typeof tenant !== "string") {
+        return problem(
+          response,
+          400,
+          "tenant_required",
+          "No customer (tenant) could be told for this request. Send it to the tenant's domain, add the header `Autoxide-Tenant: <slug>`, or sign in.",
+        );
+      }
+      if (!knownTenant(tenant)) {
+        return problem(response, 404, "tenant_not_found", `There is no tenant \`${tenant}\`.`);
+      }
+    }
     const body = await json(request);
     const account = accounts.find(
       (a) => !a.deleted && !a.disabledAt && a.email === body.email && a.password === body.password,

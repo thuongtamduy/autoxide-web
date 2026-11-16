@@ -133,7 +133,11 @@
     "mfaExpired": "The sign-in step expired. Sign in again.",
     "unreachable": "The Autoxide server does not answer. Try again in a moment.",
     "deleted": "Your account was deleted and you were signed out.",
-    "forgot": "Forgot your password?"
+    "forgot": "Forgot your password?",
+    "workspace": "Workspace",
+    "workspaceHint": "The short name of your organization on this server, for example acme. Ask whoever invited you.",
+    "workspaceNeeded": "This server hosts several workspaces. Enter yours to sign in.",
+    "invalidWorkspace": "A workspace is its short name (letters, digits and hyphens) or its ID."
   },
   "modules": {
     "title": "Modules",

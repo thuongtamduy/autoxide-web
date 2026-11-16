@@ -53,9 +53,12 @@ test("thanh bên có Nội dung; danh sách lọc theo trạng thái và chữ, 
   await expect(rows(page).first()).toContainText("Vệ sinh thớt gỗ đúng cách");
 
   await page.getByRole("link", { name: "All", exact: true }).click();
+  // Chờ trang bỏ bộ lọc "Published" xong mới gõ: gõ sớm thì form cũ (còn `status=published`) gửi đi.
+  await expect(page).toHaveURL(/\/content$/);
   await page.getByRole("searchbox").fill("bao quan");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page).toHaveURL(/q=bao\+quan/);
+  await expect(page).not.toHaveURL(/status=/);
   await expect(rows(page)).toHaveCount(1);
   await expect(rows(page).first()).toContainText("Bảo quản dao bếp");
   await expect(rows(page).first()).toContainText("In review");

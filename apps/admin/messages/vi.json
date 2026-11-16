@@ -133,7 +133,11 @@
     "mfaExpired": "Bước đăng nhập đã hết hạn. Hãy đăng nhập lại.",
     "unreachable": "Máy chủ Autoxide không trả lời. Hãy thử lại sau chốc lát.",
     "deleted": "Tài khoản của bạn đã bị xoá và bạn đã được đăng xuất.",
-    "forgot": "Quên mật khẩu?"
+    "forgot": "Quên mật khẩu?",
+    "workspace": "Không gian làm việc",
+    "workspaceHint": "Tên ngắn của tổ chức bạn trên máy chủ này, ví dụ acme. Hỏi người đã mời bạn.",
+    "workspaceNeeded": "Máy chủ này có nhiều không gian làm việc. Nhập không gian của bạn để đăng nhập.",
+    "invalidWorkspace": "Không gian làm việc là tên ngắn (chữ, số và dấu gạch ngang) hoặc ID của nó."
   },
   "modules": {
     "title": "Module",

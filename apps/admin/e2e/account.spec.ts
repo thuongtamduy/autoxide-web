@@ -346,3 +346,53 @@ test("điện thoại: các tab không tràn ngang, bảng thành thẻ, hộp t
   expect(Math.round((box?.y ?? 0) + (box?.height ?? 0))).toBe(844);
   expect(Math.round(box?.width ?? 0)).toBe(390);
 });
+
+test("core nhiều khách: đăng nhập hỏi không gian làm việc, nhớ cho lần sau", async ({
+  page,
+  context,
+  request,
+}) => {
+  // Các file test dùng dữ liệu mẫu không đặt lại core giả: luôn trả về một khách khi xong.
+  await request.post(`${CORE}/__tenancy`, { data: { mode: "multi" } });
+  try {
+    await page.goto("/login");
+    // Core một khách hay đã biết khách: không có ô này.
+    await expect(page.getByLabel("Workspace")).toHaveCount(0);
+    await page.getByLabel("Email").fill("admin@example.com");
+    await page.getByLabel("Password").fill("admin password");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    const alert = page.locator("form [role=alert]");
+    await expect(alert).toHaveAttribute("data-code", "tenant_required");
+    await expect(alert).toHaveText("This server hosts several workspaces. Enter yours to sign in.");
+    await expect(page.getByLabel("Email")).toHaveValue("admin@example.com");
+
+    await page.getByLabel("Workspace").fill("acme shop");
+    await page.getByLabel("Password").fill("admin password");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(alert).toHaveAttribute("data-code", "validation_failed");
+    await expect(page.getByLabel("Workspace")).toHaveValue("acme shop");
+
+    await page.getByLabel("Workspace").fill("nowhere");
+    await page.getByLabel("Password").fill("admin password");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(alert).toHaveAttribute("data-code", "tenant_not_found");
+
+    await page.getByLabel("Workspace").fill(" Default ");
+    await page.getByLabel("Password").fill("admin password");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    // Khách nằm trong cookie httpOnly của máy chủ, trình duyệt không đọc được bằng script.
+    const saved = (await context.cookies()).find((c) => c.name === "ax_tenant");
+    expect(saved?.value).toBe("default");
+    expect(saved?.httpOnly).toBe(true);
+
+    // Lần sau: ô hiện sẵn khách đã chọn.
+    await context.clearCookies({ name: "ax_access" });
+    await context.clearCookies({ name: "ax_refresh" });
+    await context.clearCookies({ name: "ax_session" });
+    await page.goto("/login");
+    await expect(page.getByLabel("Workspace")).toHaveValue("default");
+  } finally {
+    await request.post(`${CORE}/__tenancy`, { data: { mode: "single" } });
+  }
+});

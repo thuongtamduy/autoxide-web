@@ -4,8 +4,9 @@ import { ApiError, type AutoxideClient, createAutoxideClient, toApiError } from 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
-import { coreUrl } from "./env";
+import { adminTenantSetting, coreUrl } from "./env";
 import { ACCESS_COOKIE } from "./session";
+import { TENANT_COOKIE, tenantHeaders } from "./tenant";
 
 /**
  * `User-Agent` của trình duyệt đang gọi trang này. Gửi kèm mọi lời gọi core: core lưu nó cho
@@ -26,13 +27,33 @@ export async function coreClient(): Promise<AutoxideClient> {
   });
 }
 
-/** Client gọi core như khách (đăng nhập, làm mới token). */
+/**
+ * Client gọi core khi chưa đăng nhập (đăng nhập, bước mã, quên mật khẩu, cấu hình công khai). Core
+ * chạy nhiều khách thì kèm khách của request (xem `tenant.ts`); core một khách bỏ qua header này.
+ * Làm mới token không đi qua đây: refresh token tự mang khách.
+ */
 export async function anonymousClient(): Promise<AutoxideClient> {
-  return createAutoxideClient({
+  const client = createAutoxideClient({
     baseUrl: coreUrl(),
     language: await getLocale(),
     userAgent: await browserAgent(),
   });
+  const request = await headers();
+  const chosen = (await cookies()).get(TENANT_COOKIE)?.value;
+  const extra = tenantHeaders(
+    adminTenantSetting(),
+    chosen,
+    request.get("x-forwarded-host") ?? request.get("host"),
+  );
+  if (Object.keys(extra).length > 0) {
+    client.use({
+      onRequest({ request }) {
+        for (const [name, value] of Object.entries(extra)) request.headers.set(name, value);
+        return request;
+      },
+    });
+  }
+  return client;
 }
 
 type Result<T> = { data?: T; error?: unknown; response: Response };

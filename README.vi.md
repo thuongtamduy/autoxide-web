@@ -83,11 +83,12 @@ Mở <http://localhost:3000> và đăng nhập bằng tài khoản core.
 
 ### Cấu hình
 
-| Biến                          | Mặc định                    | Ý nghĩa                                                                                                    |
-| ----------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080`     | Địa chỉ của core, không có `/api/v1`. Chỉ máy chủ của ứng dụng này gọi tới; trình duyệt không bao giờ gọi. |
-| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` khi chạy production  | Chỉ gửi cookie phiên qua HTTPS. Chỉ tắt khi phục vụ qua HTTP thường.                                       |
-| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false` khi chạy production | Hiện các màn và tab dùng dữ liệu mẫu trong lúc core chưa có API cho chúng.                                 |
+| Biến                          | Mặc định                    | Ý nghĩa                                                                                                                                                                                                                                    |
+| ----------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080`     | Địa chỉ của core, không có `/api/v1`. Chỉ máy chủ của ứng dụng này gọi tới; trình duyệt không bao giờ gọi.                                                                                                                                 |
+| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` khi chạy production  | Chỉ gửi cookie phiên qua HTTPS. Chỉ tắt khi phục vụ qua HTTP thường.                                                                                                                                                                       |
+| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false` khi chạy production | Hiện các màn và tab dùng dữ liệu mẫu trong lúc core chưa có API cho chúng.                                                                                                                                                                 |
+| `AUTOXIDE_ADMIN_TENANT`       | trống                       | Chỉ cho core chạy nhiều khách: slug hay ID của khách duy nhất mà trang quản trị này phục vụ. Để trống: form đăng nhập hỏi không gian làm việc khi core cần (nhớ cho lần sau), hoặc core nhận khách theo tên miền đang chạy trang quản trị. |
 
 ### Link trong thư
 

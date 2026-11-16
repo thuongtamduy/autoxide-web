@@ -6,8 +6,9 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { anonymousClient } from "@/lib/core";
-import { secureCookies } from "@/lib/env";
+import { adminTenantSetting, secureCookies } from "@/lib/env";
 import { MFA_COOKIE, mfaCookie, safeNext, tokenCookies } from "@/lib/session";
+import { asksForWorkspace, normalizeWorkspace, TENANT_COOKIE } from "@/lib/tenant";
 import { applyThemeCookie, savedTheme } from "@/lib/theme-sync";
 
 /** Trạng thái form đăng nhập, giữ giữa các lần gửi. */
@@ -19,11 +20,19 @@ export type LoginState = {
   code?: string;
   /** Email vừa gửi, điền lại vào form sau khi báo lỗi (React đặt lại form sau mỗi lần gửi). */
   email?: string;
+  /**
+   * Hiện ô "Không gian làm việc" (khách của core). Chỉ khi core chạy nhiều khách mà chưa biết
+   * người dùng thuộc khách nào (`tenant_required`, `tenant_not_found`).
+   */
+  askWorkspace?: boolean;
+  /** Khách vừa gõ, điền lại vào ô. */
+  workspace?: string;
 };
 
 const PasswordForm = z.object({
   email: z.string().trim().min(1),
   password: z.string().min(1),
+  workspace: z.string().max(200).optional(),
   next: z.string().optional(),
 });
 
@@ -50,6 +59,33 @@ async function signIn(_state: LoginState, formData: FormData): Promise<LoginStat
     };
   }
   const store = await cookies();
+  // Khách gõ ở ô "Không gian làm việc": nhớ trong cookie (không phải secret) để `anonymousClient`
+  // gửi kèm lời gọi đăng nhập này, bước mã và lần đăng nhập sau. Để trống thì quên khách cũ.
+  const typed = input.data.workspace;
+  if (typed !== undefined) {
+    const workspace = normalizeWorkspace(typed);
+    if (workspace === null) {
+      return {
+        step: "password",
+        error: t("invalidWorkspace"),
+        code: "validation_failed",
+        email: input.data.email,
+        askWorkspace: true,
+        workspace: typed,
+      };
+    }
+    if (workspace) {
+      store.set(TENANT_COOKIE, workspace, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: secureCookies(),
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    } else {
+      store.delete(TENANT_COOKIE);
+    }
+  }
   let result: Awaited<ReturnType<typeof callLogin>>;
   try {
     result = await callLogin(input.data.email, input.data.password);
@@ -75,11 +111,14 @@ async function signIn(_state: LoginState, formData: FormData): Promise<LoginStat
     redirect(safeNext(input.data.next));
   }
   const failure = toApiError(response, error);
+  const askWorkspace =
+    (typed !== undefined || asksForWorkspace(failure.code)) && !adminTenantSetting();
   return {
     step: "password",
-    error: failure.problem.detail,
+    error: asksForWorkspace(failure.code) && !typed ? t("workspaceNeeded") : failure.problem.detail,
     code: failure.code,
     email: input.data.email,
+    ...(askWorkspace ? { askWorkspace, workspace: typed ?? "" } : {}),
   };
 }
 

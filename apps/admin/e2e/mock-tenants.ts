@@ -205,6 +205,11 @@ export function tenancyMode(): "single" | "multi" {
   return mode;
 }
 
+/** Có khách với slug hay id này không (header `Autoxide-Tenant` khi đăng nhập ở chế độ `multi`). */
+export function knownTenant(raw: string): boolean {
+  return tenants.some((x) => x.id === raw || x.slug === raw);
+}
+
 /** `POST /__tenancy {mode}`: đổi chế độ của bản cài giả. */
 export async function setTenancy(request: IncomingMessage, response: ServerResponse) {
   mode = text(await json(request), "mode") === "multi" ? "multi" : "single";

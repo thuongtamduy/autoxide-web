@@ -28,3 +28,11 @@ export function sampleDataSetting(): boolean {
   }
   return value === "true" || value === "1";
 }
+
+/**
+ * Khách (slug hay id) của trang quản trị dành riêng cho một khách, khi core chạy nhiều khách
+ * (`AUTOXIDE_ADMIN_TENANT`). Để trống: người dùng chọn lúc đăng nhập, hoặc core nhận theo tên miền.
+ */
+export function adminTenantSetting(): string {
+  return (process.env.AUTOXIDE_ADMIN_TENANT ?? "").trim();
+}

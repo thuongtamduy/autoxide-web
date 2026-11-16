@@ -1631,3 +1631,25 @@ chuyển tiếp. Không gửi cookie hay token nào kèm header khách.
 Đã cân nhắc: gửi `Host` gốc thay cho `X-Forwarded-Host` — `fetch` của Node không cho đặt `Host`; tra id của khách
 theo tên miền ở website rồi gửi `Autoxide-Tenant` — thêm một lần gọi và một bộ nhớ đệm, trong khi core đã làm
 việc này.
+
+## W-034 · Trang quản trị đăng nhập được khi core chạy nhiều khách — 2026-11-16 — agent quyết
+
+Quyết định:
+
+- Lời gọi core **khi chưa đăng nhập** (`anonymousClient`: đăng nhập, bước mã, quên mật khẩu, cấu hình công
+  khai, menu công khai) kèm khách theo thứ tự: `AUTOXIDE_ADMIN_TENANT` → khách đã chọn lúc đăng nhập (cookie
+  `ax_tenant`) → `Autoxide-Tenant`; không có thì `X-Forwarded-Host` bằng tên miền đang mở (`src/lib/tenant.ts`,
+  hàm thuần có test). Core một khách bỏ qua cả hai.
+- **Form đăng nhập hỏi "Không gian làm việc"** chỉ khi core trả `tenant_required` / `tenant_not_found`, hoặc đã
+  chọn lần trước; trang quản trị đặt `AUTOXIDE_ADMIN_TENANT` thì không bao giờ hỏi. Giá trị chuẩn hoá (chữ thường,
+  slug hay UUID), sai dạng thì báo dưới form, không gửi core. Khách đã chọn nằm trong cookie `httpOnly` một năm
+  (không phải secret); để trống ô thì quên.
+- **Làm mới token không gửi header khách**: refresh token tự mang khách, header của khách khác làm token mất
+  hiệu lực (mô tả của `POST /auth/refresh`). Sau khi đăng nhập, mọi lời gọi có token cũng không gửi.
+
+Lý do: thiếu phần này thì trang quản trị không đăng nhập được với core ở chế độ `multi` (W-032 ghi lại). Ba
+cách chọn khách khớp ba cách triển khai: một trang quản trị cho một khách, một trang quản trị chung, trang quản
+trị trên tên miền riêng của khách.
+
+Đã cân nhắc: danh sách khách để chọn — core không công bố danh sách khách cho người chưa đăng nhập (lộ khách
+hàng của nền tảng); gõ khách vào địa chỉ trang (`/t/acme/login`) — phải đổi mọi đường dẫn của trang quản trị.
