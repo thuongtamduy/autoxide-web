@@ -59,7 +59,7 @@ export interface paths {
         /**
          * List the audit log.
          * @description Requires `audit.read`. Newest first unless `order=asc`. Changes appear a moment
-         *     after they happen.
+         *     after they happen. With `include=actor`, each entry carries the name of who made it.
          */
         get: operations["audit_list_entries"];
         put?: never;
@@ -90,6 +90,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/all-api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the API keys of every user.
+         * @description Requires `auth.api_keys.manage`. Newest first unless `order=asc`, with the owner's name and
+         *     email; secrets are never listed. Revoke one with `DELETE /api/v1/auth/all-api-keys/{id}`.
+         */
+        get: operations["auth_list_all_api_keys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/all-api-keys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an API key of any user.
+         * @description Requires `auth.api_keys.manage`. The key stops working at once; the audit log records who
+         *     revoked it.
+         */
+        delete: operations["auth_revoke_any_api_key"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/api-keys": {
         parameters: {
             query?: never;
@@ -106,8 +148,9 @@ export interface paths {
         /**
          * Create an API key for a program or an AI agent.
          * @description Signed in with a password session only: an API key cannot create keys. The key
-         *     acts as you, limited to the permissions listed. The response carries the key
-         *     itself, shown only once.
+         *     acts as you, limited to the permissions listed. Confirm it is you with your current
+         *     password, a code from your authenticator app (`totp_code`) or one of your passkeys
+         *     (`passkey_ceremony_id`, `passkey_credential`). The response carries the key itself, shown only once.
          */
         post: operations["auth_create_api_key"];
         delete?: never;
@@ -136,6 +179,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/email-change/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report an email change you did not make.
+         * @description Needs no sign-in: the token comes from the mail sent to the old address after the
+         *     account's email changed. The account is then locked against whoever changed it: signed
+         *     out everywhere, its password removed (sign-in with a password stops working), its API
+         *     keys, passkeys, two-step sign-in and pending tokens removed. When no other account took
+         *     the old address meanwhile, the email goes back to it and a mail to choose a new password
+         *     is sent there (in the language of `Accept-Language`); otherwise ask an administrator.
+         *     Needs no tenant header: the token names its tenant.
+         */
+        post: operations["auth_report_email_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/email-verification/confirm": {
         parameters: {
             query?: never;
@@ -150,7 +219,7 @@ export interface paths {
          * @description Needs no sign-in: the token proves the mail was received. When the token was sent
          *     for a new address (`POST /api/v1/auth/me/email`), the account's email becomes that
          *     address; sign in with it from now on. Every other verification token of the
-         *     account stops working.
+         *     account stops working. Needs no tenant header: the token names its tenant.
          */
         post: operations["auth_confirm_email_verification"];
         delete?: never;
@@ -174,7 +243,9 @@ export interface paths {
          *     two-step sign-in on, answers 202 instead: send the `mfa_token` and a code to
          *     `POST /api/v1/auth/login/mfa`. The same error answers an unknown email and a
          *     wrong password. After several failed attempts the email is locked for a while,
-         *     even for the right password.
+         *     even for the right password. On a server with several tenants, sign in on the
+         *     tenant's domain or with the `Autoxide-Tenant` header; the tokens returned name
+         *     their tenant, so later requests need neither.
          */
         post: operations["auth_login"];
         delete?: never;
@@ -196,7 +267,8 @@ export interface paths {
          * Finish signing in with a code from the authenticator app or a recovery code.
          * @description Send the `mfa_token` from `POST /api/v1/auth/login` within its `expires_in`
          *     seconds. Each `mfa_token` allows five wrong codes; wrong codes also count
-         *     towards the sign-in lock of the email.
+         *     towards the sign-in lock of the email. Needs no tenant header: the `mfa_token`
+         *     names its tenant.
          */
         post: operations["auth_login_mfa"];
         delete?: never;
@@ -258,7 +330,8 @@ export interface paths {
         /**
          * Sign out: end the session of a refresh token.
          * @description Every refresh token of the session stops working; access tokens already issued
-         *     keep working until they expire. Safe to repeat.
+         *     keep working until they expire. Safe to repeat. Needs no tenant header: the
+         *     refresh token names its tenant.
          */
         post: operations["auth_logout"];
         delete?: never;
@@ -281,7 +354,8 @@ export interface paths {
         /**
          * Delete your own account and everything it owns.
          * @description Signed in with a password session only, and needs your current password (an account
-         *     without a password must set one first). The account, its sessions, keys and passkeys
+         *     without a password — `has_password: false` in `GET /api/v1/auth/me` — sets one first with
+         *     `POST /api/v1/auth/password-reset`: the mail to its own address sets a first password too). The account, its sessions, keys and passkeys
          *     go at once; data kept by other modules (notes, files…) is deleted shortly after.
          *     This cannot be undone: download your data first with `GET /api/v1/auth/me/export`.
          */
@@ -306,10 +380,18 @@ export interface paths {
          *     cannot do this). A verification mail goes to the NEW address; the email changes
          *     only when its token is confirmed with `POST /api/v1/auth/email-verification/confirm`,
          *     within 24 hours. Until then the old address stays in use. Wrong passwords count
-         *     towards the sign-in lock of the email.
+         *     towards the sign-in lock of the email. Once the change is confirmed, the OLD address gets
+         *     a mail saying so, with a token to report the change if the owner did not make it
+         *     (`POST /api/v1/auth/email-change/report`, valid 7 days).
          */
         post: operations["auth_change_email"];
-        delete?: never;
+        /**
+         * Cancel a pending email change.
+         * @description Any signed-in user, for their own account. The link sent to the new address stops working
+         *     (as does any other verification link of the account; ask for a new one if needed) and the
+         *     email stays as it is. See the pending change in `pending_email` of `GET /api/v1/auth/me`.
+         */
+        delete: operations["auth_cancel_email_change"];
         options?: never;
         head?: never;
         patch?: never;
@@ -411,7 +493,9 @@ export interface paths {
          * Start turning on two-step sign-in with an authenticator app.
          * @description Returns a new secret to add to the app. Nothing changes until you confirm with
          *     a code (`POST /api/v1/auth/me/mfa/totp/confirm`). Calling again replaces an
-         *     unconfirmed secret. Needs a password session, not an API key.
+         *     unconfirmed secret. Needs a password session, not an API key, and your current password:
+         *     a stolen access token alone cannot tie someone else's authenticator app to your account.
+         *     A wrong password counts as a failed sign-in.
          */
         post: operations["auth_start_totp"];
         delete?: never;
@@ -611,10 +695,11 @@ export interface paths {
         put?: never;
         /**
          * Ask for a password-reset mail.
-         * @description Always answers 202, whether or not an account has this email, so the answer does
-         *     not reveal who has an account. When one does, a mail with a reset token (valid 30
-         *     minutes) is sent in the language of `Accept-Language`. At most one mail per minute
-         *     per account.
+         * @description Always answers 202, whether or not an account has this email, and in the same time:
+         *     the account is looked up and the mail sent by a background job a moment later, so
+         *     neither the answer nor its timing reveals who has an account. When one does, a mail
+         *     with a reset token (valid 30 minutes) is sent in the language of `Accept-Language`. At
+         *     most one mail per minute per account.
          */
         post: operations["auth_request_password_reset"];
         delete?: never;
@@ -635,7 +720,8 @@ export interface paths {
         /**
          * Choose a new password with the token from the reset mail.
          * @description Signs the account out everywhere; every other reset token of the account stops
-         *     working. Then sign in with the new password.
+         *     working. Then sign in with the new password. Needs no tenant header: the token
+         *     names its tenant.
          */
         post: operations["auth_confirm_password_reset"];
         delete?: never;
@@ -654,7 +740,8 @@ export interface paths {
         /**
          * List every permission that roles can grant.
          * @description Requires `auth.roles.read`. Each module declares its own permissions; the list
-         *     grows when modules are added.
+         *     grows when modules are added. Descriptions follow `Accept-Language`. Without
+         *     `auth.roles.read`, read your own permissions with `GET /api/v1/me/permissions`.
          */
         get: operations["auth_list_permissions"];
         put?: never;
@@ -677,7 +764,8 @@ export interface paths {
         /**
          * Exchange a refresh token for a new pair of tokens.
          * @description The refresh token sent is used up. Sending a used refresh token again ends the
-         *     whole session (it may have been stolen): sign in again.
+         *     whole session (it may have been stolen): sign in again. Needs no tenant header:
+         *     the refresh token names its tenant (a header of another tenant makes it invalid).
          */
         post: operations["auth_refresh"];
         delete?: never;
@@ -771,7 +859,8 @@ export interface paths {
         /**
          * List or search user accounts.
          * @description Requires `auth.users.read`. Newest first unless `order=asc`. Add `search` to find
-         *     users by email or name.
+         *     users by email or name, `status` to keep active or disabled ones, `include=roles` to get
+         *     each user's roles in the same answer.
          */
         get: operations["auth_list_users"];
         put?: never;
@@ -836,6 +925,57 @@ export interface paths {
          *     set up a new device. Check who is asking before using this.
          */
         delete: operations["auth_reset_user_mfa"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/users/{id}/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the passkeys of a user.
+         * @description Requires `auth.passkeys.manage`, and that the user has no permission you lack. The same
+         *     fields as `GET /api/v1/auth/me/passkeys`: no key material. Newest first unless
+         *     `order=asc`.
+         */
+        get: operations["auth_list_user_passkeys"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove every passkey of a user who lost their devices.
+         * @description Requires `auth.passkeys.manage`, and that the user has no permission you lack. The user
+         *     signs in with the password and can add new passkeys. The password and sessions stay as they
+         *     are. Answers 204 also when the user had none.
+         */
+        delete: operations["auth_remove_user_passkeys"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/users/{id}/passkeys/{passkey_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove one passkey of a user who lost the device.
+         * @description Requires `auth.passkeys.manage`, and that the user has no permission you lack. The passkey
+         *     stops working at once. The password and the user's sessions stay as they are (like
+         *     `DELETE /api/v1/auth/users/{id}/mfa`). Check who is asking before using this. The event
+         *     `auth.passkey_removed` records `by_administrator`.
+         */
+        delete: operations["auth_remove_user_passkey"];
         options?: never;
         head?: never;
         patch?: never;
@@ -920,7 +1060,7 @@ export interface paths {
         /**
          * List comments for moderation.
          * @description Requires `comments.read`. By default the comments waiting for approval, newest first; filter
-         *     by status, target and text. Follow `pagination.next_cursor` with the same filters for more.
+         *     by status, target and text, or list unanswered questions (`status=published&unanswered=true`). Follow `pagination.next_cursor` with the same filters for more.
          */
         get: operations["comments_list_comments"];
         put?: never;
@@ -1159,8 +1299,8 @@ export interface paths {
         };
         /**
          * Count the comments of many targets (public).
-         * @description No sign-in needed. Shown comments of up to 100 targets of one kind, in the order asked;
-         *     unknown targets count 0.
+         * @description No sign-in needed. Shown comments (all, and top-level only) of up to 100 targets of one kind,
+         *     in the order asked; unknown and hidden targets count 0.
          */
         get: operations["comments_count_comments"];
         put?: never;
@@ -1180,7 +1320,8 @@ export interface paths {
         };
         /**
          * Get the comment settings (public).
-         * @description No sign-in needed. Limits and switches a website needs to show the comment box.
+         * @description No sign-in needed. Limits and switches a website needs to show the comment box, for the
+         *     tenant of the request (its own `comments.max_links` when it set one).
          */
         get: operations["comments_get_comment_settings"];
         put?: never;
@@ -1222,7 +1363,9 @@ export interface paths {
          * List the comments of a target (public).
          * @description No sign-in needed. Shown top-level comments, newest first (`order=asc`: oldest first), each
          *     with its first replies (oldest first) and `reply_count`. A top-level comment deleted by its
-         *     author stays (with `deleted: true`, no text) while it has replies. Follow
+         *     author stays (with `deleted: true`, no text) while it has replies. With `q`, only matching
+         *     top-level comments, exact-accent matches first (questions and answers on a product use the
+         *     same thread: a question is a top-level comment, answers are its replies). Follow
          *     `pagination.next_cursor` with the same parameters for more.
          */
         get: operations["comments_list_comment_thread"];
@@ -1246,7 +1389,8 @@ export interface paths {
         /**
          * Stop reply mails (public).
          * @description The page at `AUTOXIDE_COMMENTS_UNSUBSCRIBE_URL` sends the token of the link in a reply mail
-         *     here. Takes effect at once.
+         *     here. Takes effect at once. The token tells the tenant: the call works on any host of the
+         *     API, without `Autoxide-Tenant`.
          */
         post: operations["comments_unsubscribe_comment_replies"];
         delete?: never;
@@ -1268,9 +1412,33 @@ export interface paths {
          * Confirm an address for reply mails (public).
          * @description The page at `AUTOXIDE_COMMENTS_VERIFY_URL` sends the token of the mail link here (a `POST`,
          *     so mail scanners opening the link change nothing). From then on, the address gets a mail
-         *     when that comment receives a shown reply.
+         *     when that comment receives a shown reply. The token tells the tenant: the call works on any
+         *     host of the API, without `Autoxide-Tenant`.
          */
         post: operations["comments_verify_comment_email"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comments/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the targets that have comments.
+         * @description Requires `comments.read`. Each target (a post, a product…) that got a comment or had its state
+         *     set, newest first, with its counts and — when public — its title and path. Filter by kind,
+         *     state, or targets waiting for moderation (`pending=true`). Follow `pagination.next_cursor` with
+         *     the same filters for more.
+         */
+        get: operations["comments_list_comment_targets"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1872,7 +2040,10 @@ export interface paths {
         };
         /**
          * List menus.
+         * @deprecated
          * @description Requires `content.read`. Every menu in every language, by key.
+         *
+         *     **Deprecated** since 2026-11-14. It will be removed on 2027-05-14. Use `/api/v1/menus` instead.
          */
         get: operations["content_list_content_menus"];
         put?: never;
@@ -1892,13 +2063,19 @@ export interface paths {
         };
         /**
          * Get a menu.
+         * @deprecated
          * @description Requires `content.read`.
+         *
+         *     **Deprecated** since 2026-11-14. It will be removed on 2027-05-14. Use `/api/v1/menus/{id}` instead.
          */
         get: operations["content_get_content_menu"];
         /**
          * Create or replace a menu.
+         * @deprecated
          * @description Requires `content.manage`. Replaces the whole item tree. `If-Match` is required: the
          *     menu's `ETag`, or `*` (needed to create a new menu).
+         *
+         *     **Deprecated** since 2026-11-14. It will be removed on 2027-05-14. Use `/api/v1/menus/{id}` instead.
          */
         put: operations["content_put_content_menu"];
         post?: never;
@@ -1958,8 +2135,11 @@ export interface paths {
         };
         /**
          * Get a navigation menu (public).
+         * @deprecated
          * @description No sign-in needed. Items pointing to entries that are not published are left out, with
          *     their sub-items. A menu missing in the language falls back to the default language.
+         *
+         *     **Deprecated** since 2026-11-14. It will be removed on 2027-05-14. Use `/api/v1/menus/public/{key}` instead.
          */
         get: operations["content_get_public_content_menu"];
         put?: never;
@@ -2001,6 +2181,7 @@ export interface paths {
          * Read a draft through a preview link (public).
          * @description No sign-in needed: the signed token is the permission. Returns the content of the latest
          *     draft, without the internal fields of the admin view. Answers with `Cache-Control: no-store`.
+         *     Needs no tenant header: the token names its tenant.
          */
         get: operations["content_get_public_content_preview"];
         put?: never;
@@ -2068,6 +2249,28 @@ export interface paths {
          * @description No sign-in needed. Follow `next_cursor` (up to 200 per page) to get them all.
          */
         get: operations["content_list_public_content_sitemap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/public/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List categories and tags that have published posts (public).
+         * @description No sign-in needed. Only terms with at least one published post in `locale` are listed, each
+         *     with that count, so a blog can show its topics and the size of each; follow `next_cursor`
+         *     for more. Get a term's posts with `GET /api/v1/content/public/posts?term_id=`.
+         */
+        get: operations["content_list_public_content_terms"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2150,6 +2353,28 @@ export interface paths {
          *     is required.
          */
         patch: operations["content_update_content_redirect"];
+        trace?: never;
+    };
+    "/api/v1/content/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the schedules of every entry.
+         * @description Requires `content.read`. Sorted by `run_at`, latest first unless `order=asc` (soonest
+         *     first — what is about to be published or taken down). Filter with `status=scheduled` for the
+         *     ones still waiting.
+         */
+        get: operations["content_list_all_content_schedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/content/schedules/{id}": {
@@ -2397,6 +2622,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/forms/exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a CSV export made in the background.
+         * @description Requires `forms.export`. While `pending` or `running`, ask again in a few seconds. Once
+         *     `ready`, `download_url` is a fresh link to the file each time you ask.
+         */
+        get: operations["forms_get_form_submissions_export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/forms/exports/{export_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the file of a CSV export.
+         * @description No sign-in: the link from `download_url` carries its own signature and expiry, so it can be
+         *     opened in a browser. Do not share it: anyone with the link can download the file until it
+         *     expires.
+         */
+        get: operations["forms_download_form_submissions_export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/forms/public/{key}": {
         parameters: {
             query?: never;
@@ -2554,6 +2822,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/forms/{id}/submissions/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export the submissions of a form as CSV, in the background.
+         * @description Requires `forms.export`. For forms with many submissions: the file is written by a
+         *     background job, then `GET /api/v1/forms/exports/{export_id}` (the `Location` of the answer)
+         *     gives a download link. Same content as `GET /{id}/submissions/export`, byte for byte. One
+         *     export per form at a time. The file holds personal data and is deleted after
+         *     `AUTOXIDE_FORMS_EXPORT_KEEP_HOURS`, or as soon as submissions of the form are deleted by
+         *     email or the form is deleted.
+         */
+        post: operations["forms_create_form_submissions_export"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/client-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the settings an interface needs.
+         * @description No sign-in needed. Values the server's operator set (or the defaults), by module: languages,
+         *     path prefixes, upload limits, the public address… — so an interface does not guess the
+         *     server's defaults. When the request names a tenant (its domain, the `Autoxide-Tenant` header
+         *     or a credential), values that tenant set for itself replace the server's (e.g. the languages
+         *     of `content` and of `media` alt texts, see `GET /api/v1/kernel/settings`).
+         */
+        get: operations["kernel_get_client_config"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List this tenant's domains.
+         * @description Requires `kernel.domains.manage`. Domains added to the tenant, with their status and the DNS
+         *     record that verifies them; removed domains are not listed. Newest first unless `order=asc`.
+         */
+        get: operations["kernel_list_tenant_domains"];
+        put?: never;
+        /**
+         * Add a domain to this tenant.
+         * @description Requires `kernel.domains.manage`. The domain starts `pending`: set the returned DNS `record`
+         *     (TXT `_autoxide-challenge.<domain>`) at your DNS provider, then call
+         *     `POST /domains/{id}/verify` (pending domains are also checked every 10 minutes for 7 days).
+         *     Point the domain itself (A/AAAA or CNAME) at the platform's server. Adding a domain the tenant
+         *     already has returns it unchanged; retry safely with an `Idempotency-Key` header.
+         */
+        post: operations["kernel_add_tenant_domain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/domains/allowed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tell whether a domain may get a TLS certificate.
+         * @description No sign-in needed. For the `ask` URL of a reverse proxy that issues certificates on demand
+         *     (Caddy `on_demand_tls`): `200` when the domain is a verified domain of an active tenant,
+         *     `404` otherwise. Answers from a short cache; counted by the per-address rate limit.
+         */
+        get: operations["kernel_check_tenant_domain_allowed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/domains/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a domain from this tenant.
+         * @description Requires `kernel.domains.manage`. The domain becomes `revoked`: requests to it no longer reach
+         *     the tenant (other servers follow within `AUTOXIDE_TENANCY_CACHE_SECONDS`) and no new TLS
+         *     certificate is issued for it. Removing it again changes nothing.
+         */
+        delete: operations["kernel_remove_tenant_domain"];
+        options?: never;
+        head?: never;
+        /**
+         * Attach a domain to a node of the organization tree.
+         * @description Requires `kernel.domains.manage`. Sets which node of the tenant's organization tree the domain
+         *     belongs to (`org_id`), e.g. a store that has its own site; `null` attaches it to the tenant as
+         *     a whole. The node must belong to the current tenant. The domain's status and its 7-day
+         *     verification deadline do not change. Sending the current value changes nothing.
+         */
+        patch: operations["kernel_update_tenant_domain"];
+        trace?: never;
+    };
+    "/api/v1/kernel/domains/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a domain now.
+         * @description Requires `kernel.domains.manage`. Looks up the domain's TXT record right away and returns the
+         *     new status: `verified` when the record holds the expected value, otherwise still `pending`
+         *     with the reason in `check_error`. A `failed` domain can be verified again this way.
+         */
+        post: operations["kernel_verify_tenant_domain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/kernel/modules": {
         parameters: {
             query?: never;
@@ -2598,6 +3017,317 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/kernel/placements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the placements.
+         * @description Requires `kernel.placements.read` and an account of the platform tenant. Where tenants' data
+         *     is kept; connection URLs are never shown (placements are added with `autoxide placement add`).
+         */
+        get: operations["kernel_list_placements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List this tenant's settings.
+         * @description Requires `kernel.settings.manage`. Every setting the installed modules take per tenant, with
+         *     whether this tenant has set it; unset ones use the server-wide configuration. Values of
+         *     secret settings are never returned. `?group=connection` lists only the connections to partner
+         *     services, named `<module>.connection.<kind>.<field>`.
+         */
+        get: operations["kernel_list_tenant_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/settings/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set one of this tenant's settings.
+         * @description Requires `kernel.settings.manage`. Creates or replaces the value; sending it again is safe.
+         *     A secret value is stored encrypted and the answer does not contain it. The former name of a
+         *     renamed setting is still accepted; the answer carries the current name.
+         */
+        put: operations["kernel_set_tenant_setting"];
+        post?: never;
+        /**
+         * Remove one of this tenant's settings.
+         * @description Requires `kernel.settings.manage`. The server-wide configuration applies again. Removing a
+         *     setting this tenant never set changes nothing.
+         */
+        delete: operations["kernel_delete_tenant_setting"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my tenant.
+         * @description Requires signing in, no permission. The tenant the request is for — the one of the caller, or
+         *     the one entered with `Autoxide-Tenant` by platform staff — and the mode of the installation.
+         */
+        get: operations["kernel_get_current_tenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tenants of the platform.
+         * @description Requires `kernel.tenants.read` and an account of the platform tenant (not one entered with
+         *     `Autoxide-Tenant`). Newest first unless `order=asc`.
+         */
+        get: operations["kernel_list_tenants"];
+        put?: never;
+        /**
+         * Create a tenant.
+         * @description Requires `kernel.tenants.manage` and an account of the platform tenant. Creates the tenant and
+         *     prepares it (every module sets up what a new tenant needs) before answering. Retry safely with
+         *     an `Idempotency-Key` header.
+         */
+        post: operations["kernel_create_tenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a tenant.
+         * @description Requires `kernel.tenants.read` and an account of the platform tenant.
+         */
+        get: operations["kernel_get_tenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename, suspend or resume a tenant.
+         * @description Requires `kernel.tenants.manage` and an account of the platform tenant. A suspended tenant
+         *     answers every request with `403 tenant_suspended` (other servers see the change within
+         *     `AUTOXIDE_TENANCY_CACHE_SECONDS`). The platform tenant cannot be suspended.
+         */
+        patch: operations["kernel_update_tenant"];
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a tenant to another placement.
+         * @description Requires `kernel.tenants.move` and an account of the platform tenant (not one entered with
+         *     `Autoxide-Tenant`). With `dry_run` (the default) nothing changes: the answer lists what blocks
+         *     the move and the rows of the tenant that would be copied. With `"dry_run": false` the tenant
+         *     answers `503 tenant_maintenance` while a background job copies its data, switches it to the new
+         *     placement and deletes the old copy; follow it at the `Location` of the answer. Sending the same
+         *     move again resumes one that stopped half-way.
+         */
+        post: operations["kernel_move_tenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}/moves/{move_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a move of a tenant.
+         * @description Requires `kernel.tenants.read` and an account of the platform tenant. `state` goes `copying` →
+         *     `copied` → `switched` → `done` (or `aborted`); `error` tells why a run stopped.
+         */
+        get: operations["kernel_get_tenant_move"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a tenant's settings (platform staff).
+         * @description Requires `kernel.tenants.read` and an account of the platform tenant. Like
+         *     `GET /api/v1/kernel/settings`, for the tenant in the path: every setting the installed modules
+         *     take per tenant and whether that tenant has set it. Values of secret settings are never
+         *     returned. `?group=connection` lists only the connections to partner services.
+         */
+        get: operations["kernel_list_settings_of_tenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}/settings/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a setting of a tenant (platform staff).
+         * @description Requires `kernel.tenants.manage` and an account of the platform tenant. Like
+         *     `PUT /api/v1/kernel/settings/{name}`, for the tenant in the path: creates or replaces the
+         *     value; sending it again is safe. The tenant's servers use the new value within
+         *     `AUTOXIDE_TENANCY_CACHE_SECONDS`.
+         */
+        put: operations["kernel_set_setting_of_tenant"];
+        post?: never;
+        /**
+         * Remove a setting of a tenant (platform staff).
+         * @description Requires `kernel.tenants.manage` and an account of the platform tenant. The server-wide
+         *     configuration applies to that tenant again. Removing a setting the tenant never set changes
+         *     nothing.
+         */
+        delete: operations["kernel_delete_setting_of_tenant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my interface flags.
+         * @description Requires signing in, no permission: only the caller's own flags, sorted by key. Use them to
+         *     remember per account (not per browser) which hints were dismissed or which news were seen.
+         */
+        get: operations["me_list_my_flags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/flags/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set one of my interface flags.
+         * @description Requires signing in, no permission. Creates the flag or replaces its value: sending it again
+         *     is safe. A user keeps at most `AUTOXIDE_USER_FLAGS_MAX` flags (500 by default).
+         */
+        put: operations["me_set_my_flag"];
+        post?: never;
+        /**
+         * Delete one of my interface flags.
+         * @description Requires signing in, no permission. Deleting a flag that does not exist changes nothing.
+         */
+        delete: operations["me_delete_my_flag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your own permissions.
+         * @description Any signed-in user. Every permission the caller holds (through roles, or the permissions of
+         *     the API key used), with its description and risk, sorted by name. Use it to offer the
+         *     permissions a new API key may get: a key cannot have a permission its owner lacks.
+         */
+        get: operations["me_list_my_permissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media": {
         parameters: {
             query?: never;
@@ -2607,8 +3337,9 @@ export interface paths {
         };
         /**
          * List media items.
-         * @description Requires `media.read`. Filter by folder, type, visibility, trash and name; sort by
-         *     upload time, name or size. Keep the same filters, `sort` and `order` while following
+         * @description Requires `media.read`. Filter by folder, type, visibility, trash, name, tag and missing
+         *     text alternative; sort by upload time, name or size. With `include=uploader`, each item
+         *     carries the name of who uploaded it. Keep the same filters, `sort` and `order` while following
          *     `next_cursor`.
          */
         get: operations["media_list_media_items"];
@@ -2680,6 +3411,27 @@ export interface paths {
          * @description Requires `media.write`. `If-Match` is required.
          */
         patch: operations["media_update_media_folder"];
+        trace?: never;
+    };
+    "/api/v1/media/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the totals of the media library.
+         * @description Requires `media.read`. Number of items and their total size, images missing a text
+         *     alternative, items in the trash — for a library overview without paging through every item.
+         */
+        get: operations["media_get_media_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/media/tags": {
@@ -2789,6 +3541,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/{id}/alts/{locale}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the text alternative of a media item in one language.
+         * @description Requires `media.write`. The item's `alt` stays the default; readers in `locale` get this
+         *     text instead (e.g. a bilingual storefront). `locale` must be one of the tenant's languages
+         *     for alt texts (its `media.alt_locales` setting, otherwise the server's
+         *     `AUTOXIDE_MEDIA_ALT_LOCALES`; see `GET /api/v1/kernel/client-config`). `If-Match` is required. To draft the text with AI,
+         *     use `POST /api/v1/media/{id}/alt-suggestions` with the same `locale`, then send it here.
+         */
+        put: operations["media_set_media_alt_translation"];
+        post?: never;
+        /**
+         * Remove the text alternative of a media item in one language.
+         * @description Requires `media.write`. Readers in `locale` get the item's default `alt` again. Removing a
+         *     translation that does not exist changes nothing. `If-Match` is required.
+         */
+        delete: operations["media_delete_media_alt_translation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/{id}/content": {
         parameters: {
             query?: never;
@@ -2858,6 +3639,88 @@ export interface paths {
          */
         post: operations["media_restore_media_item"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List website menus.
+         * @description Requires `menus.read`. Every menu in every language, newest first by default; follow
+         *     `pagination.next_cursor` for more.
+         */
+        get: operations["menus_list_menus"];
+        put?: never;
+        /**
+         * Create a website menu.
+         * @description Requires `menus.manage`. One menu per key and language: the website shows the menu `main`
+         *     in Vietnamese from the menu with key `main` and locale `vi`. All problems with the items
+         *     are reported at once, each with its place (e.g. `items[0].children[1].ref.id`).
+         */
+        post: operations["menus_create_menu"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menus/public/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website menu, ready to show (public).
+         * @description No sign-in needed. Labels, links and pictures are worked out in the menu's language. Items
+         *     pointing to objects that are not public are left out with their sub-items, headings with
+         *     nothing left under them are left out, `auto_children` are filled in, and badges show only
+         *     in their date range. Best sellers of a category are not part of the menu: call the
+         *     product list of the catalog with the item's `ref`.
+         */
+        get: operations["menus_get_public_menu"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menus/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a website menu.
+         * @description Requires `menus.read`. The items as saved, without working out titles and links (see
+         *     `GET /api/v1/menus/public/{key}` for that).
+         */
+        get: operations["menus_get_menu"];
+        /**
+         * Replace the items of a website menu.
+         * @description Requires `menus.manage`. Replaces the whole item tree. `If-Match` is required: the menu's
+         *     `ETag` (or `*` to replace it whatever its version). If someone changed the menu since you
+         *     read it, nothing is saved and the answer is 412.
+         */
+        put: operations["menus_replace_menu_items"];
+        post?: never;
+        /**
+         * Delete a website menu.
+         * @description Requires `menus.manage`. Deletes the menu and all its items; it cannot be restored.
+         */
+        delete: operations["menus_delete_menu"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2982,6 +3845,28 @@ export interface paths {
          *     recipients left. `If-Match` is checked when sent.
          */
         post: operations["newsletter_pause_newsletter_campaign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/newsletter/campaigns/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview a campaign mail.
+         * @description Requires `newsletter.read`. The mail as it will be sent — subject label, footer, HTML
+         *     wrapping — with a placeholder token in its links (they do nothing). Needs the same settings
+         *     as sending; see `GET /api/v1/newsletter/settings`.
+         */
+        get: operations["newsletter_preview_newsletter_campaign"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3178,7 +4063,8 @@ export interface paths {
          * @description No sign-in needed. The confirmation mail links to the website's page
          *     (`AUTOXIDE_NEWSLETTER_CONFIRM_URL`); the page sends the token here with `POST` — opening the
          *     link alone (as mail scanners do) changes nothing. A link works once, within
-         *     `AUTOXIDE_NEWSLETTER_CONFIRM_HOURS`.
+         *     `AUTOXIDE_NEWSLETTER_CONFIRM_HOURS`. The token tells the tenant: the call works on any host of
+         *     the API, without `Autoxide-Tenant`.
          */
         post: operations["newsletter_confirm_newsletter_subscription"];
         delete?: never;
@@ -3218,14 +4104,16 @@ export interface paths {
         /**
          * Get the preferences of a subscriber (public).
          * @description No sign-in needed: the token comes from a campaign mail (the footer links to
-         *     `AUTOXIDE_NEWSLETTER_PREFERENCES_URL`). Reading changes nothing.
+         *     `AUTOXIDE_NEWSLETTER_PREFERENCES_URL`). Reading changes nothing. The token tells the tenant:
+         *     the call works on any host of the API, without `Autoxide-Tenant`.
          */
         get: operations["newsletter_get_newsletter_preferences"];
         /**
          * Change the preferences of a subscriber (public).
          * @description No sign-in needed: the token comes from a campaign mail. Unsubscribing takes effect at
          *     once. Subscribing to a public list confirms it at once (the token proves the inbox), with
-         *     the source `preferences` as proof of consent.
+         *     the source `preferences` as proof of consent. The token tells the tenant: the call works on
+         *     any host of the API, without `Autoxide-Tenant`.
          */
         put: operations["newsletter_update_newsletter_preferences"];
         post?: never;
@@ -3280,9 +4168,32 @@ export interface paths {
          * Unsubscribe with one click (public).
          * @description No sign-in needed. The `List-Unsubscribe` header of every campaign mail points here; mail
          *     apps send `POST` with the form body `List-Unsubscribe=One-Click` (RFC 8058). Unsubscribes
-         *     the address from the list of that mail at once. The answer is the same for any token.
+         *     the address from the list of that mail at once. The answer is the same for any token. The
+         *     token tells the tenant: the link works on any host of the API, without `Autoxide-Tenant`.
          */
         post: operations["newsletter_unsubscribe_newsletter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/newsletter/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the newsletter settings in use.
+         * @description Requires `newsletter.read`. The advertising label and daily limit, the sender's postal
+         *     address, and whether the addresses campaign mails need are set — so an interface can say
+         *     what to set before sending. The operator changes them in the server's environment.
+         */
+        get: operations["newsletter_get_newsletter_settings"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3418,7 +4329,8 @@ export interface paths {
         };
         /**
          * List webhook endpoints.
-         * @description Requires `webhooks.manage`. Newest first unless `order=asc`.
+         * @description Requires `webhooks.manage`. Newest first unless `order=asc`. Each endpoint carries its
+         *     newest delivery (`last_delivery`); `status` keeps only active or disabled endpoints.
          */
         get: operations["webhooks_list_webhook_endpoints"];
         put?: never;
@@ -3447,7 +4359,7 @@ export interface paths {
         };
         /**
          * List the kinds of events endpoints can receive.
-         * @description Requires `webhooks.manage`. Sorted by name.
+         * @description Requires `webhooks.manage`. Sorted by name; descriptions follow `Accept-Language`.
          */
         get: operations["webhooks_list_webhook_event_types"];
         put?: never;
@@ -3556,7 +4468,9 @@ export interface paths {
         };
         /**
          * Readiness probe: can the service handle requests?
-         * @description Checks that the database answers. Stop sending traffic when this fails.
+         * @description Checks that the database answers. Stop sending traffic when this fails. While the process
+         *     is shutting down (`AUTOXIDE_HTTP_DRAIN_SECONDS`), it fails even though requests are still
+         *     handled, so load balancers move traffic away before the server stops accepting connections.
          */
         get: operations["health_ready"];
         put?: never;
@@ -3624,6 +4538,11 @@ export interface components {
              */
             tokens_today: number;
         };
+        /** @description A domain that may get a TLS certificate. */
+        AllowedTenantDomain: {
+            /** @example shop.example */
+            domain: string;
+        };
         /** @description What the alt text is for. */
         AltRequest: {
             /**
@@ -3651,15 +4570,18 @@ export interface components {
         };
         /** @description One answer, with the field as it was when the submission was sent. */
         AnswerResponse: {
+            /**
+             * @description For `select`, `radio` and `checkbox`: the chosen options with their labels in the form
+             *     version the submission was sent with (in the order of `value`). A value no longer among
+             *     that version's options comes with an empty label. Absent for other types.
+             */
+            choices?: components["schemas"]["FieldOption"][] | null;
             key: string;
             /** @description The field's label in the form version the submission was sent with. */
             label: components["schemas"]["Localized"];
             type: components["schemas"]["FieldType"];
-            /**
-             * @description A string; a number for `number`; an array of values for `checkbox`; `true` for
-             *     `consent`.
-             */
-            value: Record<string, never>;
+            /** @description A string; a number for `number`; an array of values for `checkbox`; `true` for `consent`. */
+            value: string | number | string[] | boolean;
         };
         /** @description An API key, without its secret. */
         ApiKeyResponse: {
@@ -3691,8 +4613,10 @@ export interface components {
              */
             permissions: string[];
             /**
-             * @description The first characters of the key, to recognize it.
-             * @example axk_3q9ZbXcV
+             * @description A few characters of the key, to recognize it: `axk1_…` and the first 8 characters of the
+             *     key's random part (after the tenant part). Keys created in older versions (`axk_…`) show
+             *     their first 12 characters.
+             * @example axk1_…3q9ZbXcV
              */
             prefix: string;
         };
@@ -3714,6 +4638,11 @@ export interface components {
              * @example user
              */
             actor_kind: string;
+            /**
+             * @description Display name of `actor_user_id`, with `include=actor`: `null` when the account no longer
+             *     exists; absent when no user made the change.
+             */
+            actor_name?: string | null;
             /**
              * Format: uuid
              * @description User who made the change; `null` for the system (command line, background jobs,
@@ -3785,6 +4714,11 @@ export interface components {
             created_at: string;
             /** @example Ada Lovelace */
             display_name: string;
+            /**
+             * Format: int64
+             * @description How many entries (in any status) list this author. Only in the list.
+             */
+            entry_count?: number | null;
             /** Format: uuid */
             id: string;
             /** @description Unique. */
@@ -3870,6 +4804,18 @@ export interface components {
             reason?: string | null;
             type: components["schemas"]["BounceKind"];
         };
+        /** @description A campaign mail exactly as subscribers get it. */
+        CampaignPreviewResponse: {
+            /**
+             * @description The HTML body with the preheader and the footer; `null` for a text-only campaign. Show it
+             *     only inside a sandboxed `<iframe sandbox>`, like `body_html`.
+             */
+            body_html?: string | null;
+            /** @description The plain-text body with the footer (list name, preferences link, postal address). */
+            body_text: string;
+            /** @description The subject, with the advertising label when the campaign is advertising. */
+            subject: string;
+        };
         /** @description A campaign: one mail sent to the confirmed subscribers of a list. */
         CampaignResponse: {
             /**
@@ -3946,6 +4892,131 @@ export interface components {
             /** @description 12 to 128 characters. */
             new_password: string;
         };
+        /** @description Settings of the server an interface needs, by module: only values safe to show anyone. A module without such settings is absent. */
+        ClientConfigResponse: {
+            /** @description Content settings an interface needs. */
+            content: {
+                /**
+                 * @description Language of a new entry when none is given: the tenant's `content.default_locale`,
+                 *     otherwise the server's `AUTOXIDE_CONTENT_DEFAULT_LOCALE`.
+                 * @example en
+                 */
+                default_locale: string;
+                /**
+                 * @description Hosts whose videos and posts may be embedded in an entry (`AUTOXIDE_CONTENT_EMBED_HOSTS`).
+                 * @example [
+                 *       "www.youtube.com",
+                 *       "player.vimeo.com"
+                 *     ]
+                 */
+                embed_hosts: string[];
+                /**
+                 * @description Languages entries may be written in: the tenant's `content.locales` setting, otherwise
+                 *     the server's `AUTOXIDE_CONTENT_LOCALES`.
+                 * @example [
+                 *       "en",
+                 *       "vi"
+                 *     ]
+                 */
+                locales: string[];
+                /**
+                 * Format: int64
+                 * @description Largest entry body accepted, in bytes.
+                 */
+                max_body_bytes: number;
+                /**
+                 * @description First segment of the address of every post (`AUTOXIDE_CONTENT_POST_PATH_PREFIX`), without
+                 *     slashes: `blog` gives posts at `/blog/<slug>`.
+                 * @example blog
+                 */
+                post_path_prefix: string;
+            };
+            /** @description Kernel's own section. */
+            kernel: {
+                /**
+                 * @description The public address of the API (`AUTOXIDE_HTTP_PUBLIC_URL`), used in links of mails and by
+                 *     MCP clients (`<public_url>/mcp`); `null` when the operator did not set it.
+                 * @example https://api.example.com
+                 */
+                public_url?: string | null;
+                /**
+                 * @description Version of the server.
+                 * @example 0.15.0
+                 */
+                version: string;
+            };
+            /** @description Mail settings an interface needs. */
+            mail: {
+                /**
+                 * @description Sender of every mail (`AUTOXIDE_MAIL_FROM`).
+                 * @example Example <no-reply@example.com>
+                 */
+                from: string;
+                /**
+                 * @description `true` when mail goes out through an SMTP server; `false` when it is only written to
+                 *     files on the server (`AUTOXIDE_MAIL_SMTP_URL` not set) — nobody receives it.
+                 */
+                sends: boolean;
+            };
+            /** @description Media library settings an interface needs. */
+            media: {
+                /**
+                 * @description Media types accepted at upload (`AUTOXIDE_MEDIA_ALLOWED_TYPES`): `type/subtype` or
+                 *     `type/*`.
+                 * @example [
+                 *       "image/*",
+                 *       "application/pdf"
+                 *     ]
+                 */
+                allowed_types: string[];
+                /**
+                 * @description Languages of `alt` translations: the tenant's `media.alt_locales` setting, otherwise the
+                 *     server's `AUTOXIDE_MEDIA_ALT_LOCALES`. Show one alt field per language.
+                 * @example [
+                 *       "en",
+                 *       "vi"
+                 *     ]
+                 */
+                alt_locales: string[];
+                /**
+                 * @description Widths of the smaller copies made of images, in pixels.
+                 * @example [
+                 *       320,
+                 *       640,
+                 *       1280
+                 *     ]
+                 */
+                image_widths: number[];
+                /**
+                 * Format: int64
+                 * @description Largest upload, in bytes (`AUTOXIDE_MEDIA_MAX_BYTES`).
+                 * @example 52428800
+                 */
+                max_bytes: number;
+                /**
+                 * Format: int32
+                 * @description Days an item stays in the trash before it is deleted for good.
+                 * @example 30
+                 */
+                trash_days: number;
+            };
+            /** @description Menu settings an interface needs. */
+            menus: {
+                /**
+                 * @description Language of a menu when none is given.
+                 * @example en
+                 */
+                default_locale: string;
+                /**
+                 * @description Languages menus may be written in (`AUTOXIDE_MENUS_LOCALES`), the default first.
+                 * @example [
+                 *       "en",
+                 *       "vi"
+                 *     ]
+                 */
+                locales: string[];
+            };
+        };
         /** @description A code from the authenticator app, or (where stated) a recovery code. */
         CodeRequest: {
             /**
@@ -3995,6 +5066,11 @@ export interface components {
              */
             count: number;
             target_id: string;
+            /**
+             * Format: int32
+             * @description Shown top-level comments only (e.g. the number of questions on a product tab).
+             */
+            thread_count: number;
         };
         /** @description The answer to a delete. */
         CommentDeleted: {
@@ -4007,6 +5083,8 @@ export interface components {
             author_kind: components["schemas"]["CommentAuthorKind"];
             /** @description Guest name or the user's display name. */
             author_name?: string | null;
+            /** @description Codes of what the author was on the target when writing (`seller`, `verified_buyer`…). */
+            badges: string[];
             body: string;
             body_html: string;
             /** Format: date-time */
@@ -4014,6 +5092,8 @@ export interface components {
             /** Format: date-time */
             edited_at?: string | null;
             email_verified: boolean;
+            /** @description How `body` is written: `text` or `markdown`. */
+            format: components["schemas"]["Format"];
             /**
              * @description Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,
              *     `too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),
@@ -4043,7 +5123,18 @@ export interface components {
             root_id: string;
             status: components["schemas"]["CommentStatus"];
             target_id: string;
+            /**
+             * @description Title of the target (e.g. the post's title), from the module that owns it. Only given while
+             *     the target is public: for a draft, unpublished or deleted target (or a kind with no
+             *     lookup) the field is absent and only `target_type` and `target_id` identify it.
+             */
+            target_title?: string | null;
             target_type: string;
+            /**
+             * @description Public path of the target (without the domain), e.g. `/blog/hello`; absent like
+             *     `target_title`.
+             */
+            target_url?: string | null;
             /** Format: date-time */
             updated_at: string;
             /**
@@ -4061,7 +5152,7 @@ export interface components {
         };
         /** @description A token from a mail link. */
         CommentMailToken: {
-            /** @description The `token` of the link. */
+            /** @description The `token` of the link, exactly as received (it may contain a `.`). */
             token: string;
         };
         /** @description The display name of a signed-in user. */
@@ -4109,6 +5200,8 @@ export interface components {
             enabled: boolean;
             /** @description Guests (no account) may comment. */
             guests_allowed: boolean;
+            /** @description Comments may be written in Markdown (`format: markdown`): show formatting buttons. */
+            markdown: boolean;
             /** @description Longest comment, in characters. */
             max_length: number;
             /** @description More links than this hold a comment for approval. */
@@ -4125,6 +5218,11 @@ export interface components {
              * @example comments:{target_type}
              */
             token_scope: string;
+            /**
+             * @description Kinds where only verified accounts (phone number or identity) may comment or answer;
+             *     show "verify your account" instead of the comment box to others.
+             */
+            verified_only_types: string[];
         };
         /**
          * @description Where a comment stands.
@@ -4150,10 +5248,27 @@ export interface components {
              * @description Comments waiting for approval (`null` in the public answer).
              */
             pending_count?: number | null;
+            /**
+             * Format: int32
+             * @description Top-level comments waiting for approval (`null` in the public answer).
+             */
+            pending_thread_count?: number | null;
             /** @description What applies now. */
             state: components["schemas"]["CommentTargetState"];
             target_id: string;
             target_type: string;
+            /**
+             * Format: int32
+             * @description Shown top-level comments, e.g. questions on a product (0 when hidden).
+             */
+            thread_count: number;
+            /**
+             * @description Title of the target, from the module that owns it (only in the admin list, and only for a
+             *     target that is public now); absent otherwise.
+             */
+            title?: string | null;
+            /** @description Public path of the target (without the domain), like `title`. */
+            url?: string | null;
         };
         /**
          * @description Whether a target takes comments.
@@ -4199,7 +5314,10 @@ export interface components {
         };
         /** @description The token of a confirmation link. */
         ConfirmBody: {
-            /** @description The `{token}` of the link in the confirmation mail. */
+            /**
+             * @description The `{token}` of the link in the confirmation mail, exactly as received (it may contain a
+             *     `.`).
+             */
             token: string;
         };
         /** @description The lists confirmed. */
@@ -4215,9 +5333,10 @@ export interface components {
         CreateApiKeyRequest: {
             /**
              * @description Your current password: a stolen access token alone must not create a key that
-             *     outlives it.
+             *     outlives it. Or confirm with `totp_code` or a passkey (`passkey_ceremony_id` and
+             *     `passkey_credential`) instead — exactly one of the three.
              */
-            current_password: string;
+            current_password?: string;
             /**
              * Format: date-time
              * @description When the key stops working (RFC 3339, in the future). Omit for a key that does
@@ -4230,6 +5349,18 @@ export interface components {
              */
             name: string;
             /**
+             * Format: uuid
+             * @description One of your passkeys, instead of the password: start with
+             *     `POST /api/v1/auth/login/passkey/options`, let the browser sign its `options`, and send the
+             *     `ceremony_id` here with the browser's answer in `passkey_credential`.
+             */
+            passkey_ceremony_id?: string | null;
+            /**
+             * @description The browser's `AuthenticationResponseJSON` (from `navigator.credentials.get`) for
+             *     `passkey_ceremony_id`.
+             */
+            passkey_credential?: Record<string, never> | null;
+            /**
              * @description Permissions the key may use: at least one, each one you have yourself (see
              *     `GET /api/v1/auth/me`). Give a key only what its job needs.
              * @example [
@@ -4237,6 +5368,12 @@ export interface components {
              *     ]
              */
             permissions: string[];
+            /**
+             * @description A code from your authenticator app, instead of the password (two-step sign-in must be
+             *     on). Wrong codes count towards the same limit as at sign-in.
+             * @example 123456
+             */
+            totp_code?: string | null;
         };
         /** @description A new draft campaign. */
         CreateCampaignRequest: {
@@ -4267,7 +5404,7 @@ export interface components {
         CreateCommentRequest: {
             /** @description Guests: the name to show (required). Signed-in users show the name of their profile. */
             author_name?: string | null;
-            /** @description Plain text; line breaks are kept, `http(s)` addresses become links. */
+            /** @description The text, as `format` says; line breaks are kept, `http(s)` addresses become links. */
             body: string;
             /** @description The value of the `altcha` widget, when the server uses a challenge. */
             challenge?: string | null;
@@ -4278,6 +5415,7 @@ export interface components {
              *     signed in.
              */
             form_token?: string | null;
+            format?: components["schemas"]["Format"] | null;
             /** @description Language of the author: `en` or `vi` (for the mails). */
             locale?: string | null;
             /** @description Mail me when someone replies (a confirmation mail is sent to `email` first). */
@@ -4326,6 +5464,10 @@ export interface components {
              * @description Parent page (pages only).
              */
             parent_id?: string | null;
+        };
+        /** @description What to export. The body may be omitted. */
+        CreateExportRequest: {
+            status?: components["schemas"]["SubmissionStatus"] | null;
         };
         /** @description A new folder. */
         CreateFolderRequest: {
@@ -4398,6 +5540,21 @@ export interface components {
             /** @description Omitted: `false` (not open to public sign-up). */
             public?: boolean | null;
         };
+        /** @description A new menu. */
+        CreateSiteMenuRequest: {
+            items?: components["schemas"]["SiteMenuItemInput"][];
+            /**
+             * @description 1 to 64 lower-case letters, digits, `-` or `_`; unique per language. The website asks
+             *     for a menu by its key.
+             * @example main
+             */
+            key: string;
+            /**
+             * @description The menu's language; omitted: the default language.
+             * @example vi
+             */
+            locale?: string | null;
+        };
         /** @description An address to suppress by hand. */
         CreateSuppressionRequest: {
             /** @example ada@example.com */
@@ -4430,9 +5587,11 @@ export interface components {
         /** @description A new API key, with its secret. The secret is shown only here. */
         CreatedApiKeyResponse: components["schemas"]["ApiKeyResponse"] & {
             /**
-             * @description The key. Send it as `Authorization: Bearer <key>`. Store it now: it cannot be
-             *     shown again.
-             * @example axk_3q9ZbXcV…
+             * @description The key. Send it as `Authorization: Bearer <key>`; no other header is needed: the key
+             *     names its tenant. Store it now: it cannot be shown again. Shape: `axk1_`, the tenant ID
+             *     (32 lowercase hex digits), `_`, then a random part. Keys created in older versions start
+             *     with `axk_` and keep working.
+             * @example axk1_0193c5c0d2f87b2a9e4f6a1b2c3d4e5f_3q9ZbXcV…
              */
             key: string;
         };
@@ -4444,6 +5603,23 @@ export interface components {
              * @example whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw
              */
             secret: string;
+        };
+        /** @description The tenant of the caller. */
+        CurrentTenant: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description `single` (one tenant) or `multi` (many tenants on one installation).
+             * @example single
+             */
+            mode: string;
+            name: string;
+            /** @description Whether this is the platform tenant (the operator's own). */
+            platform: boolean;
+            /** @description Read-only: data can be read but every change is refused with `403 tenant_read_only`. */
+            read_only?: boolean;
+            slug: string;
+            status: string;
         };
         /** @description Envelope of a single result. */
         Data_AiStatus: {
@@ -4482,6 +5658,14 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_AllowedTenantDomain: {
+            /** @description A domain that may get a TLS certificate. */
+            data: {
+                /** @example shop.example */
+                domain: string;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_AltSuggestionResponse: {
             /** @description A suggested alt text; nothing was saved. */
             data: {
@@ -4516,6 +5700,11 @@ export interface components {
                  * @example user
                  */
                 actor_kind: string;
+                /**
+                 * @description Display name of `actor_user_id`, with `include=actor`: `null` when the account no longer
+                 *     exists; absent when no user made the change.
+                 */
+                actor_name?: string | null;
                 /**
                  * Format: uuid
                  * @description User who made the change; `null` for the system (command line, background jobs,
@@ -4569,6 +5758,11 @@ export interface components {
                 created_at: string;
                 /** @example Ada Lovelace */
                 display_name: string;
+                /**
+                 * Format: int64
+                 * @description How many entries (in any status) list this author. Only in the list.
+                 */
+                entry_count?: number | null;
                 /** Format: uuid */
                 id: string;
                 /** @description Unique. */
@@ -4589,6 +5783,21 @@ export interface components {
             data: {
                 /** @description The address is (now or already) suppressed. */
                 suppressed: boolean;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_CampaignPreviewResponse: {
+            /** @description A campaign mail exactly as subscribers get it. */
+            data: {
+                /**
+                 * @description The HTML body with the preheader and the footer; `null` for a text-only campaign. Show it
+                 *     only inside a sandboxed `<iframe sandbox>`, like `body_html`.
+                 */
+                body_html?: string | null;
+                /** @description The plain-text body with the footer (list name, preferences link, postal address). */
+                body_text: string;
+                /** @description The subject, with the advertising label when the campaign is advertising. */
+                subject: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -4654,6 +5863,16 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_ClientConfigResponse: {
+            /**
+             * @description Settings of the server an interface needs, by module (`kernel`, `content`, `media`…): only
+             *     values safe to show anyone. A module without such settings is absent.
+             */
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_CommentBan: {
             /** @description A ban. */
             data: {
@@ -4693,6 +5912,8 @@ export interface components {
                 author_kind: components["schemas"]["CommentAuthorKind"];
                 /** @description Guest name or the user's display name. */
                 author_name?: string | null;
+                /** @description Codes of what the author was on the target when writing (`seller`, `verified_buyer`…). */
+                badges: string[];
                 body: string;
                 body_html: string;
                 /** Format: date-time */
@@ -4700,6 +5921,8 @@ export interface components {
                 /** Format: date-time */
                 edited_at?: string | null;
                 email_verified: boolean;
+                /** @description How `body` is written: `text` or `markdown`. */
+                format: components["schemas"]["Format"];
                 /**
                  * @description Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,
                  *     `too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),
@@ -4729,7 +5952,18 @@ export interface components {
                 root_id: string;
                 status: components["schemas"]["CommentStatus"];
                 target_id: string;
+                /**
+                 * @description Title of the target (e.g. the post's title), from the module that owns it. Only given while
+                 *     the target is public: for a draft, unpublished or deleted target (or a kind with no
+                 *     lookup) the field is absent and only `target_type` and `target_id` identify it.
+                 */
+                target_title?: string | null;
                 target_type: string;
+                /**
+                 * @description Public path of the target (without the domain), e.g. `/blog/hello`; absent like
+                 *     `target_title`.
+                 */
+                target_url?: string | null;
                 /** Format: date-time */
                 updated_at: string;
                 /**
@@ -4770,6 +6004,8 @@ export interface components {
                 enabled: boolean;
                 /** @description Guests (no account) may comment. */
                 guests_allowed: boolean;
+                /** @description Comments may be written in Markdown (`format: markdown`): show formatting buttons. */
+                markdown: boolean;
                 /** @description Longest comment, in characters. */
                 max_length: number;
                 /** @description More links than this hold a comment for approval. */
@@ -4786,6 +6022,11 @@ export interface components {
                  * @example comments:{target_type}
                  */
                 token_scope: string;
+                /**
+                 * @description Kinds where only verified accounts (phone number or identity) may comment or answer;
+                 *     show "verify your account" instead of the comment box to others.
+                 */
+                verified_only_types: string[];
             };
         };
         /** @description Envelope of a single result. */
@@ -4809,10 +6050,27 @@ export interface components {
                  * @description Comments waiting for approval (`null` in the public answer).
                  */
                 pending_count?: number | null;
+                /**
+                 * Format: int32
+                 * @description Top-level comments waiting for approval (`null` in the public answer).
+                 */
+                pending_thread_count?: number | null;
                 /** @description What applies now. */
                 state: components["schemas"]["CommentTargetState"];
                 target_id: string;
                 target_type: string;
+                /**
+                 * Format: int32
+                 * @description Shown top-level comments, e.g. questions on a product (0 when hidden).
+                 */
+                thread_count: number;
+                /**
+                 * @description Title of the target, from the module that owns it (only in the admin list, and only for a
+                 *     target that is public now); absent otherwise.
+                 */
+                title?: string | null;
+                /** @description Public path of the target (without the domain), like `title`. */
+                url?: string | null;
             };
         };
         /** @description Envelope of a single result. */
@@ -4871,9 +6129,11 @@ export interface components {
             /** @description A new API key, with its secret. The secret is shown only here. */
             data: components["schemas"]["ApiKeyResponse"] & {
                 /**
-                 * @description The key. Send it as `Authorization: Bearer <key>`. Store it now: it cannot be
-                 *     shown again.
-                 * @example axk_3q9ZbXcV…
+                 * @description The key. Send it as `Authorization: Bearer <key>`; no other header is needed: the key
+                 *     names its tenant. Store it now: it cannot be shown again. Shape: `axk1_`, the tenant ID
+                 *     (32 lowercase hex digits), `_`, then a random part. Keys created in older versions start
+                 *     with `axk_` and keep working.
+                 * @example axk1_0193c5c0d2f87b2a9e4f6a1b2c3d4e5f_3q9ZbXcV…
                  */
                 key: string;
             };
@@ -4888,6 +6148,26 @@ export interface components {
                  * @example whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw
                  */
                 secret: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_CurrentTenant: {
+            /** @description The tenant of the caller. */
+            data: {
+                /** Format: uuid */
+                id: string;
+                /**
+                 * @description `single` (one tenant) or `multi` (many tenants on one installation).
+                 * @example single
+                 */
+                mode: string;
+                name: string;
+                /** @description Whether this is the platform tenant (the operator's own). */
+                platform: boolean;
+                /** @description Read-only: data can be read but every change is refused with `403 tenant_read_only`. */
+                read_only?: boolean;
+                slug: string;
+                status: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -4942,6 +6222,7 @@ export interface components {
                 events: string[];
                 /** Format: uuid */
                 id: string;
+                last_delivery?: components["schemas"]["LastDelivery"] | null;
                 /** Format: date-time */
                 updated_at: string;
                 /** @example https://example.com/hooks/autoxide */
@@ -5020,6 +6301,18 @@ export interface components {
                  * @description The parent page (pages only); `null` at the root.
                  */
                 parent_id?: string | null;
+                /**
+                 * @description Address of the public version, e.g. `/blog/duong-den-da-lat` or `/about/team` (a page
+                 *     carries the path of its parents); `null` while the entry is not public. It does not hold
+                 *     the language: the website decides how `locale` shows in its addresses.
+                 * @example /blog/duong-den-da-lat
+                 */
+                path?: string | null;
+                /**
+                 * Format: date-time
+                 * @description When the public version was last published; `null` while the entry is not public.
+                 */
+                published_at?: string | null;
                 /** Format: int32 */
                 reading_time_minutes: number;
                 /**
@@ -5065,6 +6358,12 @@ export interface components {
                 /** Format: date-time */
                 updated_at: string;
                 /**
+                 * @description The entry's `ETag` (as `GET /entries/{id}` sends it): send it in `If-Match` to change the
+                 *     entry straight from a list.
+                 * @example "1731628800000000"
+                 */
+                version: string;
+                /**
                  * Format: int32
                  * @description Words in the body (for Vietnamese: syllables).
                  */
@@ -5088,6 +6387,47 @@ export interface components {
                  * @description Submissions deleted.
                  */
                 deleted: number;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_ExportResponse: {
+            /** @description A CSV export made in the background. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: date-time */
+                download_expires_at?: string | null;
+                /**
+                 * @description Link to the file, only while `ready`: it needs no sign-in, so it can be opened in a
+                 *     browser, and it works until `download_expires_at`. An absolute URL when
+                 *     `AUTOXIDE_HTTP_PUBLIC_URL` is set, otherwise a path on this API. Get the export again
+                 *     for a fresh link.
+                 */
+                download_url?: string | null;
+                /**
+                 * Format: date-time
+                 * @description When the file is deleted (`AUTOXIDE_FORMS_EXPORT_KEEP_HOURS` after it was finished).
+                 */
+                expires_at?: string | null;
+                /** Format: date-time */
+                finished_at?: string | null;
+                /** Format: uuid */
+                form_id: string;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: int64
+                 * @description Rows in the file (without the header line), once `ready`.
+                 */
+                row_count?: number | null;
+                /**
+                 * Format: int64
+                 * @description Size of the file in bytes, once `ready`.
+                 */
+                size?: number | null;
+                /** @description `pending` and `running` until the file is written; then `ready` or `failed`. */
+                state: components["schemas"]["ExportState"];
+                status?: components["schemas"]["SubmissionStatus"] | null;
             };
         };
         /** @description Envelope of a single result. */
@@ -5131,6 +6471,12 @@ export interface components {
                 created_at: string;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: int64
+                 * @description Items directly in this folder (not in its subfolders), not counting the trash.
+                 * @example 12
+                 */
+                item_count: number;
                 /** @example Products */
                 name: string;
                 /**
@@ -5189,6 +6535,7 @@ export interface components {
                  */
                 retention_days?: number | null;
                 status: components["schemas"]["FormStatus"];
+                submissions?: components["schemas"]["SubmissionCounts"] | null;
                 /** @description Shown to the sender after sending. */
                 success_message: components["schemas"]["Localized"];
                 /**
@@ -5264,6 +6611,38 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_LibrarySummaryResponse: {
+            /** @description Totals of the media library. */
+            data: {
+                /**
+                 * Format: int64
+                 * @description Total size in bytes of the items not in the trash (their current content, without the
+                 *     smaller copies of images).
+                 * @example 734003200
+                 */
+                bytes: number;
+                /**
+                 * Format: int64
+                 * @description Images not in the trash with no text alternative and not marked `decorative`: the items
+                 *     `GET /api/v1/media?alt_missing=true` lists.
+                 * @example 9
+                 */
+                images_missing_alt: number;
+                /**
+                 * Format: int64
+                 * @description Items not in the trash.
+                 * @example 214
+                 */
+                items: number;
+                /**
+                 * Format: int64
+                 * @description Items in the trash.
+                 * @example 3
+                 */
+                trashed_items: number;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_ListResponse: {
             /** @description A newsletter list, as admins see it. */
             data: {
@@ -5313,6 +6692,11 @@ export interface components {
                  *     not verified (ask for a new mail with `POST /api/v1/auth/me/email/verification`).
                  */
                 email_verified_at?: string | null;
+                /**
+                 * @description Whether the account has a password. Without one (signed in with a passkey), set a first
+                 *     password through `POST /api/v1/auth/password-reset`.
+                 */
+                has_password: boolean;
                 /** Format: uuid */
                 id: string;
                 /**
@@ -5320,6 +6704,7 @@ export interface components {
                  * @example Ada Lovelace
                  */
                 name: string;
+                pending_email?: components["schemas"]["PendingEmail"] | null;
                 /**
                  * @description Permissions granted by the user's roles, sorted by name.
                  * @example [
@@ -5333,8 +6718,21 @@ export interface components {
         Data_MediaItemResponse: {
             /** @description A media item. Its content is at `url`. */
             data: {
-                /** @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. */
+                /**
+                 * @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. This is
+                 *     the default language's text, used for any language without a translation in `alts`.
+                 */
                 alt: string;
+                /**
+                 * @description Translations of `alt` by language (BCP 47 code → text), set with
+                 *     `PUT /api/v1/media/{id}/alts/{locale}`. Show `alts[locale]` when present, else `alt`.
+                 * @example {
+                 *       "vi": "Bếp từ đôi màu đen trên mặt bếp gỗ"
+                 *     }
+                 */
+                alts: {
+                    [key: string]: string;
+                };
                 /** @description Caption; empty when unset. */
                 caption: string;
                 /**
@@ -5344,6 +6742,11 @@ export interface components {
                 content_type: string;
                 /** Format: date-time */
                 created_at: string;
+                /**
+                 * @description `true` for a purely decorative image: its empty `alt` is on purpose (render `alt=""`), so
+                 *     it does not count as missing one.
+                 */
+                decorative: boolean;
                 /**
                  * Format: uuid
                  * @description The folder holding the item; `null` for the root.
@@ -5392,6 +6795,11 @@ export interface components {
                  * @description The user who uploaded the item; `null` once that account is deleted.
                  */
                 uploaded_by?: string | null;
+                /**
+                 * @description Display name of `uploaded_by`, with `include=uploader` on the list: `null` when the
+                 *     account no longer exists; absent otherwise.
+                 */
+                uploaded_by_name?: string | null;
                 /**
                  * @description Where to load the content, with its version: the address changes when the content
                  *     does, so it may be cached for a long time. Public items load without signing in.
@@ -5528,9 +6936,77 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_NewsletterSettingsResponse: {
+            /** @description The newsletter settings in use (set by the server's operator; no secrets). */
+            data: {
+                /**
+                 * @description Put at the start of the subject of advertising campaigns
+                 *     (`AUTOXIDE_NEWSLETTER_ADVERTISING_LABEL`); empty: no label.
+                 * @example [QC]
+                 */
+                advertising_label: string;
+                /**
+                 * Format: int32
+                 * @description Advertising mails one address gets at most per day
+                 *     (`AUTOXIDE_NEWSLETTER_ADVERTISING_MAX_PER_DAY`); `0`: no limit.
+                 * @example 3
+                 */
+                advertising_max_per_day: number;
+                /**
+                 * @description The website's confirmation page is set (`AUTOXIDE_NEWSLETTER_CONFIRM_URL`); needed by
+                 *     lists with double opt-in.
+                 */
+                confirm_url_set: boolean;
+                /**
+                 * @description Settings still to set before campaigns can be sent: names of environment variables,
+                 *     empty when everything needed is set (`AUTOXIDE_NEWSLETTER_POSTAL_ADDRESS` is listed:
+                 *     only advertising campaigns need it).
+                 * @example [
+                 *       "AUTOXIDE_NEWSLETTER_PREFERENCES_URL"
+                 *     ]
+                 */
+                missing: string[];
+                /**
+                 * @description The sender's postal address shown in every mail footer
+                 *     (`AUTOXIDE_NEWSLETTER_POSTAL_ADDRESS`); `null`: not set — advertising campaigns cannot
+                 *     be sent until it is.
+                 */
+                postal_address?: string | null;
+                /**
+                 * @description The website's preferences page is set (`AUTOXIDE_NEWSLETTER_PREFERENCES_URL`); needed to
+                 *     send any campaign (the footer link).
+                 */
+                preferences_url_set: boolean;
+                /**
+                 * @description The server's public address is set (`AUTOXIDE_HTTP_PUBLIC_URL`); needed to send any
+                 *     campaign (the one-click unsubscribe link).
+                 */
+                public_url_set: boolean;
+                /**
+                 * Format: int32
+                 * @description Campaign mails handed to the mail queue per minute
+                 *     (`AUTOXIDE_NEWSLETTER_SEND_RATE_PER_MINUTE`).
+                 * @example 300
+                 */
+                send_rate_per_minute: number;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_PasskeyResponse: {
             /** @description A passkey of the signed-in user. Holds no secret. */
             data: {
+                /**
+                 * Format: uuid
+                 * @description Kind of authenticator, as it identified itself when registered (its AAGUID); `null` when
+                 *     it did not say (or registered before this was kept).
+                 */
+                aaguid?: string | null;
+                /**
+                 * @description Name of that kind of authenticator, e.g. `Windows Hello`, `Apple Passwords`,
+                 *     `Google Password Manager`; `null` when the kind is not known to the server.
+                 * @example Windows Hello
+                 */
+                authenticator?: string | null;
                 /** Format: date-time */
                 created_at: string;
                 /** Format: uuid */
@@ -5608,10 +7084,16 @@ export interface components {
                 /** @description Authors, in order (the first is the main one). */
                 author_ids: string[];
                 body: components["schemas"]["BodyNode"];
+                /**
+                 * @description The public images used in `body`, in order of appearance (find one by the `mediaId` of
+                 *     its node). Images that are not public yet are left out.
+                 */
+                body_media: components["schemas"]["PublicMedia"][];
                 /** Format: int32 */
                 body_schema_version: number;
                 canonical_url: string;
                 excerpt: string;
+                featured_media?: components["schemas"]["PublicMedia"] | null;
                 featured_media_alt: string;
                 /**
                  * Format: uuid
@@ -5682,11 +7164,22 @@ export interface components {
             /** @description A comment, as shown to everyone. */
             data: {
                 author: components["schemas"]["CommentAuthor"];
-                /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
+                /**
+                 * @description Stable codes of what the author was on the target when writing, e.g. `seller` (manages
+                 *     the product) or `verified_buyer` (received it); empty for most comments. Show your own
+                 *     label for each code.
+                 * @example [
+                 *       "verified_buyer"
+                 *     ]
+                 */
+                badges: string[];
+                /** @description The text as written (plain text or Markdown, see `format`). Never insert it as HTML. */
                 body: string;
                 /**
                  * @description The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as
-                 *     links with `rel="nofollow ugc noopener"`.
+                 *     links with `rel="nofollow ugc noopener"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,
+                 *     `<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as
+                 *     their text. Insert this, never `body`.
                  */
                 body_html: string;
                 /** Format: date-time */
@@ -5698,6 +7191,8 @@ export interface components {
                  * @description When the author last changed it.
                  */
                 edited_at?: string | null;
+                /** @description How `body` is written: `text` or `markdown`. */
+                format: components["schemas"]["Format"];
                 /** Format: uuid */
                 id: string;
                 /**
@@ -5773,6 +7268,20 @@ export interface components {
                 items: components["schemas"]["PublicMenuItem"][];
                 key: string;
                 /** @description The language actually returned (the default language when the menu is not translated). */
+                locale: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_PublicSiteMenu: {
+            /** @description A website menu ready to show: links worked out, hidden targets left out. */
+            data: {
+                items: components["schemas"]["PublicSiteMenuItem"][];
+                /** @example main */
+                key: string;
+                /**
+                 * @description The language actually returned (the default language when the menu is not translated).
+                 * @example vi
+                 */
                 locale: string;
             };
         };
@@ -5916,6 +7425,8 @@ export interface components {
             /** @description A scheduled publish or take-down. */
             data: {
                 action: components["schemas"]["Action"];
+                /** @description `true` when whoever scheduled it confirmed that the AI-generated content was reviewed. */
+                ai_reviewed: boolean;
                 /** Format: date-time */
                 created_at: string;
                 /** Format: uuid */
@@ -5969,6 +7480,23 @@ export interface components {
                 model: string;
                 /** @description Up to 5 existing categories or tags of the entry's language that fit; never new ones. */
                 term_ids: string[];
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_SiteMenu: {
+            /** @description A website menu as saved. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                id: string;
+                items: components["schemas"]["SiteMenuItem"][];
+                /** @example main */
+                key: string;
+                /** @example vi */
+                locale: string;
+                /** Format: date-time */
+                updated_at: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -6116,11 +7644,221 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_Tenant: {
+            /** @description A customer (tenant) of the platform. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                expanded?: components["schemas"]["TenantExpanded"] | null;
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /**
+                 * Format: uuid
+                 * @description Parent tenant, when the tenant belongs to a chain.
+                 */
+                parent_id?: string | null;
+                /**
+                 * @description Name of the placement (database) that keeps its data.
+                 * @example main
+                 */
+                placement: string;
+                /**
+                 * @description Read-only: its data can be read (and its users can sign in and export), but every change
+                 *     is refused with `403 tenant_read_only`. Independent of `status`.
+                 */
+                read_only?: boolean;
+                /**
+                 * @description Short name: lower-case letters, digits and `-`; unique on the platform.
+                 * @example acme
+                 */
+                slug: string;
+                /**
+                 * @description `provisioning`, `active`, `suspended` (every request is refused with
+                 *     `403 tenant_suspended`), `maintenance` or `moving`.
+                 * @example active
+                 */
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TenantDomain: {
+            /** @description A domain of the tenant: requests to a verified domain reach this tenant. */
+            data: {
+                /** @description Why the last lookup did not verify the domain. */
+                check_error?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                /**
+                 * @description Lower case, without port or trailing dot; international names in punycode.
+                 * @example shop.example
+                 */
+                domain: string;
+                /**
+                 * Format: int32
+                 * @description Daily checks in a row of the verified domain that did not find the DNS record; at 3 the
+                 *     domain becomes `failed`. Keep the record in place: one successful check resets it to 0.
+                 */
+                failed_checks: number;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: date-time
+                 * @description Last time the DNS record was looked up.
+                 */
+                last_checked_at?: string | null;
+                /**
+                 * Format: uuid
+                 * @description Node of the tenant's organization tree the domain belongs to (e.g. one store's own
+                 *     site); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.
+                 */
+                org_id?: string | null;
+                /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
+                record: components["schemas"]["TenantDomainRecord"];
+                /**
+                 * @description `pending` (waits for the DNS record), `verified`, or `failed` (not verified within 7
+                 *     days, or a verified domain whose record was missing at 3 daily checks in a row: fix the
+                 *     record and verify again).
+                 * @example pending
+                 */
+                status: string;
+                /**
+                 * Format: date-time
+                 * @description When the status last changed; a `pending` domain fails 7 days after it.
+                 */
+                updated_at: string;
+                /** Format: date-time */
+                verified_at?: string | null;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TenantMove: {
+            /** @description A move of a tenant to another placement. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** @description Why the last run stopped, when it did; running the move again resumes it. */
+                error?: string | null;
+                /** Format: date-time */
+                finished_at?: string | null;
+                /** @example main */
+                from: string;
+                /** Format: uuid */
+                id: string;
+                keep_source: boolean;
+                /**
+                 * Format: int64
+                 * @description Sum of `tables[].rows`.
+                 */
+                rows: number;
+                /**
+                 * @description `copying` (the tenant answers `503`), `copied`, `switched` (the tenant works from `to`;
+                 *     the old placement is being cleaned), `done` or `aborted`.
+                 * @example done
+                 */
+                state: string;
+                /** @description Rows copied per table (after `copied`). */
+                tables: components["schemas"]["TenantTableRows"][];
+                /** Format: uuid */
+                tenant_id: string;
+                /** @example acme-db */
+                to: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TenantMovePlan: {
+            /** @description What a move would do (dry run). Nothing is changed. */
+            data: {
+                /** @description What must be fixed first; empty when the move can run. */
+                blocking: components["schemas"]["TenantMoveBlocker"][];
+                /**
+                 * Format: int64
+                 * @description Files of the tenant that would be copied to the file storage of `to`; `0` when both
+                 *     placements keep files in the same storage (nothing to copy).
+                 */
+                files: number;
+                /**
+                 * @description Placement that keeps the tenant's data now.
+                 * @example main
+                 */
+                from: string;
+                keep_source: boolean;
+                /** @description `true` when nothing blocks the move (`blocking` is empty). */
+                ready: boolean;
+                /**
+                 * Format: uuid
+                 * @description An interrupted move to `to` that a real run resumes.
+                 */
+                resumes?: string | null;
+                /**
+                 * Format: int64
+                 * @description Sum of `tables[].rows`.
+                 */
+                rows: number;
+                /**
+                 * Format: int64
+                 * @description Seconds the tenant answers `503 tenant_maintenance` before copying starts (other servers
+                 *     see the move and requests in progress finish); copying takes longer for many rows.
+                 */
+                settle_seconds: number;
+                /** @description Rows of the tenant that would be copied, per table, in copy order. */
+                tables: components["schemas"]["TenantTableRows"][];
+                /**
+                 * @description Slug of the tenant.
+                 * @example acme
+                 */
+                tenant: string;
+                /** Format: uuid */
+                tenant_id: string;
+                /**
+                 * @description Placement the data would move to.
+                 * @example acme-db
+                 */
+                to: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TenantSettingState: {
+            /** @description A setting the installed modules take per tenant, and its state in the current tenant. */
+            data: {
+                description: string;
+                /**
+                 * @description Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a
+                 *     partner service (mail server, AI provider, payment gateway…). `null`: no group.
+                 * @example connection
+                 */
+                group?: string | null;
+                /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
+                is_set: boolean;
+                /**
+                 * @description `<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named
+                 *     `<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.
+                 * @example kernel.public_url
+                 */
+                name: string;
+                /** @description Secret settings are stored encrypted and never returned: `value` is always `null`. */
+                secret: boolean;
+                /** Format: date-time */
+                updated_at?: string | null;
+                /** @description The value, for settings that are not secret and are set. */
+                value?: string | null;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_TermResponse: {
             /** @description A category or tag, with its names in every language. */
             data: {
                 /** Format: date-time */
                 created_at: string;
+                /**
+                 * Format: int64
+                 * @description How many entries (in any status) have this term. Only in the list.
+                 */
+                entry_count?: number | null;
                 /** Format: uuid */
                 id: string;
                 names: components["schemas"]["TermName"][];
@@ -6251,6 +7989,25 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_UserFlag: {
+            /** @description A flag the interface keeps for the signed-in user, e.g. a dismissed hint. */
+            data: {
+                /**
+                 * @description Lower-case letters, digits, `.`, `_` and `-`, up to 100 characters; group flags with a
+                 *     prefix, e.g. `hint.saved_views`.
+                 * @example hint.saved_views
+                 */
+                key: string;
+                /** Format: date-time */
+                updated_at: string;
+                /**
+                 * @description Up to 200 characters, e.g. `dismissed` or the last version whose news were seen.
+                 * @example dismissed
+                 */
+                value: string;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_UserResponse: {
             /** @description A user account. Never includes the password. */
             data: {
@@ -6273,13 +8030,29 @@ export interface components {
                  *     is not verified.
                  */
                 email_verified_at?: string | null;
+                /**
+                 * @description Whether the account has a password. Without one it signs in with a passkey; its owner
+                 *     sets a first password through `POST /api/v1/auth/password-reset`, an administrator
+                 *     with `POST /api/v1/auth/users/{id}/password`.
+                 */
+                has_password: boolean;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: date-time
+                 * @description When the user last started a session (sign-in, password change); `null` if not since
+                 *     this field exists.
+                 */
+                last_sign_in_at?: string | null;
+                /** @description Whether two-step sign-in (an authenticator app) is on. */
+                mfa_enabled: boolean;
                 /**
                  * @description Display name.
                  * @example Ada Lovelace
                  */
                 name: string;
+                /** @description The user's roles, by name. Only with `include=roles` on the user list. */
+                roles?: components["schemas"]["UserRole"][] | null;
                 /** Format: date-time */
                 updated_at: string;
             };
@@ -6293,6 +8066,11 @@ export interface components {
                  */
                 count: number;
                 target_id: string;
+                /**
+                 * Format: int32
+                 * @description Shown top-level comments only (e.g. the number of questions on a product tab).
+                 */
+                thread_count: number;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -6351,15 +8129,53 @@ export interface components {
             }[];
         };
         /** @description Envelope of a single result. */
+        Data_Vec_MyPermission: {
+            data: {
+                /** @description What it allows, in the language of `Accept-Language`. */
+                description: string;
+                /** @example notes.write */
+                name: string;
+                /**
+                 * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or `money`.
+                 * @example write
+                 */
+                risk: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
         Data_Vec_PermissionResponse: {
             data: {
-                /** @description What the permission allows. */
+                /** @description What the permission allows, in the language of `Accept-Language`. */
                 description: string;
                 /**
                  * @description `<module>.<action>`.
                  * @example auth.roles.read
                  */
                 name: string;
+                /**
+                 * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or
+                 *     `money`.
+                 * @example read
+                 */
+                risk: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_Placement: {
+            data: {
+                /** @description `sqlite` or `postgres`. */
+                backend: string;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                id: string;
+                /** @description `shared` (many tenants) or `dedicated` (one tenant). */
+                kind: string;
+                /** @example main */
+                name: string;
+                /** @description `ready`, `behind` (migrations pending: its tenants answer `503`) or `migrating`. */
+                schema_state: string;
+                storage?: components["schemas"]["PlacementStorage"] | null;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -6378,6 +8194,13 @@ export interface components {
                 /** @description Authors; the first is the main one. */
                 authors: components["schemas"]["PublicAuthor"][];
                 body: components["schemas"]["BodyNode"];
+                /**
+                 * @description The images used in `body` (nodes of type `image`), in order of appearance: find one by
+                 *     the `mediaId` of the node to get its size and smaller copies for `srcset`. An image
+                 *     that is no longer public is left out. `alt` here is the one of the media library; the
+                 *     node carries its own.
+                 */
+                body_media: components["schemas"]["PublicMedia"][];
                 /** Format: int32 */
                 body_schema_version: number;
                 /**
@@ -6453,6 +8276,8 @@ export interface components {
         Data_Vec_ScheduleResponse: {
             data: {
                 action: components["schemas"]["Action"];
+                /** @description `true` when whoever scheduled it confirmed that the AI-generated content was reviewed. */
+                ai_reviewed: boolean;
                 /** Format: date-time */
                 created_at: string;
                 /** Format: uuid */
@@ -6477,6 +8302,50 @@ export interface components {
             }[];
         };
         /** @description Envelope of a single result. */
+        Data_Vec_TenantSettingState: {
+            data: {
+                description: string;
+                /**
+                 * @description Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a
+                 *     partner service (mail server, AI provider, payment gateway…). `null`: no group.
+                 * @example connection
+                 */
+                group?: string | null;
+                /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
+                is_set: boolean;
+                /**
+                 * @description `<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named
+                 *     `<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.
+                 * @example kernel.public_url
+                 */
+                name: string;
+                /** @description Secret settings are stored encrypted and never returned: `value` is always `null`. */
+                secret: boolean;
+                /** Format: date-time */
+                updated_at?: string | null;
+                /** @description The value, for settings that are not secret and are set. */
+                value?: string | null;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_UserFlag: {
+            data: {
+                /**
+                 * @description Lower-case letters, digits, `.`, `_` and `-`, up to 100 characters; group flags with a
+                 *     prefix, e.g. `hint.saved_views`.
+                 * @example hint.saved_views
+                 */
+                key: string;
+                /** Format: date-time */
+                updated_at: string;
+                /**
+                 * @description Up to 200 characters, e.g. `dismissed` or the last version whose news were seen.
+                 * @example dismissed
+                 */
+                value: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
         Data_VerifiedResponse: {
             /** @description The answer to an address confirmation. */
             data: {
@@ -6495,6 +8364,11 @@ export interface components {
         };
         /** @description How far a campaign got, by delivery status. */
         DeliveryCounts: {
+            /**
+             * Format: int64
+             * @description Sent mails the receiving server bounced for good (counted in `failed` too).
+             */
+            bounced: number;
             /**
              * Format: int64
              * @description Refused for good by the receiving server, or the outcome is unknown.
@@ -6521,6 +8395,12 @@ export interface components {
              * @description Recipients taken so far (every confirmed subscriber of the list when sending started).
              */
             total: number;
+            /**
+             * Format: int64
+             * @description Recipients who unsubscribed with the link of this campaign's mail (one-click or the
+             *     preferences page).
+             */
+            unsubscribed: number;
         };
         /** @description One attempt to deliver one event to one endpoint, with its retries. */
         DeliveryResponse: {
@@ -6576,11 +8456,16 @@ export interface components {
             body: string;
             /** @description Guests: the `edit_token` received when posting. Signed-in authors omit it. */
             edit_token?: string | null;
+            format?: components["schemas"]["Format"] | null;
         };
         /** @description A comment just changed, for its author. */
         EditedComment: components["schemas"]["PublicComment"] & {
             /** @description `pending` when the change waits for approval (show "your change awaits approval"). */
             status: components["schemas"]["CommentVisibility"];
+        };
+        /** @description The token from the mail sent to the old address after an email change. */
+        EmailChangeReport: {
+            token: string;
         };
         /** @description Everything the forms hold about one email address. */
         EmailDataResponse: {
@@ -6618,6 +8503,7 @@ export interface components {
             events: string[];
             /** Format: uuid */
             id: string;
+            last_delivery?: components["schemas"]["LastDelivery"] | null;
             /** Format: date-time */
             updated_at: string;
             /** @example https://example.com/hooks/autoxide */
@@ -6729,6 +8615,18 @@ export interface components {
              * @description The parent page (pages only); `null` at the root.
              */
             parent_id?: string | null;
+            /**
+             * @description Address of the public version, e.g. `/blog/duong-den-da-lat` or `/about/team` (a page
+             *     carries the path of its parents); `null` while the entry is not public. It does not hold
+             *     the language: the website decides how `locale` shows in its addresses.
+             * @example /blog/duong-den-da-lat
+             */
+            path?: string | null;
+            /**
+             * Format: date-time
+             * @description When the public version was last published; `null` while the entry is not public.
+             */
+            published_at?: string | null;
             /** Format: int32 */
             reading_time_minutes: number;
             /**
@@ -6774,6 +8672,12 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
             /**
+             * @description The entry's `ETag` (as `GET /entries/{id}` sends it): send it in `If-Match` to change the
+             *     entry straight from a list.
+             * @example "1731628800000000"
+             */
+            version: string;
+            /**
              * Format: int32
              * @description Words in the body (for Vietnamese: syllables).
              */
@@ -6798,6 +8702,50 @@ export interface components {
             /** @example auth.user_created */
             name: string;
         };
+        /** @description A CSV export made in the background. */
+        ExportResponse: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            download_expires_at?: string | null;
+            /**
+             * @description Link to the file, only while `ready`: it needs no sign-in, so it can be opened in a
+             *     browser, and it works until `download_expires_at`. An absolute URL when
+             *     `AUTOXIDE_HTTP_PUBLIC_URL` is set, otherwise a path on this API. Get the export again
+             *     for a fresh link.
+             */
+            download_url?: string | null;
+            /**
+             * Format: date-time
+             * @description When the file is deleted (`AUTOXIDE_FORMS_EXPORT_KEEP_HOURS` after it was finished).
+             */
+            expires_at?: string | null;
+            /** Format: date-time */
+            finished_at?: string | null;
+            /** Format: uuid */
+            form_id: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: int64
+             * @description Rows in the file (without the header line), once `ready`.
+             */
+            row_count?: number | null;
+            /**
+             * Format: int64
+             * @description Size of the file in bytes, once `ready`.
+             */
+            size?: number | null;
+            /** @description `pending` and `running` until the file is written; then `ready` or `failed`. */
+            state: components["schemas"]["ExportState"];
+            status?: components["schemas"]["SubmissionStatus"] | null;
+        };
+        /**
+         * @description Where an export is: `pending` (asked for, waiting for the job), `running` (the file is being
+         *     written), `ready` (get `download_url`) or `failed` (ask for a new one).
+         * @enum {string}
+         */
+        ExportState: "pending" | "running" | "ready" | "failed";
         /** @description A field of a form. */
         Field: {
             help?: components["schemas"]["Localized"] | null;
@@ -6893,6 +8841,12 @@ export interface components {
             created_at: string;
             /** Format: uuid */
             id: string;
+            /**
+             * Format: int64
+             * @description Items directly in this folder (not in its subfolders), not counting the trash.
+             * @example 12
+             */
+            item_count: number;
             /** @example Products */
             name: string;
             /**
@@ -6948,6 +8902,7 @@ export interface components {
              */
             retention_days?: number | null;
             status: components["schemas"]["FormStatus"];
+            submissions?: components["schemas"]["SubmissionCounts"] | null;
             /** @description Shown to the sender after sending. */
             success_message: components["schemas"]["Localized"];
             /**
@@ -6986,6 +8941,12 @@ export interface components {
             /** @description Send it with the form (the receiving endpoint says in which field). Valid once. */
             token: string;
         };
+        /**
+         * @description How the body of a comment is written: `text` (plain text; addresses become links) or
+         *     `markdown` (a small part of Markdown: bold, italics, links, quotes, code).
+         * @enum {string}
+         */
+        Format: "text" | "markdown";
         /** @description Health of the service. */
         Health: {
             /**
@@ -7048,6 +9009,60 @@ export interface components {
          * @enum {string}
          */
         Kind: "post" | "page";
+        /** @description The newest delivery to an endpoint. */
+        LastDelivery: {
+            /** Format: date-time */
+            created_at: string;
+            /** @example auth.user_created */
+            event_name: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When it was last tried; `null` while it waits for its first attempt.
+             */
+            last_attempt_at?: string | null;
+            /**
+             * Format: int32
+             * @description HTTP status the endpoint answered with, on the last attempt; `null` when it did not answer.
+             */
+            response_status?: number | null;
+            /**
+             * @description `pending` (sending or waiting for a retry), `succeeded` or `failed` (gave up) — the same values
+             *     as a delivery's `status`.
+             * @example succeeded
+             */
+            status: string;
+        };
+        /** @description Totals of the media library. */
+        LibrarySummaryResponse: {
+            /**
+             * Format: int64
+             * @description Total size in bytes of the items not in the trash (their current content, without the
+             *     smaller copies of images).
+             * @example 734003200
+             */
+            bytes: number;
+            /**
+             * Format: int64
+             * @description Images not in the trash with no text alternative and not marked `decorative`: the items
+             *     `GET /api/v1/media?alt_missing=true` lists.
+             * @example 9
+             */
+            images_missing_alt: number;
+            /**
+             * Format: int64
+             * @description Items not in the trash.
+             * @example 214
+             */
+            items: number;
+            /**
+             * Format: int64
+             * @description Items in the trash.
+             * @example 3
+             */
+            trashed_items: number;
+        };
         /** @description One list choice. */
         ListChoice: {
             key: string;
@@ -7112,6 +9127,24 @@ export interface components {
             /** @example correct horse battery staple */
             password: string;
         };
+        /** @description An API key of any user, for administrators. */
+        ManagedApiKeyResponse: components["schemas"]["ApiKeyResponse"] & {
+            /**
+             * @description Email of that user; `null` like `user_name`.
+             * @example ada@example.com
+             */
+            user_email?: string | null;
+            /**
+             * Format: uuid
+             * @description The user the key acts as.
+             */
+            user_id: string;
+            /**
+             * @description Display name of that user; `null` when the account no longer exists.
+             * @example Ada Lovelace
+             */
+            user_name?: string | null;
+        };
         /**
          * @description How a result matched.
          * @enum {string}
@@ -7137,6 +9170,11 @@ export interface components {
              *     not verified (ask for a new mail with `POST /api/v1/auth/me/email/verification`).
              */
             email_verified_at?: string | null;
+            /**
+             * @description Whether the account has a password. Without one (signed in with a passkey), set a first
+             *     password through `POST /api/v1/auth/password-reset`.
+             */
+            has_password: boolean;
             /** Format: uuid */
             id: string;
             /**
@@ -7144,6 +9182,7 @@ export interface components {
              * @example Ada Lovelace
              */
             name: string;
+            pending_email?: components["schemas"]["PendingEmail"] | null;
             /**
              * @description Permissions granted by the user's roles, sorted by name.
              * @example [
@@ -7152,10 +9191,31 @@ export interface components {
              */
             permissions: string[];
         };
+        /** @description A translation of an item's text alternative. */
+        MediaAltTranslation: {
+            /**
+             * @description Text alternative in this language, up to 1000 characters.
+             * @example Bếp từ đôi màu đen trên mặt bếp gỗ
+             */
+            alt: string;
+        };
         /** @description A media item. Its content is at `url`. */
         MediaItemResponse: {
-            /** @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. */
+            /**
+             * @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. This is
+             *     the default language's text, used for any language without a translation in `alts`.
+             */
             alt: string;
+            /**
+             * @description Translations of `alt` by language (BCP 47 code → text), set with
+             *     `PUT /api/v1/media/{id}/alts/{locale}`. Show `alts[locale]` when present, else `alt`.
+             * @example {
+             *       "vi": "Bếp từ đôi màu đen trên mặt bếp gỗ"
+             *     }
+             */
+            alts: {
+                [key: string]: string;
+            };
             /** @description Caption; empty when unset. */
             caption: string;
             /**
@@ -7165,6 +9225,11 @@ export interface components {
             content_type: string;
             /** Format: date-time */
             created_at: string;
+            /**
+             * @description `true` for a purely decorative image: its empty `alt` is on purpose (render `alt=""`), so
+             *     it does not count as missing one.
+             */
+            decorative: boolean;
             /**
              * Format: uuid
              * @description The folder holding the item; `null` for the root.
@@ -7214,6 +9279,11 @@ export interface components {
              */
             uploaded_by?: string | null;
             /**
+             * @description Display name of `uploaded_by`, with `include=uploader` on the list: `null` when the
+             *     account no longer exists; absent otherwise.
+             */
+            uploaded_by_name?: string | null;
+            /**
              * @description Where to load the content, with its version: the address changes when the content
              *     does, so it may be cached for a long time. Public items load without signing in.
              * @example /api/v1/media/0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a81/content?v=0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a82
@@ -7237,6 +9307,29 @@ export interface components {
              * @example 1920
              */
             width?: number | null;
+        };
+        /** @description A small label on an item, e.g. "-50%" or "New". */
+        MenuBadge: {
+            /**
+             * Format: date-time
+             * @description Shown from this moment; omitted: at once.
+             */
+            from?: string | null;
+            /**
+             * @description 1 to 20 characters, in the menu's language.
+             * @example -50%
+             */
+            text: string;
+            /**
+             * @description `sale`, `brand`, `new` or `neutral`.
+             * @example sale
+             */
+            tone: string;
+            /**
+             * Format: date-time
+             * @description Hidden from this moment on; omitted: never.
+             */
+            until?: string | null;
         };
         /** @description A menu item to set. Give exactly one of `entry_id`, `term_id` and `url`. */
         MenuItemInput: {
@@ -7290,6 +9383,15 @@ export interface components {
             locale: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        /**
+         * @description An object of a module, as a resource type (`<module>.<type>`, e.g. `content.entry`,
+         *     `content.term`) and its id.
+         */
+        MenuTarget: {
+            id: string;
+            /** @example content.term */
+            kind: string;
         };
         /** @description Two-step sign-in: the password was right, a code is needed. */
         MfaChallengeResponse: {
@@ -7389,6 +9491,11 @@ export interface components {
             description: string;
             /** @example notes.write */
             name: string;
+            /**
+             * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or `money`.
+             * @example write
+             */
+            risk: string;
         };
         /** @description A recurring job. */
         ModuleSchedule: {
@@ -7403,6 +9510,7 @@ export interface components {
         };
         /** @description An MCP tool. */
         ModuleTool: {
+            deprecation?: components["schemas"]["ModuleToolDeprecation"] | null;
             description: string;
             /** @description The tool deletes or overwrites data that cannot be recovered. */
             destructive: boolean;
@@ -7419,6 +9527,15 @@ export interface components {
             /** @description The tool changes nothing. */
             read_only: boolean;
         };
+        /** @description A deprecated MCP tool. */
+        ModuleToolDeprecation: {
+            /** @description Deprecated since this date (`YYYY-MM-DD`, UTC). */
+            since: string;
+            /** @description Full name of the tool to use instead, if any. */
+            successor?: string | null;
+            /** @description The tool goes away on this date, if one is set. */
+            sunset?: string | null;
+        };
         /** @description Where to move a page. */
         MoveRequest: {
             /**
@@ -7427,11 +9544,52 @@ export interface components {
              */
             parent_id?: string | null;
         };
+        /** @description A permission the caller holds. */
+        MyPermission: {
+            /** @description What it allows, in the language of `Accept-Language`. */
+            description: string;
+            /** @example notes.write */
+            name: string;
+            /**
+             * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or `money`.
+             * @example write
+             */
+            risk: string;
+        };
         /**
          * @description What happens when a post is published (by the `content` module).
          * @enum {string}
          */
         NewPosts: "off" | "draft" | "send";
+        /** @description A new tenant. */
+        NewTenant: {
+            /**
+             * @description 1 to 200 characters.
+             * @example Acme Ltd
+             */
+            name: string;
+            /**
+             * Format: uuid
+             * @description Parent tenant, for chains.
+             */
+            parent_id?: string | null;
+            /** @description Name of the placement for its data; `main` (the platform's database) when omitted. */
+            placement?: string | null;
+            /**
+             * @description 1 to 63 lower-case letters, digits and `-`, not starting or ending with `-`.
+             * @example acme
+             */
+            slug: string;
+        };
+        /** @description A domain to add to the tenant. */
+        NewTenantDomain: {
+            /**
+             * @description The domain, e.g. `shop.example` (punycode for international names). Not an IP address,
+             *     `localhost` or the platform's own domain.
+             * @example shop.example
+             */
+            domain: string;
+        };
         /** @description One mail of a campaign to the person. */
         NewsletterDelivery: {
             /** Format: uuid */
@@ -7470,6 +9628,59 @@ export interface components {
              */
             at: string;
         };
+        /** @description The newsletter settings in use (set by the server's operator; no secrets). */
+        NewsletterSettingsResponse: {
+            /**
+             * @description Put at the start of the subject of advertising campaigns
+             *     (`AUTOXIDE_NEWSLETTER_ADVERTISING_LABEL`); empty: no label.
+             * @example [QC]
+             */
+            advertising_label: string;
+            /**
+             * Format: int32
+             * @description Advertising mails one address gets at most per day
+             *     (`AUTOXIDE_NEWSLETTER_ADVERTISING_MAX_PER_DAY`); `0`: no limit.
+             * @example 3
+             */
+            advertising_max_per_day: number;
+            /**
+             * @description The website's confirmation page is set (`AUTOXIDE_NEWSLETTER_CONFIRM_URL`); needed by
+             *     lists with double opt-in.
+             */
+            confirm_url_set: boolean;
+            /**
+             * @description Settings still to set before campaigns can be sent: names of environment variables,
+             *     empty when everything needed is set (`AUTOXIDE_NEWSLETTER_POSTAL_ADDRESS` is listed:
+             *     only advertising campaigns need it).
+             * @example [
+             *       "AUTOXIDE_NEWSLETTER_PREFERENCES_URL"
+             *     ]
+             */
+            missing: string[];
+            /**
+             * @description The sender's postal address shown in every mail footer
+             *     (`AUTOXIDE_NEWSLETTER_POSTAL_ADDRESS`); `null`: not set — advertising campaigns cannot
+             *     be sent until it is.
+             */
+            postal_address?: string | null;
+            /**
+             * @description The website's preferences page is set (`AUTOXIDE_NEWSLETTER_PREFERENCES_URL`); needed to
+             *     send any campaign (the footer link).
+             */
+            preferences_url_set: boolean;
+            /**
+             * @description The server's public address is set (`AUTOXIDE_HTTP_PUBLIC_URL`); needed to send any
+             *     campaign (the one-click unsubscribe link).
+             */
+            public_url_set: boolean;
+            /**
+             * Format: int32
+             * @description Campaign mails handed to the mail queue per minute
+             *     (`AUTOXIDE_NEWSLETTER_SEND_RATE_PER_MINUTE`).
+             * @example 300
+             */
+            send_rate_per_minute: number;
+        };
         /** @description A text in English and Vietnamese; a missing language falls back to the other one. */
         NewsletterText: {
             en?: string | null;
@@ -7507,8 +9718,10 @@ export interface components {
                  */
                 permissions: string[];
                 /**
-                 * @description The first characters of the key, to recognize it.
-                 * @example axk_3q9ZbXcV
+                 * @description A few characters of the key, to recognize it: `axk1_…` and the first 8 characters of the
+                 *     key's random part (after the tenant part). Keys created in older versions (`axk_…`) show
+                 *     their first 12 characters.
+                 * @example axk1_…3q9ZbXcV
                  */
                 prefix: string;
             }[];
@@ -7534,6 +9747,11 @@ export interface components {
                  * @example user
                  */
                 actor_kind: string;
+                /**
+                 * @description Display name of `actor_user_id`, with `include=actor`: `null` when the account no longer
+                 *     exists; absent when no user made the change.
+                 */
+                actor_name?: string | null;
                 /**
                  * Format: uuid
                  * @description User who made the change; `null` for the system (command line, background jobs,
@@ -7588,6 +9806,11 @@ export interface components {
                 created_at: string;
                 /** @example Ada Lovelace */
                 display_name: string;
+                /**
+                 * Format: int64
+                 * @description How many entries (in any status) list this author. Only in the list.
+                 */
+                entry_count?: number | null;
                 /** Format: uuid */
                 id: string;
                 /** @description Unique. */
@@ -7682,6 +9905,8 @@ export interface components {
                 author_kind: components["schemas"]["CommentAuthorKind"];
                 /** @description Guest name or the user's display name. */
                 author_name?: string | null;
+                /** @description Codes of what the author was on the target when writing (`seller`, `verified_buyer`…). */
+                badges: string[];
                 body: string;
                 body_html: string;
                 /** Format: date-time */
@@ -7689,6 +9914,8 @@ export interface components {
                 /** Format: date-time */
                 edited_at?: string | null;
                 email_verified: boolean;
+                /** @description How `body` is written: `text` or `markdown`. */
+                format: components["schemas"]["Format"];
                 /**
                  * @description Why it is held: `moderation`, `first_comment`, `reported`, `suspect_word`,
                  *     `too_many_links`, or the anti-spam reasons (`too_fast`, `duplicate`, `classifier`…),
@@ -7718,7 +9945,18 @@ export interface components {
                 root_id: string;
                 status: components["schemas"]["CommentStatus"];
                 target_id: string;
+                /**
+                 * @description Title of the target (e.g. the post's title), from the module that owns it. Only given while
+                 *     the target is public: for a draft, unpublished or deleted target (or a kind with no
+                 *     lookup) the field is absent and only `target_type` and `target_id` identify it.
+                 */
+                target_title?: string | null;
                 target_type: string;
+                /**
+                 * @description Public path of the target (without the domain), e.g. `/blog/hello`; absent like
+                 *     `target_title`.
+                 */
+                target_url?: string | null;
                 /** Format: date-time */
                 updated_at: string;
                 /**
@@ -7747,6 +9985,51 @@ export interface components {
                  * @description The reporting account, when signed in.
                  */
                 reporter_user_id?: string | null;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
+        Page_CommentTarget: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /**
+                 * Format: date-time
+                 * @description When it closes by itself, if set.
+                 */
+                closes_at?: string | null;
+                /**
+                 * Format: int32
+                 * @description Shown comments (0 when hidden).
+                 */
+                comment_count: number;
+                /** @description The comments are hidden from everyone (e.g. the target was deleted). */
+                hidden: boolean;
+                /**
+                 * Format: int32
+                 * @description Comments waiting for approval (`null` in the public answer).
+                 */
+                pending_count?: number | null;
+                /**
+                 * Format: int32
+                 * @description Top-level comments waiting for approval (`null` in the public answer).
+                 */
+                pending_thread_count?: number | null;
+                /** @description What applies now. */
+                state: components["schemas"]["CommentTargetState"];
+                target_id: string;
+                target_type: string;
+                /**
+                 * Format: int32
+                 * @description Shown top-level comments, e.g. questions on a product (0 when hidden).
+                 */
+                thread_count: number;
+                /**
+                 * @description Title of the target, from the module that owns it (only in the admin list, and only for a
+                 *     target that is public now); absent otherwise.
+                 */
+                title?: string | null;
+                /** @description Public path of the target (without the domain), like `title`. */
+                url?: string | null;
             }[];
             pagination: components["schemas"]["Pagination"];
         };
@@ -7813,6 +10096,7 @@ export interface components {
                 events: string[];
                 /** Format: uuid */
                 id: string;
+                last_delivery?: components["schemas"]["LastDelivery"] | null;
                 /** Format: date-time */
                 updated_at: string;
                 /** @example https://example.com/hooks/autoxide */
@@ -7884,6 +10168,18 @@ export interface components {
                  * @description The parent page (pages only); `null` at the root.
                  */
                 parent_id?: string | null;
+                /**
+                 * @description Address of the public version, e.g. `/blog/duong-den-da-lat` or `/about/team` (a page
+                 *     carries the path of its parents); `null` while the entry is not public. It does not hold
+                 *     the language: the website decides how `locale` shows in its addresses.
+                 * @example /blog/duong-den-da-lat
+                 */
+                path?: string | null;
+                /**
+                 * Format: date-time
+                 * @description When the public version was last published; `null` while the entry is not public.
+                 */
+                published_at?: string | null;
                 /** Format: int32 */
                 reading_time_minutes: number;
                 /**
@@ -7928,6 +10224,12 @@ export interface components {
                 translation_outdated: boolean;
                 /** Format: date-time */
                 updated_at: string;
+                /**
+                 * @description The entry's `ETag` (as `GET /entries/{id}` sends it): send it in `If-Match` to change the
+                 *     entry straight from a list.
+                 * @example "1731628800000000"
+                 */
+                version: string;
                 /**
                  * Format: int32
                  * @description Words in the body (for Vietnamese: syllables).
@@ -7978,6 +10280,12 @@ export interface components {
                 created_at: string;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: int64
+                 * @description Items directly in this folder (not in its subfolders), not counting the trash.
+                 * @example 12
+                 */
+                item_count: number;
                 /** @example Products */
                 name: string;
                 /**
@@ -8037,6 +10345,7 @@ export interface components {
                  */
                 retention_days?: number | null;
                 status: components["schemas"]["FormStatus"];
+                submissions?: components["schemas"]["SubmissionCounts"] | null;
                 /** @description Shown to the sender after sending. */
                 success_message: components["schemas"]["Localized"];
                 /**
@@ -8085,11 +10394,46 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_ManagedApiKeyResponse: {
+            /** @description The items of this page, in the requested order. */
+            data: (components["schemas"]["ApiKeyResponse"] & {
+                /**
+                 * @description Email of that user; `null` like `user_name`.
+                 * @example ada@example.com
+                 */
+                user_email?: string | null;
+                /**
+                 * Format: uuid
+                 * @description The user the key acts as.
+                 */
+                user_id: string;
+                /**
+                 * @description Display name of that user; `null` when the account no longer exists.
+                 * @example Ada Lovelace
+                 */
+                user_name?: string | null;
+            })[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_MediaItemResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
-                /** @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. */
+                /**
+                 * @description Text alternative for screen readers (the `alt` of an `<img>`); empty when unset. This is
+                 *     the default language's text, used for any language without a translation in `alts`.
+                 */
                 alt: string;
+                /**
+                 * @description Translations of `alt` by language (BCP 47 code → text), set with
+                 *     `PUT /api/v1/media/{id}/alts/{locale}`. Show `alts[locale]` when present, else `alt`.
+                 * @example {
+                 *       "vi": "Bếp từ đôi màu đen trên mặt bếp gỗ"
+                 *     }
+                 */
+                alts: {
+                    [key: string]: string;
+                };
                 /** @description Caption; empty when unset. */
                 caption: string;
                 /**
@@ -8099,6 +10443,11 @@ export interface components {
                 content_type: string;
                 /** Format: date-time */
                 created_at: string;
+                /**
+                 * @description `true` for a purely decorative image: its empty `alt` is on purpose (render `alt=""`), so
+                 *     it does not count as missing one.
+                 */
+                decorative: boolean;
                 /**
                  * Format: uuid
                  * @description The folder holding the item; `null` for the root.
@@ -8148,6 +10497,11 @@ export interface components {
                  */
                 uploaded_by?: string | null;
                 /**
+                 * @description Display name of `uploaded_by`, with `include=uploader` on the list: `null` when the
+                 *     account no longer exists; absent otherwise.
+                 */
+                uploaded_by_name?: string | null;
+                /**
                  * @description Where to load the content, with its version: the address changes when the content
                  *     does, so it may be cached for a long time. Public items load without signing in.
                  * @example /api/v1/media/0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a81/content?v=0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a82
@@ -8178,6 +10532,18 @@ export interface components {
         Page_PasskeyResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
+                /**
+                 * Format: uuid
+                 * @description Kind of authenticator, as it identified itself when registered (its AAGUID); `null` when
+                 *     it did not say (or registered before this was kept).
+                 */
+                aaguid?: string | null;
+                /**
+                 * @description Name of that kind of authenticator, e.g. `Windows Hello`, `Apple Passwords`,
+                 *     `Google Password Manager`; `null` when the kind is not known to the server.
+                 * @example Windows Hello
+                 */
+                authenticator?: string | null;
                 /** Format: date-time */
                 created_at: string;
                 /** Format: uuid */
@@ -8200,11 +10566,22 @@ export interface components {
             /** @description The items of this page, in the requested order. */
             data: {
                 author: components["schemas"]["CommentAuthor"];
-                /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
+                /**
+                 * @description Stable codes of what the author was on the target when writing, e.g. `seller` (manages
+                 *     the product) or `verified_buyer` (received it); empty for most comments. Show your own
+                 *     label for each code.
+                 * @example [
+                 *       "verified_buyer"
+                 *     ]
+                 */
+                badges: string[];
+                /** @description The text as written (plain text or Markdown, see `format`). Never insert it as HTML. */
                 body: string;
                 /**
                  * @description The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as
-                 *     links with `rel="nofollow ugc noopener"`.
+                 *     links with `rel="nofollow ugc noopener"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,
+                 *     `<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as
+                 *     their text. Insert this, never `body`.
                  */
                 body_html: string;
                 /** Format: date-time */
@@ -8216,6 +10593,8 @@ export interface components {
                  * @description When the author last changed it.
                  */
                 edited_at?: string | null;
+                /** @description How `body` is written: `text` or `markdown`. */
+                format: components["schemas"]["Format"];
                 /** Format: uuid */
                 id: string;
                 /**
@@ -8260,6 +10639,13 @@ export interface components {
                 /** @description Authors; the first is the main one. */
                 authors: components["schemas"]["PublicAuthor"][];
                 body: components["schemas"]["BodyNode"];
+                /**
+                 * @description The images used in `body` (nodes of type `image`), in order of appearance: find one by
+                 *     the `mediaId` of the node to get its size and smaller copies for `srcset`. An image
+                 *     that is no longer public is left out. `alt` here is the one of the media library; the
+                 *     node carries its own.
+                 */
+                body_media: components["schemas"]["PublicMedia"][];
                 /** Format: int32 */
                 body_schema_version: number;
                 /**
@@ -8304,6 +10690,19 @@ export interface components {
                 /** Format: int32 */
                 word_count: number;
             }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
+        Page_PublicTermCount: {
+            /** @description The items of this page, in the requested order. */
+            data: (components["schemas"]["PublicTerm"] & {
+                /**
+                 * Format: int64
+                 * @description Published posts in `locale` that carry the term.
+                 * @example 12
+                 */
+                posts: number;
+            })[];
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
@@ -8396,6 +10795,37 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_ScheduleResponse: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                action: components["schemas"]["Action"];
+                /** @description `true` when whoever scheduled it confirmed that the AI-generated content was reviewed. */
+                ai_reviewed: boolean;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                created_by?: string | null;
+                /** Format: uuid */
+                entry_id: string;
+                /** @description Why it failed, an error code such as `content.schedule_outdated`. */
+                error_code?: string | null;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: uuid
+                 * @description The revision that will be published (for `publish`).
+                 */
+                revision_id?: string | null;
+                /** Format: date-time */
+                run_at: string;
+                /** @description `scheduled`, `succeeded`, `failed` or `canceled`. */
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_SearchHit: {
             /** @description The items of this page, in the requested order. */
             data: {
@@ -8431,6 +10861,13 @@ export interface components {
             /** @description The items of this page, in the requested order. */
             data: {
                 /**
+                 * @description Approximate country of the sign-in (ISO 3166-1 two-letter code), from the server's
+                 *     reverse proxy when it is set up for it (`AUTOXIDE_AUTH_COUNTRY_HEADER`); `null` when not
+                 *     known. The IP address is never kept.
+                 * @example VN
+                 */
+                country?: string | null;
+                /**
                  * Format: date-time
                  * @description When the session ends unless refreshed before.
                  */
@@ -8446,6 +10883,13 @@ export interface components {
                  */
                 last_active_at: string;
                 /**
+                 * @description How the session was signed in: `password`, `password_and_mfa` (password and a code),
+                 *     `passkey`, or `password_change` (a new session after changing the password); `null` for
+                 *     sessions older than this information.
+                 * @example password_and_mfa
+                 */
+                sign_in_method?: string | null;
+                /**
                  * Format: date-time
                  * @description When the session was signed in.
                  */
@@ -8456,6 +10900,35 @@ export interface components {
                  * @example Mozilla/5.0 (X11; Linux x86_64) Firefox/140.0
                  */
                 user_agent?: string | null;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
+        Page_SiteMenuSummary: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: int64
+                 * @description How many items the menu holds, at every level.
+                 * @example 12
+                 */
+                item_count: number;
+                /** @example main */
+                key: string;
+                /** @example vi */
+                locale: string;
+                /** Format: date-time */
+                updated_at: string;
+                /**
+                 * Format: uuid
+                 * @description Who created the menu or last replaced its items; `null` when unknown (menus saved
+                 *     before this field existed, or changed by the system).
+                 */
+                updated_by?: string | null;
             }[];
             pagination: components["schemas"]["Pagination"];
         };
@@ -8608,11 +11081,108 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_Tenant: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                expanded?: components["schemas"]["TenantExpanded"] | null;
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /**
+                 * Format: uuid
+                 * @description Parent tenant, when the tenant belongs to a chain.
+                 */
+                parent_id?: string | null;
+                /**
+                 * @description Name of the placement (database) that keeps its data.
+                 * @example main
+                 */
+                placement: string;
+                /**
+                 * @description Read-only: its data can be read (and its users can sign in and export), but every change
+                 *     is refused with `403 tenant_read_only`. Independent of `status`.
+                 */
+                read_only?: boolean;
+                /**
+                 * @description Short name: lower-case letters, digits and `-`; unique on the platform.
+                 * @example acme
+                 */
+                slug: string;
+                /**
+                 * @description `provisioning`, `active`, `suspended` (every request is refused with
+                 *     `403 tenant_suspended`), `maintenance` or `moving`.
+                 * @example active
+                 */
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
+        Page_TenantDomain: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /** @description Why the last lookup did not verify the domain. */
+                check_error?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                /**
+                 * @description Lower case, without port or trailing dot; international names in punycode.
+                 * @example shop.example
+                 */
+                domain: string;
+                /**
+                 * Format: int32
+                 * @description Daily checks in a row of the verified domain that did not find the DNS record; at 3 the
+                 *     domain becomes `failed`. Keep the record in place: one successful check resets it to 0.
+                 */
+                failed_checks: number;
+                /** Format: uuid */
+                id: string;
+                /**
+                 * Format: date-time
+                 * @description Last time the DNS record was looked up.
+                 */
+                last_checked_at?: string | null;
+                /**
+                 * Format: uuid
+                 * @description Node of the tenant's organization tree the domain belongs to (e.g. one store's own
+                 *     site); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.
+                 */
+                org_id?: string | null;
+                /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
+                record: components["schemas"]["TenantDomainRecord"];
+                /**
+                 * @description `pending` (waits for the DNS record), `verified`, or `failed` (not verified within 7
+                 *     days, or a verified domain whose record was missing at 3 daily checks in a row: fix the
+                 *     record and verify again).
+                 * @example pending
+                 */
+                status: string;
+                /**
+                 * Format: date-time
+                 * @description When the status last changed; a `pending` domain fails 7 days after it.
+                 */
+                updated_at: string;
+                /** Format: date-time */
+                verified_at?: string | null;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_TermResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
                 /** Format: date-time */
                 created_at: string;
+                /**
+                 * Format: int64
+                 * @description How many entries (in any status) have this term. Only in the list.
+                 */
+                entry_count?: number | null;
                 /** Format: uuid */
                 id: string;
                 names: components["schemas"]["TermName"][];
@@ -8708,13 +11278,29 @@ export interface components {
                  *     is not verified.
                  */
                 email_verified_at?: string | null;
+                /**
+                 * @description Whether the account has a password. Without one it signs in with a passkey; its owner
+                 *     sets a first password through `POST /api/v1/auth/password-reset`, an administrator
+                 *     with `POST /api/v1/auth/users/{id}/password`.
+                 */
+                has_password: boolean;
                 /** Format: uuid */
                 id: string;
+                /**
+                 * Format: date-time
+                 * @description When the user last started a session (sign-in, password change); `null` if not since
+                 *     this field exists.
+                 */
+                last_sign_in_at?: string | null;
+                /** @description Whether two-step sign-in (an authenticator app) is on. */
+                mfa_enabled: boolean;
                 /**
                  * @description Display name.
                  * @example Ada Lovelace
                  */
                 name: string;
+                /** @description The user's roles, by name. Only with `include=roles` on the user list. */
+                roles?: components["schemas"]["UserRole"][] | null;
                 /** Format: date-time */
                 updated_at: string;
             }[];
@@ -8746,6 +11332,18 @@ export interface components {
         };
         /** @description A passkey of the signed-in user. Holds no secret. */
         PasskeyResponse: {
+            /**
+             * Format: uuid
+             * @description Kind of authenticator, as it identified itself when registered (its AAGUID); `null` when
+             *     it did not say (or registered before this was kept).
+             */
+            aaguid?: string | null;
+            /**
+             * @description Name of that kind of authenticator, e.g. `Windows Hello`, `Apple Passwords`,
+             *     `Google Password Manager`; `null` when the kind is not known to the server.
+             * @example Windows Hello
+             */
+            authenticator?: string | null;
             /** Format: date-time */
             created_at: string;
             /** Format: uuid */
@@ -8761,15 +11359,31 @@ export interface components {
              */
             name: string;
         };
+        /** @description An email change waiting for its confirmation link. */
+        PendingEmail: {
+            /** @example ada@new.example */
+            email: string;
+            /**
+             * Format: date-time
+             * @description When the confirmation link stops working.
+             */
+            expires_at: string;
+        };
         /** @description A permission that roles can grant. */
         PermissionResponse: {
-            /** @description What the permission allows. */
+            /** @description What the permission allows, in the language of `Accept-Language`. */
             description: string;
             /**
              * @description `<module>.<action>`.
              * @example auth.roles.read
              */
             name: string;
+            /**
+             * @description How careful a grant needs to be: `read`, `write`, `destructive`, `sensitive_data` or
+             *     `money`.
+             * @example read
+             */
+            risk: string;
         };
         /**
          * @description Everything the server keeps about you: one entry per module that keeps personal
@@ -8786,6 +11400,46 @@ export interface components {
         PersonalDataResponse: Record<string, never> & {
             /** @description Your profile, roles, sessions, API keys, passkeys and two-step sign-in status. */
             auth: Record<string, never>;
+        };
+        /** @description Where tenants' data is kept: one database. Connection URLs are never shown. */
+        Placement: {
+            /** @description `sqlite` or `postgres`. */
+            backend: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            /** @description `shared` (many tenants) or `dedicated` (one tenant). */
+            kind: string;
+            /** @example main */
+            name: string;
+            /** @description `ready`, `behind` (migrations pending: its tenants answer `503`) or `migrating`. */
+            schema_state: string;
+            storage?: components["schemas"]["PlacementStorage"] | null;
+        };
+        /** @description Where a placement keeps its tenants' files. Access keys are never shown. */
+        PlacementStorage: {
+            /**
+             * @description Bucket (`s3`).
+             * @example acme-files
+             */
+            bucket?: string | null;
+            /** @description Whether an access key is stored (`s3`); its value is never shown. */
+            credentials: boolean;
+            /** @description Directory on the server (`local`). */
+            dir?: string | null;
+            /** @description Address of the S3-compatible service (`s3`); `null` for Amazon S3. */
+            endpoint?: string | null;
+            /**
+             * @description `local` (a directory on the server), `s3` (an S3 or S3-compatible bucket), or
+             *     `unreadable` (the stored settings cannot be decrypted with the configured secret key).
+             * @example s3
+             */
+            kind: string;
+            /** @description Folder inside the bucket (`s3`). */
+            prefix?: string | null;
+            /** @description Region of the bucket (`s3`). */
+            region?: string | null;
         };
         /** @description A comment just posted, for its author. */
         PostedComment: components["schemas"]["PublicComment"] & {
@@ -8842,10 +11496,16 @@ export interface components {
             /** @description Authors, in order (the first is the main one). */
             author_ids: string[];
             body: components["schemas"]["BodyNode"];
+            /**
+             * @description The public images used in `body`, in order of appearance (find one by the `mediaId` of
+             *     its node). Images that are not public yet are left out.
+             */
+            body_media: components["schemas"]["PublicMedia"][];
             /** Format: int32 */
             body_schema_version: number;
             canonical_url: string;
             excerpt: string;
+            featured_media?: components["schemas"]["PublicMedia"] | null;
             featured_media_alt: string;
             /**
              * Format: uuid
@@ -8906,6 +11566,12 @@ export interface components {
             detail: string;
             /** @description One entry per invalid input field. Present only for validation problems. */
             errors?: components["schemas"]["ProblemField"][];
+            /**
+             * @description Finer, stable reason for some codes, documented with the code — e.g. for a refused link
+             *     token: `expired`, `used` or `unknown`.
+             * @example expired
+             */
+            reason?: string | null;
             /**
              * Format: int32
              * @description The HTTP status code, repeated in the body.
@@ -8971,11 +11637,22 @@ export interface components {
         /** @description A comment, as shown to everyone. */
         PublicComment: {
             author: components["schemas"]["CommentAuthor"];
-            /** @description The text as written (plain text, line breaks kept). Never insert it as HTML. */
+            /**
+             * @description Stable codes of what the author was on the target when writing, e.g. `seller` (manages
+             *     the product) or `verified_buyer` (received it); empty for most comments. Show your own
+             *     label for each code.
+             * @example [
+             *       "verified_buyer"
+             *     ]
+             */
+            badges: string[];
+            /** @description The text as written (plain text or Markdown, see `format`). Never insert it as HTML. */
             body: string;
             /**
              * @description The text as safe HTML: everything escaped, line breaks as `<br>`, `http(s)` addresses as
-             *     links with `rel="nofollow ugc noopener"`.
+             *     links with `rel="nofollow ugc noopener"`. For `markdown`, only `<p>`, `<strong>`, `<em>`,
+             *     `<a>`, `<blockquote>`, `<code>` and `<pre>` besides: raw HTML shows as text, images as
+             *     their text. Insert this, never `body`.
              */
             body_html: string;
             /** Format: date-time */
@@ -8987,6 +11664,8 @@ export interface components {
              * @description When the author last changed it.
              */
             edited_at?: string | null;
+            /** @description How `body` is written: `text` or `markdown`. */
+            format: components["schemas"]["Format"];
             /** Format: uuid */
             id: string;
             /**
@@ -9027,6 +11706,13 @@ export interface components {
             /** @description Authors; the first is the main one. */
             authors: components["schemas"]["PublicAuthor"][];
             body: components["schemas"]["BodyNode"];
+            /**
+             * @description The images used in `body` (nodes of type `image`), in order of appearance: find one by
+             *     the `mediaId` of the node to get its size and smaller copies for `srcset`. An image
+             *     that is no longer public is left out. `alt` here is the one of the media library; the
+             *     node carries its own.
+             */
+            body_media: components["schemas"]["PublicMedia"][];
             /** Format: int32 */
             body_schema_version: number;
             /**
@@ -9168,6 +11854,31 @@ export interface components {
             /** @description The language actually returned (the default language when the menu is not translated). */
             locale: string;
         };
+        /** @description A small label on a menu item. */
+        PublicMenuBadge: {
+            /** @example -50% */
+            text: string;
+            /** @description `sale`, `brand`, `new` or `neutral`. */
+            tone: string;
+        };
+        /** @description An object featured in a drop-down panel. */
+        PublicMenuFeature: {
+            href?: string | null;
+            image?: components["schemas"]["PublicMenuImage"] | null;
+            ref: components["schemas"]["PublicMenuTarget"];
+            summary: string;
+            title: string;
+        };
+        /** @description A public picture. */
+        PublicMenuImage: {
+            alt: string;
+            /** Format: int32 */
+            height?: number | null;
+            /** @description Address of the picture; it changes when the picture changes, so it may be cached long. */
+            url: string;
+            /** Format: int32 */
+            width?: number | null;
+        };
         /** @description An item of a public menu. */
         PublicMenuItem: {
             children: components["schemas"]["PublicMenuItem"][];
@@ -9180,6 +11891,12 @@ export interface components {
             href: string;
             label: string;
             term?: components["schemas"]["PublicTerm"] | null;
+        };
+        /** @description An object of a module, as a resource type and an id. */
+        PublicMenuTarget: {
+            id: string;
+            /** @example content.term */
+            kind: string;
         };
         /** @description A choice, in the asked language. */
         PublicOption: {
@@ -9198,6 +11915,35 @@ export interface components {
             noindex: boolean;
             og_image?: components["schemas"]["PublicMedia"] | null;
         };
+        /** @description A website menu ready to show: links worked out, hidden targets left out. */
+        PublicSiteMenu: {
+            items: components["schemas"]["PublicSiteMenuItem"][];
+            /** @example main */
+            key: string;
+            /**
+             * @description The language actually returned (the default language when the menu is not translated).
+             * @example vi
+             */
+            locale: string;
+        };
+        /** @description An item of a public menu. */
+        PublicSiteMenuItem: {
+            badge?: components["schemas"]["PublicMenuBadge"] | null;
+            children: components["schemas"]["PublicSiteMenuItem"][];
+            feature?: components["schemas"]["PublicMenuFeature"] | null;
+            /** @description How to set the item apart: `accent`, `brand`, `sale` or `muted`. */
+            highlight?: string | null;
+            /**
+             * @description Where the item links to: a path on the website or an address. `null` for a heading that
+             *     only groups sub-items (e.g. a column of a mega menu).
+             */
+            href?: string | null;
+            /** @description Name of an icon from a fixed set; see the item schema of `PUT /api/v1/menus/{id}`. */
+            icon?: string | null;
+            /** @description The label set on the item, or else the title of the object it points to. */
+            label: string;
+            ref?: components["schemas"]["PublicMenuTarget"] | null;
+        };
         /** @description A category or tag of an entry. */
         PublicTerm: {
             /** Format: uuid */
@@ -9208,6 +11954,15 @@ export interface components {
             slug: string;
             /** @description `category` or `tag`. */
             taxonomy: string;
+        };
+        /** @description A category or tag with the number of its published posts. */
+        PublicTermCount: components["schemas"]["PublicTerm"] & {
+            /**
+             * Format: int64
+             * @description Published posts in `locale` that carry the term.
+             * @example 12
+             */
+            posts: number;
         };
         /** @description A category or tag as readers see it. */
         PublicTermPage: components["schemas"]["PublicTerm"] & {
@@ -9232,7 +11987,13 @@ export interface components {
         PublicVariant: {
             /** Format: int32 */
             height: number;
+            /** @description JPEG copy (PNG for images with transparency). */
             url: string;
+            /**
+             * @description The same copy as WebP, usually far smaller: offer it in a `<picture>`
+             *     `<source type="image/webp">`. `null` while it is not made yet.
+             */
+            webp_url?: string | null;
             /** Format: int32 */
             width: number;
         };
@@ -9348,6 +12109,10 @@ export interface components {
              */
             name: string;
         };
+        /** @description The whole item tree of a menu. */
+        ReplaceSiteMenuItemsRequest: {
+            items: components["schemas"]["SiteMenuItemInput"][];
+        };
         /** @description A report. */
         ReportRequest: {
             /** @description What is wrong, for the moderators (at most 500 characters). */
@@ -9448,6 +12213,11 @@ export interface components {
         ScheduleRequest: {
             action: components["schemas"]["Action"];
             /**
+             * @description For a `publish` of AI-generated content: you confirm a person reviewed it, as with
+             *     `ai_reviewed` when publishing at once. Only a signed-in person may send `true`.
+             */
+            ai_reviewed?: boolean;
+            /**
              * Format: date-time
              * @description When to run; must be in the future.
              */
@@ -9456,6 +12226,8 @@ export interface components {
         /** @description A scheduled publish or take-down. */
         ScheduleResponse: {
             action: components["schemas"]["Action"];
+            /** @description `true` when whoever scheduled it confirmed that the AI-generated content was reviewed. */
+            ai_reviewed: boolean;
             /** Format: date-time */
             created_at: string;
             /** Format: uuid */
@@ -9524,7 +12296,7 @@ export interface components {
              */
             field: string;
             level: components["schemas"]["FindingLevel"];
-            /** @description What to fix, in English. */
+            /** @description What to fix, in the language of `Accept-Language`. */
             message: string;
         };
         /** @description The SEO findings of a draft. */
@@ -9551,6 +12323,13 @@ export interface components {
          */
         SessionResponse: {
             /**
+             * @description Approximate country of the sign-in (ISO 3166-1 two-letter code), from the server's
+             *     reverse proxy when it is set up for it (`AUTOXIDE_AUTH_COUNTRY_HEADER`); `null` when not
+             *     known. The IP address is never kept.
+             * @example VN
+             */
+            country?: string | null;
+            /**
              * Format: date-time
              * @description When the session ends unless refreshed before.
              */
@@ -9565,6 +12344,13 @@ export interface components {
              * @description Last time the session got tokens (sign-in or refresh).
              */
             last_active_at: string;
+            /**
+             * @description How the session was signed in: `password`, `password_and_mfa` (password and a code),
+             *     `passkey`, or `password_change` (a new session after changing the password); `null` for
+             *     sessions older than this information.
+             * @example password_and_mfa
+             */
+            sign_in_method?: string | null;
             /**
              * Format: date-time
              * @description When the session was signed in.
@@ -9581,6 +12367,104 @@ export interface components {
         SetPasswordRequest: {
             /** @description 12 to 128 characters. */
             password: string;
+        };
+        /** @description A website menu as saved. */
+        SiteMenu: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            items: components["schemas"]["SiteMenuItem"][];
+            /** @example main */
+            key: string;
+            /** @example vi */
+            locale: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description A menu item as saved. */
+        SiteMenuItem: {
+            auto_children: boolean;
+            /** Format: int32 */
+            auto_children_limit?: number | null;
+            badge?: components["schemas"]["MenuBadge"] | null;
+            children: components["schemas"]["SiteMenuItem"][];
+            feature?: components["schemas"]["MenuTarget"] | null;
+            highlight?: string | null;
+            icon?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description Empty when the item shows the title of its `ref`. */
+            label: string;
+            ref?: components["schemas"]["MenuTarget"] | null;
+            url?: string | null;
+        };
+        /**
+         * @description A menu item to save. It links to at most one of `url` and `ref`; with neither it is a
+         *     heading that groups its sub-items (e.g. a column of a mega menu).
+         */
+        SiteMenuItemInput: {
+            /**
+             * @description Also list the object's own sub-items (e.g. the sub-categories of a category) after the
+             *     item's children. Only for objects that have sub-items, and only above the 4th level.
+             */
+            auto_children?: boolean;
+            /**
+             * Format: int32
+             * @description How many sub-items `auto_children` takes, 1 to 50; default 12.
+             */
+            auto_children_limit?: number | null;
+            badge?: components["schemas"]["MenuBadge"] | null;
+            /** @description Sub-items. Menus nest at most 4 levels and hold at most 200 items in all. */
+            children?: components["schemas"]["SiteMenuItemInput"][];
+            feature?: components["schemas"]["MenuTarget"] | null;
+            /** @description Sets the item apart: `accent`, `brand`, `sale` or `muted`. */
+            highlight?: string | null;
+            /**
+             * @description One of: `bag`, `bolt`, `book`, `calendar`, `cart`, `category`, `chat`, `fire`, `gift`,
+             *     `grid`, `heart`, `help`, `home`, `info`, `mail`, `map_pin`, `news`, `percent`, `phone`,
+             *     `search`, `shop`, `sparkles`, `star`, `store`, `tag`, `truck`, `user`.
+             */
+            icon?: string | null;
+            /**
+             * Format: uuid
+             * @description The item's id from the menu as read, to keep it across this save (the response of
+             *     `PUT` shows the same id). Leave it out for a new item, and when creating a menu.
+             */
+            id?: string | null;
+            /**
+             * @description Up to 200 characters. Needed unless `ref` is given; empty with `ref` shows the title of
+             *     the object, in the menu's language.
+             */
+            label?: string | null;
+            ref?: components["schemas"]["MenuTarget"] | null;
+            /** @description An `https://`, `http://` or `mailto:` address, or a path starting with a single `/`. */
+            url?: string | null;
+        };
+        /** @description A menu in the list. */
+        SiteMenuSummary: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many items the menu holds, at every level.
+             * @example 12
+             */
+            item_count: number;
+            /** @example main */
+            key: string;
+            /** @example vi */
+            locale: string;
+            /** Format: date-time */
+            updated_at: string;
+            /**
+             * Format: uuid
+             * @description Who created the menu or last replaced its items; `null` when unknown (menus saved
+             *     before this field existed, or changed by the system).
+             */
+            updated_by?: string | null;
         };
         /** @description One address of the sitemap. */
         SitemapItem: {
@@ -9604,11 +12488,27 @@ export interface components {
             /** @description Your current password: a stolen access token alone must not add a passkey. */
             current_password: string;
         };
+        /** @description Confirms starting two-step sign-in. */
+        StartTotpRequest: {
+            /** @description Your current password. */
+            current_password: string;
+        };
         /**
          * @description Where an entry is in its life.
          * @enum {string}
          */
         Status: "draft" | "published" | "archived";
+        /** @description Submissions of a form by status. */
+        SubmissionCounts: {
+            /** Format: int64 */
+            archived: number;
+            /** Format: int64 */
+            new: number;
+            /** Format: int64 */
+            read: number;
+            /** Format: int64 */
+            spam: number;
+        };
         /** @description A submission. */
         SubmissionResponse: {
             /** @description The answers in the order of the form version, with their labels. */
@@ -9851,6 +12751,295 @@ export interface components {
          * @enum {string}
          */
         Taxonomy: "category" | "tag";
+        /** @description A customer (tenant) of the platform. */
+        Tenant: {
+            /** Format: date-time */
+            created_at: string;
+            expanded?: components["schemas"]["TenantExpanded"] | null;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /**
+             * Format: uuid
+             * @description Parent tenant, when the tenant belongs to a chain.
+             */
+            parent_id?: string | null;
+            /**
+             * @description Name of the placement (database) that keeps its data.
+             * @example main
+             */
+            placement: string;
+            /**
+             * @description Read-only: its data can be read (and its users can sign in and export), but every change
+             *     is refused with `403 tenant_read_only`. Independent of `status`.
+             */
+            read_only?: boolean;
+            /**
+             * @description Short name: lower-case letters, digits and `-`; unique on the platform.
+             * @example acme
+             */
+            slug: string;
+            /**
+             * @description `provisioning`, `active`, `suspended` (every request is refused with
+             *     `403 tenant_suspended`), `maintenance` or `moving`.
+             * @example active
+             */
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Changes to a tenant; omitted fields stay as they are. */
+        TenantChanges: {
+            name?: string | null;
+            /**
+             * @description `true`: the tenant can only read (its users still sign in and export their data), every
+             *     change is refused with `403 tenant_read_only`; `false`: writable again. Independent of
+             *     `status`. The platform tenant cannot be made read-only.
+             */
+            read_only?: boolean | null;
+            /**
+             * @description `active` or `suspended`. A suspended tenant refuses every request, reads included.
+             * @example suspended
+             */
+            status?: string | null;
+        };
+        /** @description A domain of the tenant: requests to a verified domain reach this tenant. */
+        TenantDomain: {
+            /** @description Why the last lookup did not verify the domain. */
+            check_error?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * @description Lower case, without port or trailing dot; international names in punycode.
+             * @example shop.example
+             */
+            domain: string;
+            /**
+             * Format: int32
+             * @description Daily checks in a row of the verified domain that did not find the DNS record; at 3 the
+             *     domain becomes `failed`. Keep the record in place: one successful check resets it to 0.
+             */
+            failed_checks: number;
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date-time
+             * @description Last time the DNS record was looked up.
+             */
+            last_checked_at?: string | null;
+            /**
+             * Format: uuid
+             * @description Node of the tenant's organization tree the domain belongs to (e.g. one store's own
+             *     site); `null`: the tenant as a whole. Set it with `PATCH /domains/{id}`.
+             */
+            org_id?: string | null;
+            /** @description The DNS record to set at your DNS provider, then call `POST /domains/{id}/verify`. */
+            record: components["schemas"]["TenantDomainRecord"];
+            /**
+             * @description `pending` (waits for the DNS record), `verified`, or `failed` (not verified within 7
+             *     days, or a verified domain whose record was missing at 3 daily checks in a row: fix the
+             *     record and verify again).
+             * @example pending
+             */
+            status: string;
+            /**
+             * Format: date-time
+             * @description When the status last changed; a `pending` domain fails 7 days after it.
+             */
+            updated_at: string;
+            /** Format: date-time */
+            verified_at?: string | null;
+        };
+        /** @description Where a domain belongs in the tenant's organization tree. */
+        TenantDomainChanges: {
+            /**
+             * Format: uuid
+             * @description Id of a node of the tenant's organization tree (e.g. one store, for its own site), or
+             *     `null` for the tenant as a whole. Required: send `null` explicitly to detach.
+             */
+            org_id: string | null;
+        };
+        /** @description The DNS record that proves the tenant owns the domain. */
+        TenantDomainRecord: {
+            /**
+             * @description Full name of the record.
+             * @example _autoxide-challenge.shop.example
+             */
+            name: string;
+            /**
+             * @description Always `TXT`.
+             * @example TXT
+             */
+            type: string;
+            /**
+             * @description Exact value of the record.
+             * @example autoxide-verify=6Jx1rYqQe2m3Vb0nC5tWk8sLp4dZa7Hf
+             */
+            value: string;
+        };
+        /** @description Related records of a tenant, asked for with `expand`. */
+        TenantExpanded: {
+            placement?: components["schemas"]["Placement"] | null;
+            /**
+             * @description The tenant's subscription (`expand=subscription`). Always `null` for now: subscriptions
+             *     come with the plans module (step 35); without it no tenant has one.
+             */
+            subscription?: Record<string, never> | null;
+            /**
+             * @description The tenant's use of its plan's limits (`expand=usage`). Always `null` for now, like
+             *     `subscription`.
+             */
+            usage?: Record<string, never> | null;
+        };
+        /** @description A move of a tenant to another placement. */
+        TenantMove: {
+            /** Format: date-time */
+            created_at: string;
+            /** @description Why the last run stopped, when it did; running the move again resumes it. */
+            error?: string | null;
+            /** Format: date-time */
+            finished_at?: string | null;
+            /** @example main */
+            from: string;
+            /** Format: uuid */
+            id: string;
+            keep_source: boolean;
+            /**
+             * Format: int64
+             * @description Sum of `tables[].rows`.
+             */
+            rows: number;
+            /**
+             * @description `copying` (the tenant answers `503`), `copied`, `switched` (the tenant works from `to`;
+             *     the old placement is being cleaned), `done` or `aborted`.
+             * @example done
+             */
+            state: string;
+            /** @description Rows copied per table (after `copied`). */
+            tables: components["schemas"]["TenantTableRows"][];
+            /** Format: uuid */
+            tenant_id: string;
+            /** @example acme-db */
+            to: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Why the move cannot run now. */
+        TenantMoveBlocker: {
+            /**
+             * @description Stable code, the same as the error a real run would answer.
+             * @example tenant_move_schema_differs
+             */
+            code: string;
+            message: string;
+        };
+        /** @description What a move would do (dry run). Nothing is changed. */
+        TenantMovePlan: {
+            /** @description What must be fixed first; empty when the move can run. */
+            blocking: components["schemas"]["TenantMoveBlocker"][];
+            /**
+             * Format: int64
+             * @description Files of the tenant that would be copied to the file storage of `to`; `0` when both
+             *     placements keep files in the same storage (nothing to copy).
+             */
+            files: number;
+            /**
+             * @description Placement that keeps the tenant's data now.
+             * @example main
+             */
+            from: string;
+            keep_source: boolean;
+            /** @description `true` when nothing blocks the move (`blocking` is empty). */
+            ready: boolean;
+            /**
+             * Format: uuid
+             * @description An interrupted move to `to` that a real run resumes.
+             */
+            resumes?: string | null;
+            /**
+             * Format: int64
+             * @description Sum of `tables[].rows`.
+             */
+            rows: number;
+            /**
+             * Format: int64
+             * @description Seconds the tenant answers `503 tenant_maintenance` before copying starts (other servers
+             *     see the move and requests in progress finish); copying takes longer for many rows.
+             */
+            settle_seconds: number;
+            /** @description Rows of the tenant that would be copied, per table, in copy order. */
+            tables: components["schemas"]["TenantTableRows"][];
+            /**
+             * @description Slug of the tenant.
+             * @example acme
+             */
+            tenant: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /**
+             * @description Placement the data would move to.
+             * @example acme-db
+             */
+            to: string;
+        };
+        /** @description Where to move the tenant's data. */
+        TenantMoveRequest: {
+            /**
+             * @description Only report what the move would do, changing nothing. Defaults to `true`: send `false` to
+             *     move.
+             * @default true
+             */
+            dry_run: boolean;
+            /**
+             * @description Keep the tenant's data at the old placement as a backup copy (its queued jobs and events
+             *     are removed there so nothing runs twice). Defaults to `false`: the old copy is deleted.
+             */
+            keep_source?: boolean;
+            /**
+             * @description Name of the placement (database) to move the data to.
+             * @example acme-db
+             */
+            to: string;
+        };
+        /** @description A setting the installed modules take per tenant, and its state in the current tenant. */
+        TenantSettingState: {
+            description: string;
+            /**
+             * @description Group of the setting, to filter the list by (`?group=`); `connection`: a connection to a
+             *     partner service (mail server, AI provider, payment gateway…). `null`: no group.
+             * @example connection
+             */
+            group?: string | null;
+            /** @description Whether this tenant has set it; otherwise the server-wide configuration applies. */
+            is_set: boolean;
+            /**
+             * @description `<module>.<key>`, e.g. `kernel.public_url`; a partner connection is named
+             *     `<module>.connection.<kind>.<field>`, e.g. `mail.connection.smtp.url`.
+             * @example kernel.public_url
+             */
+            name: string;
+            /** @description Secret settings are stored encrypted and never returned: `value` is always `null`. */
+            secret: boolean;
+            /** Format: date-time */
+            updated_at?: string | null;
+            /** @description The value, for settings that are not secret and are set. */
+            value?: string | null;
+        };
+        /** @description The new value of a setting. */
+        TenantSettingValue: {
+            /**
+             * @description 1 to 4000 characters. Secret values are stored encrypted and never returned.
+             * @example https://shop.example
+             */
+            value: string;
+        };
+        /** @description Rows of the tenant in one table. */
+        TenantTableRows: {
+            /** Format: int64 */
+            rows: number;
+            /** @example notes_note */
+            table: string;
+        };
         /** @description The name of a term in one language, and its parent. Omitted fields stay as they are. */
         TermFields: {
             description?: string | null;
@@ -9886,6 +13075,11 @@ export interface components {
         TermResponse: {
             /** Format: date-time */
             created_at: string;
+            /**
+             * Format: int64
+             * @description How many entries (in any status) have this term. Only in the list.
+             */
+            entry_count?: number | null;
             /** Format: uuid */
             id: string;
             names: components["schemas"]["TermName"][];
@@ -10023,7 +13217,7 @@ export interface components {
         UnsubscribeRequest: {
             /** @description Stop mails about every comment followed with this address, not just this one. */
             all?: boolean;
-            /** @description The `token` of the link in a reply mail. */
+            /** @description The `token` of the link in a reply mail, exactly as received (it may contain a `.`). */
             token: string;
         };
         /** @description The answer to an unsubscription: always the same. */
@@ -10108,6 +13302,8 @@ export interface components {
             alt?: string | null;
             /** @description Caption, up to 2000 characters; `""` clears it. */
             caption?: string | null;
+            /** @description `true` marks a purely decorative image, whose empty `alt` is on purpose. */
+            decorative?: boolean | null;
             /**
              * Format: uuid
              * @description Move to this folder; `null` moves to the root.
@@ -10173,6 +13369,30 @@ export interface components {
              */
             duplicates: components["schemas"]["DuplicateItem"][];
         };
+        /** @description A flag the interface keeps for the signed-in user, e.g. a dismissed hint. */
+        UserFlag: {
+            /**
+             * @description Lower-case letters, digits, `.`, `_` and `-`, up to 100 characters; group flags with a
+             *     prefix, e.g. `hint.saved_views`.
+             * @example hint.saved_views
+             */
+            key: string;
+            /** Format: date-time */
+            updated_at: string;
+            /**
+             * @description Up to 200 characters, e.g. `dismissed` or the last version whose news were seen.
+             * @example dismissed
+             */
+            value: string;
+        };
+        /** @description The value of a flag. */
+        UserFlagValue: {
+            /**
+             * @description Up to 200 characters, e.g. `dismissed`.
+             * @example dismissed
+             */
+            value: string;
+        };
         /** @description A user account. Never includes the password. */
         UserResponse: {
             /** Format: date-time */
@@ -10194,15 +13414,38 @@ export interface components {
              *     is not verified.
              */
             email_verified_at?: string | null;
+            /**
+             * @description Whether the account has a password. Without one it signs in with a passkey; its owner
+             *     sets a first password through `POST /api/v1/auth/password-reset`, an administrator
+             *     with `POST /api/v1/auth/users/{id}/password`.
+             */
+            has_password: boolean;
             /** Format: uuid */
             id: string;
+            /**
+             * Format: date-time
+             * @description When the user last started a session (sign-in, password change); `null` if not since
+             *     this field exists.
+             */
+            last_sign_in_at?: string | null;
+            /** @description Whether two-step sign-in (an authenticator app) is on. */
+            mfa_enabled: boolean;
             /**
              * @description Display name.
              * @example Ada Lovelace
              */
             name: string;
+            /** @description The user's roles, by name. Only with `include=roles` on the user list. */
+            roles?: components["schemas"]["UserRole"][] | null;
             /** Format: date-time */
             updated_at: string;
+        };
+        /** @description A role a user holds. */
+        UserRole: {
+            /** Format: uuid */
+            id: string;
+            /** @example editor */
+            name: string;
         };
         /** @description The complete list of roles a user should have. */
         UserRolesRequest: {
@@ -10228,6 +13471,19 @@ export interface components {
             size: number;
             /** @description Where to load it: the item's `url` with `&w=<width>`. */
             url: string;
+            /**
+             * Format: int64
+             * @description Size of the WebP copy in bytes; `null` like `webp_url`.
+             */
+            webp_size?: number | null;
+            /**
+             * @description The same copy as WebP, usually far smaller: `url` with `&format=webp`. Offer it in a
+             *     `<picture>` `<source type="image/webp">`, or in `srcset` when every browser you serve
+             *     reads WebP. `null` while it is not made yet (images uploaded before WebP copies existed
+             *     get one after `autoxide task media.refresh_variants`).
+             * @example /api/v1/media/0190f5a2-7c4e-7d1a-9b3c-2f1e0d9c8b7a/content?v=0190f5a2-7c4e-7d1a-9b3c-2f1e0d9c8b7b&w=640&format=webp
+             */
+            webp_url?: string | null;
             /**
              * Format: int32
              * @example 640
@@ -10283,7 +13539,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `ai.view`; code `permission_denied`. */
@@ -10292,7 +13548,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10340,7 +13596,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10365,6 +13621,8 @@ export interface operations {
                 action?: string;
                 /** @description Only changes in this module, e.g. `auth`. */
                 module?: string;
+                /** @description `actor`: add `actor_name`, the display name of who made each change, in the same answer. */
+                include?: "actor";
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -10405,7 +13663,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -10414,7 +13672,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `audit.read`; code `permission_denied`. */
@@ -10423,7 +13681,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -10432,7 +13690,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10476,7 +13734,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `audit.read`; code `permission_denied`. */
@@ -10485,7 +13743,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `audit.entry_not_found`. */
@@ -10494,7 +13752,155 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_list_all_api_keys: {
+        parameters: {
+            query?: {
+                /** @description Only the keys of this user. */
+                user_id?: string;
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of keys. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ManagedApiKeyResponse"];
+                };
+            };
+            /** @description `user_id` is not a UUID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.api_keys.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A paging parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_revoke_any_api_key: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the key. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The key was revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.api_keys.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No key has this id; code `auth.api_key_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10551,7 +13957,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -10560,7 +13966,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10603,13 +14009,22 @@ export interface operations {
                     "application/json": components["schemas"]["Data_CreatedApiKeyResponse"];
                 };
             };
-            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            /** @description The current password is wrong; code `auth.wrong_password`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The passkey is not one of yours or its answer is not valid; code `auth.passkey_sign_in_failed`. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The request used an API key; code `auth.api_key_cannot_create_keys`. */
@@ -10618,25 +14033,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description You have too many keys; code `auth.api_key_limit`. */
+            /** @description You have too many keys (code `auth.api_key_limit`), or sent `totp_code` without two-step sign-in on (code `auth.mfa_not_enabled`). */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A value is invalid, e.g. a permission you do not have (`not_granted`); see `errors`. */
+            /** @description A value is invalid, e.g. a permission you do not have (`not_granted`), a wrong `totp_code`, or both a password and a second factor; see `errors`. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too many wrong passwords or codes; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10680,7 +14104,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You have no key with this id; code `auth.api_key_not_found`. */
@@ -10689,7 +14113,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_report_email_change: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailChangeReport"];
+            };
+        };
+        responses: {
+            /** @description Reported; the account is locked and, when the old address was free, given back to it. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The token is unknown, expired or used; code `auth.invalid_email_change_report_token`, with `reason` (`expired`, `used` or `unknown`). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The body is missing a field or a value is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10728,13 +14204,13 @@ export interface operations {
                     "application/json": components["schemas"]["Data_UserResponse"];
                 };
             };
-            /** @description The token is unknown, expired or used; code `auth.invalid_verification_token`. */
+            /** @description The token is unknown, expired or used; code `auth.invalid_verification_token`, with `reason` (`expired`, `used` or `unknown`). Ask for a new mail with `POST /api/v1/auth/me/email/verification`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another account took this address meanwhile; code `auth.email_taken`. */
@@ -10743,7 +14219,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -10752,7 +14228,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10806,7 +14282,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled; code `auth.user_disabled`. */
@@ -10815,7 +14291,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -10824,7 +14300,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many failed sign-ins for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -10833,7 +14309,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10878,7 +14354,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled; code `auth.user_disabled`. */
@@ -10887,7 +14363,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -10896,7 +14372,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many failed attempts for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -10905,7 +14381,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -10950,7 +14426,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The passkey was not accepted; code `auth.passkey_sign_in_failed`. */
@@ -10959,7 +14435,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled (`auth.user_disabled`), or passkeys are off (`auth.passkeys_disabled`). */
@@ -10968,7 +14444,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field, or the credential is not a WebAuthn response; see `errors`. */
@@ -10977,7 +14453,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11018,7 +14494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11061,7 +14537,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11096,13 +14572,13 @@ export interface operations {
                     "application/json": components["schemas"]["Data_MeResponse"];
                 };
             };
-            /** @description The access token is missing (code `auth.missing_token`), invalid (`auth.invalid_token`) or expired (`auth.token_expired`). */
+            /** @description The access token is missing (code `auth.missing_token`), invalid (`auth.invalid_token`) or expired (`auth.token_expired`; get a new one with `POST /api/v1/auth/refresh`). Without a usable refresh token, sign in with `POST /api/v1/auth/login`. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled; code `auth.user_disabled`. */
@@ -11111,7 +14587,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11150,13 +14626,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11165,16 +14641,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You are the last active administrator; give the `admin` role to someone else first. Code `auth.last_admin`. */
@@ -11183,7 +14659,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -11192,7 +14668,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many wrong passwords for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -11201,7 +14677,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11240,13 +14716,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11255,7 +14731,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key (code `auth.session_required`), or the account is disabled (code `auth.user_disabled`). */
@@ -11264,7 +14740,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another account has this email (code `auth.email_taken`), or it is already your verified address (code `auth.email_already_verified`). */
@@ -11273,7 +14749,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or the address is invalid; see `errors`. */
@@ -11282,7 +14758,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many wrong passwords for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -11291,7 +14767,57 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_cancel_email_change: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The change was cancelled. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No change is waiting; code `auth.no_pending_email_change`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11332,7 +14858,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The address is already verified; code `auth.email_already_verified`. */
@@ -11341,7 +14867,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11382,16 +14908,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11432,7 +14958,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11479,16 +15005,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Two-step sign-in is not on; code `auth.mfa_not_enabled`. */
@@ -11497,7 +15023,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The code is wrong or expired; `errors` names the field `code`. */
@@ -11506,7 +15032,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11532,7 +15058,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartTotpRequest"];
+            };
+        };
         responses: {
             /** @description Add this secret to the authenticator app, then confirm. */
             200: {
@@ -11543,22 +15073,31 @@ export interface operations {
                     "application/json": components["schemas"]["Data_TotpSetupResponse"];
                 };
             };
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Two-step sign-in is already on; code `auth.mfa_already_enabled`. */
@@ -11567,7 +15106,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11614,25 +15153,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description No setup was started (`auth.mfa_setup_not_started`), or it is already on (`auth.mfa_already_enabled`). */
+            /** @description No setup was started (`auth.mfa_setup_not_started`; start one with `POST /api/v1/auth/me/mfa/totp`), or it is already on (`auth.mfa_already_enabled`). */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The code is wrong or expired; `errors` names the field `code`. */
@@ -11641,7 +15180,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11688,16 +15227,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Two-step sign-in is not on; code `auth.mfa_not_enabled`. */
@@ -11706,7 +15245,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The code is wrong or expired; `errors` names the field `code`. */
@@ -11715,7 +15254,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11772,7 +15311,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -11781,7 +15320,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11830,7 +15369,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11839,7 +15378,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key (`auth.session_required`), or passkeys are off (`auth.passkeys_disabled`). */
@@ -11848,7 +15387,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This passkey is already registered; code `auth.passkey_already_registered`. */
@@ -11857,7 +15396,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid; see `errors`. */
@@ -11866,7 +15405,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11907,13 +15446,13 @@ export interface operations {
                     "application/json": components["schemas"]["Data_CeremonyResponse"];
                 };
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -11922,7 +15461,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key (`auth.session_required`), or passkeys are off (`auth.passkeys_disabled`). */
@@ -11931,7 +15470,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You already have the most passkeys allowed; code `auth.passkey_limit`. */
@@ -11940,7 +15479,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -11984,7 +15523,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key; code `auth.session_required`. */
@@ -11993,7 +15532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You have no passkey with this id; code `auth.passkey_not_found`. */
@@ -12002,7 +15541,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12043,13 +15582,13 @@ export interface operations {
                     "application/json": components["schemas"]["Data_TokenResponse"];
                 };
             };
-            /** @description The current password is wrong; code `auth.wrong_password`. */
+            /** @description The current password is wrong; code `auth.wrong_password`. A user who forgot it resets it with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -12058,7 +15597,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Called with an API key (code `auth.session_required`), or the account is disabled (code `auth.user_disabled`). */
@@ -12067,7 +15606,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field, or the new password breaks the rules (see `errors`). */
@@ -12076,7 +15615,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too many wrong passwords for this email; code `auth.login_throttled`. Wait the number of seconds in the `Retry-After` header. */
@@ -12085,7 +15624,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12142,16 +15681,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -12160,7 +15699,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12209,16 +15748,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `keep` is not a valid id. */
@@ -12227,7 +15766,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12271,16 +15810,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The request used an API key; code `auth.session_required`. */
+            /** @description The request used an API key; code `auth.session_required`. Sign in with `POST /api/v1/auth/login` and use that access token. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description You have no active session with this id; code `auth.session_not_found`. */
@@ -12289,7 +15828,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12332,7 +15871,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12369,13 +15908,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The token is unknown, expired or used; code `auth.invalid_reset_token`. */
+            /** @description The token is unknown, expired or used; code `auth.invalid_reset_token`, with `reason` (`expired`, `used` or `unknown`). Ask for a new mail with `POST /api/v1/auth/password-reset`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The password does not follow the rules (12 to 128 characters); see `errors`. */
@@ -12384,7 +15923,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12425,7 +15964,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.read`; code `permission_denied`. */
@@ -12434,7 +15973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12473,13 +16012,13 @@ export interface operations {
                     "application/json": components["schemas"]["Data_TokenResponse"];
                 };
             };
-            /** @description The refresh token is unknown, expired or revoked (code `auth.invalid_refresh_token`), or was already used (code `auth.refresh_token_reused`); sign in again. */
+            /** @description The refresh token is unknown, expired or revoked (code `auth.invalid_refresh_token`), or was already used (code `auth.refresh_token_reused`); sign in again with `POST /api/v1/auth/login`. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The account is disabled; code `auth.user_disabled`. */
@@ -12488,7 +16027,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is missing a field or a value is invalid. */
@@ -12497,7 +16036,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12544,7 +16083,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An account has this email; code `auth.email_taken`. */
@@ -12553,7 +16092,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, e.g. a password shorter than 12 characters; see `errors`. */
@@ -12562,7 +16101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12619,7 +16158,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.read`; code `permission_denied`. */
@@ -12628,7 +16167,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -12637,7 +16176,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12686,7 +16225,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.manage`; code `permission_denied`. */
@@ -12695,7 +16234,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another role has this name; code `auth.role_name_taken`. */
@@ -12704,7 +16243,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, e.g. an unknown permission; see `errors`. */
@@ -12713,7 +16252,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12759,7 +16298,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.read`; code `permission_denied`. */
@@ -12768,7 +16307,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No role has this id; code `auth.role_not_found`. */
@@ -12777,7 +16316,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12831,7 +16370,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.manage`; code `permission_denied`. */
@@ -12840,7 +16379,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No role has this id; code `auth.role_not_found`. */
@@ -12849,7 +16388,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another role has this name (`auth.role_name_taken`), or the role is the built-in `admin` (`auth.role_builtin`). */
@@ -12858,7 +16397,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the record changed since you read it. Get it again and retry; code `precondition_failed`. */
@@ -12867,7 +16406,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, e.g. an unknown permission; see `errors`. */
@@ -12876,7 +16415,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12920,7 +16459,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.manage`; code `permission_denied`. */
@@ -12929,7 +16468,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No role has this id; code `auth.role_not_found`. */
@@ -12938,7 +16477,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The role is the built-in `admin`; code `auth.role_builtin`. */
@@ -12947,7 +16486,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -12969,6 +16508,10 @@ export interface operations {
                  *     `Ada Lovelace` and `ada@example.com`). Up to 200 characters.
                  */
                 search?: string;
+                /** @description Only `active` or only `disabled` accounts. */
+                status?: "active" | "disabled";
+                /** @description `roles`: add each user's roles (`roles` in each item), in the same request. */
+                include?: "roles";
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -13009,7 +16552,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.read`; code `permission_denied`. */
@@ -13018,7 +16561,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -13027,7 +16570,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13076,7 +16619,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage`; code `permission_denied`. */
@@ -13085,7 +16628,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An account has this email; code `auth.email_taken`. */
@@ -13094,7 +16637,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -13103,7 +16646,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13149,7 +16692,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.read`; code `permission_denied`. */
@@ -13158,7 +16701,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13167,7 +16710,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13211,7 +16754,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13220,7 +16763,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13229,7 +16772,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This is the last active administrator; code `auth.last_admin`. */
@@ -13238,7 +16781,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13292,7 +16835,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13301,7 +16844,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13310,7 +16853,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No active user would keep the `admin` role; code `auth.last_admin`. */
@@ -13319,7 +16862,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the record changed since you read it. Get it again and retry; code `precondition_failed`. */
@@ -13328,7 +16871,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -13337,7 +16880,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13381,7 +16924,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13390,7 +16933,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13399,7 +16942,220 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_list_user_passkeys: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the user's passkeys. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PasskeyResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No user has this id; code `auth.user_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A paging parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_remove_user_passkeys: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every passkey of the user is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No user has this id; code `auth.user_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_remove_user_passkey: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the user. */
+                id: string;
+                /** @description Id of the passkey. */
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.passkeys.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No user has this id (code `auth.user_not_found`), or the user has no passkey with this id (code `auth.passkey_not_found`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13447,7 +17203,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13456,7 +17212,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13465,16 +17221,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The account already has a password; code `auth.password_already_set`. */
+            /** @description The account already has a password; code `auth.password_already_set`. Its owner changes it with `POST /api/v1/auth/me/password` or resets it with `POST /api/v1/auth/password-reset`. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The password breaks the rules; see `errors`. */
@@ -13483,7 +17239,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13527,7 +17283,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.read`; code `permission_denied`. */
@@ -13536,7 +17292,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13545,7 +17301,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13595,7 +17351,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.roles.manage`; code `permission_denied`. */
@@ -13604,7 +17360,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13613,7 +17369,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user would keep the `admin` role; code `auth.last_admin`. */
@@ -13622,7 +17378,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A role id does not exist, or the list is too long; see `errors`. */
@@ -13631,7 +17387,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13677,7 +17433,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `auth.users.manage` (code `permission_denied`), or the user has permissions you lack (code `auth.target_has_more_permissions`). */
@@ -13686,7 +17442,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No user has this id; code `auth.user_not_found`. */
@@ -13695,7 +17451,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13723,6 +17479,11 @@ export interface operations {
                 target_id?: string;
                 /** @description Only comments whose text or author name contains this, ignoring case and accents. */
                 q?: string;
+                /**
+                 * @description `true`: only top-level comments without a shown reply yet, e.g. unanswered questions
+                 *     (use with `status=published`). Defaults to `false` (no such filter).
+                 */
+                unanswered?: boolean;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -13763,7 +17524,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.read`; code `permission_denied`. */
@@ -13772,7 +17533,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -13781,7 +17542,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13842,7 +17603,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.manage`; code `permission_denied`. */
@@ -13851,7 +17612,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -13860,7 +17621,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13909,7 +17670,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.manage`; code `permission_denied`. */
@@ -13918,7 +17679,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid input; see `errors`. */
@@ -13927,7 +17688,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -13971,7 +17732,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.manage`; code `permission_denied`. */
@@ -13980,7 +17741,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No ban has this id; code `comments.ban_not_found`. */
@@ -13989,7 +17750,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14036,7 +17797,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.export`; code `permission_denied`. */
@@ -14045,7 +17806,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -14054,7 +17815,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14103,7 +17864,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.export`; code `permission_denied`. */
@@ -14112,7 +17873,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -14121,7 +17882,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14162,7 +17923,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.post`; code `permission_denied`. */
@@ -14171,7 +17932,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14218,7 +17979,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.post`; code `permission_denied`. */
@@ -14227,7 +17988,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another user shows this name; code `comments.name_taken`. */
@@ -14236,7 +17997,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid or reserved name; see `errors`. */
@@ -14245,7 +18006,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14294,7 +18055,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Comments are off (`comments.disabled`), guests may not comment here (`comments.guests_not_allowed`), the author is banned (`comments.banned`), or a signed-in caller lacks `comments.post` (`permission_denied`). */
@@ -14303,7 +18064,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The target takes no comments (`comments.target_not_found`), or the comment to reply to is not shown (`comments.parent_not_found`). */
@@ -14312,16 +18073,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The target is closed (`comments.target_closed`), or a signed-in user has no display name yet (`comments.profile_required`). */
+            /** @description The target is closed (`comments.target_closed`), or a signed-in user has no display name yet (`comments.profile_required`; set one with `PUT /api/v1/comments/profile`). */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is too large; code `payload_too_large`. */
@@ -14330,7 +18091,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid input (see `errors`), or a banned word (`comments.banned_word`). */
@@ -14339,7 +18100,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A signed-in user posted too many; code `antispam.rate_limited`. */
@@ -14348,7 +18109,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The anti-spam check cannot run; code `antispam.verifier_unavailable`. */
@@ -14357,7 +18118,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14401,7 +18162,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14451,7 +18212,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -14460,7 +18221,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Too late (`comments.edit_window_passed`), the comment was rejected or deleted (`comments.not_editable`). */
@@ -14469,7 +18230,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A moderator changed it at the same time; code `precondition_failed`. */
@@ -14478,7 +18239,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid text (see `errors`), or a banned word (`comments.banned_word`). */
@@ -14487,7 +18248,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14537,7 +18298,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A moderator changed it at the same time; code `precondition_failed`. */
@@ -14546,7 +18307,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14606,7 +18367,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -14615,7 +18376,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14665,7 +18426,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid input; see `errors`. */
@@ -14674,7 +18435,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14723,7 +18484,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is missing or invalid; see `errors`. */
@@ -14732,7 +18493,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14765,6 +18526,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Data_CommentSettings"];
+                };
+            };
+            /** @description No tenant could be told for the request; code `tenant_required`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14810,7 +18580,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The id is invalid; see `errors`. */
@@ -14819,7 +18589,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14845,6 +18615,13 @@ export interface operations {
                 target_id?: string;
                 /** @description Replies to include with each top-level comment, 0 to 10. Defaults to 3. */
                 replies_limit?: number;
+                /**
+                 * @description Only top-level comments (e.g. questions) whose text or author name contains this, 1 to
+                 *     100 characters, ignoring case and accents. Matches with the exact accents come first,
+                 *     then the others; within each group the usual `order` applies.
+                 * @example bảo hành
+                 */
+                q?: string;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -14885,7 +18662,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is missing or invalid; see `errors`. */
@@ -14894,7 +18671,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -14979,7 +18756,91 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    comments_list_comment_targets: {
+        parameters: {
+            query?: {
+                /** @description Only targets of this kind, e.g. `content.entry`. */
+                target_type?: string;
+                /**
+                 * @description `open` or `closed`: the state that applies now (hidden targets and those past `closes_at`
+                 *     are `closed`).
+                 */
+                state?: "open" | "closed";
+                /** @description `true`: only targets with comments waiting for approval; `false`: only those without. */
+                pending?: boolean;
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of targets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CommentTarget"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `comments.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15027,7 +18888,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.read`; code `permission_denied`. */
@@ -15036,7 +18897,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This kind of target takes no comments; code `comments.target_not_found`. */
@@ -15045,7 +18906,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The id is invalid; see `errors`. */
@@ -15054,7 +18915,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15110,7 +18971,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.manage`; code `permission_denied`. */
@@ -15119,7 +18980,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This kind of target takes no comments; code `comments.target_not_found`. */
@@ -15128,7 +18989,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The target changed since you read it; code `precondition_failed`. */
@@ -15137,7 +18998,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Invalid input; see `errors`. */
@@ -15146,7 +19007,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15192,7 +19053,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.read`; code `permission_denied`. */
@@ -15201,7 +19062,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -15210,7 +19071,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15256,7 +19117,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.moderate`; code `permission_denied`. */
@@ -15265,7 +19126,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -15274,7 +19135,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15328,7 +19189,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.moderate`; code `permission_denied`. */
@@ -15337,7 +19198,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -15346,7 +19207,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The author deleted it; code `comments.deleted`. */
@@ -15355,7 +19216,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The comment changed since you read it; code `precondition_failed`. */
@@ -15364,7 +19225,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The status is invalid; see `errors`. */
@@ -15373,7 +19234,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -15382,7 +19243,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15442,7 +19303,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `comments.read`; code `permission_denied`. */
@@ -15451,7 +19312,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No comment has this id; code `comments.not_found`. */
@@ -15460,7 +19321,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -15469,7 +19330,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15486,6 +19347,8 @@ export interface operations {
     content_list_content_authors: {
         parameters: {
             query?: {
+                /** @description Only profiles whose display name contains this text, ignoring case and accents. */
+                q?: string;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -15526,7 +19389,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -15535,7 +19398,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -15544,7 +19407,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15593,7 +19456,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -15602,7 +19465,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -15611,7 +19474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -15620,7 +19483,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15666,7 +19529,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -15675,7 +19538,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No author has this id; code `content.author_not_found`. */
@@ -15684,7 +19547,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15728,7 +19591,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -15737,7 +19600,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No author has this id; code `content.author_not_found`. */
@@ -15746,7 +19609,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15798,7 +19661,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -15807,7 +19670,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No author has this id; code `content.author_not_found`. */
@@ -15816,7 +19679,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -15825,7 +19688,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The profile changed since you read it; code `precondition_failed`. */
@@ -15834,7 +19697,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -15843,7 +19706,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -15852,7 +19715,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -15894,6 +19757,25 @@ export interface operations {
                 /** @description `created_at` (the default) or `updated_at`; the direction is `order`. */
                 sort?: "created_at" | "updated_at";
                 /**
+                 * @description `true`: only entries waiting for a review (`review_requested_at` set); `false`: only the
+                 *     others.
+                 */
+                review_requested?: boolean;
+                /**
+                 * @description `true`: only entries with a scheduled publish or unpublish waiting; `false`: only the
+                 *     others.
+                 */
+                scheduled?: boolean;
+                /** @description Only entries created by this user: a user id, or `me` for the caller. */
+                created_by?: string;
+                /** @description `true`: only entries marked as generated by AI; `false`: only the others. */
+                ai_generated?: boolean;
+                /**
+                 * @description Only entries with no translation into this language yet (a BCP 47 code).
+                 * @example en
+                 */
+                missing_locale?: string;
+                /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
                  */
@@ -15933,7 +19815,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -15942,7 +19824,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A filter or paging parameter is invalid; see `errors`. */
@@ -15951,7 +19833,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16000,7 +19882,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the parent page is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16009,7 +19891,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -16018,7 +19900,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid: see `errors` (code `content.invalid_body` when only the body is, `content.media_not_found` when only media items are missing). */
@@ -16027,7 +19909,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16073,7 +19955,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -16082,7 +19964,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16091,7 +19973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16137,7 +20019,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.delete`; code `permission_denied`. */
@@ -16146,7 +20028,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16155,7 +20037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The page has subpages; code `content.page_has_children`. */
@@ -16164,7 +20046,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16173,7 +20055,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16182,7 +20064,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16236,7 +20118,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16245,7 +20127,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16254,7 +20136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -16263,7 +20145,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the entry changed since you read it; code `precondition_failed`. */
@@ -16272,7 +20154,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -16281,7 +20163,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16290,7 +20172,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16338,7 +20220,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish`; code `permission_denied`. */
@@ -16347,7 +20229,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16356,7 +20238,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A page with published subpages; code `content.page_has_published_children`. */
@@ -16365,7 +20247,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16374,7 +20256,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16383,7 +20265,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16433,7 +20315,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (or `content.publish` / `content.publish_own` for a published entry; code `permission_denied`), or the entry is not yours and you only have the `_own` permission (code `content.not_owner`). */
@@ -16442,7 +20324,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16451,7 +20333,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An id is not an author, too many, or (with only `content.write_own`) a profile of someone else (`not_allowed`); see `errors`. */
@@ -16460,7 +20342,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16512,7 +20394,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the page or the new parent is not yours and you only have `content.write_own` (code `content.not_owner`); or the page is published and you lack `content.publish`. */
@@ -16521,7 +20403,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16530,7 +20412,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Under itself or a subpage (code `content.tree_cycle`), slug taken at the new place (code `content.slug_taken`), address taken (code `content.path_taken`), or the new parent is not published (code `content.parent_not_published`). */
@@ -16539,7 +20421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16548,7 +20430,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not a page, or the parent is invalid or too deep (`tree_too_deep`); see `errors`. */
@@ -16557,7 +20439,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16566,7 +20448,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16612,7 +20494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16621,7 +20503,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16630,7 +20512,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Previews are off on this server; code `content.preview_disabled`. */
@@ -16639,7 +20521,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16694,7 +20576,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish` (or `content.publish_own`; code `permission_denied`), the entry is not yours and you only have `content.publish_own` (code `content.not_owner`), an editor archived it and you only have `content.publish_own` (code `content.archived`), or an API key sent `ai_reviewed` (code `content.ai_review_requires_human`). */
@@ -16703,7 +20585,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16712,7 +20594,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The address is used by another published entry (code `content.path_taken`), the parent page is not published (code `content.parent_not_published`), or an editor's redirect is at the address and you only have `content.publish_own` (code `content.path_has_redirect`). */
@@ -16721,7 +20603,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16730,7 +20612,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A media item is missing (code `content.media_not_found`) or not public (code `content.media_not_public`), or `published_at` was sent with only `content.publish_own`; see `errors`. */
@@ -16739,7 +20621,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16748,7 +20630,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16798,7 +20680,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16807,7 +20689,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16816,7 +20698,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16825,7 +20707,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16834,7 +20716,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16884,7 +20766,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -16893,7 +20775,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16902,7 +20784,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -16911,7 +20793,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -16920,7 +20802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -16980,7 +20862,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -16989,7 +20871,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -16998,7 +20880,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17044,7 +20926,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17053,7 +20935,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such revision of this entry; code `content.revision_not_found`. */
@@ -17062,7 +20944,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17112,7 +20994,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -17121,7 +21003,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such entry or revision; code `content.not_found` or `content.revision_not_found`. */
@@ -17130,7 +21012,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The revision's slug is now taken; code `content.slug_taken`. */
@@ -17139,7 +21021,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -17148,7 +21030,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A media item of the revision no longer exists; see `errors`. */
@@ -17157,7 +21039,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -17166,7 +21048,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17210,7 +21092,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17219,7 +21101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17273,7 +21155,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish`; code `permission_denied`. */
@@ -17282,7 +21164,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17291,7 +21173,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A schedule of this action is already pending; code `content.schedule_conflict`. */
@@ -17300,7 +21182,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -17309,7 +21191,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `run_at` is not in the future (`schedule_in_past`), or a media item is missing or not public; see `errors`. */
@@ -17318,7 +21200,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -17327,7 +21209,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17371,7 +21253,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17380,7 +21262,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17389,7 +21271,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17435,7 +21317,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -17444,7 +21326,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17453,7 +21335,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The AI model declined the content (code `ai.refused`) or its answer was cut off (code `ai.output_truncated`). */
@@ -17462,7 +21344,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Today's AI token limit is used up; code `ai.quota_exceeded`, with `Retry-After`. */
@@ -17471,7 +21353,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description AI is off (code `ai.disabled`), misconfigured (code `ai.misconfigured`), the provider is busy (code `ai.provider_unavailable`, maybe with `Retry-After`), or its answer had the wrong shape twice (code `ai.output_invalid`). */
@@ -17480,7 +21362,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17530,7 +21412,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (or `content.publish` / `content.publish_own` for a published entry; code `permission_denied`), or the entry is not yours and you only have the `_own` permission (code `content.not_owner`). */
@@ -17539,7 +21421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17548,7 +21430,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An id is not a category or tag, or too many; see `errors`. */
@@ -17557,7 +21439,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17609,7 +21491,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry (or its translation) is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -17618,7 +21500,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17627,16 +21509,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A translation into this language is already queued or running (code `content.translation_in_progress`), or the parent page has no translation yet (code `content.parent_not_translated`). */
+            /** @description A translation into this language is already queued or running (code `content.translation_in_progress`; follow it with `GET /api/v1/content/entries/{id}/translation-requests`), or the parent page has no translation yet (code `content.parent_not_translated`). */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported or is the entry's own; see `errors`. */
@@ -17645,7 +21527,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description AI is off on this server; code `ai.disabled`. */
@@ -17654,7 +21536,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17714,7 +21596,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17723,7 +21605,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -17732,7 +21614,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17784,7 +21666,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.write` or `content.write_own` (code `permission_denied`), or the entry — or the translation of its parent page — is not yours and you only have `content.write_own` (code `content.not_owner`). */
@@ -17793,7 +21675,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17802,7 +21684,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A translation in this language exists (code `content.translation_exists`), the parent page is not translated (code `content.parent_not_translated`), or the slug is taken (code `content.slug_taken`). */
@@ -17811,7 +21693,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported or a value is invalid; see `errors`. */
@@ -17820,7 +21702,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17868,7 +21750,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish` or `content.publish_own` (code `permission_denied`), or the entry is not yours and you only have `content.publish_own` (code `content.not_owner`). */
@@ -17877,7 +21759,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No entry has this id; code `content.not_found`. */
@@ -17886,7 +21768,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not published (code `content.not_published`), or a page with published subpages (code `content.page_has_published_children`). */
@@ -17895,7 +21777,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The entry changed since you read it; code `precondition_failed`. */
@@ -17904,7 +21786,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -17913,7 +21795,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -17954,7 +21836,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -17963,7 +21845,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18012,7 +21894,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -18021,7 +21903,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such menu in this language; code `content.menu_not_found`. */
@@ -18030,7 +21912,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18087,7 +21969,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18096,7 +21978,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The menu changed since you read it; code `precondition_failed`. */
@@ -18105,7 +21987,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An item is invalid (each listed with its place, e.g. `items[0].children[1].url`); see `errors`. */
@@ -18114,7 +21996,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -18123,7 +22005,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18167,7 +22049,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18213,7 +22095,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18260,7 +22142,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported; see `errors`. */
@@ -18269,7 +22151,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18343,7 +22225,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18387,7 +22269,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Previews are off on this server; code `content.preview_disabled`. */
@@ -18396,7 +22278,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18450,7 +22332,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported or the path is malformed; see `errors`. */
@@ -18459,7 +22341,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18516,7 +22398,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -18525,7 +22407,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18584,7 +22466,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    content_list_public_content_terms: {
+        parameters: {
+            query: {
+                /**
+                 * @description Language of the posts counted, and of the names returned (the default language when a
+                 *     term is not translated).
+                 * @example vi
+                 */
+                locale: string;
+                /** @description `category` or `tag`; omitted: both. */
+                taxonomy?: components["schemas"]["Taxonomy"];
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of terms with their post counts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PublicTermCount"];
+                };
+            };
+            /** @description A parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18633,7 +22580,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The language is not supported; see `errors`. */
@@ -18642,7 +22589,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18703,7 +22650,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18712,7 +22659,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -18721,7 +22668,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18770,7 +22717,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18779,7 +22726,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A loop (code `content.redirect_loop`), a published entry at that address (code `content.path_taken`), or a redirect from that address already (code `content.redirect_exists`). */
@@ -18788,7 +22735,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -18797,7 +22744,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18843,7 +22790,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18852,7 +22799,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No redirect has this id; code `content.redirect_not_found`. */
@@ -18861,7 +22808,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18905,7 +22852,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18914,7 +22861,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No redirect has this id; code `content.redirect_not_found`. */
@@ -18923,7 +22870,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -18975,7 +22922,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -18984,7 +22931,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No redirect has this id; code `content.redirect_not_found`. */
@@ -18993,7 +22940,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A loop, a published entry at that address, or another redirect from it; see the code. */
@@ -19002,7 +22949,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The redirect changed since you read it; code `precondition_failed`. */
@@ -19011,7 +22958,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -19020,7 +22967,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -19029,7 +22976,87 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    content_list_all_content_schedules: {
+        parameters: {
+            query?: {
+                /**
+                 * @description `scheduled` (waiting), `succeeded`, `failed` or `canceled`.
+                 * @example scheduled
+                 */
+                status?: string;
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of schedules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ScheduleResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `content.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19075,7 +23102,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.publish`; code `permission_denied`. */
@@ -19084,7 +23111,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No schedule has this id; code `content.schedule_not_found`. */
@@ -19093,7 +23120,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description It already ran or was canceled; code `content.schedule_not_pending`. */
@@ -19102,7 +23129,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19159,7 +23186,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -19168,7 +23195,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -19177,7 +23204,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19196,6 +23223,8 @@ export interface operations {
             query?: {
                 /** @description `category` or `tag`. */
                 taxonomy?: "category" | "tag";
+                /** @description Only terms whose name (in any language) contains this text, ignoring case and accents. */
+                q?: string;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -19236,7 +23265,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -19245,7 +23274,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -19254,7 +23283,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19303,7 +23332,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -19312,7 +23341,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -19321,7 +23350,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -19330,7 +23359,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19376,7 +23405,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read`; code `permission_denied`. */
@@ -19385,7 +23414,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No term has this id; code `content.term_not_found`. */
@@ -19394,7 +23423,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19438,7 +23467,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -19447,7 +23476,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No term has this id; code `content.term_not_found`. */
@@ -19456,7 +23485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The category has subcategories; code `content.term_has_children`. */
@@ -19465,7 +23494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19517,7 +23546,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.manage`; code `permission_denied`. */
@@ -19526,7 +23555,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No term has this id; code `content.term_not_found`. */
@@ -19535,7 +23564,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The slug is taken; code `content.slug_taken`. */
@@ -19544,7 +23573,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The term changed since you read it; code `precondition_failed`. */
@@ -19553,7 +23582,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid, or the parent would make a loop (`term_cycle`); see `errors`. */
@@ -19562,7 +23591,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -19571,7 +23600,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19615,7 +23644,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `content.read` (or `content.write` / `content.write_own`); code `permission_denied`. */
@@ -19624,7 +23653,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No translation request you may see has this id; code `content.translation_request_not_found`. */
@@ -19633,7 +23662,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19690,7 +23719,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19699,7 +23728,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -19708,7 +23737,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19764,7 +23793,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -19773,7 +23802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19782,7 +23811,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The file is too large; code `files.too_large` (or `payload_too_large` when `Content-Length` already says so). */
@@ -19791,7 +23820,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description This media type is not accepted; code `files.type_not_allowed`. The message lists the accepted types. */
@@ -19800,7 +23829,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is missing or invalid; see `errors`. */
@@ -19809,7 +23838,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19853,7 +23882,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19862,7 +23891,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No file with this id that you may see; code `files.file_not_found`. */
@@ -19871,7 +23900,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19915,7 +23944,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19924,7 +23953,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No file with this id that you may see (or it was already deleted); code `files.file_not_found`. */
@@ -19933,7 +23962,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -19977,7 +24006,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `files.upload`; code `permission_denied`. */
@@ -19986,7 +24015,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No file with this id that you may see; code `files.file_not_found`. */
@@ -19995,7 +24024,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20054,7 +24083,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.read`; code `permission_denied`. */
@@ -20063,7 +24092,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -20072,7 +24101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20121,7 +24150,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.manage` (or `forms.read`, needed to set `notify_emails`); code `permission_denied`. */
@@ -20130,7 +24159,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The key is taken; code `forms.key_taken`. */
@@ -20139,7 +24168,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The definition is invalid; see `errors`. */
@@ -20148,7 +24177,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20195,7 +24224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.export`; code `permission_denied`. */
@@ -20204,7 +24233,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -20213,7 +24242,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20262,7 +24291,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.export`; code `permission_denied`. */
@@ -20271,7 +24300,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -20280,7 +24309,138 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    forms_get_form_submissions_export: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the export. */
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ExportResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `forms.export`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No export has this id, or it was deleted; code `forms.export_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    forms_download_form_submissions_export: {
+        parameters: {
+            query: {
+                /** @description When the link stops working, in seconds since 1970 (UTC). */
+                expires: number;
+                /** @description Signature of the link. */
+                signature: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the export. */
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV file. */
+            200: {
+                headers: {
+                    /** @description `attachment` with the file name `<key>-submissions.csv`. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description `expires` or `signature` is missing or not well formed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The link is wrong or has expired; code `forms.export_link_invalid`. Get a new one from `GET /api/v1/forms/exports/{export_id}`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The export or its file was deleted; code `forms.export_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20329,7 +24489,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `locale` is not `en` or `vi`; see `errors`. */
@@ -20338,7 +24498,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20390,7 +24550,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The page's `Origin` is not allowed for this form; code `forms.origin_not_allowed`. */
@@ -20399,7 +24559,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this key; code `forms.not_found`. */
@@ -20408,7 +24568,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The form is closed; code `forms.closed`. */
@@ -20417,7 +24577,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is too large; code `payload_too_large`. */
@@ -20426,7 +24586,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description An answer is invalid; see `errors`. */
@@ -20435,7 +24595,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A caller with `forms.submit` sent too many; code `antispam.rate_limited`. */
@@ -20444,7 +24604,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The anti-spam check cannot run; code `antispam.verifier_unavailable`. */
@@ -20453,7 +24613,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20499,7 +24659,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.read`; code `permission_denied`. */
@@ -20508,7 +24668,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No submission has this id; code `forms.submission_not_found`. */
@@ -20517,7 +24677,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20561,7 +24721,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.review`; code `permission_denied`. */
@@ -20570,7 +24730,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No submission has this id; code `forms.submission_not_found`. */
@@ -20579,7 +24739,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20633,7 +24793,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.review`; code `permission_denied`. */
@@ -20642,7 +24802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No submission has this id; code `forms.submission_not_found`. */
@@ -20651,7 +24811,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The submission changed since you read it; code `precondition_failed`. */
@@ -20660,7 +24820,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The status is invalid; see `errors`. */
@@ -20669,7 +24829,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -20678,7 +24838,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20724,7 +24884,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.read`; code `permission_denied`. */
@@ -20733,7 +24893,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -20742,7 +24902,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20788,7 +24948,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.manage`; code `permission_denied`. */
@@ -20797,7 +24957,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -20806,7 +24966,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The form changed since you read it; code `precondition_failed`. */
@@ -20815,7 +24975,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -20824,7 +24984,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20878,7 +25038,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.manage` (or `forms.read`, needed to change `notify_emails`); code `permission_denied`. */
@@ -20887,7 +25047,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -20896,7 +25056,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The key is taken; code `forms.key_taken`. */
@@ -20905,7 +25065,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The form changed since you read it; code `precondition_failed`. */
@@ -20914,7 +25074,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -20923,7 +25083,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -20932,7 +25092,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -20996,7 +25156,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.read`; code `permission_denied`. */
@@ -21005,7 +25165,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -21014,7 +25174,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -21023,7 +25183,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21077,7 +25237,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `forms.export`; code `permission_denied`. */
@@ -21086,7 +25246,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No form has this id; code `forms.not_found`. */
@@ -21095,7 +25255,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -21104,7 +25264,580 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    forms_create_form_submissions_export: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the form. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Optional; may be omitted. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Asked for; the job writes the file shortly. */
+            201: {
+                headers: {
+                    /** @description Address of the export. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ExportResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `forms.export`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No form has this id; code `forms.not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The form already has an export that is not finished; code `forms.export_in_progress` (its id is in the message; follow it with `GET /api/v1/forms/exports/{export_id}`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `status` is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_client_config: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings, by module. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ClientConfigResponse"];
+                };
+            };
+            /** @description The tenant of the request is suspended; code `tenant_suspended`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unexpected server error. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant of the request is under maintenance; code `tenant_maintenance`. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_tenant_domains: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the tenant's domains. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_TenantDomain"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A paging parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_add_tenant_domain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTenantDomain"];
+            };
+        };
+        responses: {
+            /** @description The domain, with the DNS record to set. */
+            201: {
+                headers: {
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantDomain"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Another tenant has the domain (`tenant_domain_taken`), or the installation runs one tenant (`tenant_single_mode`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not a usable domain; code `tenant_domain_invalid`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_check_tenant_domain_allowed: {
+        parameters: {
+            query: {
+                /** @description The domain, as the TLS server sees it (e.g. `shop.example`). */
+                domain: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The domain is verified and its tenant is active. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_AllowedTenantDomain"];
+                };
+            };
+            /** @description The `domain` parameter is missing; code `bad_request`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not a verified domain of an active tenant; code `tenant_domain_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too many requests from this address; code `rate_limited`. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_remove_tenant_domain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the domain. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The domain is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant has no such domain; code `tenant_domain_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_update_tenant_domain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the domain. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantDomainChanges"];
+            };
+        };
+        responses: {
+            /** @description The domain after the change. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantDomain"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant has no such domain; code `tenant_domain_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The domain was removed; code `tenant_domain_revoked`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `org_id` is missing or not a node of this tenant (no installed module keeps an organization tree: only `null` is accepted); see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_verify_tenant_domain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the domain. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The domain after the lookup. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantDomain"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.domains.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant has no such domain; code `tenant_domain_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21145,7 +25878,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `kernel.modules.read`; code `permission_denied`. */
@@ -21154,7 +25887,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21198,7 +25931,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `kernel.modules.read`; code `permission_denied`. */
@@ -21207,7 +25940,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such module; code `kernel.module_not_found`. */
@@ -21216,7 +25949,1266 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_placements: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every placement, sorted by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_Placement"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.placements.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_tenant_settings: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Only settings of this group, e.g. `connection` (connections to partner services: mail
+                 *     server, AI provider…). Omit for every setting; a group no setting is in gives an empty
+                 *     list.
+                 * @example connection
+                 */
+                group?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every setting (of the group, when one is given), sorted by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TenantSettingState"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.settings.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_set_tenant_setting: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Name of the setting, `<module>.<key>`, e.g. `kernel.public_url`. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantSettingValue"];
+            };
+        };
+        responses: {
+            /** @description The setting as stored (without a secret value). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantSettingState"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.settings.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No module takes this setting (code `tenant_setting_unknown`) or the value is empty or too long; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_delete_tenant_setting: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Name of the setting. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The setting is unset (or never was). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.settings.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No module takes this setting; code `tenant_setting_unknown`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_current_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant of the request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_CurrentTenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_tenants: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+                /**
+                 * @description Only tenants in this state: `provisioning`, `active`, `suspended`, `maintenance` or
+                 *     `moving`.
+                 */
+                status?: string;
+                /** @description Only children of this tenant. */
+                parent_id?: string;
+                /** @description Only read-only tenants (`true`) or writable ones (`false`). */
+                read_only?: boolean;
+                /**
+                 * @description Only tenants whose placement is of this kind: `shared` or `dedicated`.
+                 * @example dedicated
+                 */
+                placement_kind?: string;
+                /**
+                 * @description Only tenants whose placement is in this state: `ready`, `behind` (migrations pending) or
+                 *     `migrating`.
+                 * @example behind
+                 */
+                schema_state?: string;
+                /**
+                 * @description Only tenants whose subscription is in this state: `trialing`, `active`, `past_due`,
+                 *     `suspended`, `canceled` or `deleted`. Subscriptions come with the plans module (step 35);
+                 *     without it no tenant has one, so the page is empty.
+                 * @example past_due
+                 */
+                subscription_status?: string;
+                /**
+                 * @description `true`: only tenants close to a limit of their plan. Limits come with the plans module
+                 *     (step 35); without it no tenant has limits, so the page is empty. `false` filters nothing.
+                 */
+                near_limit?: boolean;
+                /**
+                 * @description Related records to add to each tenant under `expanded`, comma-separated: `placement`,
+                 *     `subscription`, `usage`. Fetched for the whole page at once.
+                 * @example placement,subscription
+                 */
+                expand?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of tenants. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_Tenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A filter or paging parameter is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_create_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTenant"];
+            };
+        };
+        responses: {
+            /** @description The tenant, ready to use. */
+            201: {
+                headers: {
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Tenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such placement or parent; code `tenant_placement_not_found` or `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The slug is taken (`tenant_slug_taken`), the installation runs one tenant (`tenant_single_mode`), or the placement has migrations to apply (`tenant_placement_behind`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant. */
+            200: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Tenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_update_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The `ETag` you read. When given, the change is made only if nobody changed the record since; otherwise `412`. */
+                "If-Match"?: string | null;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantChanges"];
+            };
+        };
+        responses: {
+            /** @description The tenant after the change. */
+            200: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Tenant"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` does not match: the record changed since you read it; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_move_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantMoveRequest"];
+            };
+        };
+        responses: {
+            /** @description Dry run: what the move would do; nothing changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantMovePlan"];
+                };
+            };
+            /** @description The move started (or a stopped one resumed) in the background; `Location` is its status. */
+            201: {
+                headers: {
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantMove"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.move` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant or placement; code `tenant_not_found` or `tenant_placement_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The move cannot run now; code `tenant_move_platform`, `tenant_move_same_placement`, `tenant_move_not_active`, `tenant_move_running`, `tenant_move_unfinished`, `tenant_move_schema_differs`, `tenant_move_same_database` or `tenant_placement_behind`. A dry run lists every reason. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A database cannot be reached; code `tenant_move_unreachable`. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_tenant_move: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+                /** @description Id of the move. */
+                move_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The move. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantMove"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant or move; code `tenant_not_found` or `tenant_move_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_settings_of_tenant: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Only settings of this group, e.g. `connection` (connections to partner services: mail
+                 *     server, AI provider…). Omit for every setting; a group no setting is in gives an empty
+                 *     list.
+                 * @example connection
+                 */
+                group?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every setting (of the group, when one is given), sorted by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TenantSettingState"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_set_setting_of_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+                /** @description Name of the setting, `<module>.<key>`, e.g. `comments.max_links`. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantSettingValue"];
+            };
+        };
+        responses: {
+            /** @description The setting as stored (without a secret value). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantSettingState"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant is being moved to another placement; code `tenant_moving`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No module takes this setting (code `tenant_setting_unknown`) or the value is not valid for it; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_delete_setting_of_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+                /** @description Name of the setting. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The setting is unset (or never was). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant is being moved to another placement; code `tenant_moving`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No module takes this setting; code `tenant_setting_unknown`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    me_list_my_flags: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Only flags whose key starts with this, e.g. `hint.`.
+                 * @example hint.
+                 */
+                prefix?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's flags, sorted by key (at most `AUTOXIDE_USER_FLAGS_MAX`). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_UserFlag"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `prefix` is not a valid key prefix; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    me_set_my_flag: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Lower-case letters, digits, `.`, `_` and `-`, up to 100 characters, e.g. `hint.saved_views`. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserFlagValue"];
+            };
+        };
+        responses: {
+            /** @description The flag as stored. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_UserFlag"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The caller already keeps the most flags allowed; delete some first. Code `kernel.flag_limit_reached`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The key or the value is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    me_delete_my_flag: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Key of the flag. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The flag is gone (or never existed). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The key is invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    me_list_my_permissions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's permissions, by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_MyPermission"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21258,6 +27250,13 @@ export interface operations {
                  * @example brand
                  */
                 tag?: string;
+                /**
+                 * @description `true`: only images missing a text alternative (an image whose default `alt` is empty and
+                 *     that is not marked `decorative`). `false`: every other item.
+                 */
+                alt_missing?: boolean;
+                /** @description `uploader`: add `uploaded_by_name`, the display name of who uploaded each item. */
+                include?: "uploader";
                 /** @description `created_at` (the default), `name` or `size`; the direction is `order`. */
                 sort?: "created_at" | "name" | "size";
                 /**
@@ -21300,7 +27299,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21309,7 +27308,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A filter or paging parameter is invalid; see `errors`. */
@@ -21318,7 +27317,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21381,7 +27380,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -21390,7 +27389,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -21399,7 +27398,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The content is too large; code `media.too_large` (or `payload_too_large` when `Content-Length` already says so). */
@@ -21408,7 +27407,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The type is not accepted (code `media.type_not_allowed`, the message lists the accepted types), the content is not of the declared type (code `media.content_mismatch`), the type could not be detected (code `media.unknown_type`), or the image is damaged (code `media.invalid_image`). */
@@ -21417,7 +27416,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is invalid, the folder does not exist, or the body is empty; see `errors`. */
@@ -21426,7 +27425,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21491,7 +27490,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21500,7 +27499,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A filter or paging parameter is invalid; see `errors`. */
@@ -21509,7 +27508,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21558,7 +27557,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -21567,7 +27566,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The parent already holds a folder with this name; code `media.folder_name_taken`. */
@@ -21576,7 +27575,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is invalid or the parent does not exist; see `errors`. */
@@ -21585,7 +27584,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21631,7 +27630,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21640,7 +27639,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No folder has this id; code `media.folder_not_found`. */
@@ -21649,7 +27648,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21693,7 +27692,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -21702,7 +27701,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No folder has this id; code `media.folder_not_found`. */
@@ -21711,7 +27710,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The folder is not empty; code `media.folder_not_empty`. */
@@ -21720,7 +27719,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21774,7 +27773,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -21783,7 +27782,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No folder has this id; code `media.folder_not_found`. */
@@ -21792,7 +27791,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The new parent already holds a folder with this name (code `media.folder_name_taken`), or is the folder itself or one of its subfolders (code `media.folder_cycle`). */
@@ -21801,7 +27800,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the folder changed since you read it; code `precondition_failed`. */
@@ -21810,7 +27809,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is invalid or the parent does not exist; see `errors`. */
@@ -21819,7 +27818,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -21828,7 +27827,57 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    media_get_media_summary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The totals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_LibrarySummaryResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `media.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21889,7 +27938,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21898,7 +27947,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -21907,7 +27956,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -21953,7 +28002,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -21962,7 +28011,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No tag has this id; code `media.tag_not_found`. */
@@ -21971,7 +28020,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22015,7 +28064,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22024,7 +28073,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No tag has this id; code `media.tag_not_found`. */
@@ -22033,7 +28082,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22087,7 +28136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22096,7 +28145,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No tag has this id; code `media.tag_not_found`. */
@@ -22105,7 +28154,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Another tag has this name; code `media.tag_name_taken`. */
@@ -22114,7 +28163,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the tag changed since you read it; code `precondition_failed`. */
@@ -22123,7 +28172,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The name is invalid; see `errors`. */
@@ -22132,7 +28181,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -22141,7 +28190,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22187,7 +28236,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.read`; code `permission_denied`. */
@@ -22196,7 +28245,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22205,7 +28254,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22251,7 +28300,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22260,7 +28309,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22269,7 +28318,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is already in the trash; code `media.item_in_trash`. */
@@ -22278,7 +28327,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22332,7 +28381,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22341,7 +28390,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22350,16 +28399,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The item is in the trash; code `media.item_in_trash`. */
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the item changed since you read it. Get it again and retry; code `precondition_failed`. */
@@ -22368,7 +28417,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid or the folder does not exist; see `errors`. */
@@ -22377,7 +28426,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -22386,7 +28435,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22436,7 +28485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write` (code `permission_denied`), or the image is private and may not be sent (code `media.ai_private_not_allowed`). */
@@ -22445,7 +28494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22454,16 +28503,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The item is in the trash; code `media.item_in_trash`. */
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid (see `errors`), the item is not a readable JPEG, PNG, GIF or WebP image (code `media.ai_unsupported_image`), the model reads no images (code `ai.unsupported_input`), or it declined the image (code `ai.refused`). */
@@ -22472,7 +28521,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Today's AI token limit is used up; code `ai.quota_exceeded`, with `Retry-After`. */
@@ -22481,7 +28530,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description AI is off (code `ai.disabled`), misconfigured (code `ai.misconfigured`), the provider is busy (code `ai.provider_unavailable`, maybe with `Retry-After`), or its answer had the wrong shape twice (code `ai.output_invalid`). */
@@ -22490,7 +28539,223 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    media_set_media_alt_translation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required: the `ETag` you read (or `*`). The change is made only if nobody changed the item since; otherwise `412`. */
+                "If-Match": string;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the media item. */
+                id: string;
+                /** @description BCP 47 language code, e.g. `vi`. */
+                locale: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaAltTranslation"];
+            };
+        };
+        responses: {
+            /** @description The item after the change, with `alts`. */
+            200: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_MediaItemResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `media.write`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No media item has this id; code `media.item_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` does not match: the item changed since you read it. Get it again and retry; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The language is not offered (code `media.unsupported_locale`) or the text is too long; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` is missing; code `precondition_required`. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    media_delete_media_alt_translation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required: the `ETag` you read (or `*`). The change is made only if nobody changed the item since; otherwise `412`. */
+                "If-Match": string;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the media item. */
+                id: string;
+                /** @description BCP 47 language code, e.g. `vi`. */
+                locale: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The item after the change, with `alts`. */
+            200: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_MediaItemResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `media.write`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No media item has this id; code `media.item_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` does not match: the item changed since you read it. Get it again and retry; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The language is not offered; code `media.unsupported_locale`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` is missing; code `precondition_required`. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22517,6 +28782,13 @@ export interface operations {
                  *     when the image is narrower, the original is sent.
                  */
                 w?: number;
+                /**
+                 * @description `webp`: with `w`, the WebP copy of that width (much smaller; the variant's
+                 *     `webp_url`). Until it is made, the JPEG or PNG copy is sent instead, so the address
+                 *     always shows an image. Ignored without `w`.
+                 * @example webp
+                 */
+                format?: string;
             };
             header?: {
                 /** @description One byte range, e.g. `bytes=0-1023`, `bytes=1024-` or `bytes=-500`. Several ranges are answered with the whole content. */
@@ -22573,7 +28845,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id that you may load; code `media.item_not_found`. */
@@ -22582,7 +28854,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The range is outside the content; code `media.range_not_satisfiable`. `Content-Range: bytes *\/<size>` gives the size. */
@@ -22591,7 +28863,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `format` is not `webp`; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22646,7 +28927,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
@@ -22655,7 +28936,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22664,7 +28945,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22673,16 +28954,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The item is in the trash; code `media.item_in_trash`. */
+            /** @description The item is in the trash; code `media.item_in_trash`. Restore it with `POST /api/v1/media/{id}/restore`. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the item changed since you read it; code `precondition_failed`. */
@@ -22691,7 +28972,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The content is too large; code `media.too_large` (or `payload_too_large`). */
@@ -22700,7 +28981,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The type is not accepted or the content is not of that type; codes as for an upload. */
@@ -22709,7 +28990,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The body is empty; see `errors`. */
@@ -22718,7 +28999,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -22727,7 +29008,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22754,6 +29035,13 @@ export interface operations {
                  *     when the image is narrower, the original is sent.
                  */
                 w?: number;
+                /**
+                 * @description `webp`: with `w`, the WebP copy of that width (much smaller; the variant's
+                 *     `webp_url`). Until it is made, the JPEG or PNG copy is sent instead, so the address
+                 *     always shows an image. Ignored without `w`.
+                 * @example webp
+                 */
+                format?: string;
             };
             header?: {
                 /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
@@ -22783,6 +29071,13 @@ export interface operations {
             };
             /** @description No media item has this id that you may load. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `format` is not `webp`. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22829,7 +29124,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.purge`; code `permission_denied`. */
@@ -22838,7 +29133,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id (or it was already deleted); code `media.item_not_found`. */
@@ -22847,7 +29142,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is not in the trash; code `media.item_not_in_trash`. */
@@ -22856,7 +29151,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22902,7 +29197,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `media.write`; code `permission_denied`. */
@@ -22911,7 +29206,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No media item has this id; code `media.item_not_found`. */
@@ -22920,7 +29215,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The item is not in the trash; code `media.item_not_in_trash`. */
@@ -22929,7 +29224,456 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_list_menus: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of menus. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_SiteMenuSummary"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The paging parameters are invalid; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_create_menu: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSiteMenuRequest"];
+            };
+        };
+        responses: {
+            /** @description Created; `Location` is the new menu. */
+            201: {
+                headers: {
+                    /** @description Version of the record: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_SiteMenu"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A menu with this key and language exists; code `menus.menu_exists`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid values; see `errors`. Code `menus.ref_unknown_kind` when every problem is a `ref` of a kind no module provides, `menus.ref_not_found` when every problem is a missing object, `menus.children_unsupported` when every problem is `auto_children` on a kind without sub-items; otherwise `validation_failed`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_get_public_menu: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Omitted: the default language. A menu missing in this language falls back to the
+                 *     default language; `locale` in the answer says which one was returned.
+                 * @example vi
+                 */
+                locale?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Key of the menu, e.g. `main`. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The menu. */
+            200: {
+                headers: {
+                    /** @description How long the answer may be reused: until the next badge starts or ends, at most `AUTOXIDE_MENUS_PUBLIC_CACHE_SECONDS`. */
+                    "Cache-Control"?: string;
+                    /** @description Fingerprint of the whole answer; send it in `If-None-Match` to get 304. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_PublicSiteMenu"];
+                };
+            };
+            /** @description The menu has not changed since the `ETag` sent in `If-None-Match`. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No menu has this key, in this language or the default one; code `menus.public_menu_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The language is not supported; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_get_menu: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the menu. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The menu. */
+            200: {
+                headers: {
+                    /** @description Version of the menu: send it in `If-Match` when replacing its items. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_SiteMenu"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No menu has this id; code `menus.menu_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_replace_menu_items: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required: the `ETag` you read, or `*`. */
+                "If-Match": string;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the menu. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceSiteMenuItemsRequest"];
+            };
+        };
+        responses: {
+            /** @description The menu as saved. */
+            200: {
+                headers: {
+                    /** @description New version of the menu. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_SiteMenu"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No menu has this id; code `menus.menu_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The menu changed since you read it; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid values; see `errors` and the codes listed for `POST /api/v1/menus`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` is missing; code `precondition_required`. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    menus_delete_menu: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the menu. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `menus.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No menu has this id (or it was already deleted); code `menus.menu_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -22976,7 +29720,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -22985,7 +29729,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -22994,7 +29738,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23053,7 +29797,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -23062,7 +29806,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -23071,7 +29815,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23120,7 +29864,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -23129,7 +29873,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -23138,7 +29882,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23184,7 +29928,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -23193,7 +29937,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23202,7 +29946,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23248,7 +29992,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -23257,7 +30001,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23266,7 +30010,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign already sent mail; code `newsletter.campaign_not_deletable`. */
@@ -23275,7 +30019,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23284,7 +30028,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -23293,7 +30037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23347,7 +30091,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -23356,7 +30100,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23365,7 +30109,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is no longer a draft or scheduled; code `newsletter.campaign_not_editable`. */
@@ -23374,7 +30118,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23383,7 +30127,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -23392,7 +30136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -23401,7 +30145,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23451,7 +30195,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23460,7 +30204,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23469,7 +30213,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is a draft or already finished; code `newsletter.campaign_invalid_transition`. */
@@ -23478,7 +30222,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23487,7 +30231,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23537,7 +30281,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23546,7 +30290,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23555,7 +30299,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is not sending; code `newsletter.campaign_invalid_transition`. */
@@ -23564,7 +30308,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23573,7 +30317,78 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    newsletter_preview_newsletter_campaign: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the campaign. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mail. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_CampaignPreviewResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `newsletter.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A setting campaign mails need is missing: code `public_url_missing`, `newsletter.preferences_url_missing`, or `newsletter.postal_address_missing` (advertising campaigns); the message names the variable to set. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23623,7 +30438,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23632,7 +30447,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign has this id; code `newsletter.campaign_not_found`. */
@@ -23641,7 +30456,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is not paused; code `newsletter.campaign_invalid_transition`. */
@@ -23650,7 +30465,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23659,7 +30474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A setting needed to send is missing; codes `public_url_missing`, `newsletter.preferences_url_missing`, `newsletter.postal_address_missing`. */
@@ -23668,7 +30483,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23722,7 +30537,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23731,7 +30546,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign (or no list) has this id; code `newsletter.campaign_not_found` or `newsletter.list_not_found`. */
@@ -23740,7 +30555,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is not a draft or scheduled; code `newsletter.campaign_invalid_transition`. */
@@ -23749,7 +30564,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23758,7 +30573,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `at` is not in the future; see `errors`. */
@@ -23767,7 +30582,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -23776,7 +30591,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A setting needed to send is missing; codes `public_url_missing`, `newsletter.preferences_url_missing`, `newsletter.postal_address_missing`. */
@@ -23785,7 +30600,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23835,7 +30650,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23844,7 +30659,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign (or no list) has this id; code `newsletter.campaign_not_found` or `newsletter.list_not_found`. */
@@ -23853,7 +30668,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign is not a draft or scheduled; code `newsletter.campaign_invalid_transition`. */
@@ -23862,7 +30677,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The campaign changed since you read it; code `precondition_failed`. */
@@ -23871,7 +30686,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -23880,7 +30695,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A setting needed to send is missing; codes `public_url_missing`, `newsletter.preferences_url_missing`, `newsletter.postal_address_missing`. */
@@ -23889,7 +30704,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -23937,7 +30752,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.send`; code `permission_denied`. */
@@ -23946,7 +30761,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No campaign (or no list) has this id; code `newsletter.campaign_not_found` or `newsletter.list_not_found`. */
@@ -23955,7 +30770,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is not an email address; see `errors`. */
@@ -23964,7 +30779,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A setting needed to send is missing; codes `public_url_missing`, `newsletter.preferences_url_missing`, `newsletter.postal_address_missing`. */
@@ -23973,7 +30788,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24020,7 +30835,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.export`; code `permission_denied`. */
@@ -24029,7 +30844,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -24038,7 +30853,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24087,7 +30902,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.export`; code `permission_denied`. */
@@ -24096,7 +30911,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `email` is missing or not an email address; see `errors`. */
@@ -24105,7 +30920,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24162,7 +30977,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -24171,7 +30986,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -24180,7 +30995,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24229,7 +31044,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage` (or `newsletter.send`, needed for `new_posts: send`); code `permission_denied`. */
@@ -24238,7 +31053,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The key is taken; code `newsletter.list_key_taken`. */
@@ -24247,7 +31062,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -24256,7 +31071,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24302,7 +31117,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -24311,7 +31126,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No list has this id; code `newsletter.list_not_found`. */
@@ -24320,7 +31135,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24366,7 +31181,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -24375,7 +31190,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No list has this id; code `newsletter.list_not_found`. */
@@ -24384,7 +31199,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The list has unfinished campaigns; code `newsletter.list_in_use`. */
@@ -24393,7 +31208,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The list changed since you read it; code `precondition_failed`. */
@@ -24402,7 +31217,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -24411,7 +31226,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24465,7 +31280,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage` (or `newsletter.send`, needed for `new_posts: send`); code `permission_denied`. */
@@ -24474,7 +31289,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No list has this id; code `newsletter.list_not_found`. */
@@ -24483,7 +31298,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The key is taken; code `newsletter.list_key_taken`. */
@@ -24492,7 +31307,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The list changed since you read it; code `precondition_failed`. */
@@ -24501,7 +31316,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -24510,7 +31325,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -24519,7 +31334,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24566,7 +31381,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24610,7 +31425,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24627,7 +31442,7 @@ export interface operations {
     newsletter_get_newsletter_preferences: {
         parameters: {
             query?: {
-                /** @description The token in the links of a campaign mail. */
+                /** @description The token in the links of a campaign mail, exactly as received (it may contain a `.`). */
                 token?: string;
             };
             header?: {
@@ -24654,7 +31469,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `token` is missing; see `errors`. */
@@ -24663,7 +31478,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24680,7 +31495,7 @@ export interface operations {
     newsletter_update_newsletter_preferences: {
         parameters: {
             query?: {
-                /** @description The token in the links of a campaign mail. */
+                /** @description The token in the links of a campaign mail, exactly as received (it may contain a `.`). */
                 token?: string;
             };
             header?: {
@@ -24713,7 +31528,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -24722,7 +31537,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24769,7 +31584,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid (e.g. a key that is not a public list); see `errors`. */
@@ -24778,7 +31593,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A caller with `newsletter.subscribe` sent too many; code `antispam.rate_limited`. */
@@ -24787,7 +31602,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The server cannot confirm sign-ups (code `newsletter.confirm_url_missing`), or the anti-spam check cannot run (`antispam.verifier_unavailable`). */
@@ -24796,7 +31611,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24813,7 +31628,7 @@ export interface operations {
     newsletter_unsubscribe_newsletter: {
         parameters: {
             query?: {
-                /** @description The token in the links of a campaign mail. */
+                /** @description The token in the links of a campaign mail, exactly as received (it may contain a `.`). */
                 token?: string;
             };
             header?: {
@@ -24852,6 +31667,56 @@ export interface operations {
             };
         };
     };
+    newsletter_get_newsletter_settings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings in use. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_NewsletterSettingsResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `newsletter.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     newsletter_list_newsletter_subscribers: {
         parameters: {
             query?: {
@@ -24861,6 +31726,8 @@ export interface operations {
                 list_id?: string;
                 /** @description Only subscriptions in this status (in `list_id`, or in any list). */
                 status?: "unconfirmed" | "confirmed" | "unsubscribed";
+                /** @description `true`: only blocked subscribers (they get no mail); `false`: only the others. */
+                blocked?: boolean;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -24901,7 +31768,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -24910,7 +31777,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -24919,7 +31786,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -24966,7 +31833,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -24975,7 +31842,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -24984,7 +31851,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25030,7 +31897,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -25039,7 +31906,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No subscriber has this id; code `newsletter.subscriber_not_found`. */
@@ -25048,7 +31915,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25092,7 +31959,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25101,7 +31968,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No subscriber has this id; code `newsletter.subscriber_not_found`. */
@@ -25110,7 +31977,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25164,7 +32031,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25173,7 +32040,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No subscriber has this id; code `newsletter.subscriber_not_found`. */
@@ -25182,7 +32049,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The subscriber changed since you read it; code `precondition_failed`. */
@@ -25191,7 +32058,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -25200,7 +32067,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` is missing; code `precondition_required`. */
@@ -25209,7 +32076,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25268,7 +32135,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.read`; code `permission_denied`. */
@@ -25277,7 +32144,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A parameter is invalid; see `errors`. */
@@ -25286,7 +32153,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25335,7 +32202,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25344,7 +32211,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid; see `errors`. */
@@ -25353,7 +32220,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25397,7 +32264,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `newsletter.manage`; code `permission_denied`. */
@@ -25406,7 +32273,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No suppression has this id; code `newsletter.suppression_not_found`. */
@@ -25415,7 +32282,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25432,6 +32299,8 @@ export interface operations {
     webhooks_list_webhook_endpoints: {
         parameters: {
             query?: {
+                /** @description `active`: only endpoints that receive events; `disabled`: only turned-off ones. */
+                status?: "active" | "disabled";
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -25472,7 +32341,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25481,7 +32350,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -25490,7 +32359,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25539,7 +32408,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25548,7 +32417,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid — e.g. the address is not `https://` or an event name is unknown; `errors` lists every problem. */
@@ -25557,7 +32426,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25598,7 +32467,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25607,7 +32476,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25653,7 +32522,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25662,7 +32531,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25671,7 +32540,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25715,7 +32584,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25724,7 +32593,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25733,7 +32602,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25787,7 +32656,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25796,7 +32665,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25805,7 +32674,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description `If-Match` does not match: the record changed since you read it. Get it again and retry; code `precondition_failed`. */
@@ -25814,7 +32683,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A value is invalid — e.g. the address is not `https://` or an event name is unknown; `errors` lists every problem. */
@@ -25823,7 +32692,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25883,7 +32752,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25892,7 +32761,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25901,7 +32770,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A paging parameter is invalid; see `errors`. */
@@ -25910,7 +32779,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25956,7 +32825,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing permission `webhooks.manage`; code `permission_denied`. */
@@ -25965,7 +32834,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No endpoint has this id; code `webhooks.endpoint_not_found`. */
@@ -25974,7 +32843,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -26041,13 +32910,13 @@ export interface operations {
                     "application/json": components["schemas"]["Data_Health"];
                 };
             };
-            /** @description A dependency is unavailable; code `not_ready`. */
+            /** @description Not ready: code `not_ready` when the database does not answer, `shutting_down` while the process is shutting down. */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */

@@ -8,8 +8,10 @@
 #   3. kiểu dữ liệu                  tsc (mọi gói)
 #   4. secret                        gitleaks (cài sẵn thì dùng, không thì chạy image Docker)
 #   5. test đơn vị                   vitest
-#   6. build                         next build (bản standalone)
-#   7. test e2e                      Playwright với core giả, trên bản build ở bước 6
+#   6. build                         next build (bản standalone) của mọi app
+#   7. test e2e                      Playwright với core giả, trên bản build ở bước 6:
+#                                    trang quản trị (core giả 4010, app 3100), rồi website
+#                                    (`apps/storefront`: core giả 4012, app 3200)
 #
 # Biến môi trường (không bắt buộc):
 #   PLAYWRIGHT_CHROMIUM_EXECUTABLE   Chromium có sẵn thay cho bản `playwright install`.
@@ -60,7 +62,10 @@ pnpm turbo run test
 step "build (next build)"
 pnpm turbo run build
 
-step "end-to-end tests (playwright, mock core)"
+step "end-to-end tests: admin (playwright, mock core)"
 pnpm --filter @autoxide/admin e2e
+
+step "end-to-end tests: storefront (playwright, mock core)"
+pnpm --filter @autoxide/storefront e2e
 
 printf '\n\033[32mgate: green — lint, types, secrets, unit tests, build, end-to-end tests\033[0m\n'

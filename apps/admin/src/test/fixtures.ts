@@ -5,7 +5,7 @@ export const NOTES: ModuleInfo = {
   name: "notes",
   internal: false,
   position: 2,
-  permissions: [{ name: "notes.write", description: "Write notes." }],
+  permissions: [{ name: "notes.write", description: "Write notes.", risk: "write" }],
   events: [{ name: "notes.note_created", description: "A note was created." }],
   subscriptions: ["*"],
   jobs: ["notes.cleanup"],

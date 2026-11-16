@@ -1,0 +1,352 @@
+/* Màn Menu của website (bản thiết kế Menus). Lớp `mn-`, đặt dưới `.ax`. */
+
+.ax .mn-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.ax .mn-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.ax .mn-edhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--sheet);
+}
+.ax .mn-edtitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ax .mn-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.ax .mn-issues {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ax .mn-issues > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.ax .mn-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+@media (min-width: 1100px) {
+  .ax .mn-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr);
+  }
+}
+.ax .mn-tree,
+.ax .mn-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  min-width: 0;
+}
+.ax .mn-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ax .mn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+.ax .mn-row.on {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.ax .mn-row.bad {
+  border-color: var(--bad);
+}
+.ax .mn-rowbtn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ax .mn-rowbtn:hover {
+  background: var(--hover);
+}
+.ax .mn-row.on .mn-rowbtn:hover {
+  background: transparent;
+}
+.ax .mn-rowmain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ax .mn-label {
+  font-weight: 500;
+}
+.ax .mn-label.gone {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+.ax .mn-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 45%;
+}
+.ax .mn-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--hover);
+  color: var(--ink-2);
+}
+.ax .mn-badge.t-sale {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+.ax .mn-badge.t-brand {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.ax .mn-badge.t-new {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .mn-rowacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+.ax .mn-rowacts > .danger {
+  margin-left: auto;
+}
+.ax .mn-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ax .mn-form .fld {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ax .mn-fs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.ax .mn-fs > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+}
+.ax .mn-inline {
+  max-width: 140px;
+}
+.ax .mn-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ax .mn-icons > .on {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .mn-obj {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  min-width: 0;
+}
+.ax .mn-obj > .badge {
+  align-self: flex-start;
+}
+
+/* Xem trước mặt tiền */
+.ax .mn-store {
+  padding: 0;
+  overflow: hidden;
+}
+.ax .mn-bar {
+  display: flex;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ax .mn-baritem {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ax .mn-baritem.on {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+}
+.ax .mn-baritem.push {
+  margin-left: auto;
+}
+.ax .mn-baritem.hl-sale {
+  color: var(--bad);
+}
+.ax .mn-baritem.hl-brand {
+  color: var(--ok);
+}
+.ax .mn-baritem.hl-accent {
+  color: var(--accent);
+  font-weight: 600;
+}
+.ax .mn-baritem.hl-muted {
+  color: var(--ink-3);
+}
+.ax .mn-mega {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  padding: 16px 18px;
+}
+.ax .mn-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  font-size: 13px;
+}
+.ax .mn-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: auto;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--ok-bg);
+}
+.ax .mn-tap {
+  padding: 14px 18px;
+}
+.ax .mn-apis {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.ax .mn-apis > li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.ax .mn-apis > li + li {
+  border-top: 1px solid var(--line);
+}
+.ax .mn-apis del {
+  color: var(--ink-3);
+}
+.ax .mn-cmd {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 12.5px;
+  overflow-x: auto;
+}
+.ax .mn-improws {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ax .mn-improw {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 720px) {
+  .ax .mn-badges {
+    max-width: 40%;
+  }
+  .ax .mn-feature {
+    margin-left: 0;
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 100%;
+  }
+}
+.ax .mn-sample {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 4px;
+}

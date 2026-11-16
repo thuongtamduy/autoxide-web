@@ -1,0 +1,35 @@
+/* Ba màn Khách hàng, Kênh bán, Tiếp thị liên kết (W-019). Lớp `gr-`, đặt dưới `.ax`; phần còn lại dùng
+   lớp sẵn có của khung và của màn Sản phẩm (`cat-`). */
+
+.ax .cat-lines > li.gr-total {
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--ink-3);
+}
+.ax .gr-tiles {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.ax .gr-mask {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.ax .gr-legal {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .gr-result {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 13.5px;
+}
+.ax .gr-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px 16px;
+}
+.ax .h3 {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}

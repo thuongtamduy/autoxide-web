@@ -1,0 +1,127 @@
+/* Màn "Cây tổ chức". Máy tính: cây bên trái, chi tiết nút bên phải. Điện thoại: danh sách → chi
+   tiết (master → detail) theo `data-view` (có `?unit=` thì hiện chi tiết, không thì hiện cây). */
+.ax .ot-split {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+.ax .ot-tree {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 10px;
+}
+.ax .ot-tree > .h2 {
+  padding: 0 8px;
+}
+.ax .ot-tree > .fhint {
+  padding: 0 8px;
+}
+.ax .ot-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ax .ot-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.ax .ot-node:hover {
+  background: var(--hover);
+}
+.ax .ot-node.on {
+  background: var(--panel);
+  box-shadow: inset 3px 0 0 var(--accent);
+  font-weight: 500;
+}
+.ax .ot-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ax .ot-type {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax .ot-detail {
+  min-width: 0;
+}
+.ax .ot-back {
+  display: none;
+  align-self: flex-start;
+}
+.ax .ot-acts {
+  margin-inline-start: auto;
+}
+.ax .ot-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ax .ot-person .avatar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+.ax .ot-depths {
+  margin: 0;
+  padding: 12px 16px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13.5px;
+}
+.ax .ot-depths > li {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+.ax .ot-depths .badge {
+  justify-self: start;
+}
+@media (max-width: 900px) {
+  .ax .ot-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ax .ot-tree {
+    position: static;
+  }
+  .ax .ot-split[data-view="tree"] .ot-detail,
+  .ax .ot-split[data-view="node"] .ot-tree {
+    display: none;
+  }
+  .ax .ot-back {
+    display: inline-flex;
+    min-height: 44px;
+  }
+  .ax .ot-node {
+    min-height: 44px;
+  }
+  .ax .ot-acts {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+  .ax .ot-acts .btn {
+    min-height: 44px;
+  }
+  .ax .ot-depths > li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}

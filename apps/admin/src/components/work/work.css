@@ -1,0 +1,289 @@
+/* Màn "Việc và hoạt động" và trang Tổng quan (W-020): hộp việc, hoạt động, ghim, ô số liệu. */
+.ax .tone-bad {
+  color: var(--bad);
+}
+.ax .tone-warn {
+  color: var(--warn);
+}
+.ax .wk-card {
+  padding: 4px 8px 8px;
+}
+.ax .wk-pad {
+  padding: 16px 18px;
+}
+.ax .wk-groups {
+  display: flex;
+  flex-direction: column;
+}
+.ax .wk-ghead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 10px 2px;
+  font-size: inherit;
+}
+.ax .wk-list,
+.ax .wk-acts-list,
+.ax .wk-pins,
+.ax .wk-runs,
+.ax .dash-steps,
+.ax .dash-rev {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .wk-task,
+.ax .wk-act,
+.ax .wk-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 12px;
+  padding: 10px;
+  border-radius: 10px;
+}
+.ax .wk-task + .wk-task,
+.ax .wk-act + .wk-act,
+.ax .wk-run + .wk-run {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+.ax .wk-main {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ax .wk-title {
+  font-weight: 500;
+  text-wrap: pretty;
+}
+.ax .wk-meta,
+.ax .wk-flags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .wk-flags:empty {
+  display: none;
+}
+.ax .wk-due {
+  font-weight: 500;
+}
+.ax .wk-why {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .wk-why > summary {
+  width: fit-content;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.ax .wk-why > p {
+  margin: 4px 0 0;
+}
+.ax .wk-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ax .wk-acts .inline-form {
+  display: contents;
+}
+.ax .wk-pins {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 12px;
+}
+.ax .wk-pin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 14px 16px;
+}
+
+/* Trang Tổng quan */
+.ax .dash {
+  gap: 22px;
+}
+.ax .dash-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  gap: 12px;
+}
+.ax .dash-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  color: inherit;
+  text-decoration: none;
+}
+.ax .dash-tile:hover {
+  background: var(--hover);
+}
+.ax .dash-tile-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.ax .dash-tile-value {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.ax .dash-tile-note {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .dash-tile-src {
+  margin-top: 4px;
+}
+.ax .dash-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+.ax .dash-tasks {
+  flex: 2 1 520px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 8px 10px;
+}
+.ax .dash-side {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ax .dash-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+}
+.ax .dash-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ax .dash-head > .h2 {
+  flex: 0 1 auto;
+}
+.ax .dash-tasks > .dash-head,
+.ax .dash-tasks > .note {
+  margin: 0 10px;
+}
+.ax .dash-card .dash-head > .h2 {
+  flex: 1 1 auto;
+}
+.ax .dash-hint {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .dash-tasks .dash-hint {
+  flex: 1 1 200px;
+  text-align: right;
+}
+.ax .dash-count {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ax .dash-more {
+  align-self: flex-start;
+  margin: 6px 10px 0;
+}
+.ax .dash-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 0;
+}
+.ax .dash-step.done {
+  color: var(--ink-3);
+}
+.ax .dash-step-ic {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+.ax .dash-foot {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .dash-rev {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ax .dash-rev > li {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ax .dash-rev-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ax .dash-rev-head > .ell {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+.ax progress.bar.hi::-webkit-progress-value {
+  background: var(--bad);
+}
+.ax progress.bar.hi::-moz-progress-bar {
+  background: var(--bad);
+}
+@media (max-width: 720px) {
+  .ax .dash-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .ax .dash-tile {
+    padding: 12px;
+  }
+  .ax .dash-tile-value {
+    font-size: 22px;
+  }
+  .ax .dash-tasks .dash-hint {
+    text-align: left;
+  }
+  .ax .wk-acts {
+    flex: 1 1 100%;
+  }
+  .ax .wk-acts .btn {
+    min-height: 44px;
+  }
+  .ax .wk-why > summary {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+  }
+}
+/* Nhãn nguồn trong ô số liệu hẹp (hai cột trên điện thoại) được xuống dòng thay vì tràn. */
+.ax .dash-tile-src .badge {
+  max-width: 100%;
+  height: auto;
+  min-height: 22px;
+  padding: 2px 9px;
+  border-radius: 9px;
+  line-height: 1.35;
+  white-space: normal;
+}

@@ -1,0 +1,542 @@
+/* Thư viện media và bộ chọn ảnh (bản thiết kế MediaLibrary). Lớp `md-`, đặt dưới `.ax`. */
+
+.ax .md-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ax .md-drop {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--line-2);
+  border-radius: 12px;
+  background: var(--panel);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.ax .md-drop.over {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.ax .md-drop-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ax .md-drop-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.ax .md-drop-hint-text {
+  color: var(--ink);
+  font-weight: 600;
+}
+.ax .md-ups {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ax .md-up {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+}
+.ax .md-up.failed {
+  border-color: var(--bad);
+}
+.ax .md-up-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ax .md-up-head > .mono {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+}
+.ax .md-up-state {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.ax .md-up.done .md-up-state {
+  color: var(--ok);
+}
+.ax .md-up progress.bar {
+  width: 100%;
+}
+.ax .md-up.failed .md-up-state {
+  color: var(--bad);
+}
+
+/* Bộ lọc */
+.ax .md-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ax .md-search {
+  flex: 1 1 260px;
+  max-width: 340px;
+}
+.ax .md-search .inp {
+  width: 100%;
+}
+.ax .md-chiprow {
+  flex: 1 1 auto;
+  align-items: center;
+}
+.ax .md-menu {
+  position: relative;
+}
+.ax .md-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.ax .md-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.ax .md-menu-pop {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  max-height: 320px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sheet);
+  box-shadow: var(--pop);
+}
+.ax .md-menu-pop > .btn {
+  justify-content: flex-start;
+}
+.ax .md-menu-pop > .btn[aria-checked="true"] {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .md-page .cnt.hot {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.ax .seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--hover);
+}
+.ax .seg > a,
+.ax .seg > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ax .seg > .on {
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(20, 23, 31, 0.14);
+}
+.ax .md-folders {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.ax .md-folders > .md-chiprow {
+  flex: 1 1 auto;
+}
+.ax .chip.md-sub {
+  border-style: solid;
+}
+.ax .md-folder-acts {
+  display: inline-flex;
+  gap: 8px;
+}
+
+/* Lưới và khung chi tiết */
+.ax .md-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+@media (min-width: 1100px) {
+  .ax .md-body.has-pane {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+.ax .md-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.ax .md-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+.ax .md-tile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--ink);
+  overflow: hidden;
+  text-decoration: none;
+  transition:
+    box-shadow 0.18s,
+    border-color 0.18s;
+}
+.ax .md-tile:hover {
+  border-color: var(--line-2);
+}
+.ax .md-tile.sel {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.ax .md-thumb {
+  display: flex;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: var(--hover);
+}
+.ax .md-ph {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.ax .md-ph.k-video {
+  background: #1b1e25;
+  color: #e4e6eb;
+}
+.ax .md-tile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px 12px;
+  min-width: 0;
+}
+.ax .md-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+.ax .md-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax .md-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.ax .md-badges:empty {
+  display: none;
+}
+.ax .md-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ax .md-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 18px 18px;
+  min-width: 0;
+}
+@media (min-width: 1100px) {
+  .ax .md-pane {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+  }
+}
+.ax .md-panehead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 -18px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--sheet);
+}
+.ax .md-preview {
+  display: flex;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--hover);
+  overflow: hidden;
+}
+.ax .md-preview img,
+.ax .md-preview video {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+}
+.ax .md-preview audio {
+  width: 100%;
+  margin: 18px 10px;
+}
+.ax .md-ph.big {
+  display: flex;
+  width: 100%;
+  min-height: 140px;
+}
+.ax .md-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ax .md-filename {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.ax .md-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ax .md-facts dt {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax .md-facts dd {
+  margin: 1px 0 0;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+.ax .md-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ax .md-cap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ax .md-altrow {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ax .md-altlab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ax .md-altlab > .lab {
+  flex: 1 1 auto;
+}
+.ax .md-deco {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ax .md-deco > .check {
+  flex: 1 1 220px;
+}
+.ax .md-fresh {
+  color: var(--accent-ink);
+}
+.ax .md-form .fld {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ax .md-variants {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.ax .md-variants th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.ax .md-variants td,
+.ax .md-variants th {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ax .md-variants .r {
+  text-align: right;
+}
+.ax .md-variants .ok {
+  color: var(--ok);
+}
+.ax .md-url {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ax .md-url > .inp {
+  flex: 1 1 180px;
+  min-width: 0;
+  font-size: 12px;
+}
+.ax .md-paneacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ax .md-paneacts > .inline-form {
+  display: inline-flex;
+}
+
+/* Bộ chọn ảnh của trình soạn */
+.ax .md-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.ax .md-picker .md-grid {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  max-height: min(52vh, 460px);
+  overflow: auto;
+  padding: 2px;
+}
+.ax button.md-tile {
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ax .md-chosen {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.ax .md-chosen > img {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--hover);
+}
+.ax .md-featured {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ax .md-featured img {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--hover);
+}
+
+@media (max-width: 1099px) {
+  .ax .md-body.has-pane .md-pane {
+    position: fixed;
+    z-index: 40;
+    inset: auto 0 0 0;
+    max-height: 86vh;
+    overflow: auto;
+    border-radius: 16px 16px 0 0;
+    box-shadow: var(--pop);
+  }
+}
+@media (max-width: 720px) {
+  .ax .md-drop {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .ax .md-drop-hint {
+    display: none;
+  }
+  .ax .md-chiprow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ax .md-chiprow > * {
+    flex: none;
+  }
+  .ax .md-menu-pop {
+    position: fixed;
+    inset: auto 12px 12px 12px;
+    top: auto;
+  }
+  .ax .md-search {
+    max-width: none;
+  }
+  .ax .md-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .ax .md-paneacts > .btn,
+  .ax .md-paneacts > .inline-form {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
+}
+.ax .axdlg.md-pickdlg {
+  width: min(880px, calc(100vw - 32px));
+  max-width: none;
+}

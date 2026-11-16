@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,12 +15,18 @@ import { type LoginState, submitLogin } from "./actions";
 export function LoginForm({
   next,
   initialStep,
+  workspace,
 }: {
   next: string;
   initialStep: LoginState["step"];
+  /** Khách đã chọn lần trước (cookie); có thì hiện sẵn ô "Không gian làm việc". */
+  workspace?: string | undefined;
 }) {
   const t = useTranslations("login");
-  const [state, action, pending] = useActionState(submitLogin, { step: initialStep });
+  const [state, action, pending] = useActionState(submitLogin, {
+    step: initialStep,
+    ...(workspace ? { askWorkspace: true, workspace } : {}),
+  });
   const mfa = state.step === "mfa";
   return (
     <>
@@ -65,9 +72,27 @@ export function LoginForm({
                   type="password"
                   autoComplete="current-password"
                   required
-                  autoFocus={Boolean(state.email)}
+                  autoFocus={Boolean(state.email) && !state.askWorkspace}
                 />
               </div>
+              {state.askWorkspace ? (
+                <div className="grid gap-1.5">
+                  <Label htmlFor="workspace">{t("workspace")}</Label>
+                  <Input
+                    id="workspace"
+                    name="workspace"
+                    autoComplete="organization"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    defaultValue={state.workspace}
+                    aria-describedby="workspace-hint"
+                    autoFocus={Boolean(state.email)}
+                  />
+                  <p id="workspace-hint" className="text-xs text-muted-foreground">
+                    {t("workspaceHint")}
+                  </p>
+                </div>
+              ) : null}
             </>
           )}
           {state.error && (
@@ -78,6 +103,11 @@ export function LoginForm({
           <Button type="submit" name="intent" value={mfa ? "code" : "password"} disabled={pending}>
             {mfa ? t("verify") : t("submit")}
           </Button>
+          {mfa ? null : (
+            <Link className="text-sm underline" href="/forgot-password">
+              {t("forgot")}
+            </Link>
+          )}
           {mfa && (
             <Button
               type="submit"

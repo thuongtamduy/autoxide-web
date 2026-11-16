@@ -16,3 +16,23 @@ export function secureCookies(): boolean {
   }
   return value === "true" || value === "1";
 }
+
+/**
+ * Dữ liệu mẫu cho phần core chưa có API (W-006). Mặc định bật khi chạy thử, tắt ở production;
+ * `AUTOXIDE_WEB_SAMPLE_DATA=true` / `false` để ép.
+ */
+export function sampleDataSetting(): boolean {
+  const value = process.env.AUTOXIDE_WEB_SAMPLE_DATA;
+  if (value === undefined || value === "") {
+    return process.env.NODE_ENV !== "production";
+  }
+  return value === "true" || value === "1";
+}
+
+/**
+ * Khách (slug hay id) của trang quản trị dành riêng cho một khách, khi core chạy nhiều khách
+ * (`AUTOXIDE_ADMIN_TENANT`). Để trống: người dùng chọn lúc đăng nhập, hoặc core nhận theo tên miền.
+ */
+export function adminTenantSetting(): string {
+  return (process.env.AUTOXIDE_ADMIN_TENANT ?? "").trim();
+}

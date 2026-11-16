@@ -10,9 +10,12 @@ và CON TRỎ.
 
 - Chỉ dùng **REST API công khai** của core, qua `@autoxide/sdk`. Không đọc database của core,
   không gọi endpoint ngoài `openapi.json`.
+- Phần core chưa có API thì dựng bằng **dữ liệu mẫu**, chỉ theo cơ chế của W-006 (`src/sample/`,
+  nhãn `SampleBadge`, biến `AUTOXIDE_WEB_SAMPLE_DATA`). Không thay API có sẵn bằng dữ liệu mẫu.
 - Core là nguồn sự thật: kiểm quyền, kiểm dữ liệu, thông báo lỗi đều do core làm. Giao diện chỉ
   hiện. Thiếu API thì thêm ở core (theo luật của core) trước, rồi sinh lại SDK.
 - Repo công khai: viết mọi thứ với giả định người lạ sẽ đọc. Secret không bao giờ vào git.
+- **Đang ở đâu, làm gì tiếp** → [`docs/NEXT.md`](docs/NEXT.md); nợ của core → [`docs/backend-debt.md`](docs/backend-debt.md).
 
 ## Luật cứng
 
@@ -42,10 +45,11 @@ không bỏ qua test.
 
 ## Bố cục
 
-| Thư mục        | Gói               | Vai                                           |
-| -------------- | ----------------- | --------------------------------------------- |
-| `apps/admin`   | `@autoxide/admin` | Trang quản trị (Next.js App Router)           |
-| `packages/sdk` | `@autoxide/sdk`   | Client + kiểu sinh từ `openapi.json` của core |
+| Thư mục           | Gói                    | Vai                                           |
+| ----------------- | ---------------------- | --------------------------------------------- |
+| `apps/admin`      | `@autoxide/admin`      | Trang quản trị (Next.js App Router)           |
+| `apps/storefront` | `@autoxide/storefront` | Website bán hàng công khai (W-026)            |
+| `packages/sdk`    | `@autoxide/sdk`        | Client + kiểu sinh từ `openapi.json` của core |
 
 Phiên bản thư viện ghim trong `pnpm-lock.yaml`. Thêm thư viện thì ghi lý do vào
 `docs/DECISIONS.md`; vài chục dòng tự viết là đủ thì không thêm.

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { ACCESS_COOKIE, mfaCookie, REFRESH_COOKIE, safeNext, tokenCookies } from "./session";
+import {
+  ACCESS_COOKIE,
+  mfaCookie,
+  PASSKEY_COOKIE,
+  passkeyCookie,
+  REFRESH_COOKIE,
+  SESSION_COOKIE,
+  safeNext,
+  tokenCookies,
+} from "./session";
 
 const tokens = {
   access_token: "a",
@@ -21,6 +30,22 @@ describe("tokenCookies", () => {
     expect(refresh?.options).toMatchObject({ sameSite: "lax", path: "/" });
   });
 
+  it("cookie phiên giữ session_id, hết cùng refresh token", () => {
+    const session = tokenCookies(tokens, true)[2];
+
+    expect(session).toMatchObject({ name: SESSION_COOKIE, value: "s" });
+    expect(session?.options).toMatchObject({ httpOnly: true, secure: true });
+    expect(session?.options.expires?.toISOString()).toBe("2026-12-12T00:00:00.000Z");
+  });
+
+  it("cookie nghi thức passkey sống 5 phút", () => {
+    expect(passkeyCookie("c", false)).toMatchObject({
+      name: PASSKEY_COOKIE,
+      value: "c",
+      options: { httpOnly: true, maxAge: 300 },
+    });
+  });
+
   it("token sắp hết ngay vẫn có cookie ít nhất 1 giây", () => {
     const [access] = tokenCookies({ ...tokens, expires_in: 10 }, false);
 
@@ -38,13 +63,13 @@ describe("safeNext", () => {
   it.each([
     ["/modules/auth", "/modules/auth"],
     ["/modules?x=1", "/modules?x=1"],
-    [undefined, "/modules"],
-    ["", "/modules"],
-    ["https://evil.example", "/modules"],
-    ["//evil.example", "/modules"],
-    ["/\\evil.example", "/modules"],
-    ["/login", "/modules"],
-    [["/a"], "/modules"],
+    [undefined, "/"],
+    ["", "/"],
+    ["https://evil.example", "/"],
+    ["//evil.example", "/"],
+    ["/\\evil.example", "/"],
+    ["/login", "/"],
+    [["/a"], "/"],
   ])("%j → %s", (input, expected) => {
     expect(safeNext(input)).toBe(expected);
   });

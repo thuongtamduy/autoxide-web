@@ -12,6 +12,13 @@ const config: NextConfig = {
   // `@autoxide/sdk` là mã TypeScript, không build trước.
   transpilePackages: ["@autoxide/sdk"],
   poweredByHeader: false,
+  // Màn Module đã dời vào Cài đặt; giữ link cũ (dấu trang, link trong tài liệu) còn mở được.
+  async redirects() {
+    return [
+      { source: "/modules", destination: "/settings/modules", permanent: true },
+      { source: "/modules/:name", destination: "/settings/modules/:name", permanent: true },
+    ];
+  },
 };
 
 export default withNextIntl(config);

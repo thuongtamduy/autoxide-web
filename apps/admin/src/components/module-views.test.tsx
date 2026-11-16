@@ -15,7 +15,9 @@ describe("ModuleTable", () => {
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows).toHaveLength(2);
     const notes = within(rows[1] as HTMLElement);
-    expect(notes.getByRole("link", { name: "notes" }).getAttribute("href")).toBe("/modules/notes");
+    expect(notes.getByRole("link", { name: "notes" }).getAttribute("href")).toBe(
+      "/settings/modules/notes",
+    );
     expect(notes.getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
       "2",
       "notes",

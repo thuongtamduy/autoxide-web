@@ -1,0 +1,1760 @@
+/* Khung quản trị theo bản thiết kế (thanh bên, đầu trang, menu con hai bậc, thanh đáy, bảng lệnh).
+   Lớp đặt dưới `.ax` để không đụng tới component kiểu Tailwind. Số đo lấy từ bản thiết kế:
+   thanh bên 88px (232px từ 1280px, thu gọn được), vùng chạm ≥ 44px trên điện thoại, chữ ≥ 12px. */
+
+.ax {
+  min-height: 100vh;
+  display: flex;
+  align-items: stretch;
+  background: var(--bg);
+  color: var(--ink);
+}
+.ax :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ax .ic {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ax .ic.s {
+  width: 15px;
+  height: 15px;
+}
+.ax .h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.ax .cap {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ax .kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax .cnt {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+/* Khung cuộn ngang giữ cả phần tử `position: absolute` bên trong (như `.vh`): không có `position`, phần tử đó
+   lấy khung chứa ở ngoài khung cuộn và kéo dài cả trang (tràn ngang ở khổ 768). */
+.ax .overflow-x-auto,
+.ax .ptabs,
+.ax .subnav {
+  position: relative;
+}
+.ax .vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Nút (cùng kiểu bản thiết kế) */
+.ax .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ax .btn:hover {
+  background: var(--hover);
+}
+.ax .btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+}
+.ax .btn.ghost:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.ax .btn.sq {
+  width: 40px;
+  padding: 0;
+}
+
+/* Thanh bên */
+.ax .rail {
+  position: sticky;
+  top: 0;
+  flex: 0 0 88px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
+  overflow: hidden;
+}
+.ax .rail-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 14px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.ax .rail-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #1f2430;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.ax .rail-name {
+  display: none;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.ax .rail-mid {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.ax .ri {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ax .ri:hover {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--ink);
+}
+.ax .ri.on {
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 1px 2px rgba(16, 24, 40, 0.05);
+}
+.ax .ri.on .ic {
+  color: var(--accent);
+}
+.ax .rail-toggle {
+  display: none;
+}
+.ax .railmini {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.ax .rail-toggle .t-mini {
+  display: none;
+}
+.ax:has(.railmini:checked) .rail-toggle .t-full {
+  display: none;
+}
+.ax:has(.railmini:checked) .rail-toggle .t-mini {
+  display: inline;
+}
+.ax:has(.railmini:checked) .rail-toggle .ic {
+  transform: rotate(180deg);
+}
+.ax .rail-toggle:has(.railmini:focus-visible) {
+  outline: 2px solid var(--accent);
+}
+@media (min-width: 1280px) {
+  .ax .rail-toggle {
+    display: flex;
+  }
+  .ax:not(:has(.railmini:checked)) .rail {
+    flex-basis: 232px;
+    padding: 14px 12px;
+  }
+  .ax:not(:has(.railmini:checked)) .rail-logo {
+    justify-content: flex-start;
+    padding: 2px 8px 18px;
+  }
+  .ax:not(:has(.railmini:checked)) .rail-name {
+    display: inline;
+  }
+  .ax:not(:has(.railmini:checked)) .ri {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    text-align: left;
+  }
+}
+@media (min-width: 721px) and (max-height: 760px) {
+  .ax .ri {
+    min-height: 44px;
+    gap: 2px;
+  }
+}
+
+/* Khung nội dung */
+.ax .frame {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 8px;
+  display: flex;
+  flex-direction: column;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.ax .topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px 12px;
+  min-height: 60px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.ax .ctx {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 280px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.ax .tav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #1f2430;
+  color: #f2f3f6;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ax .ell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ax .searchbtn {
+  flex: 0 1 300px;
+  justify-content: flex-start;
+  margin-left: auto;
+  background: var(--panel);
+  color: var(--ink-3);
+  font-weight: 400;
+}
+.ax .avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #b4531e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ax .content {
+  flex: 1;
+  width: 100%;
+  padding: 24px 24px 48px;
+}
+
+/* Menu con của phân hệ (bậc 1: các màn) và tab của màn (bậc 2) */
+.ax .subnav,
+.ax .ptabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.ax .subnav {
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.ax .ptabs {
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.ax .gname {
+  flex: none;
+  margin-right: 8px;
+  padding: 0 14px 0 4px;
+  border-right: 1px solid var(--line-2);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ax .stab {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ax .stab:hover {
+  color: var(--ink);
+}
+.ax .stab.on {
+  color: var(--ink);
+  font-weight: 600;
+}
+.ax .stab.on::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* Thanh đáy điện thoại */
+.ax .bottombar {
+  display: none;
+}
+
+/* Bảng lệnh (Ctrl K), bảng "Phân hệ" và menu tài khoản */
+.ax .axsheet {
+  position: fixed;
+  inset: 10vh 0 auto 0;
+  margin: 0 auto;
+  width: min(560px, calc(100vw - 32px));
+  max-height: 76vh;
+  padding: 0 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--pop);
+  overflow-y: auto;
+}
+.ax .axsheet:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ax .axsheet::backdrop {
+  background: var(--scrim);
+}
+.ax .sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--sheet);
+}
+.ax .qs-in {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--sheet);
+}
+.ax .qs-in input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 16px;
+  outline: none;
+}
+.ax .qs-list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px 0;
+}
+.ax .qs-it {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.ax .qs-it:hover,
+.ax .qs-it[aria-selected="true"] {
+  background: var(--hover);
+}
+.ax .qs-dim {
+  color: var(--ink-3);
+}
+.ax .qs-none {
+  padding: 14px 10px;
+  color: var(--ink-3);
+}
+.ax .mods-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 12px 0;
+}
+.ax .mod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 76px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+}
+.ax .mod:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.ax .mod.on {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .sheet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 16px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ax .sheet-foot > * {
+  flex: 1 1 140px;
+}
+.ax .menu {
+  position: fixed;
+  inset: 64px 16px auto auto;
+  margin: 0;
+  width: 280px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--pop);
+}
+.ax .menu:popover-open {
+  display: flex;
+  flex-direction: column;
+}
+.ax .menu-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 10px 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+.ax .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ax .menu-item:hover {
+  background: var(--hover);
+}
+
+/* Điện thoại: thanh bên thành thanh đáy; bảng thành tấm từ đáy */
+@media (max-width: 720px) {
+  .ax {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  .ax .rail,
+  .ax .hide-mobile {
+    display: none;
+  }
+  .ax .frame {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+  .ax .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--sheet);
+  }
+  .ax .ctx {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+  .ax .searchbtn {
+    flex: none;
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+    margin-left: 0;
+    background: none;
+    border-color: transparent;
+  }
+  .ax .content {
+    padding: 20px 16px 32px;
+  }
+  .ax .bottombar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 18;
+    display: flex;
+    justify-content: space-around;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--sheet) 86%, transparent);
+    backdrop-filter: saturate(1.6) blur(16px);
+  }
+  .ax .bottombar a,
+  .ax .bottombar button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 64px;
+    min-height: 48px;
+    padding: 4px;
+    border: 0;
+    background: none;
+    color: var(--ink-3);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .ax .bottombar .on {
+    color: var(--ink);
+  }
+  .ax .bottombar .on .ic {
+    color: var(--accent);
+  }
+  .ax .axsheet {
+    inset: auto 0 0 0;
+    width: 100%;
+    max-height: 86vh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+  .ax .menu {
+    inset: auto 0 0 0;
+    width: 100%;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  .ax .menu-item {
+    min-height: 48px;
+  }
+}
+
+/* Khung nội dung không bị bảng rộng kéo giãn; bảng tự cuộn trong khung của nó */
+.ax .content,
+.ax .content > * {
+  min-width: 0;
+}
+
+/* Bảng thành thẻ trên điện thoại: dòng tiêu đề, rồi các ô kèm nhãn cột xếp lưới 2 cột */
+@media (max-width: 720px) {
+  .rtable thead {
+    display: none;
+  }
+  .rtable,
+  .rtable tbody {
+    display: block;
+  }
+  .rtable tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .rtable td {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+  .rtable td[data-label]::before {
+    content: attr(data-label);
+    color: var(--ink-3);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .rtable td.rt-title {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+}
+
+/* Đầu trang của màn: dòng phạm vi, h1, mô tả; nút ở phải cùng trên máy tính, đứng đầu trên điện thoại */
+.ax .page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.ax .phead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 14px;
+}
+.ax .phead-main {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ax .crumb {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.ax .pdesc {
+  margin: 0;
+  max-width: 780px;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.ax .headacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ax .page > .ptabs {
+  margin-bottom: 0;
+}
+
+.ax .h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+/* Khối nội dung: cả hàng, hoặc nửa hàng (tự xuống dòng khi hẹp) */
+.ax .blocks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 18px;
+}
+.ax .block {
+  flex: 1 1 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ax .block.half {
+  flex: 1 1 420px;
+}
+.ax .block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ax .block-head > .h2 {
+  flex: 1 1 auto;
+}
+.ax .card {
+  margin: 0;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.ax .card.list {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+}
+.ax .card.tcard {
+  overflow: hidden;
+}
+.ax .card.kv {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+}
+.ax .card.kv dt {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .card.kv dd {
+  margin: 2px 0 0;
+}
+.ax .empty {
+  margin: 0;
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--ink-3);
+}
+.ax .item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px 10px;
+  border-radius: 10px;
+}
+.ax .item + .item {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+.ax .item-main {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ax .item-title {
+  font-weight: 500;
+}
+.ax .item-meta {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+.ax .item-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ax .sq-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--hover);
+  color: var(--ink-2);
+}
+.ax .sq-ic.ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.ax .sq-ic.warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.ax .sq-ic.bad {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+.ax .sq-ic.info {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .mono {
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+.ax .cell2 {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  max-width: 420px;
+}
+.ax .cell2 .sub {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax td.rt-acts {
+  text-align: right;
+  vertical-align: middle;
+}
+.ax .pager {
+  display: flex;
+  gap: 8px;
+}
+
+/* Nhãn trạng thái */
+.ax .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ax .dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.ax .b-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.ax .b-ok .dot {
+  background: var(--ok);
+}
+.ax .b-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.ax .b-warn .dot {
+  background: var(--warn);
+}
+.ax .b-info {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .b-info .dot {
+  background: var(--accent);
+}
+.ax .b-draft .dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+
+/* Nút: chính, nguy hiểm, nhỏ */
+.ax .btn.pri {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.ax .btn.pri:hover {
+  background: var(--accent-h);
+  border-color: var(--accent-h);
+}
+.ax .btn.danger {
+  color: var(--bad);
+}
+.ax .btn.danger:hover {
+  background: var(--bad-bg);
+  border-color: transparent;
+}
+.ax .btn.danger-solid {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: var(--sheet);
+}
+.ax .btn.danger-solid:hover {
+  background: color-mix(in srgb, var(--bad) 88%, var(--ink));
+}
+.ax .btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+.ax .btn.sm {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  gap: 6px;
+}
+.ax .btn[hidden] {
+  display: none;
+}
+
+/* Biểu mẫu: nhãn, ô, gợi ý, lỗi dưới ô, câu báo chung */
+.ax .fld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ax .lab {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.ax .inp {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 14px;
+}
+.ax .inp:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.ax .inp[aria-invalid="true"] {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 18%, transparent);
+}
+.ax .fhint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+.ax .fhint:empty {
+  display: none;
+}
+.ax .ferr {
+  color: var(--bad);
+  font-size: 13px;
+}
+.ax .ferr::before {
+  content: "! ";
+  font-weight: 700;
+}
+.ax .falert {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bad-bg);
+  color: var(--bad);
+  font-size: 13px;
+}
+.ax .note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: 13.5px;
+  text-wrap: pretty;
+}
+.ax .note.warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.ax .inline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
+}
+
+/* Hộp thoại (<dialog>): giữa màn hình trên máy tính, tấm từ đáy trên điện thoại */
+.ax .axdlg {
+  width: min(560px, calc(100vw - 32px));
+  max-height: 84vh;
+  margin: 8vh auto auto;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--pop);
+  overflow-y: auto;
+}
+.ax .axdlg[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ax .axdlg::backdrop {
+  background: var(--scrim);
+}
+.ax .dlg-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ax .dlg-head > .h2 {
+  flex: 1;
+  font-size: 17px;
+}
+.ax .dlg-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.ax .dlg-intro p {
+  margin: 0;
+}
+.ax .dlg-list {
+  margin: 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+.ax .dlg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ax .dlg-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ax .qr {
+  width: 200px;
+  height: 200px;
+  align-self: center;
+  border-radius: 8px;
+}
+.ax .secret {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.ax .codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12em, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+  padding: 12px 14px 12px 40px;
+  list-style: decimal;
+  white-space: nowrap;
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 14px;
+}
+
+/* Thông báo nổi sau một thao tác */
+.ax .toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 24px;
+  z-index: 30;
+  width: max-content;
+  max-width: min(560px, calc(100% - 32px));
+  margin: 0 auto;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: #14171f;
+  color: #f2f3f6;
+  font-size: 14px;
+  box-shadow: var(--pop);
+}
+.ax .toast[data-open] {
+  display: flex;
+}
+.ax .toast-ok {
+  display: inline-flex;
+  color: #4ade80;
+}
+.ax .toast-undo {
+  min-height: 36px;
+  margin-left: 4px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f2f3f6;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ax .toast-undo:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Màn Người dùng và role: tìm, chip lọc, thẻ role, nhãn dữ liệu mẫu */
+.ax .b-arch {
+  background: transparent;
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.ax .b-arch .dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+/* Dữ liệu mẫu (W-006): viền gạch, màu cảnh báo, để không lẫn với dữ liệu thật */
+.ax .b-sample {
+  background: transparent;
+  color: var(--warn);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 55%, transparent);
+  border: 1px dashed transparent;
+  cursor: help;
+}
+.ax .searchrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ax .searchrow > .inp {
+  flex: 1 1 240px;
+  max-width: 420px;
+}
+.ax a.open {
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+.ax a.open:hover {
+  text-decoration-color: var(--accent);
+}
+.ax .muted {
+  color: var(--ink-3);
+}
+.ax .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ax .tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--hover);
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.ax .back {
+  flex: 1 1 100%;
+}
+.ax .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ax .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px dashed var(--line-2);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.ax .chip:hover {
+  border-style: solid;
+  background: var(--hover);
+  color: var(--ink);
+}
+.ax .chip.on {
+  border: 1px solid transparent;
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .cell2 > .badge {
+  align-self: flex-start;
+}
+.ax tr[data-current] > td {
+  background: var(--hover);
+}
+.ax .row-acts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ax .card.padded {
+  padding: 16px 18px;
+}
+.ax .fld-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ax .fld-row > .fld {
+  flex: 1 1 140px;
+}
+.ax .inp.area {
+  height: auto;
+  min-height: 80px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.ax select.inp {
+  appearance: auto;
+}
+.ax .visits {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.ax .visits summary {
+  cursor: pointer;
+  color: var(--accent-ink);
+}
+.ax .visits ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+/* Danh sách ô chọn (role của người dùng, permission của role) */
+.ax .checks {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+}
+.ax .checks.plain {
+  padding: 0;
+  border: 0;
+  gap: 2px;
+}
+.ax .checks fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ax .checks-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 10px 4px;
+  float: left;
+  width: 100%;
+}
+.ax .checks-head + * {
+  clear: both;
+}
+.ax .check-group {
+  font-weight: 600;
+}
+.ax .picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+  align-items: start;
+  gap: 12px;
+}
+.ax .picker > .checks {
+  position: relative;
+}
+.ax .picker .checks-head {
+  padding-right: 150px;
+}
+.ax .checks-all {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+}
+.ax .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.ax .check:hover {
+  background: var(--hover);
+}
+.ax .check[hidden] {
+  display: none;
+}
+.ax .check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+.ax .check-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ax .check-name {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ax .perm-risk {
+  margin-inline-start: 8px;
+  font-family: var(--font-sans, inherit);
+  vertical-align: 1px;
+}
+.ax .check-desc {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+.ax .checks-foot,
+.ax .role-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px;
+}
+.ax .checks-foot > .falert,
+.ax .role-foot > .falert {
+  flex: 1 1 240px;
+}
+.ax .role-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ax .role-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 16px 18px;
+}
+.ax .role-meta > .fld {
+  flex: 1 1 280px;
+}
+.ax .picker-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+.ax .picker-head > .h2 {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 720px) {
+  .ax .headacts {
+    width: 100%;
+  }
+  .ax .headacts > .btn {
+    flex: 1 1 auto;
+  }
+  .ax .btn.sm {
+    min-height: 44px;
+  }
+  .ax .item-acts {
+    width: 100%;
+  }
+  .ax .inline-form {
+    max-width: none;
+  }
+  .ax .axdlg {
+    width: 100%;
+    max-width: none;
+    max-height: 88vh;
+    margin: auto 0 0;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  .ax .dlg-acts > .btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+  .ax .toast {
+    bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+  .rtable td.rt-acts {
+    grid-column: 1 / -1;
+  }
+  .rtable td.rt-acts:empty {
+    display: none;
+  }
+  .rtable td > .badge {
+    align-self: flex-start;
+  }
+  .ax .searchrow > .inp {
+    max-width: none;
+  }
+  .ax .searchrow > .btn,
+  .ax .chip {
+    min-height: 44px;
+  }
+  .ax .row-acts {
+    justify-content: flex-start;
+  }
+}
+
+/* Nhóm Cài đặt: số liệu, thanh mức dùng, bộ lọc, dòng thời gian, khối mã */
+.ax .b-bad {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+.ax .b-bad .dot {
+  background: var(--bad);
+}
+.ax .blocks > .note {
+  flex: 1 1 100%;
+}
+.ax .kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.ax .kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+}
+.ax .kpi-label,
+.ax .kpi-sub {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .kpi-value {
+  font-size: 22px;
+  font-weight: 600;
+}
+.ax .meters {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ax .meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ax .meter-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+}
+.ax progress.bar {
+  width: 100%;
+  min-width: 120px;
+  height: 6px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--hover);
+  overflow: hidden;
+}
+.ax progress.bar::-webkit-progress-bar {
+  background: var(--hover);
+  border-radius: 999px;
+}
+.ax progress.bar::-webkit-progress-value {
+  background: var(--ink-2);
+  border-radius: 999px;
+}
+.ax progress.bar::-moz-progress-bar {
+  background: var(--ink-2);
+  border-radius: 999px;
+}
+.ax .filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+}
+.ax .filters > .fld {
+  flex: 1 1 180px;
+  max-width: 280px;
+}
+.ax .filters > .fld.grow {
+  max-width: none;
+}
+.ax .filters-acts,
+.ax .inline-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+.ax .row-acts.start {
+  justify-content: flex-start;
+}
+.ax pre.json {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ax code.txt {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ax .sub-id {
+  display: inline-block;
+  max-width: 280px;
+  font-size: 12.5px;
+}
+.ax .copy {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ax .steps {
+  margin: 0;
+  padding-left: 20px;
+  list-style: decimal;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13.5px;
+}
+.ax .due {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--warn);
+}
+.ax .due.bad {
+  color: var(--bad);
+}
+.ax .timeline {
+  margin: 0;
+  padding: 0 0 0 18px;
+  list-style: none;
+  border-left: 2px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ax .timeline > li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13.5px;
+}
+.ax .timeline > li::before {
+  content: "";
+  position: absolute;
+  left: -25px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sheet);
+  box-shadow: inset 0 0 0 2px var(--ink-3);
+}
+.ax .timeline > li:first-child::before {
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+.ax .timeline .sub {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+@media (max-width: 720px) {
+  .ax .filters > .fld {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .ax .filters-acts > .btn,
+  .ax .inline-row > .btn,
+  .ax .row-acts > .btn,
+  .ax .copy > .btn {
+    min-height: 44px;
+  }
+  .ax .sub-id {
+    max-width: 100%;
+  }
+}
+.ax .event-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+.ax .event-groups[hidden],
+.ax .event-group[hidden] {
+  display: none;
+}
+.ax .event-group summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.ax .event-group summary:hover {
+  background: var(--hover);
+}
+
+/* Số việc đang chờ trên menu (W-020): số cạnh tên màn, chấm cạnh phân hệ có việc */
+.ax .cnt.hot {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .ri .pip,
+.ax .mod .pip {
+  position: absolute;
+  top: 7px;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.ax .mod {
+  position: relative;
+}
+@media (min-width: 1280px) {
+  .ax:not(:has(.railmini:checked)) .ri .pip {
+    position: static;
+    margin-left: auto;
+    box-shadow: none;
+  }
+}
+
+/* Chọn một trong vài cách (vd cách xác nhận lại khi tạo API key): nút radio dạng phân đoạn */
+.ax .rseg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--panel);
+  gap: 2px;
+}
+.ax .rseg label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.ax .rseg label:has(input:checked) {
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(20, 23, 31, 0.12);
+}
+.ax .rseg input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.ax .rseg label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
