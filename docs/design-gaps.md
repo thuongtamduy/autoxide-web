@@ -77,7 +77,8 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 
 ## Website bán hàng (toàn bộ là mẫu, trừ ghi khác)
 
-- [ ] Tài khoản người mua: thêm Tranh chấp (bằng chứng, rút), Bảo hành, Tải hàng số, Đăng nhập và bảo mật — L
+- [x] Tài khoản người mua: thêm Tải hàng số, Bảo hành, Tranh chấp (bằng chứng, nhờ sàn, rút), Đăng nhập và bảo mật — mẫu (16/11, W-044)
+- [ ] Tài khoản › Bảo mật: đổi số điện thoại, thêm passkey cho người mua — chờ bước 47
 - [ ] Tài khoản: hộp Đánh giá đơn, Mua lại, Đã nhận hàng, tải hoá đơn, nhắn người bán; đổi trả 3 bước có ảnh — M–L
 - [ ] Thanh toán: mã người tiếp thị; trả góp qua công ty tài chính; giỏ chỉ có hàng số — M mỗi việc
 - [ ] Trang đặt xong và tra cứu đơn: tạo tài khoản tại chỗ bằng mã 6 số; tra cứu: huỷ đơn chưa giao — S–M

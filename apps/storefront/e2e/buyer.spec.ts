@@ -278,6 +278,10 @@ for (const width of [360, 390, 768, 1024, 1440]) {
       "/tai-khoan?muc=diem",
       "/tai-khoan?muc=dia-chi",
       "/tai-khoan?muc=quyen-rieng-tu",
+      "/tai-khoan?muc=tai-hang-so",
+      "/tai-khoan?muc=bao-hanh",
+      "/tai-khoan?muc=tranh-chap",
+      "/tai-khoan?muc=bao-mat",
       "/nguoi-ban/gom-su-bat-trang-xua?tab=danh-gia",
     ]) {
       await page.goto(path);
@@ -295,3 +299,66 @@ for (const width of [360, 390, 768, 1024, 1440]) {
     await expectMoneyOnOneLine(page);
   });
 }
+
+test("tài khoản: tải hàng số, bảo hành, tranh chấp, đăng nhập và bảo mật (mẫu)", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([{ name: "sf_buyer", value: "sample", url: BASE }]);
+  await page.goto("/tai-khoan");
+  const nav = page.getByRole("navigation", { name: "Mục tài khoản" });
+  await expect(nav.getByRole("link")).toHaveCount(9);
+
+  // Tải hàng số: mỗi lần tải trừ một lượt; hết lượt thì nút khoá.
+  await nav.getByRole("link", { name: "Tải hàng số" }).click();
+  const video = page.getByTestId("dl-v1");
+  await expect(video).toContainText("Còn 2 lượt");
+  await video.getByRole("button", { name: "Tải xuống" }).click();
+  await expect(video).toContainText("Còn 1 lượt");
+  await video.getByRole("button", { name: "Tải xuống" }).click();
+  await expect(video).toContainText("Hết lượt");
+  await expect(video.getByRole("button", { name: "Tải xuống" })).toBeDisabled();
+  const pdf = page.getByTestId("dl-pdf");
+  await pdf.getByRole("button", { name: "Gửi lại email" }).click();
+  await expect(pdf.getByRole("status")).toContainText("link trong email cũ hết hiệu lực");
+
+  // Bảo hành: món hết hạn không có nút; gửi thiếu mô tả thì báo lỗi, đủ thì ghi nhận.
+  await nav.getByRole("link", { name: "Bảo hành" }).click();
+  await expect(page.getByTestId("wr-dao-3-mon")).toContainText("Hết hạn");
+  await expect(page.getByTestId("wr-dao-3-mon").getByRole("button")).toHaveCount(0);
+  const pan = page.getByTestId("wr-chao-gang-26");
+  await pan.getByRole("button", { name: "Yêu cầu bảo hành" }).click();
+  await pan.getByRole("button", { name: "Gửi yêu cầu" }).click();
+  await expect(pan.getByText("Mô tả lỗi ít nhất 10 ký tự.")).toBeVisible();
+  await pan.getByLabel("Món hàng bị gì?").fill("Chảo nứt ở đáy sau 3 tuần dùng.");
+  await pan.getByRole("button", { name: "Gửi yêu cầu" }).click();
+  await expect(pan.getByRole("status")).toContainText("Đã gửi yêu cầu lúc");
+
+  // Tranh chấp: gửi trống thì báo; gửi lời thì hiện trong luồng; nhờ sàn phân xử; rút.
+  await nav.getByRole("link", { name: "Tranh chấp" }).click();
+  const dispute = page.getByTestId("dispute");
+  await expect(page.getByTestId("dispute-status")).toHaveText("Người bán đã trả lời");
+  await expect(dispute).toContainText("đang ở đối tác thu hộ có giấy phép");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(
+    page.getByText("Hãy viết vài dòng hoặc thêm ít nhất một ảnh trước khi gửi."),
+  ).toBeVisible();
+  await page.getByLabel("Lời nhắn").fill("Gửi thêm video đổ nước vào bát thứ hai.");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(page.locator(".acx-thread")).toContainText(
+    "Gửi thêm video đổ nước vào bát thứ hai.",
+  );
+  await dispute.getByRole("button", { name: "Chưa đồng ý, nhờ sàn phân xử" }).click();
+  await expect(page.getByTestId("dispute-status")).toHaveText("Sàn đang phân xử");
+  await expect(page.locator(".acx-thread")).toContainText("Đã nhận yêu cầu phân xử");
+  await dispute.getByRole("button", { name: "Rút tranh chấp" }).click();
+  await expect(page.getByTestId("dispute-status")).toHaveText("Bạn đã rút");
+  await expect(page.getByLabel("Lời nhắn")).toHaveCount(0);
+
+  // Bảo mật: đăng xuất nơi khác.
+  await nav.getByRole("link", { name: "Đăng nhập, bảo mật" }).click();
+  const devices = page.getByTestId("devices");
+  await expect(devices).toContainText("2 thiết bị");
+  await devices.getByRole("button", { name: "Đăng xuất nơi khác" }).click();
+  await expect(devices).toContainText("Chỉ trình duyệt này");
+});

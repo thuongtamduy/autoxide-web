@@ -1740,3 +1740,81 @@
     margin-left: auto;
   }
 }
+
+/* Tài khoản: tranh chấp (mốc, thông tin, thao tác, lời hai bên) */
+.sp .acx-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+.sp .acx-steps > li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 8px;
+  border-top: 3px solid var(--line);
+  font-size: 13.5px;
+}
+.sp .acx-steps > li[data-state="done"] {
+  border-top-color: var(--brand);
+}
+.sp .acx-steps > li[data-state="now"] {
+  border-top-color: var(--warn);
+}
+.sp .acx-facts {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 6px 14px;
+  margin: 0;
+  font-size: 14px;
+}
+.sp .acx-facts dt {
+  color: var(--ink-3);
+}
+.sp .acx-facts dd {
+  margin: 0;
+}
+.sp .acx-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sp .acx-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 8px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.sp .acx-thread > li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.sp .acx-thread-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+.sp .acx-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.sp .acx-photos > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

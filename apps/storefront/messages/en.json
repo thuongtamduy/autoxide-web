@@ -680,7 +680,13 @@
     "otp_or_order_invalid": "The code is not right, or the order number and phone do not match. {left, plural, one {# try} other {# tries}} left.",
     "seller_kind_required": "Choose whether you are a company, a household business or an individual.",
     "category_required": "Enter your main product category.",
-    "consent_required": "Agree that we use this information to review your application."
+    "consent_required": "Agree that we use this information to review your application.",
+    "warranty_not_found": "This product has no valid warranty.",
+    "warranty_note_short": "Describe the problem in at least {min} characters.",
+    "dispute_closed": "This dispute is closed.",
+    "evidence_required": "Write a few words or add at least one photo.",
+    "evidence_too_long": "Keep the message under {max} characters.",
+    "evidence_too_many_photos": "Add at most {max} photos at a time."
   },
   "help": {
     "open": "Need help?",
@@ -989,7 +995,11 @@
       "saved": "Saved",
       "points": "Points and tier",
       "addresses": "Address book",
-      "privacy": "Privacy"
+      "privacy": "Privacy",
+      "downloads": "Digital downloads",
+      "warranty": "Warranty",
+      "disputes": "Disputes",
+      "security": "Sign-in and security"
     },
     "tier": {
       "member": "Member",
@@ -1150,6 +1160,118 @@
       "deleteCancel": "Never mind",
       "deleteScheduled": "Account deletion scheduled (sample: nothing is deleted).",
       "legal": "Basis: the 2025 Personal Data Protection Law and Decree 13/2023/ND-CP on data subject rights — check the original texts / a legal professional."
+    },
+    "downloads": {
+      "empty": "No digital products yet. Ebooks and courses you buy appear here with their download links.",
+      "count": "{count, plural, one {# file} other {# files}}",
+      "from": "from order {order}",
+      "note": "Each file can be downloaded 5 times until {until} (30 days after payment). “Download” makes a private link that works for 5 minutes and uses one download; if the connection drops, the same link resumes without using another. Do not share the link: anyone who has it can download and use up your downloads.",
+      "left": "{left} of 5 downloads left · until {until}",
+      "usedUp": "all 5 downloads used · if a file is broken, ask the shop for a new one",
+      "badgeLeft": "{left, plural, one {# left} other {# left}}",
+      "badgeNone": "None left",
+      "download": "Download",
+      "resend": "Email the link again",
+      "resent": "A new link was emailed; the link in the older email no longer works. Your downloads left stay the same."
+    },
+    "warranty": {
+      "empty": "No warranty yet. Products with a warranty appear here after delivery.",
+      "note": "The warranty starts on the delivery date. Keep the product; the order number is your proof of purchase.",
+      "months": "{months}-month warranty",
+      "from": "from order {order}",
+      "until": "valid until {until}",
+      "ended": "ended {until}",
+      "active": "Valid",
+      "expired": "Expired",
+      "claim": "Request warranty service",
+      "claimTitle": "Warranty request: {name}",
+      "claimNote": "What is wrong with it?",
+      "claimAfter": "The shop answers within 2 working days with how to send it: bring it to a store or post it.",
+      "claimSend": "Send request",
+      "claimCancel": "Cancel",
+      "claimed": "Request sent {at}. The shop answers within 2 working days."
+    },
+    "disputes": {
+      "empty": "No disputes. If a marketplace order goes wrong and the seller does not help, you can open a dispute from the order.",
+      "about": "Order {order} · {seller}",
+      "status": {
+        "seller_responded": "Seller answered",
+        "escalated": "Marketplace is deciding",
+        "resolved": "Resolved",
+        "withdrawn": "You withdrew it"
+      },
+      "due": {
+        "seller_responded": "The seller answered within 48 hours. Accept their offer, or ask the marketplace to decide.",
+        "escalated": "The marketplace decides by {by}. You and the seller can add evidence until then.",
+        "resolved": "Closed with a {amount} refund to the card you paid with, within 1–3 working days.",
+        "withdrawn": "You withdrew the dispute. The order completes after its return period as usual."
+      },
+      "steps": {
+        "opened": "You opened the dispute",
+        "responded": "Seller answered",
+        "respondedWhen": "{at} (deadline {by})",
+        "platform": "Marketplace decides",
+        "platformIfAsked": "Only if you do not accept · decided within 7 days",
+        "platformBy": "Decides by {by}",
+        "platformDecided": "Decided",
+        "notNeeded": "Not needed",
+        "result": "Result",
+        "refunded": "{amount} refunded to your card",
+        "withdrawn": "Withdrawn",
+        "none": "Not yet"
+      },
+      "facts": {
+        "reason": "Reason",
+        "reasonValue": "Broken or cracked on arrival",
+        "asked": "You asked for",
+        "askedValue": "{amount} back (2 of 6 bowls)",
+        "offered": "Seller offers",
+        "offeredValue": "{amount} back (1 bowl)",
+        "money": "Order money",
+        "held": "{amount} is held by the licensed payment partner, not yet paid to the seller",
+        "split": "{amount} back to you; the rest goes to the seller",
+        "released": "{amount} goes to the seller"
+      },
+      "actions": {
+        "accept_offer": "Accept {amount} refund",
+        "escalate": "Do not accept, ask the marketplace",
+        "withdraw": "Withdraw dispute",
+        "platform_decides": "See the marketplace's decision (sample)"
+      },
+      "held": "The money for this order is with a licensed payment partner, not with the marketplace, and goes to the seller only when the dispute closes. Refunds go back to how you paid. One open dispute per order.",
+      "who": {
+        "buyer": "You",
+        "seller": "{seller} (seller)",
+        "platform": "Marketplace"
+      },
+      "thread": "Photos and messages from both sides",
+      "threadNote": "You, the seller and the marketplace all see every message here. Messages cannot be edited or deleted after sending.",
+      "photos": "Photos",
+      "photosOnly": "(photos only)",
+      "addTitle": "Add evidence",
+      "addBody": "Message",
+      "addPhotos": "Photos or a video (up to {max})",
+      "photosHint": "Sample: only the file names are kept; the photos themselves are not uploaded yet.",
+      "addSend": "Send",
+      "sent": "Sent. The seller and the marketplace see it right away.",
+      "closed": "This dispute is closed; no more messages can be added."
+    },
+    "security": {
+      "note": "Buyers sign in with a one-time code sent to their phone.",
+      "phone": "Phone number {phone}",
+      "phoneWhy": "Needed to post reviews and comments (Decree 147/2024)",
+      "verified": "Verified",
+      "passkey": "Passkey",
+      "passkeyWhy": "Sign in with your fingerprint or face, without a code",
+      "comingSoon": "Coming soon",
+      "password": "Password",
+      "passwordWhy": "Not needed: you sign in with a code sent to your phone",
+      "none": "None",
+      "devices": "Signed-in devices",
+      "devicesList": "This browser · a computer in Ho Chi Minh City, 3 days ago",
+      "devicesThis": "Only this browser",
+      "deviceCount": "{count, plural, one {# device} other {# devices}}",
+      "signOutOthers": "Sign out other devices"
     }
   },
   "seller": {

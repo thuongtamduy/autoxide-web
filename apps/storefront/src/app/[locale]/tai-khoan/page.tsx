@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { AddToCart } from "@/components/add-to-cart";
 import { AccountGate } from "@/components/buyer/account-gate";
+import {
+  DisputesSection,
+  DownloadsSection,
+  SecuritySection,
+  WarrantySection,
+} from "@/components/buyer/account-more";
 import { AddressBook } from "@/components/buyer/address-book";
 import { CopyButton } from "@/components/buyer/copy-button";
 import { formatDateTime } from "@/components/buyer/day-range";
@@ -38,24 +44,43 @@ import { type BuyerOrder, cancellable, returnWindow } from "@/sample/orders";
 import { readStore } from "@/sample/server";
 
 // Tài khoản người mua (bản thiết kế `Account`): chưa đăng nhập thì form đăng nhập / tạo tài khoản bằng
-// số điện thoại + OTP; đã đăng nhập thì các mục đơn hàng (mốc giao, vận đơn, huỷ, đổi trả), đã lưu,
-// điểm và hạng, sổ địa chỉ, quyền riêng tư. Mục chọn bằng `?muc=` (link thật, quay lại được, không cần
+// số điện thoại + OTP; đã đăng nhập thì chín mục: đơn hàng (mốc giao, vận đơn, huỷ, đổi trả), tải hàng
+// số, đã lưu, điểm và hạng, bảo hành, tranh chấp, sổ địa chỉ, đăng nhập và bảo mật, quyền riêng tư. Mục chọn bằng `?muc=` (link thật, quay lại được, không cần
 // JavaScript). Toàn bộ là mẫu (W-030); endpoint thay thế ghi ở `src/sample/account.ts`, `orders.ts`.
 
-const SECTIONS = ["don-hang", "da-luu", "diem", "dia-chi", "quyen-rieng-tu"] as const;
+// Thứ tự mục như bản thiết kế `Account`.
+const SECTIONS = [
+  "don-hang",
+  "tai-hang-so",
+  "da-luu",
+  "diem",
+  "bao-hanh",
+  "tranh-chap",
+  "dia-chi",
+  "bao-mat",
+  "quyen-rieng-tu",
+] as const;
 type Section = (typeof SECTIONS)[number];
 const SECTION_ICON: Record<Section, IconName> = {
   "don-hang": "bag",
+  "tai-hang-so": "doc",
   "da-luu": "heart",
   diem: "gift",
+  "bao-hanh": "shield",
+  "tranh-chap": "flag",
   "dia-chi": "pin",
+  "bao-mat": "lock",
   "quyen-rieng-tu": "shield",
 };
 const SECTION_KEY: Record<Section, string> = {
   "don-hang": "orders",
+  "tai-hang-so": "downloads",
   "da-luu": "saved",
   diem: "points",
+  "bao-hanh": "warranty",
+  "tranh-chap": "disputes",
   "dia-chi": "addresses",
+  "bao-mat": "security",
   "quyen-rieng-tu": "privacy",
 };
 
@@ -131,6 +156,14 @@ export default async function AccountPage(props: PageProps<"/[locale]/tai-khoan"
             <SavedSection locale={locale} />
           ) : section === "diem" ? (
             <PointsSection buyer={buyer} locale={locale} siteName={site.name} />
+          ) : section === "tai-hang-so" ? (
+            <DownloadsSection locale={locale} owner={buyer.kind === "sample"} />
+          ) : section === "bao-hanh" ? (
+            <WarrantySection locale={locale} owner={buyer.kind === "sample"} />
+          ) : section === "tranh-chap" ? (
+            <DisputesSection locale={locale} owner={buyer.kind === "sample"} />
+          ) : section === "bao-mat" ? (
+            <SecuritySection locale={locale} phone={buyer.phone} owner={buyer.kind === "sample"} />
           ) : section === "dia-chi" ? (
             <AddressBook
               initial={buyer.kind === "sample" ? SAMPLE_ADDRESSES : []}

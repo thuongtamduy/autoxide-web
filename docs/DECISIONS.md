@@ -1829,3 +1829,25 @@ Quyết định:
 Lý do: bản thiết kế (W-042); các việc này core đã có API. Đã chạy thử với core thật (nhiều khách, SQLite).
 
 Đã cân nhắc: hợp nhất tự động hai bản menu — dễ sai thứ tự cây; người dùng tự làm lại phần của mình sau khi tải bản mới.
+
+## W-044 · Tài khoản người mua đủ 9 mục như thiết kế (mẫu) — 2026-11-16 — agent quyết
+
+Quyết định: website thêm bốn mục ở `/tai-khoan?muc=…` theo thứ tự của thiết kế `Account`: `tai-hang-so` (mỗi file 5
+lượt tải, hạn 30 ngày từ khi thanh toán; "Tải xuống" trừ một lượt, "Gửi lại email" giữ lượt), `bao-hanh` (hạn tính từ
+ngày giao; món còn hạn có form "Yêu cầu bảo hành" cần mô tả từ 10 ký tự), `tranh-chap` (tranh chấp sàn TC-2611-0007:
+mốc, đề nghị hai bên, nơi giữ tiền; đồng ý / nhờ sàn phân xử / rút; gửi thêm lời và ảnh khi còn mở), `bao-mat` (số điện
+thoại đã xác thực, passkey "sắp có", không có mật khẩu vì người mua đăng nhập bằng mã, đăng xuất nơi khác).
+
+- Toàn bộ là mẫu (W-006): dữ liệu và luật thuần ở `src/sample/account-more.ts`, trạng thái người dùng đổi ở cookie
+  `sf_acct_more` (`account-more-state.ts`, đọc giá trị hỏng thì về trạng thái đầu, giới hạn độ dài để cookie dưới 4 KB),
+  Server Action ở `account-more-actions.ts`. Chỉ tài khoản mẫu có dữ liệu; tài khoản mới tạo thấy trạng thái trống.
+- Nút là form Server Action thật (bấm được trước khi trang chạy JavaScript).
+- Ảnh bằng chứng của tranh chấp: chỉ gửi **tên** file (ô chọn file không có `name`) — chưa có nơi nhận ảnh thật, và
+  gửi nội dung ảnh qua Server Action sẽ vượt giới hạn thân request.
+- Tiền của đơn sàn ghi rõ ở đối tác thu hộ có giấy phép, chỉ chuyển cho người bán khi tranh chấp đóng (D-187 của core).
+
+Lý do: bản thiết kế (W-042); quyền của người mua (đổi trả, bảo hành, khiếu nại) nằm ở đây. Endpoint cần ở core đã ghi
+vào `docs/prompts/web-build-api-gaps.md` của core (bước 41, 45, 46, 47).
+
+Đã cân nhắc: đổi số điện thoại và thêm passkey cho người mua bằng mẫu — giả một luồng xác thực dễ làm người thử tưởng
+đã an toàn; để "sắp có" tới bước 47.
