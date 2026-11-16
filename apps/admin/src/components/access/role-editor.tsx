@@ -5,6 +5,7 @@ import { type FormEvent, useMemo, useRef, useState } from "react";
 import { createRole, updateRole } from "@/app/(admin)/org/access/actions";
 import { Field, FormAlert, useFocusInvalid, useSubmit } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
+import { useHydrated } from "@/lib/hydrated";
 import type { PermissionInfo } from "@/lib/permission-groups";
 import { PermissionPicker } from "./permission-picker";
 
@@ -32,6 +33,7 @@ export function RoleEditor({
   editable: boolean;
 }) {
   const t = useTranslations("access.role");
+  const hydrated = useHydrated();
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
   const [name, setName] = useState(role?.name ?? "");
@@ -87,7 +89,7 @@ export function RoleEditor({
       {editable ? (
         <div className="role-foot">
           <FormAlert state={state} />
-          <button type="submit" className="btn pri" disabled={pending}>
+          <button type="submit" className="btn pri" disabled={pending || !hydrated}>
             {role ? t("save") : t("create")}
           </button>
         </div>

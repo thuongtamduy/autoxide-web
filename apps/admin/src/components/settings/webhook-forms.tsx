@@ -14,6 +14,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { DialogButtons, Field, FormAlert, useFocusInvalid, useSubmit } from "@/components/ui/form";
 import { SecretOnce } from "@/components/ui/secret-once";
 import { useToast } from "@/components/ui/toast";
+import { useHydrated } from "@/lib/hydrated";
 // Sổ event cùng dạng `<module>.<việc>` như permission: dùng chung cách nhóm và tìm không dấu.
 import { groupPermissions, matchesPermission } from "@/lib/permission-groups";
 
@@ -197,6 +198,7 @@ export function WebhookEditForm({
   events: readonly EventKind[];
 }) {
   const t = useTranslations("settings.webhooks");
+  const hydrated = useHydrated();
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
   const [state, submit, pending] = useSubmit(updateWebhook, () => toast(t("saved")));
@@ -229,7 +231,7 @@ export function WebhookEditForm({
       <EventPicker events={events} initial={endpoint.events} error={state.fields?.events} />
       <div className="role-foot">
         <FormAlert state={state} />
-        <button type="submit" className="btn pri" disabled={pending}>
+        <button type="submit" className="btn pri" disabled={pending || !hydrated}>
           {t("save")}
         </button>
       </div>

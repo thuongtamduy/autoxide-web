@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/components/ui/toast";
 import type { FormState } from "@/lib/form";
 import { suggestFormKey } from "@/lib/forms";
+import { useHydrated } from "@/lib/hydrated";
 import { NEW_POSTS, type NewsletterList } from "@/lib/newsletter";
 
 /** Các ô của một danh sách nhận tin, dùng cho cả tạo và sửa. */
@@ -148,6 +149,7 @@ export function ListEditForm({
   canSendPosts: boolean;
 }) {
   const t = useTranslations("engage.newsletter.listForm");
+  const hydrated = useHydrated();
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
   const [state, run, pending] = useSubmit(updateList, () => toast(t("saved")));
@@ -163,7 +165,7 @@ export function ListEditForm({
       <ListFields list={list} state={state} canSendPosts={canSendPosts} />
       <div className="role-foot">
         <FormAlert state={state} />
-        <button type="submit" className="btn pri" disabled={pending}>
+        <button type="submit" className="btn pri" disabled={pending || !hydrated}>
           {t("save")}
         </button>
       </div>

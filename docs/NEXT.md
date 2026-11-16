@@ -3,19 +3,21 @@
 File nội bộ cho agent phiên sau: trạng thái lúc dừng và việc kế tiếp. Cập nhật khi xong một đợt việc; quyết định
 lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`backend-debt.md`](backend-debt.md).
 
-## Trạng thái (16/11/2026, đợt 3)
+## Trạng thái (16/11/2026, đợt 4)
 
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
 - SDK ghim core ở commit `fb3ba06` của `main` (bước 33 của core tới D-297: đa khách, tên miền riêng, dời khách, chỉ
   đọc, cấu hình theo khách, nhóm `connection`). Core `main` mới nhất (`f62f5a2`) chỉ thêm ghi chú tài liệu, OpenAPI
-  không đổi: SDK không cần sinh lại. Quyết định mới nhất của repo này: W-040.
+  không đổi: SDK không cần sinh lại. Quyết định mới nhất của repo này: W-041.
 - Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
   hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị
   khi khách chỉ đọc: dải báo hiện, lưu cài đặt và lưu bài bị từ chối với thông báo `tenant_read_only` của core.
 - Đợt 3: core `main` (`10d6c49`) vẫn chỉ đổi ghi chú. Sitemap và RSS của tên miền lạ cũng 404 (W-039), đã thử với
   core thật. Sửa một test e2e chập chờn của media: nút lưu đặt thẳng trên trang khoá tới khi JavaScript chạy (W-040).
   Mục "Tự làm được" còn lại đều là việc để đó có lý do: phần lớn việc tiếp theo chờ core (bước 34).
+- Đợt 4: core `main` vẫn ở `10d6c49`. Rà mọi form: 8 form `onSubmit` đặt thẳng trên trang khoá nút gửi tới khi trang
+  chạy JavaScript (W-041); thêm form mới loại này thì dùng `useHydrated()` và thêm trang vào `before-hydration.spec.ts`.
 - Gate đầy đủ xanh ở commit cuối của đợt này.
 
 ## Bám core (việc lặp lại)

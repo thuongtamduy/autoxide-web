@@ -1773,3 +1773,17 @@ Người dùng trên máy chậm gặp đúng như vậy. Nút khoá thì Playwr
 
 Đã cân nhắc: chỉ cho test chờ trang tải xong — giấu lỗi của người dùng thật; chuyển các form sang Server Action với
 `action` — đổi cách xử lý lỗi theo ô và `If-Match` của các form này, lớn hơn nhiều so với lỗi cần sửa.
+
+## W-041 · Áp W-040 cho mọi form `onSubmit` đặt thẳng trên trang — 2026-11-16 — agent quyết
+
+Quyết định: rà mọi form của trang quản trị. Tám form gửi bằng `onSubmit` nằm thẳng trên trang (không trong hộp thoại)
+khoá nút gửi tới khi `useHydrated()` là `true`, như W-040: sửa / tạo role, tạo API key, sửa biểu mẫu, sửa chiến dịch
+bản tin, ngưỡng tự đóng bình luận, tra dữ liệu theo email, sửa danh sách bản tin, sửa webhook. Test e2e
+`before-hydration.spec.ts` mở vài trang tiêu biểu với JavaScript tắt và kiểm nút gửi bị khoá.
+
+Không đổi: form dùng `useSubmit` (`action={run}`, hàm của trình duyệt) — bấm trước hydration thì React không gửi gì
+(không tải lại, không đưa giá trị lên địa chỉ), người dùng bấm lại được; form trong hộp thoại; website bán hàng (form
+`onSubmit` ở đó chỉ hiện sau một cú bấm, còn lại là Server Action vẫn gửi được khi chưa có JavaScript).
+
+Lý do: form `onSubmit` bấm sớm bị trình duyệt gửi kiểu GET — form tra dữ liệu theo email đưa email lên thanh địa chỉ,
+lịch sử trình duyệt và log của máy chủ (dữ liệu cá nhân); các form khác mất chữ đã gõ mà không báo.
