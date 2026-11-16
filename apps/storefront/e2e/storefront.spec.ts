@@ -296,4 +296,11 @@ test("tên miền không thuộc cửa hàng nào (core nhiều khách): 404, kh
       path.startsWith("/en") ? "Page not found" : "Không tìm thấy trang",
     );
   }
+  // Sitemap và RSS cũng không có: máy tìm kiếm không lấy danh sách trang của tên miền này.
+  for (const path of ["/sitemap.xml", "/feed.xml", "/en/feed.xml"]) {
+    const response = await page.request.get(path, {
+      headers: { "X-Forwarded-Host": "unknown-shop.example" },
+    });
+    expect(response.status(), path).toBe(404);
+  }
 });

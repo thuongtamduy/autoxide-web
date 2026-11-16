@@ -7,6 +7,7 @@ import { createEntry } from "@/app/(admin)/content/actions";
 import { useContentLocales } from "@/components/content/locales";
 import { SelectField } from "@/components/ui/form";
 import { type EntryErrors, type EntryKind, entryErrors } from "@/lib/content";
+import { useHydrated } from "@/lib/hydrated";
 import { BodyEditor, type BodyEditorHandle } from "./body-editor";
 import { TextField } from "./fields";
 
@@ -29,6 +30,7 @@ export function NewEntryForm({
   const [excerpt, setExcerpt] = useState("");
   const [locale, setLocale] = useState(defaultLocale);
   const [parent, setParent] = useState("");
+  const hydrated = useHydrated();
   const [errors, setErrors] = useState<EntryErrors | null>(null);
   const [pending, startTransition] = useTransition();
   const body = useRef<BodyEditorHandle>(null);
@@ -160,7 +162,7 @@ export function NewEntryForm({
               mono
             />
             <div className="ce-acts">
-              <button type="submit" className="btn pri" disabled={pending}>
+              <button type="submit" className="btn pri" disabled={pending || !hydrated}>
                 {n("create")}
               </button>
               <Link className="btn" href="/content">
