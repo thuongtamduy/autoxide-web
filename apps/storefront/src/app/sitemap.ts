@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 import { localePath, routing } from "@/i18n/routing";
-import { publicClient } from "@/lib/core";
-import { siteUrl } from "@/lib/env";
+import { publicClient, siteUrl } from "@/lib/core";
 import { sitemapEntries } from "@/lib/feeds";
 import type { SitemapItem } from "@/lib/types";
 
@@ -13,7 +12,7 @@ export const dynamic = "force-dynamic";
 const MAX_PAGES = 50;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const site = siteUrl();
+  const site = await siteUrl();
   const fixed = ["/", "/blog"].map((path) => ({
     url: `${site}${localePath(routing.defaultLocale, path)}`,
     alternates: {

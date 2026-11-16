@@ -186,7 +186,7 @@ pnpm --filter @autoxide/storefront dev                       # http://localhost:
 | Variable                     | Default                 | Meaning                                                                                                                                                              |
 | ---------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTOXIDE_API_URL`           | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Browsers never call it directly.                                                                                             |
-| `AUTOXIDE_STOREFRONT_URL`    | `http://localhost:3000` | Public address of the website: canonical links, sitemap, RSS.                                                                                                        |
+| `AUTOXIDE_STOREFRONT_URL`    | the domain opened       | Public address of the website: canonical links, sitemap, RSS. Empty: the domain the visitor opened.                                                                  |
 | `AUTOXIDE_STOREFRONT_NAME`   | sample shop / Autoxide  | Name of the shop in the header, footer and titles.                                                                                                                   |
 | `AUTOXIDE_STOREFRONT_THEME`  | `default`               | Look: `default`, `market`, `minimal` or `luxe`.                                                                                                                      |
 | `AUTOXIDE_STOREFRONT_TENANT` | empty                   | Customer (slug or ID) of a core that runs several; empty: chosen by the domain the visitor opened (needs this server in the core's `AUTOXIDE_HTTP_TRUSTED_PROXIES`). |
@@ -211,6 +211,43 @@ newsletter form shows when the core has at least one public list. Draft previews
 `/preview?token=…`. In production: `pnpm build`, then
 `PORT=3000 AUTOXIDE_API_URL=… AUTOXIDE_STOREFRONT_URL=… pnpm --filter @autoxide/storefront start`,
 or `docker build --build-arg APP=storefront -t autoxide-storefront .`.
+
+### Several shops on one website
+
+With a core that runs several tenants (`AUTOXIDE_TENANCY_MODE=multi`), one storefront can serve
+every shop on its own domain:
+
+1. Leave `AUTOXIDE_STOREFRONT_TENANT` and `AUTOXIDE_STOREFRONT_URL` empty. The website then tells
+   the core the domain each visitor opened (`X-Forwarded-Host`), and its canonical links, sitemap
+   and RSS feed use that domain.
+2. On the core, list the website's server in `AUTOXIDE_HTTP_TRUSTED_PROXIES`: the core reads the
+   forwarded domain only from trusted proxies.
+3. Each shop adds and verifies its domain in the admin (**Settings › Domains**).
+4. Let Caddy get certificates on demand for the verified domains only, and send them to the
+   website instead of the core:
+
+```text
+{
+    on_demand_tls {
+        ask http://127.0.0.1:8080/api/v1/kernel/domains/allowed
+    }
+}
+
+api.example.com {
+    reverse_proxy 127.0.0.1:8080
+}
+
+https:// {
+    tls {
+        on_demand
+    }
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+Caddy passes on the visitor's `Host` and sets `X-Forwarded-Proto`, which is all the website needs.
+The shop's name in the header still comes from `AUTOXIDE_STOREFRONT_NAME` (one name for every
+shop) until the core publishes each tenant's public profile.
 
 ## How it works
 

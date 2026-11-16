@@ -176,7 +176,7 @@ pnpm --filter @autoxide/storefront dev                       # http://localhost:
 | Biến                         | Mặc định                | Ý nghĩa                                                                                                                                                     |
 | ---------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTOXIDE_API_URL`           | `http://127.0.0.1:8080` | Địa chỉ của core, không có `/api/v1`. Trình duyệt không gọi trực tiếp.                                                                                      |
-| `AUTOXIDE_STOREFRONT_URL`    | `http://localhost:3000` | Địa chỉ công khai của website: link canonical, sitemap, RSS.                                                                                                |
+| `AUTOXIDE_STOREFRONT_URL`    | tên miền đang mở        | Địa chỉ công khai của website: link canonical, sitemap, RSS. Trống: tên miền người đọc đang mở.                                                             |
 | `AUTOXIDE_STOREFRONT_NAME`   | cửa hàng mẫu / Autoxide | Tên cửa hàng ở đầu trang, chân trang và tiêu đề.                                                                                                            |
 | `AUTOXIDE_STOREFRONT_THEME`  | `default`               | Kiểu giao diện: `default`, `market`, `minimal` hoặc `luxe`.                                                                                                 |
 | `AUTOXIDE_STOREFRONT_TENANT` | trống                   | Khách (slug hay ID) của core chạy nhiều khách; trống: chọn theo tên miền người đọc mở (cần máy chủ này nằm trong `AUTOXIDE_HTTP_TRUSTED_PROXIES` của core). |
@@ -201,6 +201,41 @@ nhất một danh sách công khai. Bản nháp xem trước ở
 `/preview?token=…`. Chạy thật: `pnpm build`, rồi
 `PORT=3000 AUTOXIDE_API_URL=… AUTOXIDE_STOREFRONT_URL=… pnpm --filter @autoxide/storefront start`,
 hoặc `docker build --build-arg APP=storefront -t autoxide-storefront .`.
+
+### Nhiều cửa hàng trên một website
+
+Với core chạy nhiều khách (`AUTOXIDE_TENANCY_MODE=multi`), một website phục vụ được mọi cửa hàng,
+mỗi cửa hàng trên tên miền của nó:
+
+1. Để trống `AUTOXIDE_STOREFRONT_TENANT` và `AUTOXIDE_STOREFRONT_URL`. Website khi đó báo core tên
+   miền người đọc đang mở (`X-Forwarded-Host`), và link canonical, sitemap, RSS dùng đúng tên miền đó.
+2. Ở core, thêm máy chủ của website vào `AUTOXIDE_HTTP_TRUSTED_PROXIES`: core chỉ đọc tên miền được
+   chuyển tiếp từ proxy nó tin.
+3. Mỗi cửa hàng thêm và xác minh tên miền của mình ở trang quản trị (**Cài đặt › Tên miền**).
+4. Để Caddy chỉ xin chứng chỉ cho tên miền đã xác minh, và chuyển chúng tới website thay vì core:
+
+```text
+{
+    on_demand_tls {
+        ask http://127.0.0.1:8080/api/v1/kernel/domains/allowed
+    }
+}
+
+api.example.com {
+    reverse_proxy 127.0.0.1:8080
+}
+
+https:// {
+    tls {
+        on_demand
+    }
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+Caddy chuyển tiếp `Host` của người đọc và đặt `X-Forwarded-Proto`, website chỉ cần vậy. Tên cửa hàng ở
+đầu trang vẫn lấy từ `AUTOXIDE_STOREFRONT_NAME` (một tên cho mọi cửa hàng) cho tới khi core công bố hồ
+sơ công khai của từng khách.
 
 ## Cách hoạt động
 

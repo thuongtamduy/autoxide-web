@@ -1,8 +1,7 @@
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { publicClient } from "@/lib/core";
-import { siteUrl } from "@/lib/env";
+import { publicClient, siteUrl } from "@/lib/core";
 import { rss } from "@/lib/feeds";
 import { siteIdentity } from "@/lib/site";
 
@@ -24,7 +23,7 @@ export async function GET(_: Request, context: RouteContext<"/[locale]/feed.xml"
   }
   return new Response(
     rss({
-      site: siteUrl(),
+      site: await siteUrl(),
       title: `${site.blogName} · ${site.name}`,
       description: t("intro"),
       locale,

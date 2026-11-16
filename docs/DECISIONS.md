@@ -1653,3 +1653,18 @@ trị trên tên miền riêng của khách.
 
 Đã cân nhắc: danh sách khách để chọn — core không công bố danh sách khách cho người chưa đăng nhập (lộ khách
 hàng của nền tảng); gõ khách vào địa chỉ trang (`/t/acme/login`) — phải đổi mọi đường dẫn của trang quản trị.
+
+## W-036 · Website: link tuyệt đối theo tên miền đang mở khi không đặt địa chỉ cố định — 2026-11-16 — agent quyết
+
+Quyết định: `AUTOXIDE_STOREFRONT_URL` trống thì gốc của link tuyệt đối (`canonical`, Open Graph, sitemap, RSS,
+`robots.txt`, JSON-LD) là tên miền người đọc đang mở (`X-Forwarded-Host` / `Host`), giao thức theo
+`X-Forwarded-Proto` (không có: `https` khi chạy thật, `http` khi chạy thử); tên miền sai dạng thì về
+`http://localhost:3000`. Hàm thuần `publicOrigin` (`apps/storefront/src/lib/tenant.ts`, có test); `siteUrl()` thành
+async ở `core.ts`. Đặt biến thì giữ hành vi cũ. README thêm mục "Nhiều cửa hàng trên một website" (Caddy
+on-demand TLS hỏi `GET /kernel/domains/allowed` của core, chuyển tên miền của khách tới website).
+
+Lý do: W-033 cho một website phục vụ nhiều cửa hàng theo tên miền, nhưng link tuyệt đối vẫn trỏ về một địa chỉ cố
+định — sitemap của cửa hàng A liệt kê địa chỉ của tên miền khác, máy tìm kiếm gộp sai trang.
+
+Đã cân nhắc: tra tên miền chính của khách từ core — core chưa công bố (hồ sơ công khai, bước 34) và tốn một lời gọi
+mỗi trang; tin `Host` không kiểm — chỉ nhận tên máy đúng dạng, và Caddy chỉ cấp chứng chỉ cho tên miền đã xác minh.

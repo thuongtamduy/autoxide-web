@@ -7,7 +7,8 @@ import { SampleNotice } from "@/components/sample-notice";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { routing } from "@/i18n/routing";
-import { siteUrl, themeVariant } from "@/lib/env";
+import { siteUrl } from "@/lib/core";
+import { themeVariant } from "@/lib/env";
 import { siteIdentity } from "@/lib/site";
 import { THEME_COOKIE, themeAttr } from "@/lib/theme";
 import { sampleDataEnabled } from "@/sample";
@@ -33,7 +34,7 @@ export async function generateMetadata(props: LayoutProps<"/[locale]">): Promise
   const site = await siteIdentity(locale);
   const t = await getTranslations({ locale, namespace: "site" });
   return {
-    metadataBase: new URL(siteUrl()),
+    metadataBase: new URL(await siteUrl()),
     title: { default: site.name, template: `%s · ${site.name}` },
     description: t("description", { name: site.name }),
     applicationName: site.name,

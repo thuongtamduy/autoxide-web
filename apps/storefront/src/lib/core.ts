@@ -2,8 +2,8 @@ import "server-only";
 
 import { type AutoxideClient, createAutoxideClient, toApiError } from "@autoxide/sdk";
 import { headers } from "next/headers";
-import { coreUrl, tenantSetting } from "./env";
-import { tenantHeaders } from "./tenant";
+import { coreUrl, siteUrlSetting, tenantSetting } from "./env";
+import { publicOrigin, tenantHeaders } from "./tenant";
 
 // Website công khai chỉ gọi endpoint công khai của core (`…/public/…`), từ máy chủ Next.js, như
 // khách: không có token nào, trình duyệt không bao giờ gọi core trực tiếp (trừ ảnh, đi qua route
@@ -50,6 +50,25 @@ export async function visitorHost(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Gốc công khai của website cho link tuyệt đối (xem `publicOrigin`). Ngoài request (lúc build) thì theo
+ * biến môi trường hay `http://localhost:3000`.
+ */
+export async function siteUrl(): Promise<string> {
+  let proto: string | null = null;
+  try {
+    proto = (await headers()).get("x-forwarded-proto");
+  } catch {
+    proto = null;
+  }
+  return publicOrigin(
+    siteUrlSetting(),
+    await visitorHost(),
+    proto,
+    process.env.NODE_ENV === "production",
+  );
 }
 
 /** `X-Forwarded-For` của request đang xử lý (Server Action), kèm địa chỉ do proxy phía trước báo. */

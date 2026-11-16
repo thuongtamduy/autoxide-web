@@ -9,11 +9,11 @@ export function coreUrl(): string {
 }
 
 /**
- * Địa chỉ công khai của website (không có `/` ở cuối): gốc của link tuyệt đối trong `canonical`,
- * Open Graph, sitemap và RSS. Mặc định `http://localhost:3000` khi chạy thử.
+ * Địa chỉ công khai cố định của website (`AUTOXIDE_STOREFRONT_URL`); trống thì theo tên miền khách đang
+ * mở (`siteUrl()` ở `core.ts`, quy tắc ở `publicOrigin` của `tenant.ts`).
  */
-export function siteUrl(): string {
-  return (process.env.AUTOXIDE_STOREFRONT_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+export function siteUrlSetting(): string {
+  return (process.env.AUTOXIDE_STOREFRONT_URL ?? "").trim();
 }
 
 /**

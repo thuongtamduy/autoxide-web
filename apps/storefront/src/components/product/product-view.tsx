@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { getPathname, Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { siteUrl } from "@/lib/env";
+import { siteUrl } from "@/lib/core";
 import { formatDate, formatRating, groupDigits, keepUnits } from "@/lib/format";
 import { averageOf, ratingDistribution, shortName } from "@/lib/reviews";
 import { routes } from "@/lib/routes";
@@ -518,7 +518,7 @@ export async function ProductView({
     : t("soldByShop", { shop: site.name });
 
   // ---- JSON-LD `Product` kèm `Offer` từng biến thể (giá không cần mã, Google Search Central).
-  const url = `${siteUrl()}${getPathname({ href: routes.product(text(product.slugs, locale)), locale })}`;
+  const url = `${await siteUrl()}${getPathname({ href: routes.product(text(product.slugs, locale)), locale })}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
