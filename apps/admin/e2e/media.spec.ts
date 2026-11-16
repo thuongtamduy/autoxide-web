@@ -246,3 +246,26 @@ test("bộ chọn ảnh: ảnh đại diện và ảnh trong thân bài; xem tr�
     .toBe(4);
   await stranger.close();
 });
+
+test("trước khi JavaScript của trang chạy, nút lưu khoá (không gửi form kiểu thô)", async ({
+  page,
+  browser,
+}) => {
+  await signIn(page, "/content/media");
+  await upload(page, "chao-gang.png", PNG);
+  await expect(page).toHaveURL(/item=[0-9a-f-]{36}/);
+  // Cùng phiên đăng nhập, tắt JavaScript: trang chỉ có HTML máy chủ dựng.
+  const bare = await browser.newContext({
+    javaScriptEnabled: false,
+    storageState: await page.context().storageState(),
+  });
+  const html = await bare.newPage();
+  await html.goto(page.url());
+  await expect(pane(html).getByRole("button", { name: "Save details" })).toBeDisabled();
+  await expect(pane(html).getByRole("button", { name: "Save alt text" })).toBeDisabled();
+  await html.goto("/content/new");
+  await expect(html.getByRole("button", { name: "Create draft" })).toBeDisabled();
+  await bare.close();
+  // Trang đã chạy JavaScript: mở khoá.
+  await expect(pane(page).getByRole("button", { name: "Save details" })).toBeEnabled();
+});

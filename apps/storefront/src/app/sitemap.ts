@@ -1,7 +1,10 @@
+import { toApiError } from "@autoxide/sdk";
 import type { MetadataRoute } from "next";
+import { notFound, unstable_rethrow } from "next/navigation";
 import { localePath, routing } from "@/i18n/routing";
 import { publicClient, siteUrl } from "@/lib/core";
 import { sitemapEntries } from "@/lib/feeds";
+import { isUnknownShop } from "@/lib/tenant";
 import type { SitemapItem } from "@/lib/types";
 
 // `sitemap.xml`: trang chủ và mục bài viết ở mọi ngôn ngữ, cùng mọi bài / trang đã đăng của core
@@ -26,15 +29,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const client = publicClient(routing.defaultLocale);
     let cursor: string | undefined;
     for (let page = 0; page < MAX_PAGES; page += 1) {
-      const { data } = await client.GET("/api/v1/content/public/sitemap", {
+      const { data, error, response } = await client.GET("/api/v1/content/public/sitemap", {
         params: { query: { limit: 200, order: "asc", ...(cursor ? { cursor } : {}) } },
       });
+      // Tên miền không thuộc cửa hàng nào (core nhiều khách): 404 như trang (W-038).
+      if (error !== undefined && isUnknownShop(response.status, toApiError(response, error).code)) {
+        notFound();
+      }
       if (!data) break;
       items.push(...data.data);
       if (!data.pagination.next_cursor) break;
       cursor = data.pagination.next_cursor;
     }
-  } catch {
+  } catch (failure) {
+    unstable_rethrow(failure);
     // Core không trả lời: sitemap chỉ còn các trang cố định, lần sau dựng lại.
   }
   return [...fixed, ...sitemapEntries(site, items)];

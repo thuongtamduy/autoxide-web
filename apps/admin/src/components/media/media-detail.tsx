@@ -20,6 +20,7 @@ import { Labelled } from "@/components/ui/form";
 import { CopyButton } from "@/components/ui/secret-once";
 import { Time } from "@/components/ui/time";
 import { useToast } from "@/components/ui/toast";
+import { useHydrated } from "@/lib/hydrated";
 import {
   formatBytes,
   isImage,
@@ -417,6 +418,7 @@ function DetailsForm({
 }) {
   const t = useTranslations("media.detail");
   const id = useId();
+  const hydrated = useHydrated();
   const options = [
     { value: "", label: t("root") },
     ...folders
@@ -486,7 +488,7 @@ function DetailsForm({
         )}
       </Labelled>
       <div className="ce-acts">
-        <button type="submit" className="btn sm pri" disabled={pending}>
+        <button type="submit" className="btn sm pri" disabled={pending || !hydrated}>
           {t("saveDetails")}
         </button>
       </div>
@@ -532,6 +534,7 @@ function AltSection({
   const t = useTranslations("media.detail");
   const names = useTranslations("content.locales");
   const toast = useToast();
+  const hydrated = useHydrated();
   const [busy, startTransition] = useTransition();
   const [first] = locales;
   const [rows, setRows] = useState<AltRow[]>(() =>
@@ -628,7 +631,7 @@ function AltSection({
           <button
             type="button"
             className="btn sm pri"
-            disabled={pending || busy}
+            disabled={pending || busy || !hydrated}
             onClick={() =>
               startTransition(async () => {
                 const text = (locale: string) =>

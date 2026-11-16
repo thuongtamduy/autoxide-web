@@ -1748,3 +1748,28 @@ có trang chung nào đúng cho mọi cách triển khai.
 Ghi thêm khi chạy thử: máy chủ Next.js tự đặt `X-Forwarded-Proto: http` khi request không có header này, nên nhánh
 "`https` khi chạy thật" của `publicOrigin` (W-036) chỉ dùng khi chạy ngoài máy chủ Next.js. README nói rõ reverse
 proxy phải đặt `X-Forwarded-Proto` (Caddy tự đặt).
+
+## W-039 · Sitemap và RSS của tên miền không thuộc cửa hàng nào cũng 404 — 2026-11-16 — agent quyết
+
+Quyết định: mở rộng W-038 cho hai route không phải trang. `sitemap.xml` gọi `notFound()` khi core trả
+`400 tenant_required` (và để nó đi qua `catch` bằng `unstable_rethrow`); `feed.xml` trả `404` thẳng. `robots.txt`
+giữ nguyên: không gọi core, và trỏ tới sitemap đã 404 thì máy tìm kiếm cũng không lấy được trang nào.
+
+Lý do: trước đó sitemap của tên miền lạ vẫn liệt kê trang chủ và `/blog` (đều 404), RSS trả một kênh rỗng — mâu
+thuẫn với trang.
+
+Đã cân nhắc: `robots.txt` chặn hết cho tên miền lạ — thêm một lời gọi core mỗi lần bot đọc robots, lợi ích không đáng.
+
+## W-040 · Nút lưu đặt thẳng trên trang khoá tới khi JavaScript của trang chạy — 2026-11-16 — agent quyết
+
+Quyết định: hook `useHydrated()` (`apps/admin/src/lib/hydrated.ts`, `useSyncExternalStore`: máy chủ `false`, trình
+duyệt `true`). Nút lưu của form nằm thẳng trên trang (không trong hộp thoại) thêm `disabled={… || !hydrated}`: "Lưu
+thông tin" và "Lưu alt" ở khung chi tiết media, "Tạo bản nháp" ở `/content/new`. Form và nút trong hộp thoại không cần:
+mở hộp thoại đã cần JavaScript. Thêm form mới đặt thẳng trên trang thì làm như vậy.
+
+Lý do: gate đỏ chập chờn ở `media.spec.ts` — sau khi tải lại trang, test bấm "Lưu thông tin" trước hydration; form có
+`onSubmit` bị trình duyệt gửi kiểu thô (GET, giá trị lên thanh địa chỉ, tải lại trang), không lưu gì mà không báo.
+Người dùng trên máy chậm gặp đúng như vậy. Nút khoá thì Playwright cũng tự chờ tới khi bấm được.
+
+Đã cân nhắc: chỉ cho test chờ trang tải xong — giấu lỗi của người dùng thật; chuyển các form sang Server Action với
+`action` — đổi cách xử lý lỗi theo ô và `If-Match` của các form này, lớn hơn nhiều so với lỗi cần sửa.
