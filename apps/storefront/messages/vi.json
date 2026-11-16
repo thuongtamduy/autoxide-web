@@ -680,7 +680,13 @@
     "otp_or_order_invalid": "Mã xác nhận chưa đúng, hoặc mã đơn và số điện thoại không khớp. Còn {left} lần thử.",
     "seller_kind_required": "Hãy chọn bạn là doanh nghiệp, hộ kinh doanh hay cá nhân.",
     "category_required": "Hãy nhập ngành hàng chính.",
-    "consent_required": "Hãy đồng ý để chúng tôi dùng thông tin này xét đăng ký."
+    "consent_required": "Hãy đồng ý để chúng tôi dùng thông tin này xét đăng ký.",
+    "warranty_not_found": "Món này không còn bảo hành.",
+    "warranty_note_short": "Mô tả lỗi ít nhất {min} ký tự.",
+    "dispute_closed": "Tranh chấp đã đóng.",
+    "evidence_required": "Hãy viết vài dòng hoặc thêm ít nhất một ảnh trước khi gửi.",
+    "evidence_too_long": "Lời nhắn tối đa {max} ký tự.",
+    "evidence_too_many_photos": "Mỗi lần gửi tối đa {max} ảnh."
   },
   "help": {
     "open": "Cần giúp?",
@@ -989,7 +995,11 @@
       "saved": "Đã lưu",
       "points": "Điểm và hạng",
       "addresses": "Sổ địa chỉ",
-      "privacy": "Quyền riêng tư"
+      "privacy": "Quyền riêng tư",
+      "downloads": "Tải hàng số",
+      "warranty": "Bảo hành",
+      "disputes": "Tranh chấp",
+      "security": "Đăng nhập, bảo mật"
     },
     "tier": {
       "member": "Thành viên",
@@ -1150,6 +1160,118 @@
       "deleteCancel": "Thôi",
       "deleteScheduled": "Đã lên lịch xoá tài khoản (mẫu: không xoá thật).",
       "legal": "Căn cứ: Luật Bảo vệ dữ liệu cá nhân 2025 và Nghị định 13/2023/NĐ-CP về quyền của chủ thể dữ liệu — cần đối chiếu văn bản gốc / người có chuyên môn pháp lý."
+    },
+    "downloads": {
+      "empty": "Chưa có hàng số. Sách điện tử, khoá học bạn mua sẽ hiện ở đây kèm link tải.",
+      "count": "{count, plural, other {# file}}",
+      "from": "từ đơn {order}",
+      "note": "Mỗi file tải được 5 lần, tới hết {until} (30 ngày từ khi thanh toán). Bấm “Tải xuống” tạo một link riêng sống 5 phút và trừ một lượt; mạng chập chờn thì tải tiếp bằng chính link đó không bị trừ thêm. Đừng chia sẻ link: ai có link cũng tải được và trừ lượt của bạn.",
+      "left": "còn {left}/5 lượt tải · hạn tải {until}",
+      "usedUp": "đã dùng hết 5 lượt · file lỗi thì báo cửa hàng để được cấp lại",
+      "badgeLeft": "Còn {left} lượt",
+      "badgeNone": "Hết lượt",
+      "download": "Tải xuống",
+      "resend": "Gửi lại email",
+      "resent": "Đã gửi email mới có link tải; link trong email cũ hết hiệu lực, số lượt giữ nguyên."
+    },
+    "warranty": {
+      "empty": "Chưa có món nào được bảo hành. Món có bảo hành hiện ở đây sau khi giao.",
+      "note": "Bảo hành tính từ ngày giao. Giữ món hàng; số đơn là bằng chứng mua hàng.",
+      "months": "bảo hành {months} tháng",
+      "from": "từ đơn {order}",
+      "until": "còn hạn tới {until}",
+      "ended": "hết hạn {until}",
+      "active": "Còn hạn",
+      "expired": "Hết hạn",
+      "claim": "Yêu cầu bảo hành",
+      "claimTitle": "Yêu cầu bảo hành: {name}",
+      "claimNote": "Món hàng bị gì?",
+      "claimAfter": "Cửa hàng trả lời trong 2 ngày làm việc, kèm cách gửi: mang tới cửa hàng hoặc gửi bưu cục.",
+      "claimSend": "Gửi yêu cầu",
+      "claimCancel": "Thôi",
+      "claimed": "Đã gửi yêu cầu lúc {at}. Cửa hàng trả lời trong 2 ngày làm việc."
+    },
+    "disputes": {
+      "empty": "Chưa có tranh chấp nào. Đơn trên sàn có vấn đề mà người bán không giúp thì mở tranh chấp từ đơn hàng.",
+      "about": "Đơn {order} · {seller}",
+      "status": {
+        "seller_responded": "Người bán đã trả lời",
+        "escalated": "Sàn đang phân xử",
+        "resolved": "Đã giải quyết",
+        "withdrawn": "Bạn đã rút"
+      },
+      "due": {
+        "seller_responded": "Người bán đã trả lời trong hạn 48 giờ. Bạn đồng ý đề nghị của người bán, hoặc nhờ sàn phân xử.",
+        "escalated": "Sàn quyết trước {by}. Bạn và người bán vẫn gửi thêm bằng chứng được tới lúc đó.",
+        "resolved": "Đã đóng: hoàn {amount} về thẻ đã thanh toán trong 1–3 ngày làm việc.",
+        "withdrawn": "Bạn đã rút tranh chấp. Đơn hoàn tất theo hạn đổi trả như bình thường."
+      },
+      "steps": {
+        "opened": "Bạn mở tranh chấp",
+        "responded": "Người bán trả lời",
+        "respondedWhen": "{at} (hạn {by})",
+        "platform": "Sàn phân xử",
+        "platformIfAsked": "Khi bạn chưa đồng ý · sàn quyết trong 7 ngày",
+        "platformBy": "Hạn {by}",
+        "platformDecided": "Sàn đã quyết",
+        "notNeeded": "Không cần",
+        "result": "Kết quả",
+        "refunded": "Hoàn {amount} về thẻ",
+        "withdrawn": "Đã rút",
+        "none": "Chưa có"
+      },
+      "facts": {
+        "reason": "Lý do",
+        "reasonValue": "Hàng vỡ, nứt khi nhận",
+        "asked": "Bạn đề nghị",
+        "askedValue": "Hoàn {amount} (2 trên 6 bát)",
+        "offered": "Người bán đề nghị",
+        "offeredValue": "Hoàn {amount} (1 bát)",
+        "money": "Tiền của đơn",
+        "held": "{amount} đang ở đối tác thu hộ có giấy phép, chưa chuyển cho người bán",
+        "split": "Hoàn {amount} cho bạn; phần còn lại chuyển cho người bán",
+        "released": "{amount} chuyển cho người bán"
+      },
+      "actions": {
+        "accept_offer": "Đồng ý hoàn {amount}",
+        "escalate": "Chưa đồng ý, nhờ sàn phân xử",
+        "withdraw": "Rút tranh chấp",
+        "platform_decides": "Xem khi sàn đã quyết (mẫu)"
+      },
+      "held": "Tiền của đơn ở đối tác thu hộ có giấy phép, không ở sàn, và chỉ chuyển cho người bán khi tranh chấp đóng. Được hoàn thì tiền về đúng nguồn bạn đã thanh toán. Mỗi đơn chỉ có một tranh chấp mở.",
+      "who": {
+        "buyer": "Bạn",
+        "seller": "{seller} (người bán)",
+        "platform": "Sàn"
+      },
+      "thread": "Ảnh và lời hai bên",
+      "threadNote": "Bạn, người bán và sàn cùng thấy mọi tin ở đây. Tin đã gửi không sửa, không xoá được.",
+      "photos": "Ảnh",
+      "photosOnly": "(chỉ gửi ảnh)",
+      "addTitle": "Gửi thêm bằng chứng",
+      "addBody": "Lời nhắn",
+      "addPhotos": "Ảnh hoặc video (tối đa {max})",
+      "photosHint": "Mẫu: chỉ giữ tên file, ảnh chưa được tải lên.",
+      "addSend": "Gửi",
+      "sent": "Đã gửi; người bán và sàn nhận được ngay.",
+      "closed": "Tranh chấp đã đóng, không gửi thêm được."
+    },
+    "security": {
+      "note": "Người mua đăng nhập bằng mã một lần gửi tới số điện thoại.",
+      "phone": "Số điện thoại {phone}",
+      "phoneWhy": "Cần xác thực để viết đánh giá và bình luận (NĐ 147/2024)",
+      "verified": "Đã xác thực",
+      "passkey": "Khoá đăng nhập (passkey)",
+      "passkeyWhy": "Đăng nhập bằng vân tay hoặc khuôn mặt, không cần mã",
+      "comingSoon": "Sắp có",
+      "password": "Mật khẩu",
+      "passwordWhy": "Không cần: bạn đăng nhập bằng mã gửi tới điện thoại",
+      "none": "Không có",
+      "devices": "Thiết bị đang đăng nhập",
+      "devicesList": "Trình duyệt này · máy tính ở TP Hồ Chí Minh, 3 ngày trước",
+      "devicesThis": "Chỉ trình duyệt này",
+      "deviceCount": "{count, plural, other {# thiết bị}}",
+      "signOutOthers": "Đăng xuất nơi khác"
     }
   },
   "seller": {
