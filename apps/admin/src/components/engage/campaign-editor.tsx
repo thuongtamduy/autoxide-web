@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { isoToLocal, localToIso } from "@/lib/engage";
 import type { FormState } from "@/lib/form";
+import { useHydrated } from "@/lib/hydrated";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
@@ -51,6 +52,7 @@ export function CampaignEditor({
   ads: { label: string; maxPerDay: number };
 }) {
   const t = useTranslations("engage.newsletter.editor");
+  const hydrated = useHydrated();
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
   const [subject, setSubject] = useState(initial.subject);
@@ -153,7 +155,7 @@ export function CampaignEditor({
       </div>
       <div className="eg-foot">
         <FormAlert state={state} />
-        <button type="submit" className="btn pri" disabled={pending}>
+        <button type="submit" className="btn pri" disabled={pending || !hydrated}>
           {submit}
         </button>
       </div>

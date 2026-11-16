@@ -17,6 +17,7 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { BAN_KINDS, type BanKind } from "@/lib/comments";
 import { isoToLocal, localToIso } from "@/lib/engage";
+import { useHydrated } from "@/lib/hydrated";
 
 /**
  * "Cấm": theo tài khoản, email hay dấu vết mạng đã băm. Mở từ một bình luận thì điền sẵn giá trị
@@ -127,6 +128,7 @@ export function ClosesForm({
   current?: string | null | undefined;
 }) {
   const t = useTranslations("engage.comments.closes");
+  const hydrated = useHydrated();
   const toast = useToast();
   const [local, setLocal] = useState(() => isoToLocal(current));
   const [state, run, pending] = useSubmit(setTargetCloses, () =>
@@ -152,7 +154,7 @@ export function ClosesForm({
         error={state.fields?.closes_at}
       />
       <div className="filters-acts">
-        <button type="submit" className="btn" disabled={pending}>
+        <button type="submit" className="btn" disabled={pending || !hydrated}>
           {t("save")}
         </button>
         {local ? (

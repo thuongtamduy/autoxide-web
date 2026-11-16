@@ -23,6 +23,7 @@ import {
   suggestFormKey,
   suggestKey,
 } from "@/lib/forms";
+import { useHydrated } from "@/lib/hydrated";
 
 type Action = (state: FormEditorState, formData: FormData) => Promise<FormEditorState>;
 
@@ -62,6 +63,7 @@ export function FormEditor({
   submit: string;
 }) {
   const t = useTranslations("engage.forms.editor");
+  const hydrated = useHydrated();
   const types = useTranslations("engage.forms.types");
   const form = useRef<HTMLFormElement>(null);
   const uid = useRef(initial.fields.length);
@@ -272,7 +274,7 @@ export function FormEditor({
 
       <div className="eg-foot">
         <FormAlert state={state} />
-        <button type="submit" className="btn pri" disabled={pending}>
+        <button type="submit" className="btn pri" disabled={pending || !hydrated}>
           {submit}
         </button>
       </div>

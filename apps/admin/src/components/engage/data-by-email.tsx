@@ -8,6 +8,7 @@ import { DialogButtons, Field, FormAlert, useFocusInvalid, useSubmit } from "@/c
 import { Time } from "@/components/ui/time";
 import { useToast } from "@/components/ui/toast";
 import type { DataState, DataFound as Found } from "@/lib/engage";
+import { useHydrated } from "@/lib/hydrated";
 
 type Schemas = components["schemas"];
 
@@ -30,6 +31,7 @@ export function DataByEmail({
   canErase: boolean;
 }) {
   const t = useTranslations("engage.data");
+  const hydrated = useHydrated();
   const form = useRef<HTMLFormElement>(null);
   const [state, submit, pending] = useSubmit(lookup, () => {});
   useFocusInvalid(form, state);
@@ -56,7 +58,7 @@ export function DataByEmail({
             error={state.fields?.email}
           />
           <div className="filters-acts">
-            <button type="submit" className="btn pri" disabled={pending}>
+            <button type="submit" className="btn pri" disabled={pending || !hydrated}>
               {t("lookup")}
             </button>
           </div>

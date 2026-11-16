@@ -14,6 +14,7 @@ import { Field, FormAlert, SelectField, useFocusInvalid, useSubmit } from "@/com
 import { CopyButton, SecretOnce } from "@/components/ui/secret-once";
 import { EXPIRY_CHOICES } from "@/lib/api-keys";
 import type { FormState } from "@/lib/form";
+import { useHydrated } from "@/lib/hydrated";
 import type { PermissionInfo } from "@/lib/permission-groups";
 import { ceremonyErrorKey, passkeySignInSupported, requestOptionsJson } from "@/lib/webauthn";
 
@@ -36,6 +37,7 @@ export function ApiKeyCreator({
   methods: KeyConfirmMethods;
 }) {
   const t = useTranslations("settings.apiKeys");
+  const hydrated = useHydrated();
   const form = useRef<HTMLFormElement>(null);
   const [chosen, setChosen] = useState<Set<string>>(() => new Set());
   const offered = (["password", "totp", "passkey"] as const).filter((m) => methods[m]);
@@ -186,7 +188,7 @@ export function ApiKeyCreator({
       </fieldset>
       <div className="role-foot">
         <FormAlert state={shown} />
-        <button type="submit" className="btn pri" disabled={pending || signing}>
+        <button type="submit" className="btn pri" disabled={pending || signing || !hydrated}>
           {t("create")}
         </button>
       </div>
