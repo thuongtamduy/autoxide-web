@@ -13,9 +13,9 @@ import { z } from "zod";
 import { type Outcome, send } from "@/lib/action";
 import {
   type Author,
-  CONTENT_LOCALES,
   defined,
   type Entry,
+  LOCALE_CODE,
   type SeoSuggestion,
   type Term,
   type TranslationRequest,
@@ -44,7 +44,8 @@ type Result<T> = { data?: T; error?: unknown; response: Response };
 
 const id = z.uuid();
 const version = z.string().min(1).max(200);
-const locale = z.enum(CONTENT_LOCALES);
+// Chỉ kiểm định dạng mã ngôn ngữ; ngôn ngữ có được mở hay không do core kiểm (`AUTOXIDE_CONTENT_LOCALES`).
+const locale = z.string().regex(LOCALE_CODE);
 
 /** Ô của bản nháp gửi kèm mỗi lần lưu. Core kiểm từng ô; ở đây chỉ kiểm hình dạng. */
 const Fields = z.object({

@@ -5,7 +5,7 @@ import { RedirectDialog } from "@/components/structure/forms";
 import { ConfirmAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
-import { CONTENT_LOCALES } from "@/lib/content";
+import { contentLocaleFor } from "@/lib/client-config";
 import { optional } from "@/lib/content-server";
 import { isForbidden, load } from "@/lib/core";
 import { CONTENT_MANAGE } from "@/lib/permissions";
@@ -27,7 +27,7 @@ export default async function RedirectsTab(props: PageProps<"/content/structure/
   const source = SOURCES.find((s) => s === params.source) as Source | undefined;
   const cursor = typeof params.cursor === "string" ? params.cursor : undefined;
   const uiLocale = await getLocale();
-  const defaultLocale = (CONTENT_LOCALES as readonly string[]).includes(uiLocale) ? uiLocale : "en";
+  const defaultLocale = await contentLocaleFor(uiLocale);
   let page: Awaited<ReturnType<typeof loadPage>>;
   try {
     page = await loadPage(source, cursor);

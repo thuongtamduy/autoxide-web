@@ -4,7 +4,8 @@ import { MessagePanel } from "@/components/message-panel";
 import { TermDialog } from "@/components/structure/forms";
 import { ConfirmAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
-import { CONTENT_LOCALES, type Term } from "@/lib/content";
+import { contentLocaleFor } from "@/lib/client-config";
+import type { Term } from "@/lib/content";
 import { isForbidden, load } from "@/lib/core";
 import { CONTENT_MANAGE, CONTENT_READ } from "@/lib/permissions";
 import { descendants, flattenTree, termName, termSlug } from "@/lib/structure";
@@ -18,7 +19,7 @@ import { deleteTerm } from "../actions";
 export default async function TermsTab(props: PageProps<"/content/structure/terms">) {
   const t = await getTranslations("structure.terms");
   const uiLocale = await getLocale();
-  const locale = (CONTENT_LOCALES as readonly string[]).includes(uiLocale) ? uiLocale : "en";
+  const locale = await contentLocaleFor(uiLocale);
   const raw = (await props.searchParams).q;
   const q = (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 200) ?? "";
   let terms: Term[];

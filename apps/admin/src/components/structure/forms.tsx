@@ -8,6 +8,7 @@ import {
   saveRedirect,
   saveTerm,
 } from "@/app/(admin)/content/structure/actions";
+import { useContentLocales } from "@/components/content/locales";
 import { Dialog } from "@/components/ui/dialog";
 import {
   DialogButtons,
@@ -19,7 +20,7 @@ import {
   useSubmit,
 } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
-import { type Author, CONTENT_LOCALES, type Term } from "@/lib/content";
+import type { Author, Term } from "@/lib/content";
 import type { FormState } from "@/lib/form";
 import type { Redirect } from "@/lib/structure";
 
@@ -197,6 +198,7 @@ function TermFields({
 }) {
   const t = useTranslations("structure.terms");
   const locales = useTranslations("content.locales");
+  const { content: localeList } = useContentLocales();
   const [locale, setLocale] = useState(state.values?.locale ?? defaultLocale);
   const name = term?.names.find((n) => n.locale === locale);
   return (
@@ -207,7 +209,10 @@ function TermFields({
         value={locale}
         onChange={(event) => setLocale(event.target.value)}
         error={state.fields?.locale}
-        options={CONTENT_LOCALES.map((code) => ({ value: code, label: locales(code) }))}
+        options={localeList.map((code) => ({
+          value: code,
+          label: locales.has(code) ? locales(code) : code,
+        }))}
         hint={term ? t("localeHint") : undefined}
       />
       {/* `key` theo ngôn ngữ: đổi ngôn ngữ thì điền lại tên, slug của ngôn ngữ đó. */}
@@ -357,6 +362,7 @@ function RedirectFields({
 }) {
   const t = useTranslations("structure.redirects");
   const locales = useTranslations("content.locales");
+  const { content: localeList } = useContentLocales();
   const initialTarget = redirect
     ? redirect.status_code === 410
       ? "gone"
@@ -440,7 +446,10 @@ function RedirectFields({
         name="locale"
         defaultValue={state.values?.locale ?? redirect?.locale ?? defaultLocale}
         error={state.fields?.locale}
-        options={CONTENT_LOCALES.map((code) => ({ value: code, label: locales(code) }))}
+        options={localeList.map((code) => ({
+          value: code,
+          label: locales.has(code) ? locales(code) : code,
+        }))}
       />
     </>
   );

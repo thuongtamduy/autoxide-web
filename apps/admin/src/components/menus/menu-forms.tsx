@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRef } from "react";
 import { type NewMenuState, newMenu } from "@/app/(admin)/content/menus/actions";
+import { useContentLocales } from "@/components/content/locales";
 import { Dialog } from "@/components/ui/dialog";
 import {
   DialogButtons,
@@ -14,7 +15,6 @@ import {
   useSubmit,
 } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
-import { CONTENT_LOCALES } from "@/lib/content";
 
 /** "Menu mới" (`POST /api/v1/menus`): khoá (`main`, `footer`…), ngôn ngữ, chép từ một menu có sẵn. */
 export function NewMenuDialog({ copyFrom }: { copyFrom: { id: string; label: string }[] }) {
@@ -35,6 +35,7 @@ function NewMenuForm({
 }) {
   const t = useTranslations("menus.create");
   const locales = useTranslations("content.locales");
+  const { menus: localeList } = useContentLocales();
   const toast = useToast();
   const router = useRouter();
   const form = useRef<HTMLFormElement>(null);
@@ -71,7 +72,10 @@ function NewMenuForm({
         name="locale"
         defaultValue={state.values?.locale ?? "vi"}
         error={state.fields?.locale}
-        options={CONTENT_LOCALES.map((code) => ({ value: code, label: locales(code) }))}
+        options={localeList.map((code) => ({
+          value: code,
+          label: locales.has(code) ? locales(code) : code,
+        }))}
       />
       <SelectField
         label={t("copy")}

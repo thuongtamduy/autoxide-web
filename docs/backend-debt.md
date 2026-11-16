@@ -8,10 +8,10 @@ Cập nhật file này mỗi khi gửi đợt yêu cầu mới, khi core làm xo
 
 ## Các lần gửi
 
-| Ngày | Gửi bằng | Nội dung | Trạng thái |
-| --- | --- | --- | --- |
+| Ngày       | Gửi bằng                                                                     | Nội dung                                                                                                                                    | Trạng thái                                                               |
+| ---------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | 15/11/2026 | [thuongtamduy/autoxide#50](https://github.com/thuongtamduy/autoxide/pull/50) | Đề bài A–D (`docs/prompts/web-api-requests.md`): sửa chỗ chưa phù hợp, trường và bộ lọc thiếu, cấu hình cho giao diện, tài khoản và API key | **Core đã làm xong** (merge #51, 16/11); giao diện đã nối (W-027, W-028) |
-| 16/11/2026 | [thuongtamduy/autoxide#52](https://github.com/thuongtamduy/autoxide/pull/52) | Đợt 2: 4 chỗ core trả khác OpenAPI; ~20 thứ website bán hàng cần | **Đã merge vào `main`, core chưa làm** — chủ dự án quyết để đó, nhắc sau |
+| 16/11/2026 | [thuongtamduy/autoxide#52](https://github.com/thuongtamduy/autoxide/pull/52) | Đợt 2: 4 chỗ core trả khác OpenAPI; ~20 thứ website bán hàng cần                                                                            | **Đã merge vào `main`, core chưa làm** — chủ dự án quyết để đó, nhắc sau |
 
 ## Còn nợ (đếm ngày 16/11/2026)
 

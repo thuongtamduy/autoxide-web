@@ -4,6 +4,7 @@ import { EntryFilters, EntryTable, UpcomingTable } from "@/components/content/en
 import { RequiredPages, SiteChips } from "@/components/content/sample-sites";
 import { MessagePanel } from "@/components/message-panel";
 import { Icon } from "@/components/shell/icon";
+import { contentLocales } from "@/lib/client-config";
 import {
   abilities,
   filtersHref,
@@ -99,7 +100,9 @@ export default async function ContentPage(props: PageProps<"/content">) {
             })}
           </nav>
 
-          {page.kind === "entries" ? <EntryFilters filters={filters} /> : null}
+          {page.kind === "entries" ? (
+            <EntryFilters filters={filters} locales={(await contentLocales()).content} />
+          ) : null}
           {page.kind === "upcoming" ? <p className="fhint">{t("list.upcomingAbout")}</p> : null}
 
           <div className="card tcard">

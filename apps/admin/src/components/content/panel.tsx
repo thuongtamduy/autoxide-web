@@ -15,10 +15,11 @@ import {
   suggestSeo,
   translateWithAi,
 } from "@/app/(admin)/content/actions";
+import { useContentLocales } from "@/components/content/locales";
 import { CheckField } from "@/components/ui/form";
 import { Time } from "@/components/ui/time";
 import { useToast } from "@/components/ui/toast";
-import { CONTENT_LOCALES, type EntryErrors, type SeoSuggestion, type Term } from "@/lib/content";
+import type { EntryErrors, SeoSuggestion, Term } from "@/lib/content";
 import { useEditorApi } from "./context";
 import type { Draft, EditorData } from "./editor";
 import { ConfirmDialog, ScheduleDialog } from "./entry-dialogs";
@@ -716,10 +717,11 @@ function SeoPane({
 function LanguagesPane({ data }: { data: EditorData }) {
   const t = useTranslations("content.languages");
   const locales = useTranslations("content.locales");
+  const { content: localeList } = useContentLocales();
   const api = useEditorApi();
   const toast = useToast();
   const { entry } = api;
-  const others = CONTENT_LOCALES.filter((code) => code !== entry.locale);
+  const others = localeList.filter((code) => code !== entry.locale);
   return (
     <div className="ce-sections">
       <div className="ce-row">

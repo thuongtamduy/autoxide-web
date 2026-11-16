@@ -13,7 +13,7 @@ import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { type Outcome, send } from "@/lib/action";
-import { CONTENT_LOCALES } from "@/lib/content";
+import { LOCALE_CODE } from "@/lib/content";
 import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
 
 type Result<T> = { data?: T; error?: unknown; response: Response };
@@ -100,7 +100,7 @@ export async function movePage(state: FormState, formData: FormData): Promise<Fo
 
 const TermForm = z.object({
   taxonomy: z.enum(["category", "tag"]),
-  locale: z.enum(CONTENT_LOCALES),
+  locale: z.string().regex(LOCALE_CODE),
   name: z.string().trim().min(1).max(200),
   slug: z.string().trim().max(200).optional(),
   description: z.string().max(5000).optional(),
@@ -234,7 +234,7 @@ const RedirectForm = z.object({
   to_url: z.string().trim().max(2000).optional(),
   to_entry_id: z.union([z.uuid(), z.literal("")]).optional(),
   status_code: z.enum(["301", "302", "307", "308"]).optional(),
-  locale: z.enum(CONTENT_LOCALES),
+  locale: z.string().regex(LOCALE_CODE),
 });
 const REDIRECT_FIELDS = ["from_path", "to_url", "to_entry_id", "status_code", "locale"] as const;
 

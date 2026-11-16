@@ -1,7 +1,8 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { NewEntryForm } from "@/components/content/new-entry";
 import { MessagePanel } from "@/components/message-panel";
-import { abilities, CONTENT_LOCALES } from "@/lib/content";
+import { contentLocaleFor } from "@/lib/client-config";
+import { abilities } from "@/lib/content";
 import { optional } from "@/lib/content-server";
 import { load } from "@/lib/core";
 import { getMe } from "@/lib/viewer";
@@ -22,7 +23,7 @@ export default async function NewEntryPage(props: PageProps<"/content/new">) {
   }
   const isPage = kind === "page";
   const uiLocale = await getLocale();
-  const locale = (CONTENT_LOCALES as readonly string[]).includes(uiLocale) ? uiLocale : "en";
+  const locale = await contentLocaleFor(uiLocale);
   // Trang cha: mọi trang (một trang 200 bài); core kiểm độ sâu và vòng lặp.
   const pages = isPage
     ? await optional(

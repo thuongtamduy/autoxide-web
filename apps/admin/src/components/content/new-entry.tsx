@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRef, useState, useTransition } from "react";
 import { createEntry } from "@/app/(admin)/content/actions";
+import { useContentLocales } from "@/components/content/locales";
 import { SelectField } from "@/components/ui/form";
-import { CONTENT_LOCALES, type EntryErrors, type EntryKind, entryErrors } from "@/lib/content";
+import { type EntryErrors, type EntryKind, entryErrors } from "@/lib/content";
 import { BodyEditor, type BodyEditorHandle } from "./body-editor";
 import { TextField } from "./fields";
 
@@ -22,6 +23,7 @@ export function NewEntryForm({
   const t = useTranslations("content.editor");
   const n = useTranslations("content.new");
   const locales = useTranslations("content.locales");
+  const { content: localeList } = useContentLocales();
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -55,7 +57,7 @@ export function NewEntryForm({
           startTransition(async () => {
             const result = await createEntry({
               kind,
-              locale: locale as (typeof CONTENT_LOCALES)[number],
+              locale: locale as string,
               parent_id: kind === "page" && parent ? parent : null,
               title: title.trim(),
               slug: slug.trim(),
@@ -130,7 +132,10 @@ export function NewEntryForm({
                 setLocale(event.target.value);
                 setParent("");
               }}
-              options={CONTENT_LOCALES.map((code) => ({ value: code, label: locales(code) }))}
+              options={localeList.map((code) => ({
+                value: code,
+                label: locales.has(code) ? locales(code) : code,
+              }))}
             />
             {kind === "page" ? (
               <SelectField

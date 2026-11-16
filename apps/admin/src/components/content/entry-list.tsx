@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import {
-  CONTENT_LOCALES,
   type Entry,
   entryPath,
   filtersHref,
@@ -20,7 +19,14 @@ import { EntryStatusBadges } from "./status";
  * lọc là tham số của `GET /content/entries` (core lọc cả danh sách, không chỉ trang đang xem).
  * Form GET: kết quả nằm trên địa chỉ, chạy cả khi chưa có JS.
  */
-export function EntryFilters({ filters }: { filters: ListFilters }) {
+/** `locales`: ngôn ngữ của nội dung theo cấu hình của core (trang đọc bằng `contentLocales()`). */
+export function EntryFilters({
+  filters,
+  locales,
+}: {
+  filters: ListFilters;
+  locales: readonly string[];
+}) {
   const t = useTranslations("content.list");
   return (
     <>
@@ -36,12 +42,18 @@ export function EntryFilters({ filters }: { filters: ListFilters }) {
           </Link>
         ))}
       </nav>
-      <FilterForm filters={filters} />
+      <FilterForm filters={filters} localeList={locales} />
     </>
   );
 }
 
-function FilterForm({ filters }: { filters: ListFilters }) {
+function FilterForm({
+  filters,
+  localeList,
+}: {
+  filters: ListFilters;
+  localeList: readonly string[];
+}) {
   const t = useTranslations("content.list");
   const locales = useTranslations("content.locales");
   return (
@@ -77,7 +89,7 @@ function FilterForm({ filters }: { filters: ListFilters }) {
         <span className="vh">{t("locale")}</span>
         <select className="inp" name="locale" defaultValue={filters.locale ?? ""}>
           <option value="">{t("allLocales")}</option>
-          {CONTENT_LOCALES.map((code) => (
+          {localeList.map((code) => (
             <option key={code} value={code}>
               {locales(code)}
             </option>
@@ -88,7 +100,7 @@ function FilterForm({ filters }: { filters: ListFilters }) {
         <span className="vh">{t("missing")}</span>
         <select className="inp" name="missing" defaultValue={filters.missing ?? ""}>
           <option value="">{t("anyTranslation")}</option>
-          {CONTENT_LOCALES.map((code) => (
+          {localeList.map((code) => (
             <option key={code} value={code}>
               {t("missingIn", { language: locales(code) })}
             </option>

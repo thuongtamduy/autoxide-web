@@ -7,7 +7,7 @@ import { MediaGrid, MediaTable } from "@/components/media/media-list";
 import { MessagePanel } from "@/components/message-panel";
 import { Icon } from "@/components/shell/icon";
 import { getClientConfig } from "@/lib/client-config";
-import { CONTENT_LOCALES } from "@/lib/content";
+import { FALLBACK_CONTENT_LOCALES } from "@/lib/content";
 import { optional } from "@/lib/content-server";
 import { isForbidden, isNotFound, load, loadTagged } from "@/lib/core";
 import {
@@ -78,7 +78,7 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
     ? { maxBytes: media.max_bytes, allowedTypes: media.allowed_types }
     : null;
   // Ngôn ngữ alt máy chủ nhận (`AUTOXIDE_MEDIA_ALT_LOCALES`); core cũ thì ngôn ngữ của nội dung.
-  const altLocales = media?.alt_locales.length ? media.alt_locales : [...CONTENT_LOCALES];
+  const altLocales = media?.alt_locales.length ? media.alt_locales : [...FALLBACK_CONTENT_LOCALES];
   // Tên người tải lên chỉ có ở danh sách (`include=uploader`): lấy từ dòng của tệp đang mở.
   const uploaderName =
     page.data.find((item) => item.id === selected?.item.id)?.uploaded_by_name ?? null;

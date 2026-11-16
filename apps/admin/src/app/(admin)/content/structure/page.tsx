@@ -4,7 +4,8 @@ import { EntryStatusBadges } from "@/components/content/status";
 import { MessagePanel } from "@/components/message-panel";
 import { MovePageDialog } from "@/components/structure/forms";
 import { Table, Td, Th } from "@/components/ui/table";
-import { abilities, CONTENT_LOCALES, type Entry, entryPath } from "@/lib/content";
+import { contentLocales } from "@/lib/client-config";
+import { abilities, type Entry, entryPath } from "@/lib/content";
 import { isForbidden, load } from "@/lib/core";
 import { CONTENT_READ } from "@/lib/permissions";
 import { flattenTree, pagePath, parentChoices } from "@/lib/structure";
@@ -17,9 +18,8 @@ import { getMe } from "@/lib/viewer";
 export default async function PagesTab(props: PageProps<"/content/structure">) {
   const t = await getTranslations("structure.pages");
   const { locale: wanted } = await props.searchParams;
-  const locale = (CONTENT_LOCALES as readonly string[]).includes(String(wanted))
-    ? String(wanted)
-    : "";
+  const { content: localeList } = await contentLocales();
+  const locale = localeList.includes(String(wanted)) ? String(wanted) : "";
   let pages: Entry[];
   let more = false;
   try {
@@ -73,7 +73,7 @@ export default async function PagesTab(props: PageProps<"/content/structure">) {
           >
             {t("allLocales")} <span className="cnt">{pages.length}</span>
           </Link>
-          {CONTENT_LOCALES.map((code) => (
+          {localeList.map((code) => (
             <Link
               key={code}
               className={locale === code ? "chip on" : "chip"}

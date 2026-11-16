@@ -4,6 +4,7 @@ import "server-only";
 
 import type { components } from "@autoxide/sdk";
 import { cache } from "react";
+import { FALLBACK_CONTENT_LOCALES } from "./content";
 import { anonymousClient } from "./core";
 
 /**
@@ -25,3 +26,27 @@ export const getClientConfig = cache(async (): Promise<ClientConfig | null> => {
     return null;
   }
 });
+
+/**
+ * Ngôn ngữ của nội dung và menu theo cấu hình của core; core cũ hay không trả lời thì giá trị mặc
+ * định của core (`en`, `vi`).
+ */
+export async function contentLocales(): Promise<{
+  content: string[];
+  contentDefault: string;
+  menus: string[];
+}> {
+  const config = await getClientConfig();
+  const content = config?.content?.locales?.length
+    ? config.content.locales
+    : [...FALLBACK_CONTENT_LOCALES];
+  const contentDefault = config?.content?.default_locale ?? content[0] ?? "en";
+  const menus = config?.menus?.locales?.length ? config.menus.locales : content;
+  return { content, contentDefault, menus };
+}
+
+/** Ngôn ngữ của giao diện nếu nội dung có ngôn ngữ đó, không thì ngôn ngữ mặc định của nội dung. */
+export async function contentLocaleFor(uiLocale: string): Promise<string> {
+  const { content, contentDefault } = await contentLocales();
+  return content.includes(uiLocale) ? uiLocale : contentDefault;
+}

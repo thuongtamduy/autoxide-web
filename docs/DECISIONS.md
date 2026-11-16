@@ -1534,3 +1534,27 @@ dữ liệu mẫu đúng hình dạng đặc tả để khi core có chỉ đổ
 đơn giản hơn và giống kho mẫu của trang quản trị); bước đặt hàng mỗi bước một địa chỉ (`/thanh-toan/giao-hang`…) —
 một form giữ được dữ liệu khi quay lại bước trước mà không cần lưu tạm; đăng nhập mẫu có mật khẩu — không, website
 không bao giờ nhận mật khẩu của người mua.
+
+## W-031 · Ngôn ngữ của nội dung và menu lấy từ core; sổ nợ của backend — 2026-11-16 — agent quyết
+
+Quyết định:
+
+- **Danh sách ngôn ngữ do core quyết** (`content.locales`, `content.default_locale`, `menus.locales` của
+  `GET /kernel/client-config`), thay cho hằng `CONTENT_LOCALES = ["en", "vi"]` viết cứng:
+  - máy chủ đọc bằng `contentLocales()` / `contentLocaleFor(uiLocale)` (`src/lib/client-config.ts`);
+  - layout của phân hệ Nội dung đặt danh sách vào `ContentLocalesProvider`; form trong phân hệ lấy bằng
+    `useContentLocales()` (`src/components/content/locales.tsx`). Component dùng được cả hai phía (không có
+    `"use client"`, vd `entry-list.tsx`) nhận danh sách bằng prop, không dùng hook;
+  - Server Action và bộ lọc trên địa chỉ chỉ kiểm định dạng mã (`LOCALE_CODE`); ngôn ngữ có được mở hay không
+    do core kiểm;
+  - tên ngôn ngữ chưa có bản dịch (vd `pt-BR`) hiện nguyên mã thay vì báo lỗi;
+  - không đọc được cấu hình (core cũ) thì dùng `FALLBACK_CONTENT_LOCALES` (`en`, `vi`, mặc định của core).
+- **Sổ nợ của backend** ở `docs/backend-debt.md`: tóm tắt những gì đã gửi core mà core chưa làm, lần gửi, cách
+  nhắc. Danh sách từng dòng vẫn ở `docs/prompts/web-build-api-gaps.md` của core; sổ chỉ giữ phần tóm tắt.
+  Chủ dự án quyết (16/11/2026) để các yêu cầu đợt 2 (#52) ở đó, nhắc sau.
+
+Lý do: người vận hành đổi `AUTOXIDE_CONTENT_LOCALES` thì giao diện phải theo, không phải sửa code; core là nguồn
+sự thật cho ngôn ngữ được mở.
+
+Đã cân nhắc: truyền danh sách qua prop ở mọi tầng — nhiều tầng component, dễ sót; đọc cấu hình trong từng form
+phía trình duyệt — token và địa chỉ core không xuống trình duyệt, và mỗi form một lần gọi.

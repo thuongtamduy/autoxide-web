@@ -18,10 +18,14 @@ export type SeoSuggestion = Schemas["SeoSuggestion"];
 export type TranslationRequest = Schemas["TranslationRequestResponse"];
 
 /**
- * Ngôn ngữ của nội dung. Core đặt bằng `AUTOXIDE_CONTENT_LOCALES` (mặc định `en,vi`) nhưng
- * chưa có API đọc danh sách này, nên giao diện dùng đúng giá trị mặc định của core.
+ * Ngôn ngữ của nội dung khi không đọc được cấu hình của core: giá trị mặc định của
+ * `AUTOXIDE_CONTENT_LOCALES`. Danh sách thật lấy từ `contentLocales()` (máy chủ) hay
+ * `useContentLocales()` (form trong phân hệ Nội dung).
  */
-export const CONTENT_LOCALES = ["en", "vi"] as const;
+export const FALLBACK_CONTENT_LOCALES = ["en", "vi"] as const;
+
+/** Mã ngôn ngữ BCP 47 dạng ngắn (`vi`, `en`, `pt-BR`). Core kiểm ngôn ngữ có được mở hay không. */
+export const LOCALE_CODE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
 
 /**
  * Đầu đường dẫn của bài viết, dạng `/blog/`, từ cấu hình của core (`content.post_path_prefix` của
@@ -83,7 +87,7 @@ function one(params: SearchParams, key: string): string | undefined {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 function isLocale(value: string | undefined): value is string {
-  return value !== undefined && (CONTENT_LOCALES as readonly string[]).includes(value);
+  return value !== undefined && LOCALE_CODE.test(value);
 }
 
 /** Đọc bộ lọc từ địa chỉ (`?status=draft&kind=page&q=…`); giá trị lạ thì bỏ qua. */

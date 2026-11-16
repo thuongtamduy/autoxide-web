@@ -20,10 +20,16 @@ describe("parseFilters / filtersHref / listQuery", () => {
     expect(
       parseFilters({ status: "draft", kind: "page", locale: "vi", q: "  bếp ", cursor: "abc" }),
     ).toEqual({ status: "draft", kind: "page", locale: "vi", q: "bếp", cursor: "abc" });
+    // Ngôn ngữ nào được mở do core quyết (`AUTOXIDE_CONTENT_LOCALES`): giao diện chỉ bỏ mã sai định dạng.
     expect(
-      parseFilters({ status: "trash", kind: "video", locale: "fr", q: "", missing: "fr" }),
+      parseFilters({ status: "trash", kind: "video", locale: "Français", q: "", missing: "x_1" }),
     ).toEqual({
       status: "all",
+    });
+    expect(parseFilters({ locale: "fr", missing: "pt-BR" })).toEqual({
+      status: "all",
+      locale: "fr",
+      missing: "pt-BR",
     });
     expect(parseFilters({ status: ["published", "draft"] }).status).toBe("published");
   });
