@@ -1558,3 +1558,25 @@ sự thật cho ngôn ngữ được mở.
 
 Đã cân nhắc: truyền danh sách qua prop ở mọi tầng — nhiều tầng component, dễ sót; đọc cấu hình trong từng form
 phía trình duyệt — token và địa chỉ core không xuống trình duyệt, và mỗi form một lần gọi.
+
+## W-033 · Website: chủ đề `/blog` từ core, chuyển tiếp khách khi core chạy nhiều khách — 2026-11-16 — agent quyết
+
+Quyết định:
+
+- **Chủ đề của `/blog` lấy từ `GET /api/v1/content/public/terms`** (core D-294, `taxonomy=category`, kèm số bài
+  công khai), thay cho việc gom chủ đề từ các bài trên trang đang xem. Core trả lỗi hay chưa có endpoint thì không
+  hiện dải chủ đề, trang vẫn chạy.
+- **Website cho core biết đang phục vụ khách nào** (bước 33 của core) bằng một hàm thuần `tenantHeaders`
+  (`apps/storefront/src/lib/tenant.ts`), dùng chung cho client công khai và route chuyển tiếp ảnh:
+  - đặt `AUTOXIDE_STOREFRONT_TENANT` (slug hay id) thì gửi `Autoxide-Tenant` — một website, một khách;
+  - không đặt thì gửi `X-Forwarded-Host` bằng tên miền khách đang mở — một website phục vụ mọi tên miền riêng
+    của khách; core chỉ tin header này khi website nằm trong `AUTOXIDE_HTTP_TRUSTED_PROXIES`;
+  - tên miền không đúng dạng (chữ thường, số, `.`, `-`, port) thì không gửi gì;
+  - core chạy chế độ một khách thì bỏ qua cả hai header, nên mặc định không phải cấu hình gì.
+
+Lý do: core là nguồn sự thật về chủ đề và số bài; cách chọn khách theo tên miền là cách core đã chốt, website chỉ
+chuyển tiếp. Không gửi cookie hay token nào kèm header khách.
+
+Đã cân nhắc: gửi `Host` gốc thay cho `X-Forwarded-Host` — `fetch` của Node không cho đặt `Host`; tra id của khách
+theo tên miền ở website rồi gửi `Autoxide-Tenant` — thêm một lần gọi và một bộ nhớ đệm, trong khi core đã làm
+việc này.

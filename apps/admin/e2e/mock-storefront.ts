@@ -292,6 +292,25 @@ export async function storefrontRoutes(
     send(response, 200, pageOf(found, url) satisfies Schemas["Page_PublicEntryResponse"]);
     return true;
   }
+  // Chủ đề của blog (core D-294): danh mục / thẻ có ít nhất một bài đã đăng ở `locale`, kèm số bài.
+  if (route === "GET /api/v1/content/public/terms") {
+    const locale = url.searchParams.get("locale") ?? "vi";
+    const taxonomy = url.searchParams.get("taxonomy");
+    const counts = new Map<string, Schemas["PublicTermCount"]>();
+    for (const entry of published(locale, "post")) {
+      for (const term of entry.terms) {
+        if (taxonomy && term.taxonomy !== taxonomy) continue;
+        const seen = counts.get(term.id);
+        counts.set(term.id, seen ? { ...seen, posts: seen.posts + 1 } : { ...term, posts: 1 });
+      }
+    }
+    send(
+      response,
+      200,
+      pageOf([...counts.values()], url) satisfies Schemas["Page_PublicTermCount"],
+    );
+    return true;
+  }
   if (route === "GET /api/v1/content/public/feed") {
     const locale = url.searchParams.get("locale") ?? "vi";
     send(response, 200, {

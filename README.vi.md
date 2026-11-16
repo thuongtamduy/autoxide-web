@@ -169,13 +169,14 @@ cp apps/storefront/.env.example apps/storefront/.env.local   # rồi sửa nếu
 pnpm --filter @autoxide/storefront dev                       # http://localhost:3300
 ```
 
-| Biến                        | Mặc định                | Ý nghĩa                                                                |
-| --------------------------- | ----------------------- | ---------------------------------------------------------------------- |
-| `AUTOXIDE_API_URL`          | `http://127.0.0.1:8080` | Địa chỉ của core, không có `/api/v1`. Trình duyệt không gọi trực tiếp. |
-| `AUTOXIDE_STOREFRONT_URL`   | `http://localhost:3000` | Địa chỉ công khai của website: link canonical, sitemap, RSS.           |
-| `AUTOXIDE_STOREFRONT_NAME`  | cửa hàng mẫu / Autoxide | Tên cửa hàng ở đầu trang, chân trang và tiêu đề.                       |
-| `AUTOXIDE_STOREFRONT_THEME` | `default`               | Kiểu giao diện: `default`, `market`, `minimal` hoặc `luxe`.            |
-| `AUTOXIDE_WEB_SAMPLE_DATA`  | `false` khi chạy thật   | Hiện các khối bán hàng dùng dữ liệu mẫu.                               |
+| Biến                         | Mặc định                | Ý nghĩa                                                                                                                                                     |
+| ---------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTOXIDE_API_URL`           | `http://127.0.0.1:8080` | Địa chỉ của core, không có `/api/v1`. Trình duyệt không gọi trực tiếp.                                                                                      |
+| `AUTOXIDE_STOREFRONT_URL`    | `http://localhost:3000` | Địa chỉ công khai của website: link canonical, sitemap, RSS.                                                                                                |
+| `AUTOXIDE_STOREFRONT_NAME`   | cửa hàng mẫu / Autoxide | Tên cửa hàng ở đầu trang, chân trang và tiêu đề.                                                                                                            |
+| `AUTOXIDE_STOREFRONT_THEME`  | `default`               | Kiểu giao diện: `default`, `market`, `minimal` hoặc `luxe`.                                                                                                 |
+| `AUTOXIDE_STOREFRONT_TENANT` | trống                   | Khách (slug hay ID) của core chạy nhiều khách; trống: chọn theo tên miền người đọc mở (cần máy chủ này nằm trong `AUTOXIDE_HTTP_TRUSTED_PROXIES` của core). |
+| `AUTOXIDE_WEB_SAMPLE_DATA`   | `false` khi chạy thật   | Hiện các khối bán hàng dùng dữ liệu mẫu.                                                                                                                    |
 
 Đặt các biến này **ở core** để thư của core trỏ về website:
 

@@ -6,6 +6,7 @@ type Schemas = components["schemas"];
 export type PublicEntry = Schemas["PublicEntryResponse"];
 export type PublicMedia = Schemas["PublicMedia"];
 export type PublicTerm = Schemas["PublicTerm"];
+export type PublicTermCount = Schemas["PublicTermCount"];
 export type PublicAuthor = Schemas["PublicAuthor"];
 export type PublicTranslation = Schemas["PublicTranslation"];
 export type BodyNode = Schemas["BodyNode"];

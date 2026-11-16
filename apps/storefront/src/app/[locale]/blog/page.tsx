@@ -4,7 +4,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Icon } from "@/components/icon";
 import { PostList, TopicChips } from "@/components/post-list";
 import type { Locale } from "@/i18n/routing";
-import { listPosts } from "@/lib/content";
+import { listPosts, listTopics } from "@/lib/content";
 import { routes } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 import { siteIdentity } from "@/lib/site";
@@ -32,7 +32,10 @@ export default async function BlogPage(props: PageProps<"/[locale]/blog">) {
   const after = typeof cursor === "string" ? cursor.slice(0, 500) : undefined;
   const site = await siteIdentity(locale);
   const t = await getTranslations({ locale, namespace: "blog" });
-  const page = await listPosts(locale, after ? { cursor: after } : {});
+  const [page, topics] = await Promise.all([
+    listPosts(locale, after ? { cursor: after } : {}),
+    listTopics(locale),
+  ]);
   const posts = page?.data ?? [];
   return (
     <main id="main" className="wrap bl-page">
@@ -45,7 +48,7 @@ export default async function BlogPage(props: PageProps<"/[locale]/blog">) {
           {t("rss")}
         </a>
       </header>
-      <TopicChips posts={posts} label={t("topics")} />
+      <TopicChips topics={topics?.data ?? []} label={t("topics")} />
       <PostList
         posts={posts}
         locale={locale}

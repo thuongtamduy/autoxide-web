@@ -178,13 +178,14 @@ cp apps/storefront/.env.example apps/storefront/.env.local   # then edit if need
 pnpm --filter @autoxide/storefront dev                       # http://localhost:3300
 ```
 
-| Variable                    | Default                 | Meaning                                                                  |
-| --------------------------- | ----------------------- | ------------------------------------------------------------------------ |
-| `AUTOXIDE_API_URL`          | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Browsers never call it directly. |
-| `AUTOXIDE_STOREFRONT_URL`   | `http://localhost:3000` | Public address of the website: canonical links, sitemap, RSS.            |
-| `AUTOXIDE_STOREFRONT_NAME`  | sample shop / Autoxide  | Name of the shop in the header, footer and titles.                       |
-| `AUTOXIDE_STOREFRONT_THEME` | `default`               | Look: `default`, `market`, `minimal` or `luxe`.                          |
-| `AUTOXIDE_WEB_SAMPLE_DATA`  | `false` in production   | Show the shop sections that use sample data.                             |
+| Variable                     | Default                 | Meaning                                                                                                                                                              |
+| ---------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTOXIDE_API_URL`           | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Browsers never call it directly.                                                                                             |
+| `AUTOXIDE_STOREFRONT_URL`    | `http://localhost:3000` | Public address of the website: canonical links, sitemap, RSS.                                                                                                        |
+| `AUTOXIDE_STOREFRONT_NAME`   | sample shop / Autoxide  | Name of the shop in the header, footer and titles.                                                                                                                   |
+| `AUTOXIDE_STOREFRONT_THEME`  | `default`               | Look: `default`, `market`, `minimal` or `luxe`.                                                                                                                      |
+| `AUTOXIDE_STOREFRONT_TENANT` | empty                   | Customer (slug or ID) of a core that runs several; empty: chosen by the domain the visitor opened (needs this server in the core's `AUTOXIDE_HTTP_TRUSTED_PROXIES`). |
+| `AUTOXIDE_WEB_SAMPLE_DATA`   | `false` in production   | Show the shop sections that use sample data.                                                                                                                         |
 
 Set these **on the core** so its mails link to the website:
 

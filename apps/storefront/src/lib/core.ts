@@ -2,7 +2,8 @@ import "server-only";
 
 import { type AutoxideClient, createAutoxideClient, toApiError } from "@autoxide/sdk";
 import { headers } from "next/headers";
-import { coreUrl } from "./env";
+import { coreUrl, tenantSetting } from "./env";
+import { tenantHeaders } from "./tenant";
 
 // Website công khai chỉ gọi endpoint công khai của core (`…/public/…`), từ máy chủ Next.js, như
 // khách: không có token nào, trình duyệt không bao giờ gọi core trực tiếp (trừ ảnh, đi qua route
@@ -17,6 +18,16 @@ import { coreUrl } from "./env";
  */
 export function publicClient(locale: string, forwardedFor?: string | null): AutoxideClient {
   const client = createAutoxideClient({ baseUrl: coreUrl(), language: locale });
+  client.use({
+    async onRequest({ request }) {
+      for (const [name, value] of Object.entries(
+        tenantHeaders(tenantSetting(), await visitorHost()),
+      )) {
+        request.headers.set(name, value);
+      }
+      return request;
+    },
+  });
   if (forwardedFor) {
     client.use({
       onRequest({ request }) {
@@ -26,6 +37,19 @@ export function publicClient(locale: string, forwardedFor?: string | null): Auto
     });
   }
   return client;
+}
+
+/**
+ * Tên miền người đọc đang mở (để core chọn đúng khách theo tên miền). Ngoài một request (vd lúc build)
+ * thì `null`.
+ */
+export async function visitorHost(): Promise<string | null> {
+  try {
+    const incoming = await headers();
+    return incoming.get("x-forwarded-host") ?? incoming.get("host");
+  } catch {
+    return null;
+  }
 }
 
 /** `X-Forwarded-For` của request đang xử lý (Server Action), kèm địa chỉ do proxy phía trước báo. */

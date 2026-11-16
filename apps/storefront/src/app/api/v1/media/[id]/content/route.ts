@@ -1,4 +1,5 @@
-import { coreUrl } from "@/lib/env";
+import { coreUrl, tenantSetting } from "@/lib/env";
+import { tenantHeaders } from "@/lib/tenant";
 
 // Ảnh công khai của core đi qua website: địa chỉ ảnh trong dữ liệu của core là đường dẫn
 // `/api/v1/media/<id>/content?v=…` (cùng gốc với core), nên website chuyển tiếp đúng đường dẫn đó.
@@ -19,7 +20,12 @@ export async function GET(request: Request, context: RouteContext<"/api/v1/media
   const { id } = await context.params;
   if (!UUID.test(id)) return new Response("Not found", { status: 404 });
   const search = new URL(request.url).search;
-  const headers = new Headers();
+  const headers = new Headers(
+    tenantHeaders(
+      tenantSetting(),
+      request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
+    ),
+  );
   const match = request.headers.get("if-none-match");
   if (match) headers.set("If-None-Match", match);
   let upstream: Response;

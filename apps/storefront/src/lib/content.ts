@@ -57,6 +57,18 @@ export function isTaxonomy(value: string): value is Taxonomy {
   return (TAXONOMIES as readonly string[]).includes(value);
 }
 
+/**
+ * Chủ đề của blog: danh mục có ít nhất một bài đã đăng ở ngôn ngữ này, kèm số bài (core D-294). Hỏng thì
+ * `null` — khối chủ đề là phụ, trang vẫn hiện danh sách bài.
+ */
+export const listTopics = cache(async (locale: Locale) =>
+  loadOptional(locale, (client) =>
+    client.GET("/api/v1/content/public/terms", {
+      params: { query: { locale, taxonomy: "category", limit: 50 } },
+    }),
+  ),
+);
+
 export const getTerm = cache(async (locale: Locale, taxonomy: Taxonomy, slug: string) =>
   loadPublic(locale, (client) =>
     client.GET("/api/v1/content/public/terms/{taxonomy}/{slug}", {

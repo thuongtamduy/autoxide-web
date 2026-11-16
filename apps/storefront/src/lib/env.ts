@@ -42,3 +42,12 @@ export function themeVariant(): Variant {
 export function siteNameSetting(): string {
   return (process.env.AUTOXIDE_STOREFRONT_NAME ?? "").trim();
 }
+
+/**
+ * Khách (cửa hàng) mà website này phục vụ khi core chạy nhiều khách (`AUTOXIDE_STOREFRONT_TENANT`: slug
+ * hay ID của khách). Trống: website chuyển tên miền người đọc đang mở cho core (`X-Forwarded-Host`), để
+ * một bản website phục vụ nhiều cửa hàng theo tên miền. Core chạy một khách thì bỏ qua cả hai.
+ */
+export function tenantSetting(): string {
+  return (process.env.AUTOXIDE_STOREFRONT_TENANT ?? "").trim();
+}

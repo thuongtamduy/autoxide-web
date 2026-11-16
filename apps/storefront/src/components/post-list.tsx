@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { routes } from "@/lib/routes";
-import type { PublicEntry } from "@/lib/types";
+import type { PublicEntry, PublicTermCount } from "@/lib/types";
 import { PostCard } from "./post-card";
 
 /**
@@ -52,22 +52,15 @@ export function PostList({
   );
 }
 
-/** Danh mục có trong các bài của trang (core chưa có danh sách danh mục công khai). */
-export function TopicChips({ posts, label }: { posts: PublicEntry[]; label: string }) {
-  const seen = new Map<string, { name: string; slug: string }>();
-  for (const post of posts) {
-    for (const term of post.terms) {
-      if (term.taxonomy === "category" && !seen.has(term.id)) {
-        seen.set(term.id, { name: term.name, slug: term.slug });
-      }
-    }
-  }
-  if (seen.size === 0) return null;
+/** Chủ đề của blog: danh mục có bài đã đăng, kèm số bài, từ `GET /content/public/terms` của core. */
+export function TopicChips({ topics, label }: { topics: PublicTermCount[]; label: string }) {
+  if (topics.length === 0) return null;
   return (
     <nav className="bl-topics" aria-label={label}>
-      {[...seen.values()].map((term) => (
-        <Link key={term.slug} className="chip" href={routes.term("category", term.slug)}>
+      {topics.map((term) => (
+        <Link key={term.id} className="chip" href={routes.term("category", term.slug)}>
           {term.name}
+          <span className="cnt">{term.posts}</span>
         </Link>
       ))}
     </nav>

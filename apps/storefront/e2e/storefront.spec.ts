@@ -76,6 +76,9 @@ test("mục bài viết: 12 bài một trang, trang sau theo con trỏ", async (
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Góc bếp");
   await expect(page.locator(".bl-grid > *")).toHaveCount(12);
   await expectNoOrphanCard(page, ".bl-grid");
+  // Chủ đề lấy từ core (`GET /content/public/terms`, D-294): danh mục có bài, kèm số bài.
+  const topics = page.getByRole("navigation", { name: "Chủ đề" });
+  await expect(topics.getByRole("link")).toHaveText([/^Chọn mua\s*1$/, /^Mẹo dùng\s*13$/]);
   await page.getByRole("link", { name: "Bài cũ hơn" }).click();
   await expect(page).toHaveURL(/\/blog\?cursor=/);
   await expect(page.locator(".bl-grid > *")).toHaveCount(2);
