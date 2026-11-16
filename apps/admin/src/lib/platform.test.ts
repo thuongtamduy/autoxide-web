@@ -6,6 +6,9 @@ import {
   matchesFilter,
   mergePlacements,
   mergeTenants,
+  moveFinished,
+  moveSteps,
+  moveTargets,
   needsAttention,
   orderTree,
   roughAge,
@@ -70,6 +73,38 @@ describe("ghép khách và placement của core với dữ liệu mẫu", () => 
     const placements = mergePlacements([main], null);
     expect(placements).toHaveLength(1);
     expect(placements[0]).toMatchObject({ control: true, location: "", pending_migrations: [] });
+  });
+
+  it("nơi lưu file của placement đi theo bản của core; không có thì `null`", () => {
+    const storage = { kind: "s3", bucket: "b", credentials: true };
+    const [own, plain] = mergePlacements(
+      [
+        { ...main, id: "p2", name: "eu-db", storage },
+        { ...main, storage: null },
+      ],
+      null,
+    );
+    expect(own?.storage).toEqual(storage);
+    expect(plain?.storage).toBeNull();
+  });
+});
+
+describe("dời khách", () => {
+  it("các bước của lượt dời: đã qua, đang ở, chưa tới; xong thì mọi bước đã qua", () => {
+    expect(moveSteps("copied").map((s) => s.phase)).toEqual(["done", "current", "todo", "todo"]);
+    expect(moveSteps("done").every((s) => s.phase === "done")).toBe(true);
+    expect(moveSteps("aborted").some((s) => s.phase === "current")).toBe(false);
+    expect(moveFinished("done") && moveFinished("aborted")).toBe(true);
+    expect(moveFinished("switched")).toBe(false);
+  });
+
+  it("đích dời: placement của core trừ placement đang ở; placement mẫu không chọn được", () => {
+    const list = [
+      { name: "main", source: "core" as const },
+      { name: "eu-db", source: "core" as const },
+      { name: "pool-1", source: "sample" as const },
+    ];
+    expect(moveTargets(list, "main").map((p) => p.name)).toEqual(["eu-db"]);
   });
 });
 

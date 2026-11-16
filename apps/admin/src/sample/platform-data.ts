@@ -9,7 +9,7 @@
 // dùng đúng id và giá của `settings.ts`.
 //
 // Kho trong bộ nhớ của tiến trình máy chủ; khởi động lại thì về ban đầu. Việc chạy bằng job ở core
-// (cấp phát, migrate, dời khách, xuất dữ liệu) ở đây tiến theo thời gian thật mỗi lần đọc (`sync`).
+// (cấp phát, migrate, xuất dữ liệu) ở đây tiến theo thời gian thật mỗi lần đọc (`sync`).
 import { SAMPLE_CHILD_TENANTS } from "./org";
 import { SAMPLE_PLAN_IDS } from "./settings";
 
@@ -18,7 +18,7 @@ const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-/** Mỗi bước của job mẫu (cấp phát, migrate, dời khách, xuất dữ liệu) mất chừng này. */
+/** Mỗi bước của job mẫu (cấp phát, migrate, xuất dữ liệu) mất chừng này. */
 export const SAMPLE_STEP_MS = 3 * SECOND;
 
 export interface Ref {
@@ -341,20 +341,6 @@ export interface MigrationPlan {
   tenants: number;
 }
 
-/** Kết quả chạy thử của việc dời khách giữa database chung và riêng. */
-export interface MovePlan {
-  at: string;
-  tenant_id: string;
-  /** Đích đã chạy thử: id placement dùng chung, hay `dedicated` (database riêng mới). */
-  to_id: string;
-  from: string;
-  to: string;
-  tables: number;
-  rows: number;
-  /** Khách chỉ đọc trong chừng này giây. */
-  read_only_seconds: number;
-}
-
 // ---------------------------------------------------------------- Kho
 
 /** Nhân sự nền tảng mẫu (cùng id với `org.ts`, nơi khách thấy họ trong sổ quyền vào). */
@@ -476,12 +462,10 @@ export interface Store {
   dryRuns: {
     fleet: MigrationPlan | null;
     placements: Record<string, MigrationPlan>;
-    moves: Record<string, MovePlan>;
   };
-  /** Hẹn giờ của việc chạy bằng job: placement đang migrate, khách đang dời. */
+  /** Hẹn giờ của việc chạy bằng job: placement đang migrate. */
   timers: {
     migrate: Record<string, number>;
-    move: Record<string, { until: number; to: string }>;
     /** Lượt cấp phát sẽ dừng lỗi ở bước này (lần chạy đầu), để thấy được "Thử lại". */
     failAt: Record<string, ProvisionStep>;
   };
@@ -1317,8 +1301,8 @@ function seed(now: number): Store {
     backups,
     backlog,
     alerts,
-    dryRuns: { fleet: null, placements: {}, moves: {} },
-    timers: { migrate: {}, move: {}, failAt: {} },
+    dryRuns: { fleet: null, placements: {} },
+    timers: { migrate: {}, failAt: {} },
   };
 }
 

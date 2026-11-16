@@ -9,7 +9,6 @@ import {
   listPlacements,
   listProvisionings,
   migratePlacements,
-  moveTenant,
   requestExport,
   retryProvisioning,
   revokeGrant,
@@ -164,19 +163,6 @@ describe("migration và dời khách: luôn chạy thử trước", () => {
     expect((await getDryRuns()).data.fleet).toBeNull();
     const stale = await migratePlacements({ dry_run: false, confirm: "migrate" });
     expect(!stale.ok && stale.problem.code).toBe("kernel_dry_run_required");
-  });
-
-  it("dời khách sang database riêng: chạy thử ghi kế hoạch, chạy thật thì khách đang dời rồi xong", async () => {
-    const same = await moveTenant(TENANT_IDS.traSen, { to: PLACEMENT_IDS.pool1, dry_run: true });
-    expect(!same.ok && same.problem.errors?.[0]?.code).toBe("same_placement");
-    const plan = await moveTenant(TENANT_IDS.traSen, { to: "dedicated", dry_run: true });
-    expect(plan.ok && plan.data.to).toBe("tra-sen");
-    expect((await moveTenant(TENANT_IDS.traSen, { to: "", dry_run: false })).ok).toBe(true);
-    expect((await getTenant(TENANT_IDS.traSen))?.data.status).toBe("moving");
-    later(2 * SAMPLE_STEP_MS);
-    const moved = await getTenant(TENANT_IDS.traSen);
-    expect(moved?.data.status).toBe("active");
-    expect(moved?.data.placement_id).not.toBe(PLACEMENT_IDS.pool1);
   });
 });
 

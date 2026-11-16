@@ -1,12 +1,11 @@
 "use client";
 
-// Biểu mẫu của các tab Cài đặt dùng dữ liệu mẫu (W-006): đổi gói, hồ sơ xuất hoá đơn, thêm tên
-// miền, đặt kết nối đối tác. Cùng cách làm với phần gọi core thật: Server Action, lỗi theo ô, gom
+// Biểu mẫu của các tab Cài đặt dùng dữ liệu mẫu (W-006): đổi gói, hồ sơ xuất hoá đơn, đặt kết
+// nối đối tác. Cùng cách làm với phần gọi core thật: Server Action, lỗi theo ô, gom
 // mọi lỗi một lần; chỉ khác là action gọi hàm mẫu thay cho API chưa có.
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
 import {
-  addDomainAction,
   changePlanAction,
   saveBillingProfile,
   saveConnectionAction,
@@ -170,44 +169,6 @@ export function BillingProfileForm({
           </button>
         </div>
       ) : null}
-    </form>
-  );
-}
-
-/** "Thêm tên miền": tên miền; xong thì danh sách hiện bản ghi TXT cần đặt. */
-export function AddDomainDialog() {
-  const t = useTranslations("settings.domains");
-  return (
-    <Dialog label={t("add")} title={t("addTitle")} intro={t("addIntro")} triggerClass="btn sm">
-      {(close) => <AddDomainForm close={close} />}
-    </Dialog>
-  );
-}
-
-function AddDomainForm({ close }: { close: () => void }) {
-  const t = useTranslations("settings.domains");
-  const toast = useToast();
-  const form = useRef<HTMLFormElement>(null);
-  const [state, action, pending] = useActionState(addDomainAction, {});
-  useFocusInvalid(form, state);
-  useOnDone(state.done, () => {
-    close();
-    toast(t("added"));
-  });
-  return (
-    <form ref={form} action={action} noValidate className="dlg-form">
-      <Field
-        label={t("domain")}
-        name="domain"
-        autoComplete="off"
-        mono
-        placeholder="shop.example.com"
-        defaultValue={state.values?.domain}
-        error={state.fields?.domain}
-        autoFocus
-      />
-      <FormAlert state={state} />
-      <DialogButtons submit={t("addSubmit")} pending={pending} close={close} />
     </form>
   );
 }

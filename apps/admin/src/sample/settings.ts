@@ -127,27 +127,6 @@ export interface BillingProfile {
 
 export type BillingProfileInput = Omit<BillingProfile, "updated_at">;
 
-// ---------------------------------------------------------------- Bước 33: tên miền
-
-export type DomainStatus = "pending" | "verified" | "failed" | "revoked";
-
-/** Tên miền riêng của khách (`GET /api/v1/kernel/domains`). */
-export interface Domain {
-  id: string;
-  domain: string;
-  org_id: string | null;
-  /** Dự kiến: kèm tên nút tổ chức dùng tên miền. */
-  org_name: string | null;
-  status: DomainStatus;
-  /** Bản ghi TXT phải đặt để chứng minh sở hữu. */
-  txt_name: string;
-  txt_value: string;
-  verified_at: string | null;
-  last_checked_at: string | null;
-  check_error: string | null;
-  created_at: string;
-}
-
 // ---------------------------------------------------------------- Bước 33, 36, 39: kết nối đối tác
 
 export type ConnectionId = "mail" | "sms" | "payment" | "einvoice";
@@ -203,7 +182,6 @@ interface Store {
   limits: LimitUsage[];
   periods: BillingPeriod[];
   profile: BillingProfile;
-  domains: Domain[];
   connections: Connection[];
   jobs: Job[];
 }
@@ -383,26 +361,6 @@ function seed(): Store {
       address_line: "[Số nhà, đường mẫu]",
       updated_at: at(-40 * DAY),
     },
-    domains: [
-      domain("04", "bepmoc.example", "Trụ sở (gốc)", "verified", -270, null),
-      domain("03", "cho.bepmoc.example", "Chợ Bếp Mộc", "verified", -240, null),
-      domain(
-        "02",
-        "shop.bepmoc.example",
-        "CN Quận 3",
-        "pending",
-        -2,
-        "TXT record not found yet; checked again every 10 minutes for 7 days.",
-      ),
-      domain(
-        "01",
-        "bepmoc-cu.example",
-        null,
-        "failed",
-        -9,
-        "No TXT record found for 7 days; add it and check again.",
-      ),
-    ],
     connections: [
       {
         id: "mail",
@@ -483,30 +441,6 @@ function seed(): Store {
         finished_at: at(-DAY - 3 * HOUR + MINUTE),
       },
     ],
-  };
-}
-
-function domain(
-  n: string,
-  name: string,
-  org: string | null,
-  status: DomainStatus,
-  days: number,
-  error: string | null,
-): Domain {
-  const token = `sample-${n}-${name.length}`;
-  return {
-    id: id(`40${n}`),
-    domain: name,
-    org_id: org ? id(`50${n}`) : null,
-    org_name: org,
-    status,
-    txt_name: `_autoxide-challenge.${name}`,
-    txt_value: `autoxide-verify=${token}`,
-    verified_at: status === "verified" ? at(days * DAY + HOUR) : null,
-    last_checked_at: at(status === "failed" ? -7 * DAY : -30 * MINUTE),
-    check_error: error,
-    created_at: at(days * DAY),
   };
 }
 
@@ -648,78 +582,6 @@ export async function updateBillingProfile(
   const s = store();
   s.profile = { ...input, updated_at: new Date().toISOString() };
   return { ok: true, data: { ...s.profile } };
-}
-
-// ---------------------------------------------------------------- Hàm: tên miền
-
-/** Thay bằng GET /api/v1/kernel/domains (bước 33) khi core có. Mới nhất trước; bỏ tên đã gỡ. */
-export async function listDomains(
-  query: { status?: DomainStatus } = {},
-): Promise<{ data: Domain[] }> {
-  const list = store().domains.filter(
-    (d) => d.status !== "revoked" && (!query.status || d.status === query.status),
-  );
-  return { data: structuredClone(list) };
-}
-
-const DOMAIN = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/;
-const IP = /^\d{1,3}(\.\d{1,3}){3}$/;
-
-/**
- * Thay bằng POST /api/v1/kernel/domains (bước 33) khi core có. Trả bản ghi TXT phải đặt. Không
- * nhận IP, `localhost`; tên miền đã có (kể cả của khách khác) → 409 `tenant_domain_taken`.
- */
-export async function addDomain(raw: string): Promise<SampleOutcome<Domain>> {
-  const name = raw.trim().toLowerCase().replace(/\.$/, "");
-  if (!DOMAIN.test(name) || IP.test(name) || name === "localhost" || name.endsWith(".localhost")) {
-    return invalid([{ field: "domain", code: "domain", detail: "is not a usable domain name" }]);
-  }
-  const s = store();
-  if (s.domains.some((d) => d.domain === name && d.status !== "revoked")) {
-    return failed(409, "tenant_domain_taken", `The domain ${name} already belongs to a customer.`);
-  }
-  const created: Domain = {
-    id: crypto.randomUUID(),
-    domain: name,
-    org_id: null,
-    org_name: null,
-    status: "pending",
-    txt_name: `_autoxide-challenge.${name}`,
-    txt_value: `autoxide-verify=${crypto.randomUUID().replaceAll("-", "").slice(0, 32)}`,
-    verified_at: null,
-    last_checked_at: null,
-    check_error: null,
-    created_at: new Date().toISOString(),
-  };
-  s.domains.unshift(created);
-  return { ok: true, data: { ...created } };
-}
-
-/**
- * Thay bằng POST /api/v1/kernel/domains/{id}/verify (bước 33) khi core có: tra DNS ngay. Bản mẫu
- * không tra DNS thật, nên tên miền chờ vẫn chờ (ghi lại lần kiểm).
- */
-export async function verifyDomain(domainId: string): Promise<SampleOutcome<Domain>> {
-  const found = store().domains.find((d) => d.id === domainId && d.status !== "revoked");
-  if (!found) {
-    return failed(404, "tenant_domain_not_found", "This domain is not in your account.");
-  }
-  found.last_checked_at = new Date().toISOString();
-  if (found.status !== "verified") {
-    found.status = "pending";
-    found.check_error = "TXT record not found yet; checked again every 10 minutes for 7 days.";
-  }
-  return { ok: true, data: { ...found } };
-}
-
-/** Thay bằng DELETE /api/v1/kernel/domains/{id} (bước 33) khi core có: tên miền thành `revoked`. */
-export async function revokeDomain(domainId: string): Promise<SampleOutcome<Domain>> {
-  const found = store().domains.find((d) => d.id === domainId && d.status !== "revoked");
-  if (!found) {
-    return failed(404, "tenant_domain_not_found", "This domain is not in your account.");
-  }
-  found.status = "revoked";
-  return { ok: true, data: { ...found } };
 }
 
 // ---------------------------------------------------------------- Hàm: kết nối đối tác

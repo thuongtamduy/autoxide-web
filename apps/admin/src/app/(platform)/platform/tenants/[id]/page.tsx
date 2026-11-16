@@ -9,10 +9,14 @@ import { SampleTenant } from "./sample-tenant";
 
 // Chi tiết một khách: khách của core (bước 33) đọc `GET /kernel/tenants/{id}` (W-027); khách chỉ có
 // trong dữ liệu mẫu (luồng cấp phát mẫu của bước 35) dùng trang mẫu cũ (W-014) khi bật dữ liệu mẫu.
-export default async function TenantPage(props: { params: Promise<{ id: string }> }) {
+export default async function TenantPage(props: PageProps<"/platform/tenants/[id]">) {
   const gate = await platformGate(TENANTS_READ);
   if (gate) return gate;
-  const { id } = await props.params;
+  const [{ id }, query] = await Promise.all([props.params, props.searchParams]);
+  const one = (key: string) => {
+    const value = query[key];
+    return typeof value === "string" && value ? value : undefined;
+  };
   let found: { data: { data: components["schemas"]["Tenant"] }; etag: string | null } | null;
   try {
     found = await loadTagged((client) =>
@@ -28,5 +32,12 @@ export default async function TenantPage(props: { params: Promise<{ id: string }
     if (sampleDataEnabled()) return <SampleTenant id={id} />;
     notFound();
   }
-  return <CoreTenantView tenant={found.data.data} etag={found.etag} data={await platformData()} />;
+  return (
+    <CoreTenantView
+      tenant={found.data.data}
+      etag={found.etag}
+      data={await platformData()}
+      search={{ move_to: one("move_to"), keep_source: one("keep_source"), move: one("move") }}
+    />
+  );
 }

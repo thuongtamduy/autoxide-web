@@ -326,21 +326,51 @@ test("nhật ký audit: lọc theo module, mở một mục thấy trước / sa
   await expect(page.locator("pre.json").nth(1)).toContainText("New name");
 });
 
-test("dữ liệu mẫu: tên miền (lỗi dưới ô, TXT), kết nối đối tác có AI thật, job chạy lại", async ({
+test("tên miền: một khách thì giải thích; nhiều khách thì thêm, bản ghi TXT, kiểm tra, gỡ", async ({
   page,
+  request,
 }) => {
   await signIn(page, "/settings/domains");
+  await expect(page.getByTestId("domains-single")).toContainText("single-tenant mode");
+  await expect(page.getByRole("button", { name: "Add domain" })).toHaveCount(0);
+
+  await request.post(`${CORE}/__tenancy`, { data: { mode: "multi" } });
+  await page.reload();
   await page.getByRole("button", { name: "Add domain" }).click();
   await dialog(page).getByLabel("Domain").fill("10.0.0.1");
   await dialog(page).getByRole("button", { name: "Add domain" }).click();
   await expect(dialog(page).getByLabel("Domain")).toHaveAttribute("aria-invalid", "true");
-  const name = `shop${Date.now()}.example.com`;
-  await dialog(page).getByLabel("Domain").fill(name);
+  await expect(dialog(page).getByText("is not a domain that can be used")).toBeVisible();
+  await dialog(page).getByLabel("Domain").fill("Shop.Example.com.");
   await dialog(page).getByRole("button", { name: "Add domain" }).click();
-  await expect(toast(page)).toHaveText("Domain added. Set its TXT record.");
-  await expect(rows(page).filter({ hasText: name })).toContainText(`_autoxide-challenge.${name}`);
+  await expect(toast(page)).toHaveText("Domain added. Create its TXT record.");
+  const row = rows(page).filter({ hasText: "shop.example.com" });
+  await expect(row.getByTestId("txt-name")).toHaveText("_autoxide-challenge.shop.example.com");
+  await expect(row.getByTestId("txt-value")).toContainText("autoxide-verify=");
+  await expect(row).toContainText("Waiting for the DNS record");
+  await expect(row).toContainText("Fails if not verified by");
+  await expect(row.getByRole("button", { name: "Copy value" })).toBeVisible();
 
-  await page.goto("/settings/connections");
+  // Chưa có bản ghi: core trả 200, lý do ở `check_error`.
+  await row.getByRole("button", { name: "Check shop.example.com now" }).click();
+  await expect(toast(page)).toContainText("Not verified yet: No TXT record found");
+  await expect(row.getByTestId("check-error")).toContainText("No TXT record found");
+
+  await request.post(`${CORE}/__domains/dns`, { data: { domain: "shop.example.com" } });
+  await row.getByRole("button", { name: "Check shop.example.com now" }).click();
+  await expect(toast(page)).toHaveText("shop.example.com is verified.");
+  await expect(row).toContainText("Verified since");
+  await expect(row.getByRole("button", { name: /Check .* now/ })).toHaveCount(0);
+
+  await row.getByRole("button", { name: "Remove" }).click();
+  await expect(dialog(page)).toContainText("Another account can then add and verify the domain");
+  await dialog(page).getByRole("button", { name: "Remove domain" }).click();
+  await expect(toast(page)).toHaveText("Domain removed.");
+  await expect(page.locator(".empty")).toHaveText("No domains yet. Add the first one.");
+});
+
+test("dữ liệu mẫu: kết nối đối tác có AI thật, job chạy lại", async ({ page }) => {
+  await signIn(page, "/settings/connections");
   await expect(page.getByTestId("ai-status")).toContainText("Off");
   const sms = page.getByTestId("conn-sms");
   await sms.getByRole("button", { name: /Set up|Change/ }).click();

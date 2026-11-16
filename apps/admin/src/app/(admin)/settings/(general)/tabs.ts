@@ -25,7 +25,7 @@ export interface GeneralTab {
 // Thứ tự theo bản thiết kế: gói, tên miền, kết nối, module, job, nhân sự, webhook, audit.
 const TABS: (GeneralTab & { permission: string })[] = [
   { id: "plan", href: "/settings/plan", permission: BILLING_READ, sample: "35" },
-  { id: "domains", href: "/settings/domains", permission: DOMAINS_MANAGE, sample: "33" },
+  { id: "domains", href: "/settings/domains", permission: DOMAINS_MANAGE },
   { id: "connections", href: "/settings/connections", permission: TENANT_SETTINGS_MANAGE },
   { id: "modules", href: "/settings/modules", permission: MODULES_READ },
   { id: "jobs", href: "/settings/jobs", permission: DEVTOOLS_READ, sample: "52" },

@@ -38,14 +38,18 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
   roles with a permission picker (risky permissions are labelled), first password and two-step
   sign-in reset only where they apply, sign-out everywhere, removing the passkeys of someone who
   lost their device.
-- **Settings**: modules, per-customer settings, webhooks (with their last delivery), audit log,
+- **Settings**: custom domains (the DNS TXT record to create, verify now, daily re-check status,
+  remove; explained instead of refused on a single-tenant installation), modules, per-customer
+  settings, webhooks (with their last delivery), audit log,
   API keys and AI agents (MCP; confirm a new key with a password, an authenticator code or a
   passkey; administrators see and revoke everyone's keys), developer tools.
 - **My account**: profile, email and password (cancel a pending email change; an account without a
   password gets a link to set one), two-step sign-in, passkeys with their kind, devices with how and
   from which country they signed in, your data.
-- **Platform console › Customers and Database fleet**: the customers and placements of the core;
-  add, rename, suspend and resume a customer.
+- **Platform console › Customers and Database fleet**: the customers and placements of the core
+  (with each placement's own file storage, never its keys); add, rename, suspend and resume a
+  customer; move a customer to another placement (dry run with tables, rows, files and blockers,
+  then a background move followed until done).
 - **Pages opened from mail** (no sign-in): verify an email, forgot and reset password, and "it was
   not me" when someone else changed your email.
 
