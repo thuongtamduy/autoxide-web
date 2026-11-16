@@ -3,12 +3,16 @@
 File nội bộ cho agent phiên sau: trạng thái lúc dừng và việc kế tiếp. Cập nhật khi xong một đợt việc; quyết định
 lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`backend-debt.md`](backend-debt.md).
 
-## Trạng thái (16/11/2026)
+## Trạng thái (16/11/2026, đợt 2)
 
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
 - SDK ghim core ở commit `fb3ba06` của `main` (bước 33 của core tới D-297: đa khách, tên miền riêng, dời khách, chỉ
-  đọc, cấu hình theo khách, nhóm `connection`). Quyết định mới nhất của repo này: W-037.
+  đọc, cấu hình theo khách, nhóm `connection`). Core `main` mới nhất (`f62f5a2`) chỉ thêm ghi chú tài liệu, OpenAPI
+  không đổi: SDK không cần sinh lại. Quyết định mới nhất của repo này: W-038.
+- Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
+  hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị
+  khi khách chỉ đọc: dải báo hiện, lưu cài đặt và lưu bài bị từ chối với thông báo `tenant_read_only` của core.
 - Gate đầy đủ xanh ở commit cuối của đợt này.
 
 ## Bám core (việc lặp lại)
@@ -39,15 +43,18 @@ Chờ core (nối ngay khi có):
 
 Tự làm được, chưa làm:
 
-- Chưa chạy thử với core thật: website nhận khách theo tên miền (`X-Forwarded-Host`, cần
-  `AUTOXIDE_HTTP_TRUSTED_PROXIES` ở core và hai tên miền đã xác minh); thao tác ghi trên giao diện khi khách đang chỉ
-  đọc (mới có test với core giả).
 - Website trả 404 cho địa chỉ core báo đã gỡ (410): App Router không trả được 410 từ trang; làm ở proxy thì thêm một
   lời gọi core mỗi lượt xem. Để đó tới khi cần.
-- Nhắc team core 3 việc nhỏ ở `backend-debt.md` (tỉnh / phường công khai, `reason` khi tạm khoá khách, danh sách loại
+- Sitemap / RSS / `robots.txt` của tên miền lạ vẫn trả 200 (chỉ có trang cố định): route không có trang 404 riêng;
+  để đó vì không có link nào trỏ tới.
+- Nhắc team core (đã gửi thêm 2 chỗ mô tả OpenAPI ở thuongtamduy/autoxide#57, đã merge) 3 việc nhỏ ở `backend-debt.md` (tỉnh / phường công khai, `reason` khi tạm khoá khách, danh sách loại
   đối tượng cho menu) và các chỗ mô tả OpenAPI chưa khớp.
 
 ## Mẹo chạy thử
+
+- Thử nhiều tên miền trên máy không có DNS: thêm tên miền ở core (`POST /kernel/domains`), rồi đặt `status` của nó
+  thành `verified` thẳng trong bảng `kernel_tenant_domains` của database chạy thử (chỉ máy thử; core tra TXT thật).
+  Gọi website với `curl -H "Host: shop-a.test" localhost:<cổng>/…`; core cần `AUTOXIDE_HTTP_TRUSTED_PROXIES=127.0.0.1`.
 
 - Core nhiều khách: `AUTOXIDE_TENANCY_MODE=multi` (cần `AUTOXIDE_SECRET_KEY`); tạo khách bằng
   `POST /kernel/tenants`, tạo người dùng của khách bằng `autoxide user create --tenant <slug> --admin …`. Đăng nhập

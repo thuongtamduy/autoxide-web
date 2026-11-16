@@ -270,6 +270,21 @@ export async function storefrontRoutes(
     return true;
   }
 
+  // Core nhiều khách không nhận ra cửa hàng của tên miền (chưa gắn / chưa xác minh): mọi endpoint công
+  // khai trả `400 tenant_required`, như core thật. Website chuyển tên miền qua `X-Forwarded-Host`.
+  if (
+    path.includes("/public/") &&
+    String(request.headers["x-forwarded-host"] ?? "").startsWith("unknown-shop.")
+  ) {
+    problem(
+      response,
+      400,
+      "tenant_required",
+      "No customer (tenant) could be told for this request.",
+    );
+    return true;
+  }
+
   // ------------------------------------------------------------ content
   if (route === "GET /api/v1/content/public/posts") {
     const locale = url.searchParams.get("locale");

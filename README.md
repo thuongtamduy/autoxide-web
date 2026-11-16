@@ -246,6 +246,9 @@ https:// {
 ```
 
 Caddy passes on the visitor's `Host` and sets `X-Forwarded-Proto`, which is all the website needs.
+With another reverse proxy, make it set `X-Forwarded-Proto` too: without it, the Next.js server
+assumes `http` and the canonical links would start with `http://`. A domain that no shop has
+verified gets the website's "page not found" (404).
 The shop's name in the header still comes from `AUTOXIDE_STOREFRONT_NAME` (one name for every
 shop) until the core publishes each tenant's public profile.
 

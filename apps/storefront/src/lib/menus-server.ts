@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { sampleDataEnabled } from "@/sample";
 import { sampleFooterMenu, sampleMainMenu } from "@/sample/menus";
-import { loadPublic } from "./core";
+import { loadChrome } from "./core";
 import type { SiteMenu } from "./types";
 
 // Menu của website từ module `menus` của core (`GET /api/v1/menus/public/{key}?locale`). Không có
@@ -17,14 +17,10 @@ export interface LoadedMenu {
 }
 
 async function fetchMenu(key: "main" | "footer", locale: string): Promise<SiteMenu | null> {
-  try {
-    const found = await loadPublic(locale, (client) =>
-      client.GET("/api/v1/menus/public/{key}", { params: { path: { key }, query: { locale } } }),
-    );
-    return found?.data ?? null;
-  } catch {
-    return null;
-  }
+  const found = await loadChrome(locale, (client) =>
+    client.GET("/api/v1/menus/public/{key}", { params: { path: { key }, query: { locale } } }),
+  );
+  return found?.data ?? null;
 }
 
 export const loadMenu = cache(
