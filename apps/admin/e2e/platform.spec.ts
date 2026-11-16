@@ -127,18 +127,21 @@ test("khách của core: một khách thì không thêm được; nhiều khách
 
   await page.goto("/platform/fleet");
   await expect(page.locator("tbody tr", { hasText: "main" }).first()).toContainText("Up to date");
+  // Nơi lưu file riêng của placement: chỉ phần không bí mật.
+  const eu = page.locator("tbody tr", { hasText: "eu-db" });
+  await expect(eu).toContainText("S3 bucket");
+  await expect(eu).toContainText("eu-files/autoxide");
+  await expect(eu).toContainText("Access key stored (never shown)");
+  await expect(page.locator("tbody tr", { hasText: "main" }).first()).toContainText(
+    "Platform file storage",
+  );
 });
 
-test("chi tiết khách: dời khách chạy thử trước; tạm khoá có hộp xác nhận nêu hệ quả, mở lại", async ({
-  page,
-}) => {
+test("chi tiết khách mẫu: tạm khoá có hộp xác nhận nêu hệ quả, mở lại", async ({ page }) => {
   await signIn(page, `/platform/tenants/${TRA_SEN}`);
   await expect(page.getByRole("heading", { level: 1, name: "Trà Sen" })).toBeVisible();
-
-  await page.getByRole("button", { name: "Move to a dedicated database" }).click();
-  await dialog(page).getByRole("button", { name: "Run the dry run" }).click();
-  await expect(toast(page)).toContainText("Dry run finished");
-  await expect(page.getByText(/Dry run: from pool-1 to tra-sen, 48 tables/)).toBeVisible();
+  // Dời khách là API thật: khách chỉ có trong dữ liệu mẫu không có nút dời.
+  await expect(page.getByRole("heading", { name: "Move to another placement" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Suspend completely" }).click();
   await expect(dialog(page)).toContainText("including sign-in");
@@ -152,6 +155,54 @@ test("chi tiết khách: dời khách chạy thử trước; tạm khoá có h�
   await expect(page.getByText("Suspended: Vi phạm điều khoản sử dụng, phiếu #77")).toBeVisible();
   await page.getByRole("button", { name: "Reactivate" }).click();
   await expect(toast(page)).toHaveText("Trà Sen is active again.");
+});
+
+test("dời khách của core: chạy thử ra kế hoạch, chạy thật, theo dõi tới xong; khách nền tảng không dời", async ({
+  page,
+  request,
+}) => {
+  await signIn(page, "/platform/tenants/00000000-0000-7000-8000-000000000001");
+  await expect(page.getByRole("heading", { level: 1, name: "Default" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Move to another placement" })).toHaveCount(0);
+
+  await request.post(`${CORE}/__tenancy`, { data: { mode: "multi" } });
+  await page.goto("/platform");
+  await page.getByRole("button", { name: "Add customer" }).click();
+  await dialog(page).getByLabel("Name", { exact: true }).fill("Move Co");
+  await dialog(page).getByLabel("Short name").fill("move-e2e");
+  await dialog(page).getByRole("button", { name: "Add customer" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Move Co" })).toBeVisible();
+
+  const section = page.locator("section", {
+    has: page.getByRole("heading", { name: "Move to another placement" }),
+  });
+  await section.getByLabel("Move to").selectOption("eu-db");
+  await section.getByRole("button", { name: "Run the dry run" }).click();
+  await expect(page).toHaveURL(/move_to=eu-db/);
+  const plan = page.getByTestId("move-plan");
+  await expect(plan).toContainText("Dry run: from main to eu-db");
+  await expect(plan).toContainText("21 rows in 4 tables");
+  await expect(plan).toContainText("Nothing blocks the move.");
+  await plan.getByText("4 tables, in copy order").click();
+  await expect(plan.getByRole("cell", { name: "notes_note" })).toBeVisible();
+
+  await plan.getByRole("button", { name: "Move now" }).click();
+  await expect(dialog(page)).toContainText("503 tenant_maintenance");
+  await expect(dialog(page)).toContainText("autoxide tenant move move-e2e --to eu-db");
+  await dialog(page).getByRole("button", { name: "Move now" }).click();
+  await expect(toast(page)).toContainText("Move Co is moving");
+  await expect(page).toHaveURL(/\?move=[0-9a-f-]+$/);
+  const status = page.getByTestId("move-status");
+  await expect(status).toContainText("Move from main to eu-db");
+  // Trang tự làm mới tới khi lượt dời xong (core giả đi mỗi bước 1,5 giây).
+  await expect(status).toHaveAttribute("data-state", "done", { timeout: 20_000 });
+  await expect(status).toContainText("Done. Move Co works from eu-db.");
+  await page.reload();
+  await expect(page.getByTestId("moving-note")).toHaveCount(0);
+  await expect(page.locator('section[aria-labelledby="pf-t-place"]')).toContainText("eu-db");
+
+  // Khách đã ở `eu-db`: đích còn lại chỉ là `main`.
+  await expect(section.getByLabel("Move to").locator("option")).toHaveText([/^main/]);
 });
 
 test("thuê bao: đánh dấu đã thu đưa khách quá hạn về đang dùng", async ({ page }) => {

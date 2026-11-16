@@ -6,6 +6,7 @@ import {
 } from "@/app/(platform)/platform/actions";
 import { Chips } from "@/components/engage/common";
 import { PlatformHead, SCHEMA_BADGE, StatusBadge } from "@/components/platform/common";
+import { PlacementStorageView } from "@/components/platform/storage";
 import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
@@ -28,7 +29,8 @@ const ENDPOINTS =
   "mới: POST /api/v1/kernel/placements/migrations {placement_id?, dry_run} (core mới có CLI autoxide migrate up --all)";
 
 // Màn "Đội database": placement THẬT của core (`GET /kernel/placements`, bước 33) — dùng chung hay
-// riêng, backend, trạng thái migration — và số khách trên mỗi placement. Core chưa có API chạy
+// riêng, backend, trạng thái migration, nơi lưu file riêng (`storage`, D-293; không bao giờ có khoá)
+// — và số khách trên mỗi placement. Dời khách nằm ở trang của từng khách (W-032). Core chưa có API chạy
 // migration (chỉ CLI `autoxide migrate up --all`): nút chạy thử / migrate là dữ liệu mẫu (W-014), chỉ
 // cho placement mẫu khi bật dữ liệu mẫu.
 export default async function FleetPage(props: { searchParams: Promise<SearchParams> }) {
@@ -50,7 +52,7 @@ export default async function FleetPage(props: { searchParams: Promise<SearchPar
   const [dryRuns, manage] = await Promise.all([
     sample
       ? getDryRuns().then((r) => r.data)
-      : Promise.resolve<Store["dryRuns"]>({ fleet: null, placements: {}, moves: {} }),
+      : Promise.resolve<Store["dryRuns"]>({ fleet: null, placements: {} }),
     can(TENANTS_MANAGE),
   ]);
   const placements = all.filter((p) => !state || p.schema_state === state);
@@ -155,6 +157,7 @@ export default async function FleetPage(props: { searchParams: Promise<SearchPar
                 <Th>{t("colPlacement")}</Th>
                 <Th>{t("colKind")}</Th>
                 <Th className="r">{t("colTenants")}</Th>
+                <Th>{t("colStorage")}</Th>
                 <Th>{t("colChecked")}</Th>
                 <Th>{t("colMigration")}</Th>
                 <Th>
@@ -185,6 +188,9 @@ export default async function FleetPage(props: { searchParams: Promise<SearchPar
                     </Td>
                     <Td label={t("colTenants")} className="r">
                       {count}
+                    </Td>
+                    <Td label={t("colStorage")}>
+                      {p.source === "core" ? <PlacementStorageView storage={p.storage} /> : "—"}
                     </Td>
                     <Td label={t("colChecked")}>
                       {p.schema_checked_at ? <Time value={p.schema_checked_at} /> : "—"}

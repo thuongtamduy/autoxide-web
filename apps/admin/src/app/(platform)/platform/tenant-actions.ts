@@ -1,9 +1,10 @@
 "use server";
 
 // Server Action của mặt điều khiển nền tảng gọi core THẬT (bước 33): tạo khách, đổi tên, tạm khoá /
-// mở lại. Core kiểm permission (`kernel.tenants.manage`) và người gọi thuộc khách nền tảng; ở đây chỉ
-// kiểm ô bắt buộc để báo sớm và gom mọi lỗi một lần. Việc của bước 35 trở đi (cấp phát, gói, dời
-// khách, xuất dữ liệu) vẫn là dữ liệu mẫu ở `actions.ts`.
+// mở lại, dời khách sang placement khác (W-032). Core kiểm permission (`kernel.tenants.manage`,
+// `kernel.tenants.move`) và người gọi thuộc khách nền tảng; ở đây chỉ kiểm ô bắt buộc để báo sớm và
+// gom mọi lỗi một lần. Việc của bước 35 trở đi (cấp phát, gói, xuất dữ liệu) vẫn là dữ liệu mẫu ở
+// `actions.ts`.
 import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import type { DialogState } from "@/components/ui/form-dialog";
@@ -74,6 +75,36 @@ export async function suspendCoreTenant(state: FormState, formData: FormData): P
 /** Mở lại khách đang tạm khoá. */
 export async function resumeCoreTenant(state: FormState, formData: FormData): Promise<FormState> {
   return patchTenant(state, formData, { status: "active" }, []);
+}
+
+/**
+ * Dời khách thật (`POST /kernel/tenants/{id}/move` với `dry_run: false`) theo đúng đích và
+ * `keep_source` của lần chạy thử đang hiện. Core xếp job rồi trả lượt dời (201); trang mở trạng thái
+ * của lượt đó (`?move=`) và tự làm mới tới khi xong. Lý do chặn (409) hiện nguyên câu của core.
+ */
+export async function startMove(state: DialogState, formData: FormData): Promise<DialogState> {
+  const id = text(formData, "tenant_id");
+  const to = text(formData, "to");
+  const keepSource = text(formData, "keep_source") === "1";
+  const result = await send((client) =>
+    client.POST("/api/v1/kernel/tenants/{id}/move", {
+      params: { path: { id } },
+      body: { to, dry_run: false, keep_source: keepSource },
+    }),
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  // Core trả 200 kèm kế hoạch khi coi lời gọi là chạy thử; ở đây luôn gửi `dry_run: false` nên chỉ
+  // 201 (lượt dời) là đúng. Kiểm `state` để kiểu dữ liệu chắc chắn là `TenantMove`.
+  const moved = result.data.data;
+  if (!("state" in moved)) {
+    const t = await getTranslations("platform.tenant.move");
+    return { error: t("notStarted") };
+  }
+  refresh();
+  return {
+    done: nextDone(state),
+    go: `/platform/tenants/${encodeURIComponent(id)}?move=${encodeURIComponent(moved.id)}`,
+  };
 }
 
 async function patchTenant(

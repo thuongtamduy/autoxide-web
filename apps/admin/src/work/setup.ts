@@ -4,11 +4,14 @@ import "server-only";
 // thái tính từ dữ liệu (không có ô "đánh dấu xong"); bước pháp lý chặn bán được đánh dấu `blocking`.
 // Bước chỉ hiện khi áp dụng cho khách (có website bán hàng, có sàn) và người xem có permission của nó.
 // Core chưa có `GET /api/v1/kernel/setup` và các module nguồn (bước 33, 37): đọc dữ liệu mẫu.
+import { ApiError } from "@autoxide/sdk";
+import { load } from "@/lib/core";
 import { DOMAINS_MANAGE, LEGAL_READ, TENANT_SETTINGS_MANAGE } from "@/lib/permissions";
+import { getCurrentTenant } from "@/lib/viewer";
 import { listComplianceWebsites, listLegalProfiles } from "@/sample/compliance";
 import { listWebsites, websiteChecklist } from "@/sample/content";
 import type { ConnectionId } from "@/sample/settings";
-import { CONNECTION_SETTINGS, listConnections, listDomains } from "@/sample/settings";
+import { CONNECTION_SETTINGS, listConnections } from "@/sample/settings";
 import { visibleSources } from "./registry";
 import type { SetupView, WorkContext, WorkMessage } from "./types";
 
@@ -114,11 +117,23 @@ const STEPS: readonly SetupStep[] = [
   {
     id: "domain",
     permission: [DOMAINS_MANAGE],
-    sample: { step: "33", endpoint: `${SETUP_ENDPOINT} · GET /api/v1/kernel/domains` },
+    sample: { step: "51", endpoint: SETUP_ENDPOINT },
     href: "/settings/domains",
     blocking: false,
+    // Tên miền đọc thật (`GET /kernel/domains`, W-032); bản cài một khách không có tên miền riêng
+    // nên bước này không áp dụng.
     state: async () => {
-      const { data } = await listDomains();
+      if ((await getCurrentTenant())?.mode === "single") return null;
+      let data: { status: string }[];
+      try {
+        ({ data } = await load((client) =>
+          client.GET("/api/v1/kernel/domains", { params: { query: { limit: 200 } } }),
+        ));
+      } catch (error) {
+        // Core không trả được (quyền, core cũ): bỏ bước, không làm hỏng cả trang Tổng quan.
+        if (error instanceof ApiError) return null;
+        throw error;
+      }
       const verified = data.some((d) => d.status === "verified");
       return verified
         ? { done: true, note: null }

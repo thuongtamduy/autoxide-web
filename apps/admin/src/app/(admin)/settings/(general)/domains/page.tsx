@@ -1,35 +1,77 @@
-import Link from "next/link";
+import type { components } from "@autoxide/sdk";
 import { getTranslations } from "next-intl/server";
-import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
+import { removeDomain } from "@/app/(admin)/settings/domain-actions";
+import { MessagePanel } from "@/components/message-panel";
 import { SampleBadge } from "@/components/sample-badge";
-import { AddDomainDialog } from "@/components/settings/sample-forms";
-import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
+import { AddDomainDialog, VerifyDomainButton } from "@/components/settings/domain-forms";
+import { ConfirmAction } from "@/components/ui/confirm";
+import { CopyButton } from "@/components/ui/secret-once";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
+import { isForbidden, load } from "@/lib/core";
+import {
+  canVerify,
+  domainNext,
+  MAX_FAILED_CHECKS,
+  pendingExpiresAt,
+  sortDomains,
+  type TenantDomain,
+} from "@/lib/domains";
 import { DOMAINS_MANAGE } from "@/lib/permissions";
-import { type DomainStatus, listDomains } from "@/sample/settings";
-import { revokeDomainAction, verifyDomainAction } from "../../sample-actions";
+import { can, getCurrentTenant } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
 
-const STATUSES: Exclude<DomainStatus, "revoked">[] = ["verified", "pending", "failed"];
-const BADGE: Record<DomainStatus, string> = {
+type Problem = components["schemas"]["Problem"];
+
+const BADGE: Record<string, string> = {
   verified: "badge b-ok",
   pending: "badge b-warn",
   failed: "badge b-bad",
-  revoked: "badge b-arch",
 };
 
-// Tab "Tên miền" (dữ liệu mẫu, chờ `/api/v1/kernel/domains` của bước 33): thêm tên miền, đặt bản
-// ghi TXT để chứng minh sở hữu, kiểm lại, gỡ.
-export default async function DomainsPage(props: PageProps<"/settings/domains">) {
-  const gate = await sampleGate(DOMAINS_MANAGE);
-  if (gate) return gate;
+/** Mọi tên miền của khách (mỗi trang 200, tối đa 5 trang — một khách có vài tên miền). */
+async function allDomains(): Promise<TenantDomain[]> {
+  const all: TenantDomain[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < 5; page++) {
+    const result = await load((client) =>
+      client.GET("/api/v1/kernel/domains", {
+        params: { query: { limit: 200, ...(cursor ? { cursor } : {}) } },
+      }),
+    );
+    all.push(...result.data);
+    cursor = result.pagination.next_cursor ?? undefined;
+    if (!cursor) break;
+  }
+  return all;
+}
+
+// Tab "Tên miền" (W-032): tên miền riêng của khách đọc thật từ core (`/kernel/domains`, D-291 của
+// core). Mỗi tên miền hiện đúng bản ghi TXT phải tạo (nút chép), trạng thái, lần tra gần nhất, lý do
+// chưa xác minh, hạn của tên miền đang chờ và số lần kiểm hằng ngày không thấy bản ghi. Bản cài một
+// khách (`mode: single` của `GET /kernel/tenant`) không nhận tên miền: trang giải thích thay vì để
+// người dùng gặp lỗi 409. Gắn tên miền vào một cửa hàng / chi nhánh chưa có API (bước 34).
+export default async function DomainsPage() {
   const t = await getTranslations("settings.domains");
-  const { status } = await props.searchParams;
-  const current = STATUSES.find((s) => s === status);
-  const [{ data: domains }, { data: all }] = await Promise.all([
-    listDomains(current ? { status: current } : {}),
-    listDomains(),
-  ]);
+  if (!(await can(DOMAINS_MANAGE))) {
+    const te = await getTranslations("errors");
+    return (
+      <MessagePanel
+        title={te("forbiddenTitle")}
+        message={te("forbidden", { permission: DOMAINS_MANAGE })}
+      />
+    );
+  }
+  let domains: TenantDomain[];
+  try {
+    domains = sortDomains(await allDomains());
+  } catch (error) {
+    if (!isForbidden(error)) throw error;
+    const problem = error.problem as Problem;
+    return <MessagePanel title={t("title")} message={problem.detail} />;
+  }
+  const tenant = await getCurrentTenant();
+  const single = tenant?.mode === "single";
   return (
     <div className="blocks">
       <section className="block" aria-labelledby="domains-h">
@@ -37,111 +79,153 @@ export default async function DomainsPage(props: PageProps<"/settings/domains">)
           <h2 id="domains-h" className="h2">
             {t("title")}
           </h2>
-          <SampleBadge
-            step="33"
-            endpoint="GET/POST/DELETE /api/v1/kernel/domains, POST /{id}/verify"
-          />
-          <AddDomainDialog />
+          {single ? null : <AddDomainDialog />}
         </div>
         <p className="fhint">{t("about")}</p>
-        <nav className="chips" aria-label={t("filter")}>
-          <Link
-            className={current ? "chip" : "chip on"}
-            href="/settings/domains"
-            aria-current={current ? undefined : "page"}
-          >
-            {t("all")} <span className="cnt">{all.length}</span>
-          </Link>
-          {STATUSES.map((s) => (
-            <Link
-              key={s}
-              className={current === s ? "chip on" : "chip"}
-              href={`/settings/domains?status=${s}`}
-              aria-current={current === s ? "page" : undefined}
-            >
-              {t(`status.${s}`)}{" "}
-              <span className="cnt">{all.filter((d) => d.status === s).length}</span>
-            </Link>
-          ))}
-        </nav>
-        <div className="card tcard">
-          {domains.length === 0 ? (
-            <p className="empty">{t("empty")}</p>
-          ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("domain")}</Th>
-                  <Th>{t("unit")}</Th>
-                  <Th>{t("note")}</Th>
-                  <Th>{t("checked")}</Th>
-                  <Th>{t("state")}</Th>
-                  <Th>
-                    <span className="vh">{t("actions")}</span>
-                  </Th>
-                </tr>
-              </thead>
-              <tbody>
-                {domains.map((domain) => (
-                  <tr key={domain.id}>
-                    <Td className="rt-title">
-                      <b className="mono">{domain.domain}</b>
-                    </Td>
-                    <Td label={t("unit")}>{domain.org_name ?? t("noUnit")}</Td>
-                    <Td label={t("note")}>
-                      {domain.status === "verified" && domain.verified_at ? (
-                        <>
-                          {t("verifiedSince")} <Time value={domain.verified_at} date />
-                        </>
-                      ) : (
-                        <span className="cell2">
-                          <span className="sub">{t("txt")}</span>
-                          <code className="mono txt">{domain.txt_name}</code>
-                          <code className="mono txt">{domain.txt_value}</code>
-                          {domain.check_error ? (
-                            <span className="sub">{domain.check_error}</span>
-                          ) : null}
-                        </span>
-                      )}
-                    </Td>
-                    <Td className="whitespace-nowrap" label={t("checked")}>
-                      {domain.last_checked_at ? <Time value={domain.last_checked_at} /> : "—"}
-                    </Td>
-                    <Td label={t("state")}>
-                      <span className={BADGE[domain.status]}>
-                        <span className="dot" />
-                        {t(`status.${domain.status}`)}
-                      </span>
-                    </Td>
-                    <Td className="rt-acts">
-                      <span className="row-acts">
-                        {domain.status !== "verified" ? (
-                          <InlineAction
-                            action={verifyDomainAction}
-                            id={domain.id}
-                            label={t("verify")}
-                            ariaLabel={t("verifyLabel", { domain: domain.domain })}
-                            done={t("verified")}
-                          />
-                        ) : null}
-                        <ConfirmAction
-                          action={revokeDomainAction}
-                          id={domain.id}
-                          label={t("revoke")}
-                          title={t("revokeTitle", { domain: domain.domain })}
-                          points={[t("revokeSite"), t("revokeAgain")]}
-                          submit={t("revokeSubmit")}
-                          done={t("revoked")}
-                        />
-                      </span>
-                    </Td>
+        {single ? (
+          <div className="note" data-testid="domains-single">
+            <p>
+              <b>{t("singleTitle")}</b> {t("singleText")}
+            </p>
+            <p className="fhint">{t("singleHow")}</p>
+          </div>
+        ) : (
+          <ol className="steps">
+            <li>{t("step1")}</li>
+            <li>{t("step2")}</li>
+            <li>{t("step3")}</li>
+          </ol>
+        )}
+        {domains.length === 0 && single ? null : (
+          <div className="card tcard">
+            {domains.length === 0 ? (
+              <p className="empty">{t("empty")}</p>
+            ) : (
+              <Table cards>
+                <thead>
+                  <tr>
+                    <Th>{t("domain")}</Th>
+                    <Th>{t("record")}</Th>
+                    <Th>{t("state")}</Th>
+                    <Th>
+                      <span className="vh">{t("actions")}</span>
+                    </Th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {domains.map((domain) => {
+                    const next = domainNext(domain);
+                    const expires = pendingExpiresAt(domain);
+                    return (
+                      <tr key={domain.id} data-domain={domain.domain}>
+                        <Td className="rt-title">
+                          <span className="cell2">
+                            <b className="mono">{domain.domain}</b>
+                            <span className="sub">
+                              {t("addedAt")} <Time value={domain.created_at} date />
+                            </span>
+                          </span>
+                        </Td>
+                        <Td label={t("record")}>
+                          <span className="cell2">
+                            <span className="sub">{t(`next.${next}`)}</span>
+                            <span className="sub">
+                              {t("recordType")} <code className="mono">{domain.record.type}</code>
+                            </span>
+                            <span className="sub">{t("recordName")}</span>
+                            <code className="mono txt" data-testid="txt-name">
+                              {domain.record.name}
+                            </code>
+                            <CopyButton text={domain.record.name} label={t("copyName")} />
+                            <span className="sub">{t("recordValue")}</span>
+                            <code className="mono txt" data-testid="txt-value">
+                              {domain.record.value}
+                            </code>
+                            <CopyButton text={domain.record.value} label={t("copyValue")} />
+                          </span>
+                        </Td>
+                        <Td label={t("state")}>
+                          <span className="cell2">
+                            <span className={BADGE[domain.status] ?? "badge"}>
+                              <span className="dot" />
+                              {t.has(`status.${domain.status}`)
+                                ? t(`status.${domain.status}`)
+                                : domain.status}
+                            </span>
+                            {domain.verified_at && domain.status === "verified" ? (
+                              <span className="sub">
+                                {t("verifiedSince")} <Time value={domain.verified_at} date />
+                              </span>
+                            ) : null}
+                            {expires ? (
+                              <span className="sub">
+                                {t("expires")} <Time value={expires} />
+                              </span>
+                            ) : null}
+                            <span className="sub">
+                              {t("checked")}{" "}
+                              {domain.last_checked_at ? (
+                                <Time value={domain.last_checked_at} />
+                              ) : (
+                                t("neverChecked")
+                              )}
+                            </span>
+                            {domain.status === "verified" && domain.failed_checks > 0 ? (
+                              <span className="sub due">
+                                {t("failedChecks", {
+                                  count: domain.failed_checks,
+                                  max: MAX_FAILED_CHECKS,
+                                })}
+                              </span>
+                            ) : null}
+                            {domain.check_error ? (
+                              <span className="sub" data-testid="check-error">
+                                {t("checkError", { reason: domain.check_error })}
+                              </span>
+                            ) : null}
+                          </span>
+                        </Td>
+                        <Td className="rt-acts">
+                          <span className="row-acts">
+                            {canVerify(domain) ? (
+                              <VerifyDomainButton id={domain.id} domain={domain.domain} />
+                            ) : null}
+                            <ConfirmAction
+                              action={removeDomain}
+                              id={domain.id}
+                              label={t("revoke")}
+                              title={t("revokeTitle", { domain: domain.domain })}
+                              points={[
+                                t("revokeSite", { domain: domain.domain }),
+                                t("revokeCertificate"),
+                                t("revokeOthers"),
+                                t("revokeAgain"),
+                              ]}
+                              submit={t("revokeSubmit")}
+                              done={t("revoked")}
+                            />
+                          </span>
+                        </Td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            )}
+          </div>
+        )}
       </section>
+      {sampleDataEnabled() && !single ? (
+        <section className="block" aria-labelledby="domains-unit-h">
+          <div className="block-head">
+            <h2 id="domains-unit-h" className="h2">
+              {t("unitTitle")}
+            </h2>
+            <SampleBadge step="34" endpoint="PATCH /api/v1/kernel/domains/{id} {org_id}" />
+          </div>
+          <p className="fhint">{t("unitAbout")}</p>
+        </section>
+      ) : null}
     </div>
   );
 }

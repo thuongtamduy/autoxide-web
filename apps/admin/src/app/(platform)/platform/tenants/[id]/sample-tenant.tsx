@@ -4,10 +4,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
 import {
-  confirmMove,
   exportTenant,
   grantAccess,
-  planMove,
   reactivateTenant,
   removeOverrideAction,
   restoreOverrideAction,
@@ -15,7 +13,6 @@ import {
   suspendTenant,
   undoOverrideAction,
 } from "@/app/(platform)/platform/actions";
-import { ConfirmButton } from "@/components/engage/actions";
 import { Back, Facts } from "@/components/engage/common";
 import {
   GRANT_BADGE,
@@ -41,7 +38,6 @@ import {
 } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
 import {
-  getDryRuns,
   getTenant,
   listExports,
   listGrants,
@@ -63,7 +59,7 @@ import {
 } from "@/sample/platform-plans";
 
 const ENDPOINTS =
-  "GET/PATCH /api/v1/kernel/tenants/{id} (bước 33); GET /api/v1/plans/tenants/{id}/subscription, …/usage, …/overrides (bước 35); GET/POST /api/v1/auth/support-grants (bước 34); mới: POST /api/v1/kernel/tenants/{id}/move, …/exports";
+  "GET/PATCH /api/v1/kernel/tenants/{id} (bước 33); GET /api/v1/plans/tenants/{id}/subscription, …/usage, …/overrides (bước 35); GET/POST /api/v1/auth/support-grants (bước 34); mới: POST /api/v1/kernel/tenants/{id}/exports";
 
 // Chi tiết một khách CHỈ có trong dữ liệu mẫu (W-014; vd khách vừa "cấp phát" bằng luồng mẫu của
 // bước 35): vị trí dữ liệu và dời khách, thuê bao, hạn mức, module bật cho khách, cây khách, vào dữ
@@ -88,7 +84,6 @@ export async function SampleTenant({ id }: { id: string }) {
     { data: overrides },
     { data: grants },
     { data: exports },
-    { data: dryRuns },
     support,
   ] = await Promise.all([
     listPlacements(),
@@ -102,7 +97,6 @@ export async function SampleTenant({ id }: { id: string }) {
     listOverrides(id),
     listGrants({ tenant_id: id }),
     listExports(id),
-    getDryRuns(),
     supportEnabled(id),
   ]);
   const [manage, subsManage, grant] = await Promise.all([
@@ -116,10 +110,6 @@ export async function SampleTenant({ id }: { id: string }) {
   const parent = tenants.find((x) => x.id === tenant.parent_id) ?? null;
   const children = tenants.filter((x) => x.parent_id === tenant.id);
   const ready = !tenant.is_platform && tenant.status !== "provisioning";
-  const plannedMove = dryRuns.moves[tenant.id];
-  const moveTargets = placements.filter(
-    (p) => p.kind === "shared" && !p.control && p.id !== tenant.placement_id,
-  );
   const moduleName = (m: string) => (t.has(`moduleNames.${m}`) ? t(`moduleNames.${m}`) : m);
   const subFacts: [string, ReactNode][] = [];
   if (subscription) {
@@ -284,76 +274,6 @@ export async function SampleTenant({ id }: { id: string }) {
             )}
             <p className="fhint">{t("tenant.placeAbout")}</p>
             {tenant.status === "moving" ? <p className="note">{t("tenant.moving")}</p> : null}
-            {ready && manage && tenant.status === "active" ? (
-              <div className="eg-acts">
-                <FormDialog
-                  action={planMove}
-                  label={
-                    placement?.kind === "dedicated"
-                      ? t("tenant.move.toShared")
-                      : t("tenant.move.toDedicated")
-                  }
-                  title={t("tenant.move.title", { tenant: tenant.name })}
-                  intro={t("tenant.move.intro")}
-                  submit={t("tenant.move.dryRun")}
-                  done={t("tenant.move.dryRunDone")}
-                  fields={[
-                    { kind: "hidden", name: "tenant_id", value: tenant.id },
-                    {
-                      kind: "select",
-                      name: "to",
-                      label: t("tenant.move.to"),
-                      defaultValue:
-                        placement?.kind === "dedicated" ? (moveTargets[0]?.id ?? "") : "dedicated",
-                      options: [
-                        ...(placement?.kind === "dedicated"
-                          ? []
-                          : [
-                              {
-                                value: "dedicated",
-                                label: t("tenant.move.dedicated", { slug: tenant.slug }),
-                              },
-                            ]),
-                        ...moveTargets.map((p) => ({
-                          value: p.id,
-                          label: t("tenant.move.shared", { name: p.name }),
-                        })),
-                      ],
-                    },
-                  ]}
-                />
-              </div>
-            ) : null}
-            {plannedMove && tenant.status === "active" ? (
-              <div className="note pf-plan-note">
-                <p>
-                  {t("tenant.move.planned", {
-                    from: plannedMove.from,
-                    to: plannedMove.to,
-                    tables: plannedMove.tables,
-                    rows: plannedMove.rows,
-                    minutes: Math.ceil(plannedMove.read_only_seconds / 60),
-                  })}
-                </p>
-                {manage ? (
-                  <ConfirmButton
-                    action={confirmMove}
-                    fields={{ id: tenant.id }}
-                    label={t("tenant.move.run")}
-                    title={t("tenant.move.runTitle", { tenant: tenant.name, to: plannedMove.to })}
-                    points={[
-                      t("tenant.move.runReadOnly", {
-                        minutes: Math.ceil(plannedMove.read_only_seconds / 60),
-                      }),
-                      t("tenant.move.runCopy"),
-                      t("tenant.move.runSource"),
-                    ]}
-                    submit={t("tenant.move.runSubmit")}
-                    done={t("tenant.move.runDone", { tenant: tenant.name })}
-                  />
-                ) : null}
-              </div>
-            ) : null}
           </div>
         </section>
 

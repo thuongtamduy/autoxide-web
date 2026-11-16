@@ -107,6 +107,8 @@ export const CONTENT_PUBLISH = "content.publish";
 export const TENANTS_READ = "kernel.tenants.read";
 /** Tạo khách, đổi tên, tạm khoá / mở lại khách (`POST`, `PATCH /kernel/tenants…`). */
 export const TENANTS_MANAGE = "kernel.tenants.manage";
+/** Dời khách sang placement khác (`POST /kernel/tenants/{id}/move`, D-292 của core). */
+export const TENANTS_MOVE = "kernel.tenants.move";
 /** Vào ngữ cảnh một khách bằng header `Autoxide-Tenant` (bước 33). */
 export const TENANTS_OPERATE = "kernel.tenants.operate";
 /** Xem các nơi lưu dữ liệu (placement) và trạng thái migration của chúng. */

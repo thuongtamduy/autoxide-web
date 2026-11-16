@@ -20,7 +20,6 @@ import {
   createGrant,
   createProvisioning,
   migratePlacements,
-  moveTenant,
   requestExport,
   retryProvisioning,
   revokeGrant,
@@ -102,25 +101,6 @@ export async function reactivateTenant(state: FormState, formData: FormData): Pr
   const stop = await guard(TENANTS_MANAGE);
   if (stop) return stop;
   return finish(state, await setTenantStatus(text(formData, "id"), "active", ""), []);
-}
-
-/** Chạy thử việc dời khách giữa database chung và riêng: kết quả hiện trên trang chi tiết. */
-export async function planMove(state: DialogState, formData: FormData): Promise<DialogState> {
-  const stop = await guard(TENANTS_MANAGE);
-  if (stop) return stop;
-  const sent = values(formData, ["to"]);
-  const outcome = await moveTenant(text(formData, "tenant_id"), {
-    to: sent.to ?? "",
-    dry_run: true,
-  });
-  return finish(state, outcome, ["to"], sent);
-}
-
-/** Dời thật theo lần chạy thử còn hiệu lực (`id` = id khách). */
-export async function confirmMove(state: FormState, formData: FormData): Promise<FormState> {
-  const stop = await guard(TENANTS_MANAGE);
-  if (stop) return stop;
-  return finish(state, await moveTenant(text(formData, "id"), { to: "", dry_run: false }), []);
 }
 
 /** Xếp job xuất toàn bộ dữ liệu của khách. */

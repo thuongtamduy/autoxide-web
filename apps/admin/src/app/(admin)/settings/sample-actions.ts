@@ -1,28 +1,23 @@
 "use server";
 
-// Server Action cho phần Cài đặt dùng dữ liệu mẫu (W-006): gói và thuê bao (bước 35), tên miền
-// (bước 33), kết nối đối tác (bước 33/36/39), job (bước 52), yêu cầu duyệt của agent (bước 51).
-// Gọi hàm mẫu của `src/sample/` thay cho API chưa có; cùng cách trả lỗi như phần gọi core thật,
-// để khi có API chỉ thay lời gọi.
-import { getTranslations } from "next-intl/server";
-import { z } from "zod";
-import { type FormState, parseForm } from "@/lib/form";
+// Server Action cho phần Cài đặt dùng dữ liệu mẫu (W-006): gói và thuê bao (bước 35), kết nối
+// đối tác (bước 33/36/39), job (bước 52), yêu cầu duyệt của agent (bước 51). Gọi hàm mẫu
+// của `src/sample/` thay cho API chưa có; cùng cách trả lỗi như phần gọi core thật, để khi có API
+// chỉ thay lời gọi.
+import type { FormState } from "@/lib/form";
 import { finishSample, sampleGuard } from "@/lib/sample-action";
 import { getMe } from "@/lib/viewer";
 import { approveRequest, rejectRequest } from "@/sample/agent";
 import {
-  addDomain,
   CONNECTION_SETTINGS,
   type ConnectionId,
   cancelRenewal,
   changePlan,
   resumeRenewal,
   retryJob,
-  revokeDomain,
   saveConnection,
   testConnection,
   updateBillingProfile,
-  verifyDomain,
 } from "@/sample/settings";
 
 function idOf(formData: FormData): string {
@@ -79,32 +74,6 @@ export async function saveBillingProfile(state: FormState, formData: FormData): 
     address_line: values.address_line ?? "",
   });
   return finishSample(state, outcome, PROFILE_FIELDS, values);
-}
-
-// ---------------------------------------------------------------- Tên miền
-
-const DomainForm = z.object({ domain: z.string().trim().min(1) });
-
-export async function addDomainAction(state: FormState, formData: FormData): Promise<FormState> {
-  const off = await sampleGuard();
-  if (off) return off;
-  const values = typed(formData, ["domain"]);
-  const t = await getTranslations("settings.required");
-  const input = parseForm(DomainForm, formData, t("field"), { domain: t("domain") });
-  if (!input.ok) return { fields: input.fields, values };
-  return finishSample(state, await addDomain(input.data.domain), ["domain"], values);
-}
-
-export async function verifyDomainAction(state: FormState, formData: FormData): Promise<FormState> {
-  const off = await sampleGuard();
-  if (off) return off;
-  return finishSample(state, await verifyDomain(idOf(formData)), []);
-}
-
-export async function revokeDomainAction(state: FormState, formData: FormData): Promise<FormState> {
-  const off = await sampleGuard();
-  if (off) return off;
-  return finishSample(state, await revokeDomain(idOf(formData)), []);
 }
 
 // ---------------------------------------------------------------- Kết nối đối tác

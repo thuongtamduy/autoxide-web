@@ -34,14 +34,17 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 - **Tổ chức › Người dùng và role**: tài khoản kèm role, lọc theo trạng thái và lần đăng nhập gần nhất,
   role với bộ chọn permission (permission rủi ro có nhãn), đặt mật khẩu đầu tiên và tắt xác thực hai
   bước chỉ khi cần, đăng xuất mọi nơi, gỡ passkey của người mất thiết bị.
-- **Cài đặt**: module, cài đặt theo khách, webhook (kèm lần giao gần nhất), nhật ký audit, API key và
+- **Cài đặt**: tên miền riêng (bản ghi TXT cần tạo, kiểm tra ngay, kết quả kiểm lại hằng ngày, gỡ; bản
+  cài một khách thì giải thích thay vì báo lỗi), module, cài đặt theo khách, webhook (kèm lần giao gần nhất), nhật ký audit, API key và
   AI agent (MCP; xác nhận key mới bằng mật khẩu, mã của app xác thực hay passkey; quản trị viên xem và
   thu hồi key của mọi người), công cụ cho lập trình viên.
 - **Tài khoản của tôi**: hồ sơ, email và mật khẩu (huỷ yêu cầu đổi email đang chờ; tài khoản chưa có
   mật khẩu nhận link để đặt), xác thực hai bước, passkey kèm loại thiết bị, thiết bị kèm cách đăng nhập
   và quốc gia, dữ liệu của bạn.
-- **Mặt điều khiển nền tảng › Khách hàng và Đội database**: khách và placement của core; thêm, đổi tên,
-  tạm khoá và mở lại một khách.
+- **Mặt điều khiển nền tảng › Khách hàng và Đội database**: khách và placement của core (kèm nơi lưu
+  file riêng của placement, không bao giờ có khoá); thêm, đổi tên, tạm khoá và mở lại một khách; dời
+  khách sang placement khác (chạy thử nêu bảng, số dòng, file và lý do chặn, rồi dời bằng job nền và
+  theo dõi tới xong).
 - **Trang mở từ mail** (không cần đăng nhập): xác nhận email, quên và đặt lại mật khẩu, và "không phải
   tôi" khi người khác đổi email của bạn.
 

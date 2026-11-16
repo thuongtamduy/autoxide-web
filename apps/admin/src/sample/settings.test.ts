@@ -1,23 +1,19 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  addDomain,
   cancelRenewal,
   changePlan,
   getSubscription,
   listBillingPeriods,
   listCatalog,
   listConnections,
-  listDomains,
   listJobs,
   resetSampleSettings,
   resumeRenewal,
   retryJob,
-  revokeDomain,
   saveConnection,
   testConnection,
   updateBillingProfile,
   usagePercent,
-  verifyDomain,
 } from "./settings";
 
 afterEach(resetSampleSettings);
@@ -89,31 +85,6 @@ describe("gói và thuê bao mẫu", () => {
     expect(usagePercent({ used: 23, max: 50 })).toBe(46);
     expect(usagePercent({ used: 80, max: 50 })).toBe(100);
     expect(usagePercent({ used: 1, max: 0 })).toBe(0);
-  });
-});
-
-describe("tên miền mẫu", () => {
-  it("thêm: chữ thường, có bản ghi TXT; không nhận IP, localhost, tên trùng", async () => {
-    const added = await addDomain(" Shop.Example.com. ");
-    expect(added.ok && added.data.domain).toBe("shop.example.com");
-    expect(added.ok && added.data.txt_name).toBe("_autoxide-challenge.shop.example.com");
-    expect(added.ok && added.data.status).toBe("pending");
-    for (const bad of ["10.0.0.1", "localhost", "a..b", "no-dot"]) {
-      const result = await addDomain(bad);
-      expect(!result.ok && result.problem.errors?.[0]?.field).toBe("domain");
-    }
-    const taken = await addDomain("shop.example.com");
-    expect(!taken.ok && taken.problem.code).toBe("tenant_domain_taken");
-  });
-
-  it("lọc theo trạng thái, kiểm lại, gỡ thì biến khỏi danh sách", async () => {
-    const failed = must((await listDomains({ status: "failed" })).data[0]);
-    const checked = await verifyDomain(failed.id);
-    expect(checked.ok && checked.data.status).toBe("pending");
-    await revokeDomain(failed.id);
-    expect((await listDomains()).data.some((d) => d.id === failed.id)).toBe(false);
-    const gone = await verifyDomain(failed.id);
-    expect(!gone.ok && gone.problem.status).toBe(404);
   });
 });
 

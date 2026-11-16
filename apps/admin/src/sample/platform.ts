@@ -12,7 +12,6 @@ import {
   iso,
   type MigrationPlan,
   type ModuleBacklog,
-  type MovePlan,
   type OperatorSubscription,
   type OpsAlert,
   PLATFORM_TENANT_ID,
@@ -72,7 +71,7 @@ const ACTOR: Ref = STAFF.lead;
 // ---------------------------------------------------------------- Việc chạy bằng job
 
 /**
- * Cho các job mẫu tiến theo thời gian thật: placement đang migrate xong, khách đang dời xong, lượt
+ * Cho các job mẫu tiến theo thời gian thật: placement đang migrate xong, lượt
  * cấp phát đi tiếp từng bước, lần xuất dữ liệu xong. Gọi ở đầu mỗi hàm đọc; `now` cho test.
  */
 export function syncPlatform(now = Date.now()): void {
@@ -87,16 +86,6 @@ export function syncPlatform(now = Date.now()): void {
       placement.updated_at = iso(now);
     }
     delete s.timers.migrate[id];
-  }
-  for (const [id, move] of Object.entries(s.timers.move)) {
-    if (now < move.until) continue;
-    const tenant = s.tenants.find((x) => x.id === id);
-    if (tenant) {
-      tenant.placement_id = move.to;
-      tenant.status = "active";
-      tenant.updated_at = iso(now);
-    }
-    delete s.timers.move[id];
   }
   for (const run of s.provisionings) advance(run, now);
   for (const job of s.exports) {
@@ -288,7 +277,6 @@ export async function getDryRuns(): Promise<{ data: Store["dryRuns"] }> {
     data: structuredClone({
       fleet: fresh(s.dryRuns.fleet, now) ? s.dryRuns.fleet : null,
       placements: keep(s.dryRuns.placements),
-      moves: keep(s.dryRuns.moves),
     }),
   };
 }
@@ -348,77 +336,6 @@ export async function migratePlacements(input: {
   }
   if (!input.placement_id) s.dryRuns.fleet = null;
   return { ok: true, data: plan };
-}
-
-/**
- * Dời khách `shared` ↔ `dedicated`: chạy thử với đích `to`, rồi chạy thật theo đúng lần chạy thử đó
- * (`to` bỏ trống). Core mới có CLI (`autoxide tenant move <slug> --to`); đề xuất mới:
- * POST /api/v1/kernel/tenants/{id}/move `{to, dry_run}` xếp job.
- */
-export async function moveTenant(
-  id: string,
-  input: { to: string; dry_run: boolean },
-): Promise<SampleOutcome<MovePlan>> {
-  syncPlatform();
-  const s = store();
-  const now = Date.now();
-  const tenant = s.tenants.find((x) => x.id === id);
-  if (!tenant) return failed(404, "tenant_not_found", `No tenant ${id}.`);
-  if (tenant.is_platform || tenant.status !== "active") {
-    return failed(409, "tenant_invalid_transition", `The tenant is ${tenant.status}.`);
-  }
-  if (!input.dry_run) {
-    const planned = s.dryRuns.moves[id];
-    if (!planned || !fresh(planned, now)) {
-      return failed(409, "kernel_dry_run_required", "Run a dry run first, then move.");
-    }
-    let to = planned.to_id;
-    if (to === "dedicated") {
-      const placement: Placement = {
-        id: crypto.randomUUID(),
-        name: tenant.slug,
-        kind: "dedicated",
-        backend: "postgres",
-        schema_state: "ready",
-        schema_checked_at: iso(now),
-        created_at: iso(now),
-        updated_at: iso(now),
-        pending_migrations: [],
-        location: "Việt Nam",
-        control: false,
-      };
-      s.placements.push(placement);
-      to = placement.id;
-    }
-    tenant.status = "moving";
-    tenant.updated_at = iso(now);
-    s.timers.move[tenant.id] = { until: now + 2 * SAMPLE_STEP_MS, to };
-    delete s.dryRuns.moves[id];
-    return { ok: true, data: structuredClone(planned) };
-  }
-  const current = s.placements.find((p) => p.id === tenant.placement_id);
-  const target =
-    input.to === "dedicated"
-      ? null
-      : s.placements.find((p) => p.id === input.to && p.kind === "shared");
-  if (input.to !== "dedicated" && !target) {
-    return invalid([{ field: "to", code: "unknown", detail: "is not a shared placement" }]);
-  }
-  if ((target && target.id === tenant.placement_id) || (!target && current?.kind === "dedicated")) {
-    return invalid([{ field: "to", code: "same_placement", detail: "is the current placement" }]);
-  }
-  const plan: MovePlan = {
-    at: iso(now),
-    tenant_id: tenant.id,
-    to_id: input.to,
-    from: current?.name ?? "—",
-    to: target?.name ?? tenant.slug,
-    tables: 48,
-    rows: 120_000 + tenant.slug.length * 9_000,
-    read_only_seconds: 360,
-  };
-  s.dryRuns.moves[id] = plan;
-  return { ok: true, data: structuredClone(plan) };
 }
 
 // ---------------------------------------------------------------- Cấp phát (bước 35 mục 5)

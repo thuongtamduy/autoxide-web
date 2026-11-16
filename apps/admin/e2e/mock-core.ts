@@ -9,7 +9,8 @@
 // Quản trị người dùng, role và trang công khai của link trong thư: `mock-access.ts`.
 // Webhook, API key, audit, trạng thái AI, OpenAPI: `mock-settings.ts`.
 // Cờ giao diện theo người dùng (`/api/v1/me/flags`): `mock-flags.ts`.
-// Khách hàng, placement, cài đặt theo khách (bước 33): `mock-tenants.ts`.
+// Khách hàng, placement, cài đặt theo khách, dời khách (bước 33): `mock-tenants.ts`; tên miền
+// riêng của khách: `mock-domains.ts`.
 // Màn Nội dung (bài viết, trình soạn, xem trước): `mock-content.ts`.
 // Phân hệ Tiếp thị (biểu mẫu, bản tin, bình luận): `mock-engage.ts`.
 // Menu của website (module `menus`): `mock-menus.ts`.
@@ -43,6 +44,7 @@ import {
   seedPages,
   setAiEnabled,
 } from "./mock-content.ts";
+import { domainRoutes, resetDomains, setDnsRecord } from "./mock-domains.ts";
 import { ENGAGE_MODULES, engageRoutes, resetEngage } from "./mock-engage.ts";
 import { flagRoutes, resetFlags } from "./mock-flags.ts";
 import {
@@ -290,9 +292,11 @@ const server = createServer(async (request, response) => {
     resetMenus();
     resetFlags();
     resetTenants();
+    resetDomains();
     return send(response, 204);
   }
   if (route === "POST /__tenancy") return setTenancy(request, response);
+  if (route === "POST /__domains/dns") return setDnsRecord(request, response);
   if (route === "POST /__webhooks/fire") {
     return fireEvent(request, response);
   }
@@ -487,6 +491,7 @@ const server = createServer(async (request, response) => {
   if (handled) return;
   if (await flagRoutes(request, response, url, account)) return;
   if (await tenantRoutes(request, response, url, account)) return;
+  if (await domainRoutes(request, response, url, account)) return;
   if (await settingsRoutes(request, response, url, account, () => accounts)) return;
   if (await engageRoutes(request, response, url, route)) return;
   if (url.pathname.startsWith("/api/v1/kernel/modules")) {

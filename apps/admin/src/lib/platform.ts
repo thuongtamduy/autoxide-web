@@ -19,7 +19,12 @@ type CorePlacement = components["schemas"]["Placement"];
 /** Bản ghi đến từ core (`core`) hay chỉ có trong dữ liệu mẫu (`sample`, phần core chưa có). */
 export type Source = "core" | "sample";
 export type PlatformTenant = Tenant & { source: Source };
-export type PlatformPlacement = Placement & { source: Source };
+export type PlacementStorage = components["schemas"]["PlacementStorage"];
+/**
+ * `storage`: nơi lưu file riêng của placement (D-293 của core, chỉ phần không bí mật); `null` khi
+ * khách trên placement này lưu file ở nơi lưu chung của nền tảng. Placement mẫu không có.
+ */
+export type PlatformPlacement = Placement & { source: Source; storage?: PlacementStorage | null };
 
 /** Placement đặt cố định của core cho database điều khiển (D-253 của core). */
 export const MAIN_PLACEMENT_ID = "00000000-0000-7000-8000-000000000002";
@@ -44,6 +49,7 @@ export function fromCorePlacement(core: CorePlacement, sample?: Placement): Plat
     pending_migrations: sample?.pending_migrations ?? [],
     location: sample?.location ?? "",
     control: core.id === MAIN_PLACEMENT_ID,
+    storage: core.storage ?? null,
     source: "core",
   };
 }
@@ -168,6 +174,39 @@ export function orderTree<T extends { id: string; name: string; parent_id: strin
     walk(root, 0);
   }
   return out;
+}
+
+/** Trạng thái của một lượt dời khách (`TenantMove.state`, D-292 của core), theo thứ tự chạy. */
+export const MOVE_STATES = ["copying", "copied", "switched", "done"] as const;
+
+/** Lượt dời đã dừng hẳn (xong hay đã huỷ): thôi theo dõi. */
+export function moveFinished(state: string): boolean {
+  return state === "done" || state === "aborted";
+}
+
+/**
+ * Các bước của lượt dời cho thanh tiến độ: bước đã qua, bước đang ở, bước chưa tới. Lượt đã huỷ
+ * (`aborted`) không có bước nào "đang ở".
+ */
+export function moveSteps(
+  state: string,
+): { state: (typeof MOVE_STATES)[number]; phase: "done" | "current" | "todo" }[] {
+  const at = MOVE_STATES.indexOf(state as (typeof MOVE_STATES)[number]);
+  return MOVE_STATES.map((step, index) => ({
+    state: step,
+    phase: state === "done" || (at >= 0 && index < at) ? "done" : index === at ? "current" : "todo",
+  }));
+}
+
+/**
+ * Đích dời được: mọi placement của core trừ placement khách đang ở. Placement mẫu không có thật ở
+ * core nên không chọn được.
+ */
+export function moveTargets<T extends { name: string; source: Source }>(
+  placements: readonly T[],
+  current: string,
+): T[] {
+  return placements.filter((p) => p.source === "core" && p.name !== current);
 }
 
 /** Số ngày (làm tròn lên) từ `now` tới `until`; đã qua thì số âm (làm tròn xuống). */

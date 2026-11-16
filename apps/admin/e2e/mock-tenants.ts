@@ -6,6 +6,11 @@
 //   `POST /__tenancy {"mode": "multi"}` bật nhiều khách để thử tạo khách;
 // - đọc một khách trả `ETag`; `If-Match` cũ thì 412; khách nền tảng không tạm khoá được (422, ô
 //   `status`);
+// - dời khách (D-292): `POST …/move` chạy thử mặc định (kế hoạch: bảng, số dòng, file, lý do chặn);
+//   `dry_run: false` → 201 lượt dời, khách thành `moving`; lượt dời tự đi `copying` → `copied` →
+//   `switched` (khách đổi placement, `active` lại) → `done`, mỗi bước `MOVE_STEP_MS`, xem ở
+//   `GET …/moves/{id}`. Khách nền tảng không dời được (`tenant_move_platform`);
+// - placement `eu-db` có nơi lưu file riêng (S3, chỉ phần không bí mật) để thử `storage`;
 // - cài đặt bí mật không bao giờ trả giá trị. Ngoài `kernel.public_url` (như core), có thêm
 //   `mail.smtp_url` (bí mật) để thử cách hiện secret.
 import { randomUUID } from "node:crypto";
@@ -27,7 +32,37 @@ const PLACEMENTS: Schemas["Placement"][] = [
     backend: "sqlite",
     schema_state: "ready",
     created_at: "2026-11-01T00:00:00Z",
+    storage: null,
   },
+  {
+    id: "00000000-0000-7000-8000-0000000000e1",
+    name: "eu-db",
+    kind: "dedicated",
+    backend: "postgres",
+    schema_state: "ready",
+    created_at: "2026-11-02T00:00:00Z",
+    storage: {
+      kind: "s3",
+      bucket: "eu-files",
+      prefix: "autoxide",
+      region: "eu-central-1",
+      endpoint: null,
+      dir: null,
+      credentials: true,
+    },
+  },
+];
+
+/** Mỗi bước của lượt dời giả mất chừng này. */
+const MOVE_STEP_MS = 1500;
+const MOVE_FLOW = ["copying", "copied", "switched", "done"] as const;
+
+/** Bảng cấp khách hàng giả sẽ chép, theo thứ tự tạo bảng. */
+const TABLES: Schemas["TenantTableRows"][] = [
+  { table: "kernel_tenant_settings", rows: 2 },
+  { table: "auth_users", rows: 3 },
+  { table: "auth_roles", rows: 4 },
+  { table: "notes_note", rows: 12 },
 ];
 
 const SETTINGS: { name: string; description: string; secret: boolean }[] = [
@@ -47,10 +82,12 @@ const SETTINGS: { name: string; description: string; secret: boolean }[] = [
 let mode: "single" | "multi" = "single";
 let tenants: Tenant[] = [];
 let values = new Map<string, { value: string; updated_at: string }>();
+let moves: Schemas["TenantMove"][] = [];
 
 export function resetTenants() {
   mode = "single";
   values = new Map();
+  moves = [];
   tenants = [
     {
       id: PLATFORM_TENANT,
@@ -92,6 +129,80 @@ function page<T extends { id: string }>(items: T[], url: URL) {
       next_cursor: start + limit < items.length ? (data.at(-1)?.id ?? null) : null,
     } satisfies Schemas["Pagination"],
   };
+}
+
+/** Cho lượt dời đi tiếp theo thời gian thật; bước `switched` đổi placement của khách. */
+function advance(move: Schemas["TenantMove"]) {
+  if (move.state === "done" || move.state === "aborted") return;
+  const step = Math.min(
+    MOVE_FLOW.length - 1,
+    Math.floor((Date.now() - Date.parse(move.created_at)) / MOVE_STEP_MS),
+  );
+  const next = MOVE_FLOW[step] ?? "copying";
+  if (next === move.state) return;
+  const now = new Date().toISOString();
+  move.state = next;
+  move.updated_at = now;
+  if (step >= 1) {
+    move.tables = TABLES;
+    move.rows = TABLES.reduce((sum, t) => sum + t.rows, 0);
+  }
+  if (step >= 2) {
+    const tenant = tenants.find((x) => x.id === move.tenant_id);
+    if (tenant && tenant.status === "moving") {
+      tenant.placement = move.to;
+      tenant.status = "active";
+      tenant.updated_at = now;
+    }
+  }
+  if (next === "done") move.finished_at = now;
+}
+
+/** Lý do chặn của việc dời `tenant` sang `to` (như `check` của core), và lượt dở để chạy tiếp. */
+function moveCheck(tenant: Tenant, to: string) {
+  const blocking: Schemas["TenantMoveBlocker"][] = [];
+  const unfinished = moves.find(
+    (m) => m.tenant_id === tenant.id && m.state !== "done" && m.state !== "aborted",
+  );
+  if (tenant.id === PLATFORM_TENANT) {
+    blocking.push({
+      code: "tenant_move_platform",
+      message:
+        "The platform tenant always keeps its data on the placement `main`; it cannot be moved.",
+    });
+  }
+  if (unfinished) {
+    if (unfinished.to !== to) {
+      blocking.push({
+        code: "tenant_move_unfinished",
+        message: `An unfinished move to \`${unfinished.to}\` must be finished or aborted first.`,
+      });
+    } else {
+      blocking.push({
+        code: "tenant_move_running",
+        message: `A move to \`${unfinished.to}\` is running.`,
+      });
+    }
+  } else {
+    if (tenant.placement === to) {
+      blocking.push({
+        code: "tenant_move_same_placement",
+        message: `The tenant already keeps its data on the placement \`${to}\`.`,
+      });
+    }
+    if (tenant.status !== "active") {
+      blocking.push({
+        code: "tenant_move_not_active",
+        message: `The tenant is \`${tenant.status}\`; only an active tenant can move.`,
+      });
+    }
+  }
+  return blocking;
+}
+
+/** Chế độ của bản cài giả (tên miền riêng chỉ nhận ở `multi`, như core). */
+export function tenancyMode(): "single" | "multi" {
+  return mode;
 }
 
 /** `POST /__tenancy {mode}`: đổi chế độ của bản cài giả. */
@@ -142,6 +253,7 @@ export async function tenantRoutes(
       denied(method === "GET" ? "kernel.tenants.read" : "kernel.tenants.manage");
       return true;
     }
+    for (const m of moves) advance(m);
     if (path === "/api/v1/kernel/tenants" && method === "GET") {
       const status = url.searchParams.get("status");
       const parent = url.searchParams.get("parent_id");
@@ -207,6 +319,86 @@ export async function tenantRoutes(
       tenants.push(created);
       response.setHeader("Location", `/api/v1/kernel/tenants/${created.id}`);
       send(response, 201, { data: created } satisfies Schemas["Data_Tenant"]);
+      return true;
+    }
+    const moveMatch = path.match(/^\/api\/v1\/kernel\/tenants\/([^/]+)\/(move|moves\/([^/]+))$/);
+    if (moveMatch) {
+      const owner = tenants.find((x) => x.id === moveMatch[1] || x.slug === moveMatch[1]);
+      if (!owner) {
+        problem(response, 404, "tenant_not_found", "No tenant has this id.");
+        return true;
+      }
+      if (moveMatch[2] === "move" && method === "POST") {
+        const body = await json(request);
+        const to = text(body, "to");
+        const target = PLACEMENTS.find((p) => p.name === to);
+        if (!target) {
+          problem(response, 404, "tenant_placement_not_found", `No placement \`${to}\`.`);
+          return true;
+        }
+        const keepSource = body.keep_source === true;
+        const blocking = moveCheck(owner, to);
+        if (body.dry_run !== false) {
+          const from =
+            moves.find((m) => m.tenant_id === owner.id && m.state !== "done")?.from ??
+            owner.placement;
+          const source = PLACEMENTS.find((p) => p.name === from);
+          const files =
+            JSON.stringify(source?.storage ?? null) === JSON.stringify(target.storage ?? null)
+              ? 0
+              : 4;
+          send(response, 200, {
+            data: {
+              tenant_id: owner.id,
+              tenant: owner.slug,
+              from,
+              to,
+              keep_source: keepSource,
+              ready: blocking.length === 0,
+              blocking,
+              resumes: null,
+              tables: TABLES,
+              rows: TABLES.reduce((sum, t) => sum + t.rows, 0),
+              files,
+              settle_seconds: 6,
+            },
+          } satisfies Schemas["Data_TenantMovePlan"]);
+          return true;
+        }
+        const first = blocking[0];
+        if (first) {
+          problem(response, 409, first.code, first.message);
+          return true;
+        }
+        const now = new Date().toISOString();
+        const created: Schemas["TenantMove"] = {
+          id: randomUUID(),
+          tenant_id: owner.id,
+          from: owner.placement,
+          to,
+          keep_source: keepSource,
+          state: "copying",
+          tables: [],
+          rows: 0,
+          error: null,
+          created_at: now,
+          updated_at: now,
+          finished_at: null,
+        };
+        moves.push(created);
+        owner.status = "moving";
+        owner.updated_at = now;
+        response.setHeader("Location", `/kernel/tenants/${owner.id}/moves/${created.id}`);
+        send(response, 201, { data: created } satisfies Schemas["Data_TenantMove"]);
+        return true;
+      }
+      const found = moves.find((m) => m.id === moveMatch[3] && m.tenant_id === owner.id);
+      if (method === "GET" && found) {
+        advance(found);
+        send(response, 200, { data: found } satisfies Schemas["Data_TenantMove"]);
+        return true;
+      }
+      problem(response, 404, "tenant_move_not_found", "No move of this tenant has this id.");
       return true;
     }
     const key = decodeURIComponent(path.slice("/api/v1/kernel/tenants/".length));

@@ -1559,6 +1559,57 @@ sự thật cho ngôn ngữ được mở.
 Đã cân nhắc: truyền danh sách qua prop ở mọi tầng — nhiều tầng component, dễ sót; đọc cấu hình trong từng form
 phía trình duyệt — token và địa chỉ core không xuống trình duyệt, và mỗi form một lần gọi.
 
+## W-032 · Tên miền riêng, dời khách giữa placement, nơi lưu file của placement: dùng API thật (bước 33 phần C) — 2026-11-16 — agent quyết
+
+Core `main` `11bbef0` làm xong bước 33 phần C (D-291 tên miền riêng, D-292 dời khách, D-293 nơi lưu file theo
+placement). Hai màn bỏ dữ liệu mẫu và gọi API thật.
+
+Quyết định:
+
+- **Cài đặt › Tên miền** đọc `GET /kernel/domains` (đọc hết các trang), thêm bằng `POST`, "Kiểm tra ngay" bằng
+  `POST /{id}/verify`, gỡ bằng `DELETE`. Mỗi tên miền hiện đúng bản ghi `record` của core (loại, tên, giá trị — nút
+  chép riêng cho tên và giá trị), trạng thái, lần tra gần nhất, `check_error`, hạn của tên miền đang chờ
+  (`updated_at` + 7 ngày, đúng cách core tính) và `failed_checks` của lần kiểm hằng ngày (tới 3 thì hỏng). Câu "việc
+  cần làm" theo trạng thái (`domainNext` ở `src/lib/domains.ts`); tên miền cần xử lý đứng trước.
+  - "Kiểm tra ngay" báo đúng kết quả (đã xác minh / chưa, kèm lý do của core) vì core luôn trả 200. Không hiện nút
+    cho tên miền đã xác minh mà bản ghi vẫn thấy: core trả nguyên trạng thái, không tra DNS.
+  - Gỡ có hộp xác nhận nêu hệ quả: request thôi vào website ngay, không xin chứng chỉ TLS nữa, khách khác nhận được
+    tên miền, dùng lại phải tạo bản ghi mới (giá trị đổi).
+  - **Bản cài một khách**: `mode` của `GET /kernel/tenant` là `single` thì trang giải thích (trỏ tên miền về máy chủ;
+    tên miền riêng cần `AUTOXIDE_TENANCY_MODE=multi`) và không có nút thêm. 409 `tenant_single_mode` vẫn được đổi
+    thành lời giải thích đó (`explainSingleMode`), vì câu của core nói về việc thêm khách.
+  - Bỏ kho tên miền mẫu (`src/sample/settings.ts`, action và form mẫu). Bước thiết lập "tên miền" ở Tổng quan đọc API
+    thật (bản cài một khách: bước không áp dụng). Gắn tên miền với cửa hàng / chi nhánh còn chờ bước 34: chỉ còn một
+    khối giải thích có nhãn mẫu, không có dữ liệu mẫu.
+- **Dời khách** ở trang khách của core (`kernel.tenants.move`; khách nền tảng không có khối này):
+  - chọn đích (placement của core trừ placement đang ở) và "giữ bản cũ" bằng form GET (`?move_to=&keep_source=1`);
+    trang chạy thử (`POST …/move`, `dry_run` mặc định) mỗi lần dựng — chạy thử không đổi gì — và hiện kế hoạch: số
+    dòng / bảng (danh sách bảng gập lại), số file, số giây khách trả 503 trước khi chép, bản cũ giữ hay xoá, lý do
+    chặn (`blocking`: câu của core kèm `code`), lượt dở sẽ chạy tiếp (`resumes`);
+  - chỉ khi `ready` mới có nút "Dời ngay" (hộp xác nhận nêu 503 `tenant_maintenance` kèm `Retry-After`, chép và đếm
+    trong một transaction, bản cũ, khách lớn dùng CLI); chạy thật gửi `dry_run: false` rồi mở `?move=<id>`;
+  - trạng thái lượt dời đọc `GET …/moves/{move_id}`: các bước `copying → copied → switched → done` (hay `aborted`),
+    `error` kèm cách chạy tiếp; còn chạy thì trang tự làm mới mỗi 3 giây (`MovePoll`, `router.refresh`);
+  - khách đang `moving` có lời giải thích cửa sổ bảo trì 503 cho người vận hành.
+  - Bỏ luồng dời mẫu của khách chỉ có trong dữ liệu mẫu (`moveTenant`, `dryRuns.moves`, `timers.move`): dời khách đã
+    là API thật, khách mẫu không có ở core nên không dời được.
+- **Nơi lưu file của placement** (`Placement.storage`): cột "Nơi lưu file" ở Đội database và dòng "Nơi lưu file" ở
+  trang khách — nơi lưu chung, thư mục, bucket S3 (bucket/prefix, vùng, endpoint, đã có khoá hay chưa) hay "không đọc
+  được" (sai `AUTOXIDE_SECRET_KEY`). Không bao giờ có khoá.
+- Core giả: `e2e/mock-domains.ts` (hook `POST /__domains/dns` đặt bản ghi TXT), dời khách và placement `eu-db` có S3
+  trong `e2e/mock-tenants.ts`.
+
+Lý do: luật "không thay API có sẵn bằng dữ liệu mẫu"; chạy thử trên địa chỉ giữ được kế hoạch khi tải lại và chạy cả
+khi không có JavaScript, còn chạy thật vẫn qua Server Action.
+
+Đã cân nhắc: chạy thử trong hộp thoại (Server Action trả kế hoạch) — kế hoạch mất khi tải lại, phải đưa cả kế hoạch
+qua state của client; ẩn danh sách bảng — người vận hành cần biết bảng nào lớn nên để gập lại; lọc trạng thái tên
+miền bằng chip — core không có tham số lọc, một khách có vài tên miền nên bỏ chip.
+
+Chưa làm được với core thật ở chế độ `multi`: trang đăng nhập của giao diện chưa gửi `Autoxide-Tenant` hay chạy trên
+tên miền của khách, nên core trả `tenant_required` khi đăng nhập. Đã thử bằng phiên đăng nhập lúc core ở `single`
+rồi bật `multi`. Chọn khách khi đăng nhập là việc riêng.
+
 ## W-033 · Website: chủ đề `/blog` từ core, chuyển tiếp khách khi core chạy nhiều khách — 2026-11-16 — agent quyết
 
 Quyết định:

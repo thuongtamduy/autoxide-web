@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import {
   renameTenant,
   resumeCoreTenant,
+  startMove,
   suspendCoreTenant,
 } from "@/app/(platform)/platform/tenant-actions";
 import { ConfirmButton } from "@/components/engage/actions";
@@ -14,35 +15,53 @@ import {
   StatusBadge,
   TENANT_BADGE,
 } from "@/components/platform/common";
+import { MovePlanForm, MovePoll } from "@/components/platform/move";
+import { PlacementStorageView } from "@/components/platform/storage";
 import { SampleBadge } from "@/components/sample-badge";
 import { FormDialog } from "@/components/ui/form-dialog";
+import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
+import { type Outcome, send } from "@/lib/action";
 import { initialsOf } from "@/lib/initials";
-import { TENANTS_MANAGE } from "@/lib/permissions";
+import { TENANTS_MANAGE, TENANTS_MOVE } from "@/lib/permissions";
+import { moveFinished, moveSteps, moveTargets } from "@/lib/platform";
 import type { PlatformData } from "@/lib/platform-server";
 import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 import { PLATFORM_TENANT_ID, type TenantStatus } from "@/sample/platform-data";
 
 type CoreTenant = components["schemas"]["Tenant"];
+type TenantMove = components["schemas"]["TenantMove"];
+type TenantMovePlan = components["schemas"]["TenantMovePlan"];
+
+/** Tham số trên địa chỉ của trang: đích đang chạy thử, hay lượt dời đang theo dõi. */
+export interface MoveSearch {
+  move_to?: string | undefined;
+  keep_source?: string | undefined;
+  move?: string | undefined;
+}
 
 const PENDING =
-  "GET /api/v1/plans/tenants/{id}/subscription, …/usage, …/overrides (bước 35); GET/POST /api/v1/auth/support-grants (bước 34); mới: POST /api/v1/kernel/tenants/{id}/move, …/exports";
+  "GET /api/v1/plans/tenants/{id}/subscription, …/usage, …/overrides (bước 35); GET/POST /api/v1/auth/support-grants (bước 34); mới: POST /api/v1/kernel/tenants/{id}/exports";
 
-// Chi tiết một khách của core (bước 33, W-027): tên, trạng thái, nơi lưu, cây khách; đổi tên, tạm
-// khoá / mở lại bằng `PATCH /kernel/tenants/{id}` kèm `If-Match`. Thuê bao, hạn mức, dời khách,
-// xuất dữ liệu và quyền vào hỗ trợ chưa có API (bước 34, 35 và mục "mới" của bảng thiếu API).
+// Chi tiết một khách của core (bước 33, W-027, W-032): tên, trạng thái, nơi lưu (kèm nơi lưu file
+// của placement), cây khách; đổi tên, tạm khoá / mở lại bằng `PATCH /kernel/tenants/{id}` kèm
+// `If-Match`; dời sang placement khác (`POST …/move`: chạy thử trước, rồi chạy thật bằng job, theo dõi
+// ở `GET …/moves/{move_id}`). Thuê bao, hạn mức, xuất dữ liệu và quyền vào hỗ trợ chưa có API
+// (bước 34, 35 và mục "mới" của bảng thiếu API).
 export async function CoreTenantView({
   tenant,
   etag,
   data,
+  search,
 }: {
   tenant: CoreTenant;
   etag: string | null;
   data: PlatformData;
+  search: MoveSearch;
 }) {
   const t = await getTranslations("platform");
-  const manage = await can(TENANTS_MANAGE);
+  const [manage, mover] = await Promise.all([can(TENANTS_MANAGE), can(TENANTS_MOVE)]);
   const sample = sampleDataEnabled();
   const platform = tenant.id === PLATFORM_TENANT_ID;
   const status = tenant.status as TenantStatus;
@@ -141,6 +160,7 @@ export async function CoreTenantView({
                       label={t(`schema.${placement.schema_state}`)}
                     />,
                   ],
+                  [t("tenant.files"), <PlacementStorageView key="f" storage={placement.storage} />],
                 ]}
               />
             ) : (
@@ -188,6 +208,10 @@ export async function CoreTenantView({
           </div>
         </section>
       </div>
+
+      {mover && !platform ? (
+        <MoveSection tenant={tenant} status={status} data={data} search={search} />
+      ) : null}
 
       {sample ? (
         <section className="block" aria-labelledby="pf-t-pending">
@@ -256,6 +280,234 @@ export async function CoreTenantView({
           </div>
         </section>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Khối "Dời sang placement khác" (W-032): theo dõi lượt dời (`?move=`), kết quả chạy thử của đích
+ * đang chọn (`?move_to=`), form chọn đích. Chỉ cho người có `kernel.tenants.move`; khách nền tảng
+ * không dời được nên không có khối này.
+ */
+async function MoveSection({
+  tenant,
+  status,
+  data,
+  search,
+}: {
+  tenant: CoreTenant;
+  status: string;
+  data: PlatformData;
+  search: MoveSearch;
+}) {
+  const t = await getTranslations("platform.tenant.move");
+  const tp = await getTranslations("platform");
+  const targets = moveTargets(data.placements, tenant.placement);
+  const keepSource = search.keep_source === "1";
+  const [moving, plan] = await Promise.all([
+    search.move
+      ? send((client) =>
+          client.GET("/api/v1/kernel/tenants/{id}/moves/{move_id}", {
+            params: { path: { id: tenant.id, move_id: search.move ?? "" } },
+          }),
+        )
+      : Promise.resolve(null),
+    // Chạy thử không đổi gì ở core: gọi mỗi lần dựng trang để kế hoạch luôn đúng lúc này.
+    search.move_to && !search.move
+      ? send((client) =>
+          client.POST("/api/v1/kernel/tenants/{id}/move", {
+            params: { path: { id: tenant.id } },
+            body: { to: search.move_to ?? "", dry_run: true, keep_source: keepSource },
+          }),
+        )
+      : Promise.resolve(null),
+  ]);
+  const canPlan = status === "active" || status === "moving";
+  return (
+    <section className="block" aria-labelledby="pf-t-move">
+      <h2 id="pf-t-move" className="h2">
+        {t("title")}
+      </h2>
+      <div className="card padded pf-stack">
+        <p className="fhint">{t("about")}</p>
+        {status === "moving" ? (
+          <p className="note warn" data-testid="moving-note">
+            {t("movingNow")}
+          </p>
+        ) : null}
+        {moving ? (
+          moving.ok ? (
+            <MoveStatus tenant={tenant} move={moving.data.data} />
+          ) : (
+            <p className="note warn" data-code={moving.problem.code}>
+              {moving.problem.detail}
+            </p>
+          )
+        ) : null}
+        {plan ? <MovePlanView tenant={tenant} plan={plan} /> : null}
+        {canPlan && targets.length > 0 ? (
+          <MovePlanForm
+            action={`/platform/tenants/${tenant.id}`}
+            targets={targets.map((p) => ({
+              name: p.name,
+              label: t("target", {
+                name: p.name,
+                kind: tp(`placementKind.${p.kind}`),
+                backend: tp(`backend.${p.backend}`),
+              }),
+            }))}
+            to={search.move_to}
+            keepSource={keepSource}
+          />
+        ) : null}
+        {canPlan && targets.length === 0 ? <p className="fhint">{t("noTargets")}</p> : null}
+        <p className="fhint">{t("cli", { slug: tenant.slug })}</p>
+      </div>
+    </section>
+  );
+}
+
+/** Kết quả chạy thử: lý do chặn, số dòng theo bảng, số file, thời gian khách nhận 503; nút chạy thật. */
+async function MovePlanView({
+  tenant,
+  plan,
+}: {
+  tenant: CoreTenant;
+  plan: Outcome<{ data: TenantMovePlan | TenantMove }>;
+}) {
+  const t = await getTranslations("platform.tenant.move");
+  if (!plan.ok) {
+    return (
+      <p className="note warn" data-code={plan.problem.code}>
+        {plan.problem.detail}
+      </p>
+    );
+  }
+  const result = plan.data.data;
+  // Chạy thử luôn trả kế hoạch (200); lượt dời (201) chỉ khi gửi `dry_run: false`.
+  if (!("blocking" in result)) return null;
+  return (
+    <div className="pf-plan-note" data-testid="move-plan">
+      <h3 className="pf-move-h">{t("planTitle", { from: result.from, to: result.to })}</h3>
+      <Facts
+        items={[
+          [t("planRows"), t("planRowsValue", { rows: result.rows, tables: result.tables.length })],
+          [t("planFiles"), result.files > 0 ? String(result.files) : t("planNoFiles")],
+          [t("planSettle"), t("planSettleValue", { seconds: result.settle_seconds })],
+          [t("planSource"), result.keep_source ? t("sourceKept") : t("sourceDeleted")],
+        ]}
+      />
+      {result.resumes ? <p className="note">{t("resumes")}</p> : null}
+      {result.ready ? (
+        <p className="note">{t("ready")}</p>
+      ) : (
+        <div className="note warn">
+          <p>{t("blocked")}</p>
+          <ul className="pf-blockers">
+            {result.blocking.map((blocker) => (
+              <li key={blocker.code} data-code={blocker.code}>
+                {blocker.message} <span className="sub mono">{blocker.code}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {result.tables.length > 0 ? (
+        <details>
+          <summary>{t("planTables", { count: result.tables.length })}</summary>
+          <Table>
+            <thead>
+              <tr>
+                <Th>{t("table")}</Th>
+                <Th className="r">{t("rows")}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.tables.map((row) => (
+                <tr key={row.table}>
+                  <Td>
+                    <span className="mono">{row.table}</span>
+                  </Td>
+                  <Td className="r">{row.rows}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </details>
+      ) : null}
+      {result.ready ? (
+        <div className="eg-acts">
+          <FormDialog
+            action={startMove}
+            label={result.resumes ? t("resume") : t("run")}
+            triggerClass="btn sm pri"
+            danger
+            title={t("runTitle", { tenant: tenant.name, to: result.to })}
+            points={[
+              t("run503", { seconds: result.settle_seconds }),
+              t("runCopy"),
+              result.keep_source ? t("runKeep", { from: result.from }) : t("runDelete"),
+              t("runBig", { slug: tenant.slug, to: result.to }),
+            ]}
+            submit={result.resumes ? t("resume") : t("runSubmit")}
+            done={t("runDone", { tenant: tenant.name })}
+            fields={[
+              { kind: "hidden", name: "tenant_id", value: tenant.id },
+              { kind: "hidden", name: "to", value: result.to },
+              { kind: "hidden", name: "keep_source", value: result.keep_source ? "1" : "" },
+            ]}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Trạng thái của một lượt dời; còn chạy thì trang tự làm mới. */
+async function MoveStatus({ tenant, move }: { tenant: CoreTenant; move: TenantMove }) {
+  const t = await getTranslations("platform.tenant.move");
+  const finished = moveFinished(move.state);
+  return (
+    <div className="pf-plan-note" data-testid="move-status" data-state={move.state}>
+      <h3 className="pf-move-h">{t("statusTitle", { from: move.from, to: move.to })}</h3>
+      <ol className="pf-steps" aria-label={t("steps")}>
+        {moveSteps(move.state).map((step) => (
+          <li key={step.state} data-phase={step.phase}>
+            {t(`state.${step.state}`)}
+          </li>
+        ))}
+      </ol>
+      <p>
+        {t.has(`stateAbout.${move.state}`)
+          ? t(`stateAbout.${move.state}`, { tenant: tenant.name, from: move.from, to: move.to })
+          : move.state}
+      </p>
+      {move.rows > 0 ? (
+        <p className="fhint">{t("copied", { rows: move.rows, tables: move.tables.length })}</p>
+      ) : null}
+      {move.error ? (
+        <p className="note warn">
+          {t("stopped", { error: move.error })} {t("resumeHow")}
+        </p>
+      ) : null}
+      {move.state === "done" && move.keep_source ? (
+        <p className="fhint">{t("purge", { slug: tenant.slug, from: move.from })}</p>
+      ) : null}
+      <p className="fhint">
+        {t("started")} <Time value={move.created_at} />
+        {move.finished_at ? (
+          <>
+            {" · "}
+            {t("finished")} <Time value={move.finished_at} />
+          </>
+        ) : null}
+      </p>
+      {finished ? null : (
+        <>
+          <p className="fhint">{t("polling")}</p>
+          <MovePoll />
+        </>
+      )}
     </div>
   );
 }
