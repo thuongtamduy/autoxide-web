@@ -1,6 +1,6 @@
 import type { components } from "@autoxide/sdk";
 import { notFound } from "next/navigation";
-import { isNotFound, loadTagged } from "@/lib/core";
+import { isForbidden, isNotFound, load, loadTagged } from "@/lib/core";
 import { TENANTS_READ } from "@/lib/permissions";
 import { platformData, platformGate, platformRefused } from "@/lib/platform-server";
 import { sampleDataEnabled } from "@/sample";
@@ -32,12 +32,30 @@ export default async function TenantPage(props: PageProps<"/platform/tenants/[id
     if (sampleDataEnabled()) return <SampleTenant id={id} />;
     notFound();
   }
+  const [data, settings] = await Promise.all([platformData(), tenantSettings(found.data.data.id)]);
   return (
     <CoreTenantView
       tenant={found.data.data}
       etag={found.etag}
-      data={await platformData()}
+      data={data}
+      settings={settings}
       search={{ move_to: one("move_to"), keep_source: one("keep_source"), move: one("move") }}
     />
   );
+}
+
+/** Cấu hình theo khách của khách `id` (D-296 của core); `null` khi core từ chối (403). */
+async function tenantSettings(
+  id: string,
+): Promise<components["schemas"]["TenantSettingState"][] | null> {
+  try {
+    return (
+      await load((client) =>
+        client.GET("/api/v1/kernel/tenants/{id}/settings", { params: { path: { id } } }),
+      )
+    ).data;
+  } catch (error) {
+    if (isForbidden(error)) return null;
+    throw error;
+  }
 }

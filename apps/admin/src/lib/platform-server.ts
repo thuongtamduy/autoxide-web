@@ -11,10 +11,13 @@ import { sampleDataEnabled } from "@/sample";
 import { listPlacements, listTenants } from "@/sample/platform";
 import { load } from "./core";
 import {
+  coreTenantFilter,
+  fromCoreTenant,
   mergePlacements,
   mergeTenants,
   type PlatformPlacement,
   type PlatformTenant,
+  type TenantQuery,
 } from "./platform";
 import { can } from "./viewer";
 
@@ -25,14 +28,19 @@ export interface PlatformData {
   placements: PlatformPlacement[];
 }
 
-/** Đọc hết các trang của sổ khách (mỗi trang 200, tối đa 10 trang — đủ cho một bản cài). */
-async function coreTenants(query: { parent_id?: string } = {}): Promise<CoreTenant[]> {
+/**
+ * Đọc hết các trang của sổ khách (mỗi trang 200, tối đa 10 trang — đủ cho một bản cài), kèm
+ * placement của từng khách (`expand=placement`: core đọc cho cả trang một lần, không gọi riêng).
+ */
+async function coreTenants(query: ReturnType<typeof coreTenantFilter> = {}): Promise<CoreTenant[]> {
   const all: CoreTenant[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < 10; page++) {
     const result = await load((client) =>
       client.GET("/api/v1/kernel/tenants", {
-        params: { query: { limit: 200, ...query, ...(cursor ? { cursor } : {}) } },
+        params: {
+          query: { limit: 200, expand: "placement", ...query, ...(cursor ? { cursor } : {}) },
+        },
       }),
     );
     all.push(...result.data);
@@ -55,10 +63,31 @@ export const platformData = cache(async (): Promise<PlatformData> => {
     sample ? listPlacements().then((r) => r.data) : Promise.resolve(null),
   ]);
   return {
-    tenants: mergeTenants(tenants, placements, sampleTenants),
+    tenants: mergeTenants(tenants, placements, sampleTenants, samplePlacements),
     placements: mergePlacements(placements, samplePlacements),
   };
 });
+
+/**
+ * Khách khớp bộ lọc của sổ khách. Bộ lọc của core (chỉ đọc, loại placement, trạng thái migration)
+ * do core lọc (`GET /kernel/tenants` kèm tham số); không có thì dùng lại sổ của `platformData`,
+ * không gọi thêm. Khách chỉ có trong dữ liệu mẫu đi kèm, trang lọc chúng theo cùng luật
+ * (`matchesQuery`).
+ */
+export async function filteredTenants(
+  query: TenantQuery,
+  data: PlatformData,
+): Promise<PlatformTenant[]> {
+  const filter = coreTenantFilter(query);
+  if (Object.keys(filter).length === 0) return data.tenants;
+  const found = await coreTenants(filter);
+  // Dòng đã có trong sổ của request này giữ phần ghép từ dữ liệu mẫu (mô hình, tên miền…).
+  const known = new Map(data.tenants.map((x) => [x.id, x]));
+  return [
+    ...found.map((x) => known.get(x.id) ?? fromCoreTenant(x, data.placements)),
+    ...data.tenants.filter((x) => x.source === "sample"),
+  ];
+}
 
 /**
  * Cửa của một màn có dữ liệu thật của mặt điều khiển: thiếu permission thì báo như màn thật; trả

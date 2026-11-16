@@ -1320,7 +1320,8 @@ export interface paths {
         };
         /**
          * Get the comment settings (public).
-         * @description No sign-in needed. Limits and switches a website needs to show the comment box.
+         * @description No sign-in needed. Limits and switches a website needs to show the comment box, for the
+         *     tenant of the request (its own `comments.max_links` when it set one).
          */
         get: operations["comments_get_comment_settings"];
         put?: never;
@@ -2857,7 +2858,9 @@ export interface paths {
          * Get the settings an interface needs.
          * @description No sign-in needed. Values the server's operator set (or the defaults), by module: languages,
          *     path prefixes, upload limits, the public address… — so an interface does not guess the
-         *     server's defaults. They change only when the server restarts with new settings.
+         *     server's defaults. When the request names a tenant (its domain, the `Autoxide-Tenant` header
+         *     or a credential), values that tenant set for itself replace the server's (e.g. the languages
+         *     of `content` and of `media` alt texts, see `GET /api/v1/kernel/settings`).
          */
         get: operations["kernel_get_client_config"];
         put?: never;
@@ -3196,6 +3199,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/kernel/tenants/{id}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a tenant's settings (platform staff).
+         * @description Requires `kernel.tenants.read` and an account of the platform tenant. Like
+         *     `GET /api/v1/kernel/settings`, for the tenant in the path: every setting the installed modules
+         *     take per tenant and whether that tenant has set it. Values of secret settings are never
+         *     returned.
+         */
+        get: operations["kernel_list_settings_of_tenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/tenants/{id}/settings/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a setting of a tenant (platform staff).
+         * @description Requires `kernel.tenants.manage` and an account of the platform tenant. Like
+         *     `PUT /api/v1/kernel/settings/{name}`, for the tenant in the path: creates or replaces the
+         *     value; sending it again is safe. The tenant's servers use the new value within
+         *     `AUTOXIDE_TENANCY_CACHE_SECONDS`.
+         */
+        put: operations["kernel_set_setting_of_tenant"];
+        post?: never;
+        /**
+         * Remove a setting of a tenant (platform staff).
+         * @description Requires `kernel.tenants.manage` and an account of the platform tenant. The server-wide
+         *     configuration applies to that tenant again. Removing a setting the tenant never set changes
+         *     nothing.
+         */
+        delete: operations["kernel_delete_setting_of_tenant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/flags": {
         parameters: {
             query?: never;
@@ -3488,8 +3543,9 @@ export interface paths {
         /**
          * Set the text alternative of a media item in one language.
          * @description Requires `media.write`. The item's `alt` stays the default; readers in `locale` get this
-         *     text instead (e.g. a bilingual storefront). `locale` must be one of the languages the server
-         *     lists in `AUTOXIDE_MEDIA_ALT_LOCALES`. `If-Match` is required. To draft the text with AI,
+         *     text instead (e.g. a bilingual storefront). `locale` must be one of the tenant's languages
+         *     for alt texts (its `media.alt_locales` setting, otherwise the server's
+         *     `AUTOXIDE_MEDIA_ALT_LOCALES`; see `GET /api/v1/kernel/client-config`). `If-Match` is required. To draft the text with AI,
          *     use `POST /api/v1/media/{id}/alt-suggestions` with the same `locale`, then send it here.
          */
         put: operations["media_set_media_alt_translation"];
@@ -4832,7 +4888,8 @@ export interface components {
             /** @description Content settings an interface needs. */
             content: {
                 /**
-                 * @description Language of a new entry when none is given.
+                 * @description Language of a new entry when none is given: the tenant's `content.default_locale`,
+                 *     otherwise the server's `AUTOXIDE_CONTENT_DEFAULT_LOCALE`.
                  * @example en
                  */
                 default_locale: string;
@@ -4845,7 +4902,8 @@ export interface components {
                  */
                 embed_hosts: string[];
                 /**
-                 * @description Languages entries may be written in (`AUTOXIDE_CONTENT_LOCALES`), the default first.
+                 * @description Languages entries may be written in: the tenant's `content.locales` setting, otherwise
+                 *     the server's `AUTOXIDE_CONTENT_LOCALES`.
                  * @example [
                  *       "en",
                  *       "vi"
@@ -4903,8 +4961,8 @@ export interface components {
                  */
                 allowed_types: string[];
                 /**
-                 * @description Languages of `alt` translations (`AUTOXIDE_MEDIA_ALT_LOCALES`): show one alt field per
-                 *     language.
+                 * @description Languages of `alt` translations: the tenant's `media.alt_locales` setting, otherwise the
+                 *     server's `AUTOXIDE_MEDIA_ALT_LOCALES`. Show one alt field per language.
                  * @example [
                  *       "en",
                  *       "vi"
@@ -5549,6 +5607,8 @@ export interface components {
             name: string;
             /** @description Whether this is the platform tenant (the operator's own). */
             platform: boolean;
+            /** @description Read-only: data can be read but every change is refused with `403 tenant_read_only`. */
+            read_only?: boolean;
             slug: string;
             status: string;
         };
@@ -6095,6 +6155,8 @@ export interface components {
                 name: string;
                 /** @description Whether this is the platform tenant (the operator's own). */
                 platform: boolean;
+                /** @description Read-only: data can be read but every change is refused with `403 tenant_read_only`. */
+                read_only?: boolean;
                 slug: string;
                 status: string;
             };
@@ -7578,6 +7640,7 @@ export interface components {
             data: {
                 /** Format: date-time */
                 created_at: string;
+                expanded?: components["schemas"]["TenantExpanded"] | null;
                 /** Format: uuid */
                 id: string;
                 name: string;
@@ -7592,12 +7655,18 @@ export interface components {
                  */
                 placement: string;
                 /**
+                 * @description Read-only: its data can be read (and its users can sign in and export), but every change
+                 *     is refused with `403 tenant_read_only`. Independent of `status`.
+                 */
+                read_only?: boolean;
+                /**
                  * @description Short name: lower-case letters, digits and `-`; unique on the platform.
                  * @example acme
                  */
                 slug: string;
                 /**
-                 * @description `provisioning`, `active`, `suspended`, `maintenance` or `moving`.
+                 * @description `provisioning`, `active`, `suspended` (every request is refused with
+                 *     `403 tenant_suspended`), `maintenance` or `moving`.
                  * @example active
                  */
                 status: string;
@@ -10988,6 +11057,7 @@ export interface components {
             data: {
                 /** Format: date-time */
                 created_at: string;
+                expanded?: components["schemas"]["TenantExpanded"] | null;
                 /** Format: uuid */
                 id: string;
                 name: string;
@@ -11002,12 +11072,18 @@ export interface components {
                  */
                 placement: string;
                 /**
+                 * @description Read-only: its data can be read (and its users can sign in and export), but every change
+                 *     is refused with `403 tenant_read_only`. Independent of `status`.
+                 */
+                read_only?: boolean;
+                /**
                  * @description Short name: lower-case letters, digits and `-`; unique on the platform.
                  * @example acme
                  */
                 slug: string;
                 /**
-                 * @description `provisioning`, `active`, `suspended`, `maintenance` or `moving`.
+                 * @description `provisioning`, `active`, `suspended` (every request is refused with
+                 *     `403 tenant_suspended`), `maintenance` or `moving`.
                  * @example active
                  */
                 status: string;
@@ -12644,6 +12720,7 @@ export interface components {
         Tenant: {
             /** Format: date-time */
             created_at: string;
+            expanded?: components["schemas"]["TenantExpanded"] | null;
             /** Format: uuid */
             id: string;
             name: string;
@@ -12658,12 +12735,18 @@ export interface components {
              */
             placement: string;
             /**
+             * @description Read-only: its data can be read (and its users can sign in and export), but every change
+             *     is refused with `403 tenant_read_only`. Independent of `status`.
+             */
+            read_only?: boolean;
+            /**
              * @description Short name: lower-case letters, digits and `-`; unique on the platform.
              * @example acme
              */
             slug: string;
             /**
-             * @description `provisioning`, `active`, `suspended`, `maintenance` or `moving`.
+             * @description `provisioning`, `active`, `suspended` (every request is refused with
+             *     `403 tenant_suspended`), `maintenance` or `moving`.
              * @example active
              */
             status: string;
@@ -12674,7 +12757,13 @@ export interface components {
         TenantChanges: {
             name?: string | null;
             /**
-             * @description `active` or `suspended`.
+             * @description `true`: the tenant can only read (its users still sign in and export their data), every
+             *     change is refused with `403 tenant_read_only`; `false`: writable again. Independent of
+             *     `status`. The platform tenant cannot be made read-only.
+             */
+            read_only?: boolean | null;
+            /**
+             * @description `active` or `suspended`. A suspended tenant refuses every request, reads included.
              * @example suspended
              */
             status?: string | null;
@@ -12737,6 +12826,20 @@ export interface components {
              * @example autoxide-verify=6Jx1rYqQe2m3Vb0nC5tWk8sLp4dZa7Hf
              */
             value: string;
+        };
+        /** @description Related records of a tenant, asked for with `expand`. */
+        TenantExpanded: {
+            placement?: components["schemas"]["Placement"] | null;
+            /**
+             * @description The tenant's subscription (`expand=subscription`). Always `null` for now: subscriptions
+             *     come with the plans module (step 35); without it no tenant has one.
+             */
+            subscription?: Record<string, never> | null;
+            /**
+             * @description The tenant's use of its plan's limits (`expand=usage`). Always `null` for now, like
+             *     `subscription`.
+             */
+            usage?: Record<string, never> | null;
         };
         /** @description A move of a tenant to another placement. */
         TenantMove: {
@@ -18366,6 +18469,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Data_CommentSettings"];
+                };
+            };
+            /** @description No tenant could be told for the request; code `tenant_required`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
@@ -25219,8 +25331,26 @@ export interface operations {
                     "application/json": components["schemas"]["Data_ClientConfigResponse"];
                 };
             };
+            /** @description The tenant of the request is suspended; code `tenant_suspended`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Unexpected server error. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant of the request is under maintenance; code `tenant_maintenance`. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25979,10 +26109,44 @@ export interface operations {
                  *     order (and `sort`, where offered) while following `next_cursor`.
                  */
                 order?: "asc" | "desc";
-                /** @description Only tenants in this state. */
+                /**
+                 * @description Only tenants in this state: `provisioning`, `active`, `suspended`, `maintenance` or
+                 *     `moving`.
+                 */
                 status?: string;
                 /** @description Only children of this tenant. */
                 parent_id?: string;
+                /** @description Only read-only tenants (`true`) or writable ones (`false`). */
+                read_only?: boolean;
+                /**
+                 * @description Only tenants whose placement is of this kind: `shared` or `dedicated`.
+                 * @example dedicated
+                 */
+                placement_kind?: string;
+                /**
+                 * @description Only tenants whose placement is in this state: `ready`, `behind` (migrations pending) or
+                 *     `migrating`.
+                 * @example behind
+                 */
+                schema_state?: string;
+                /**
+                 * @description Only tenants whose subscription is in this state: `trialing`, `active`, `past_due`,
+                 *     `suspended`, `canceled` or `deleted`. Subscriptions come with the plans module (step 35);
+                 *     without it no tenant has one, so the page is empty.
+                 * @example past_due
+                 */
+                subscription_status?: string;
+                /**
+                 * @description `true`: only tenants close to a limit of their plan. Limits come with the plans module
+                 *     (step 35); without it no tenant has limits, so the page is empty. `false` filters nothing.
+                 */
+                near_limit?: boolean;
+                /**
+                 * @description Related records to add to each tenant under `expanded`, comma-separated: `placement`,
+                 *     `subscription`, `usage`. Fetched for the whole page at once.
+                 * @example placement,subscription
+                 */
+                expand?: string;
             };
             header?: {
                 /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
@@ -26431,6 +26595,238 @@ export interface operations {
             };
             /** @description No such tenant or move; code `tenant_not_found` or `tenant_move_not_found`. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_settings_of_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every setting, sorted by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TenantSettingState"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_set_setting_of_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+                /** @description Name of the setting, `<module>.<key>`, e.g. `comments.max_links`. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantSettingValue"];
+            };
+        };
+        responses: {
+            /** @description The setting as stored (without a secret value). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantSettingState"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant is being moved to another placement; code `tenant_moving`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No module takes this setting (code `tenant_setting_unknown`) or the value is not valid for it; see `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_delete_setting_of_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+                /** @description Name of the setting. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The setting is unset (or never was). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.manage` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant is being moved to another placement; code `tenant_moving`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No module takes this setting; code `tenant_setting_unknown`. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

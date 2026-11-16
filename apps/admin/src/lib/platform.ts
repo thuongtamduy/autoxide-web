@@ -2,6 +2,7 @@
 // với phần còn là dữ liệu mẫu, lọc sổ khách hàng, xếp cây khách cha – con, đếm ngày còn lại. Không
 // đọc dữ liệu; trang ghép dữ liệu (mẫu hay API thật) rồi gọi các hàm này.
 import type { components } from "@autoxide/sdk";
+import { hrefWith, oneOf, type SearchParams } from "@/lib/engage";
 import {
   type OperatorSubscription,
   PLATFORM_TENANT_ID,
@@ -18,7 +19,16 @@ type CorePlacement = components["schemas"]["Placement"];
 
 /** Bản ghi đến từ core (`core`) hay chỉ có trong dữ liệu mẫu (`sample`, phần core chưa có). */
 export type Source = "core" | "sample";
-export type PlatformTenant = Tenant & { source: Source };
+/**
+ * `read_only`: cờ chỉ đọc của nhà vận hành (D-296 của core; khách mẫu luôn `false`). `placement`:
+ * placement của khách lấy từ `expand=placement` của sổ khách (khách mẫu: placement mẫu cùng id);
+ * `null` khi core không trả kèm (vd đọc một khách lẻ).
+ */
+export type PlatformTenant = Tenant & {
+  source: Source;
+  read_only: boolean;
+  placement: PlatformPlacement | null;
+};
 export type PlacementStorage = components["schemas"]["PlacementStorage"];
 /**
  * `storage`: nơi lưu file riêng của placement (D-293 của core, chỉ phần không bí mật); `null` khi
@@ -55,28 +65,39 @@ export function fromCorePlacement(core: CorePlacement, sample?: Placement): Plat
 }
 
 /**
- * Khách của core theo hình dạng giao diện dùng: placement tra theo tên trong danh sách placement của
- * core. Trường core chưa có (`business_model`, `primary_domain`, lý do tạm khoá) lấy từ bản mẫu cùng
- * id khi bật dữ liệu mẫu, không thì `null`.
+ * Khách của core theo hình dạng giao diện dùng. Placement lấy từ `expanded.placement` khi sổ khách
+ * gọi kèm `expand=placement`; không có thì tra theo tên trong danh sách placement của core. Trường
+ * core chưa có (`business_model`, `primary_domain`, lý do tạm khoá) lấy từ bản mẫu cùng id khi bật
+ * dữ liệu mẫu, không thì `null`.
  */
 export function fromCoreTenant(
   core: CoreTenant,
   placements: readonly Pick<CorePlacement, "id" | "name">[],
   sample?: Tenant,
+  samplePlacements: readonly Placement[] = [],
 ): PlatformTenant {
+  const expanded = core.expanded?.placement ?? null;
+  const placementId = expanded?.id ?? placements.find((p) => p.name === core.placement)?.id ?? "";
   return {
     id: core.id,
     slug: core.slug,
     name: core.name,
     status: core.status as TenantStatus,
     parent_id: core.parent_id ?? null,
-    placement_id: placements.find((p) => p.name === core.placement)?.id ?? "",
+    placement_id: placementId,
     created_at: core.created_at,
     updated_at: core.updated_at,
     is_platform: core.id === PLATFORM_TENANT_ID,
     business_model: sample?.business_model ?? null,
     primary_domain: sample?.primary_domain ?? null,
     status_reason: sample?.status_reason ?? null,
+    read_only: core.read_only ?? false,
+    placement: expanded
+      ? fromCorePlacement(
+          expanded,
+          samplePlacements.find((p) => p.id === expanded.id),
+        )
+      : null,
     source: "core",
   };
 }
@@ -89,14 +110,24 @@ export function mergeTenants(
   core: readonly CoreTenant[],
   placements: readonly Pick<CorePlacement, "id" | "name">[],
   sample: readonly Tenant[] | null,
+  samplePlacements: readonly Placement[] | null = null,
 ): PlatformTenant[] {
   const known = new Set(core.map((x) => x.id));
   const byId = new Map((sample ?? []).map((x) => [x.id, x]));
+  const own = samplePlacements ?? [];
   return [
-    ...core.map((x) => fromCoreTenant(x, placements, byId.get(x.id))),
+    ...core.map((x) => fromCoreTenant(x, placements, byId.get(x.id), own)),
     ...(sample ?? [])
       .filter((x) => !known.has(x.id))
-      .map((x) => ({ ...x, source: "sample" as const })),
+      .map((x) => {
+        const placement = own.find((p) => p.id === x.placement_id);
+        return {
+          ...x,
+          read_only: false,
+          placement: placement ? { ...placement, source: "sample" as const } : null,
+          source: "sample" as const,
+        };
+      }),
   ];
 }
 
@@ -115,9 +146,6 @@ export function mergePlacements(
   ];
 }
 
-export const TENANT_FILTERS = ["all", "dedicated", "shared", "migration", "attention"] as const;
-export type TenantFilter = (typeof TENANT_FILTERS)[number];
-
 /** Một dòng của sổ khách hàng: khách kèm nơi lưu, thuê bao, gói, hạn mức gần chạm nhất. */
 export interface TenantRow {
   tenant: PlatformTenant;
@@ -134,25 +162,88 @@ export function needsAttention(row: TenantRow): boolean {
   return (
     status === "past_due" ||
     status === "suspended" ||
+    row.tenant.read_only ||
     row.tenant.status === "suspended" ||
     row.tenant.status === "provisioning" ||
     (row.nearest !== null && usageRatio(row.nearest) >= 85)
   );
 }
 
-export function matchesFilter(row: TenantRow, filter: TenantFilter): boolean {
-  switch (filter) {
-    case "all":
-      return true;
-    case "dedicated":
-      return row.placement?.kind === "dedicated";
-    case "shared":
-      return row.placement?.kind === "shared";
-    case "migration":
-      return row.placement !== null && row.placement.schema_state !== "ready";
-    case "attention":
-      return needsAttention(row);
-  }
+export const PLACEMENT_KINDS = ["shared", "dedicated"] as const;
+export const SCHEMA_STATES = ["ready", "behind", "migrating"] as const;
+
+/**
+ * Bộ lọc của sổ khách trên địa chỉ trang (`/platform?placement_kind=dedicated&read_only=true`).
+ * Ba bộ lọc đầu là tham số của `GET /kernel/tenants` (D-296 của core): core lọc cả sổ, không chỉ
+ * trang đang xem. `attention` ghép cả dữ liệu mẫu của bước 35 (thuê bao, hạn mức) nên lọc ở đây.
+ * Lọc theo thuê bao (`subscription_status`, `near_limit`) chưa có: core luôn trả rỗng tới bước 35.
+ */
+export interface TenantQuery {
+  read_only?: boolean;
+  placement_kind?: (typeof PLACEMENT_KINDS)[number];
+  schema_state?: (typeof SCHEMA_STATES)[number];
+  attention?: boolean;
+}
+
+/** Đọc bộ lọc từ địa chỉ; giá trị lạ thì bỏ qua (không gửi core thứ nó sẽ từ chối). */
+export function parseTenantQuery(params: SearchParams): TenantQuery {
+  const query: TenantQuery = {};
+  const readOnly = oneOf(params, "read_only", ["true", "false"] as const);
+  if (readOnly) query.read_only = readOnly === "true";
+  const kind = oneOf(params, "placement_kind", PLACEMENT_KINDS);
+  if (kind) query.placement_kind = kind;
+  const state = oneOf(params, "schema_state", SCHEMA_STATES);
+  if (state) query.schema_state = state;
+  if (oneOf(params, "attention", ["true"] as const)) query.attention = true;
+  return query;
+}
+
+/** Phần của bộ lọc gửi cho core (`GET /kernel/tenants`); rỗng khi không lọc gì ở core. */
+export function coreTenantFilter(
+  query: TenantQuery,
+): Pick<TenantQuery, "read_only" | "placement_kind" | "schema_state"> {
+  return {
+    ...(query.read_only !== undefined ? { read_only: query.read_only } : {}),
+    ...(query.placement_kind ? { placement_kind: query.placement_kind } : {}),
+    ...(query.schema_state ? { schema_state: query.schema_state } : {}),
+  };
+}
+
+/** Địa chỉ của sổ khách với bộ lọc này; không lọc gì thì `/platform`. */
+export function tenantQueryHref(query: TenantQuery): string {
+  return hrefWith("/platform", {
+    read_only: query.read_only === undefined ? undefined : String(query.read_only),
+    placement_kind: query.placement_kind,
+    schema_state: query.schema_state,
+    attention: query.attention ? "true" : undefined,
+  });
+}
+
+/** Hai bộ lọc như nhau (để đánh dấu chip đang chọn). */
+export function sameQuery(a: TenantQuery, b: TenantQuery): boolean {
+  return tenantQueryHref(a) === tenantQueryHref(b);
+}
+
+/** Lối tắt trên sổ khách: mỗi chip là một bộ lọc dựng sẵn. */
+export const TENANT_VIEWS = [
+  { key: "all", query: {} },
+  { key: "dedicated", query: { placement_kind: "dedicated" } },
+  { key: "shared", query: { placement_kind: "shared" } },
+  { key: "migration", query: { schema_state: "behind" } },
+  { key: "readOnly", query: { read_only: true } },
+  { key: "attention", query: { attention: true } },
+] as const satisfies readonly { key: string; query: TenantQuery }[];
+
+/**
+ * Dòng có khớp bộ lọc không. Khách của core đã được core lọc theo ba bộ lọc đầu; hàm này lọc khách
+ * chỉ có trong dữ liệu mẫu theo cùng luật, đếm số trên chip, và lọc "cần để ý".
+ */
+export function matchesQuery(row: TenantRow, query: TenantQuery): boolean {
+  if (query.read_only !== undefined && row.tenant.read_only !== query.read_only) return false;
+  if (query.placement_kind && row.placement?.kind !== query.placement_kind) return false;
+  if (query.schema_state && row.placement?.schema_state !== query.schema_state) return false;
+  if (query.attention && !needsAttention(row)) return false;
+  return true;
 }
 
 /**

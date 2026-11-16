@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { type APIRequestContext, expect, type Page, test } from "@playwright/test";
 
 // Mặt điều khiển nền tảng (W-014, W-027): không gian riêng của nhân sự vận hành. Sổ khách và
 // placement là API thật của bước 33 (core giả: `mock-tenants.ts`); gói, thuê bao, cấp phát, sức khoẻ,
@@ -54,7 +54,7 @@ test("chuyển giữa hai không gian; khung riêng; cấp phát khách mới c�
   const rows = page.locator(".pf-table tbody tr");
   await expect(rows.filter({ hasText: "Nhà Sách Gió Huế" })).toContainText("child customer");
   await page.getByRole("link", { name: /Waiting for migration/ }).click();
-  await expect(page).toHaveURL(/filter=migration/);
+  await expect(page).toHaveURL(/schema_state=behind/);
   await expect(rows.filter({ hasText: "Trà Sen" })).toHaveCount(0);
   await expect(rows.filter({ hasText: "Studio Ảnh Mây" })).toHaveCount(1);
 
@@ -257,4 +257,164 @@ test("vào dữ liệu khách: cấp có hạn, có lý do; khách thấy ở Ph
 
   await page.goto("/org/access/support");
   await expect(page.getByText("Khách báo lỗi đồng bộ kho, phiếu #e2e-31")).toBeVisible();
+});
+
+/** Bật nhiều khách ở core giả rồi thêm khách `name` trên placement `placement` qua giao diện. */
+async function addTenant(
+  page: Page,
+  request: APIRequestContext,
+  name: string,
+  slug: string,
+  placement: string,
+) {
+  await request.post(`${CORE}/__tenancy`, { data: { mode: "multi" } });
+  await page.goto("/platform");
+  await page.getByRole("button", { name: "Add customer" }).click();
+  await dialog(page).getByLabel("Name", { exact: true }).fill(name);
+  await dialog(page).getByLabel("Short name").fill(slug);
+  await dialog(page).getByLabel("Where its data is kept").selectOption(placement);
+  await dialog(page).getByRole("button", { name: "Add customer" }).click();
+  await expect(toast(page)).toHaveText("Customer added.");
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+}
+
+test("khách chỉ đọc (D-296): bật có hộp xác nhận nêu hệ quả, nhãn ở chi tiết và sổ khách, tắt lại; khách nền tảng không có nút", async ({
+  page,
+  request,
+}) => {
+  await signIn(page, "/platform");
+  await addTenant(page, request, "Eu Shop", "eu-shop", "eu-db");
+  const block = page.getByTestId("read-only-block");
+  await expect(block).toContainText("every change is refused");
+  await block.getByRole("button", { name: "Make read-only" }).click();
+  await expect(dialog(page)).toContainText("Its staff still sign in, view and export their data");
+  await expect(dialog(page)).toContainText("refused with 403 tenant_read_only");
+  await expect(dialog(page)).toContainText("This is not a suspension");
+  await dialog(page).getByRole("button", { name: "Make read-only" }).click();
+  await expect(toast(page)).toHaveText("Eu Shop is read-only.");
+  await expect(page.getByTestId("read-only-badge")).toHaveText("Read-only");
+  // Tạm khoá vẫn là việc riêng: khách chỉ đọc vẫn đang hoạt động.
+  await expect(page.getByRole("button", { name: "Suspend completely" })).toBeVisible();
+
+  await page.goto("/platform");
+  const rows = page.locator(".pf-table tbody tr");
+  await expect(rows.filter({ hasText: "Eu Shop" })).toContainText("Read-only");
+
+  await page.goto("/platform");
+  await rows.filter({ hasText: "Eu Shop" }).getByRole("link", { name: "Eu Shop" }).click();
+  await page.getByRole("button", { name: "Make writable again" }).click();
+  await dialog(page).getByRole("button", { name: "Make writable again" }).click();
+  await expect(toast(page)).toHaveText("Eu Shop is writable again.");
+  await expect(page.getByTestId("read-only-badge")).toHaveCount(0);
+
+  // Khách nền tảng không chỉ đọc được: không có khối này.
+  await page.goto("/platform/tenants/default");
+  await expect(page.getByRole("heading", { level: 1, name: "Default" })).toBeVisible();
+  await expect(page.getByTestId("read-only-block")).toHaveCount(0);
+});
+
+test("sổ khách lọc ở core (D-296): chỉ đọc, loại placement, trạng thái migration; kết hợp bằng form", async ({
+  page,
+  request,
+}) => {
+  await signIn(page, "/platform");
+  await addTenant(page, request, "Eu Shop", "eu-shop", "eu-db");
+  await page.getByTestId("read-only-block").getByRole("button", { name: "Make read-only" }).click();
+  await dialog(page).getByRole("button", { name: "Make read-only" }).click();
+  await expect(toast(page)).toHaveText("Eu Shop is read-only.");
+
+  await page.goto("/platform");
+  const rows = page.locator(".pf-table tbody tr");
+  // Placement đi kèm sổ khách (`expand=placement`).
+  await expect(rows.filter({ hasText: "Eu Shop" })).toContainText("Dedicated database");
+  await expect(rows.filter({ hasText: "Eu Shop" })).toContainText("eu-db");
+
+  await page.getByRole("link", { name: /^Read-only/ }).click();
+  await expect(page).toHaveURL(/\/platform\?read_only=true$/);
+  await expect(rows.filter({ hasText: "Eu Shop" })).toHaveCount(1);
+  await expect(rows.filter({ hasText: "Default" })).toHaveCount(0);
+  await expect(rows.filter({ hasText: "Trà Sen" })).toHaveCount(0);
+
+  await page.getByRole("link", { name: /^Shared database/ }).click();
+  await expect(page).toHaveURL(/placement_kind=shared$/);
+  await expect(rows.filter({ hasText: "Default" })).toHaveCount(1);
+  await expect(rows.filter({ hasText: "Eu Shop" })).toHaveCount(0);
+
+  // Kết hợp: ghi được + database riêng → không còn Eu Shop.
+  const form = page.getByRole("search", { name: "Combine filters" });
+  await form.getByLabel("Read-only").selectOption("false");
+  await form.getByLabel("Placement kind").selectOption("dedicated");
+  await form.getByRole("button", { name: "Apply" }).click();
+  await expect(page).toHaveURL(/read_only=false&placement_kind=dedicated/);
+  await expect(rows.filter({ hasText: "Eu Shop" })).toHaveCount(0);
+  await expect(rows.filter({ hasText: "Default" })).toHaveCount(0);
+
+  await form.getByLabel("Read-only").selectOption("true");
+  await form.getByLabel("Migration state").selectOption("ready");
+  await form.getByRole("button", { name: "Apply" }).click();
+  await expect(page).toHaveURL(/read_only=true&placement_kind=dedicated&schema_state=ready/);
+  await expect(rows.filter({ hasText: "Eu Shop" })).toHaveCount(1);
+
+  await form.getByRole("link", { name: "Clear filters" }).click();
+  await expect(page).toHaveURL(/\/platform$/);
+  await expect(rows.filter({ hasText: "Default" })).toHaveCount(1);
+});
+
+test("cấu hình theo khách (D-296): nhân sự nền tảng đặt cho một khách, lỗi 422 dưới ô, bỏ", async ({
+  page,
+  request,
+}) => {
+  await signIn(page, "/platform");
+  await addTenant(page, request, "Eu Shop", "eu-shop", "eu-db");
+  await expect(page.getByRole("heading", { name: "Settings of this customer" })).toBeVisible();
+  const links = page.getByTestId("tset-comments.max_links");
+  await expect(links).toContainText("the server-wide configuration applies");
+  await links.getByRole("button", { name: "Set comments.max_links" }).click();
+  await dialog(page).getByLabel("Value").fill("500");
+  await dialog(page).getByRole("button", { name: "Save" }).click();
+  // Core kiểm giá trị: lỗi dưới ô "Value", giá trị đã gõ giữ lại.
+  await expect(dialog(page).getByLabel("Value")).toHaveAttribute("aria-invalid", "true");
+  await expect(dialog(page)).toContainText("must be a whole number from 0 to 100");
+  await expect(dialog(page).getByLabel("Value")).toHaveValue("500");
+  await dialog(page).getByLabel("Value").fill("5");
+  await dialog(page).getByRole("button", { name: "Save" }).click();
+  await expect(toast(page)).toHaveText("Saved comments.max_links.");
+  await expect(links).toContainText("5");
+  await expect(links).toContainText("Set");
+
+  await links.getByRole("button", { name: "Remove" }).click();
+  await dialog(page).getByRole("button", { name: "Remove" }).click();
+  await expect(toast(page)).toHaveText(
+    "Removed comments.max_links; the server-wide configuration applies.",
+  );
+  await expect(links).toContainText("the server-wide configuration applies");
+
+  // Giá trị là của khách đó: cài đặt của chính khách nền tảng không đổi.
+  await page.goto("/settings/connections");
+  await expect(page.getByTestId("tset-comments.max_links")).toContainText(
+    "the server-wide configuration applies",
+  );
+});
+
+test("khách của người đăng nhập chỉ đọc (D-296): dải báo ở khung, lệnh ghi hiện lỗi của core", async ({
+  page,
+  request,
+}) => {
+  await request.post(`${CORE}/__own-tenant`, { data: { read_only: true } });
+  await signIn(page, "/settings/connections");
+  const banner = page.getByTestId("read-only-banner");
+  await expect(banner).toContainText("This workspace is read-only.");
+  await expect(banner).toContainText("changes are refused");
+  const url = page.getByTestId("tset-kernel.public_url");
+  await url.getByRole("button", { name: "Set kernel.public_url" }).click();
+  await dialog(page).getByLabel("Value").fill("https://shop.example");
+  await dialog(page).getByRole("button", { name: "Save" }).click();
+  await expect(dialog(page).getByRole("alert")).toHaveAttribute("data-code", "tenant_read_only");
+  await expect(dialog(page).getByRole("alert")).toContainText("This tenant is read-only for now");
+  await page.keyboard.press("Escape");
+
+  // Ghi được trở lại: dải báo biến mất.
+  await request.post(`${CORE}/__own-tenant`, { data: { read_only: false } });
+  await page.reload();
+  await expect(page.getByTestId("read-only-banner")).toHaveCount(0);
 });

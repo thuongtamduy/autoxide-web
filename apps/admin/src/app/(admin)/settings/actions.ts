@@ -322,22 +322,29 @@ export async function revokeApiKey(state: FormState, formData: FormData): Promis
 // ---------------------------------------------------------------- Cài đặt theo khách
 
 /**
- * Đặt một cài đặt của khách (`PUT /kernel/settings/{name}`, `kernel.settings.manage`): giá trị bí mật
- * được core mã hoá khi lưu và không bao giờ trả lại; ở đây không giữ lại giá trị đã gõ.
+ * Đặt một cài đặt theo khách. Không có `tenant_id`: khách của người đăng nhập
+ * (`PUT /kernel/settings/{name}`, `kernel.settings.manage`). Có `tenant_id`: nhân sự nền tảng đặt cho
+ * khách đó (`PUT /kernel/tenants/{id}/settings/{name}`, `kernel.tenants.manage`, D-296 của core).
+ * Giá trị bí mật được core mã hoá khi lưu và không bao giờ trả lại; ở đây không giữ lại giá trị đã
+ * gõ. Core kiểm giá trị (422, lỗi ở ô `value`); khách đang dời thì 409 `tenant_moving`.
  */
 export async function setTenantSetting(state: FormState, formData: FormData): Promise<FormState> {
   const name = String(formData.get("name") ?? "");
+  const tenant = String(formData.get("tenant_id") ?? "");
   const secret = formData.get("secret") === "1";
   const value = String(formData.get("value") ?? "");
   if (!value.trim()) {
     const t = await getTranslations("settings.required");
     return { fields: { value: t("value") } };
   }
+  const body = { value: secret ? value : value.trim() };
   const result = await send((client) =>
-    client.PUT("/api/v1/kernel/settings/{name}", {
-      params: { path: { name } },
-      body: { value: secret ? value : value.trim() },
-    }),
+    tenant
+      ? client.PUT("/api/v1/kernel/tenants/{id}/settings/{name}", {
+          params: { path: { id: tenant, name } },
+          body,
+        })
+      : client.PUT("/api/v1/kernel/settings/{name}", { params: { path: { name } }, body }),
   );
   if (!result.ok) {
     return {
@@ -349,13 +356,22 @@ export async function setTenantSetting(state: FormState, formData: FormData): Pr
   return { done: nextDone(state) };
 }
 
-/** Bỏ cài đặt của khách: cấu hình chung của máy chủ áp dụng lại. */
+/**
+ * Bỏ cài đặt theo khách (`id` là tên cài đặt; `tenant_id` như `setTenantSetting`): cấu hình chung
+ * của máy chủ áp dụng lại.
+ */
 export async function removeTenantSetting(
   state: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const name = idOf(formData);
+  const tenant = String(formData.get("tenant_id") ?? "");
   const result = await send((client) =>
-    client.DELETE("/api/v1/kernel/settings/{name}", { params: { path: { name: idOf(formData) } } }),
+    tenant
+      ? client.DELETE("/api/v1/kernel/tenants/{id}/settings/{name}", {
+          params: { path: { id: tenant, name } },
+        })
+      : client.DELETE("/api/v1/kernel/settings/{name}", { params: { path: { name } } }),
   );
   if (!result.ok) return problemState(result.problem, []);
   refresh();

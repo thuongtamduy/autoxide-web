@@ -214,7 +214,9 @@
     "themeSystem": "System",
     "account": "Account",
     "accountMenu": "Account menu of {name}",
-    "pending": "Has work to handle"
+    "pending": "Has work to handle",
+    "readOnlyTitle": "This workspace is read-only.",
+    "readOnlyBody": "You can sign in, view and export data, but changes are refused until the platform operator makes it writable again."
   },
   "dashboard": {
     "hello": "Hello, {name}",
@@ -4550,6 +4552,7 @@
         "dedicated": "Dedicated database",
         "shared": "Shared database",
         "migration": "Waiting for migration",
+        "readOnly": "Read-only",
         "attention": "Needs attention"
       },
       "col": {
@@ -4576,7 +4579,18 @@
       "modules": "{count, plural, one {# module} other {# modules}}",
       "singleMode": "This installation runs one tenant (AUTOXIDE_TENANCY_MODE=single): the platform tenant is the only one, and new customers cannot be added until the core allows many tenants.",
       "sampleRow": "sample",
-      "sampleRowHint": "Only in the sample data (e.g. from the sample provisioning flow of step 35); the core does not have this customer."
+      "sampleRowHint": "Only in the sample data (e.g. from the sample provisioning flow of step 35); the core does not have this customer.",
+      "filterForm": "Combine filters",
+      "filterReadOnly": "Read-only",
+      "anyWrite": "Read-only or not",
+      "onlyReadOnly": "Read-only only",
+      "onlyWritable": "Writable only",
+      "filterKind": "Placement kind",
+      "anyKind": "Any placement kind",
+      "filterSchema": "Migration state",
+      "anySchema": "Any migration state",
+      "apply": "Apply",
+      "clear": "Clear filters"
     },
     "tenant": {
       "back": "Customers",
@@ -4728,7 +4742,7 @@
       "suspend": "Suspend completely",
       "suspendTitle": "Suspend {tenant} completely?",
       "suspendStops": "Every API call and website page of the customer answers 403 tenant_suspended, including sign-in.",
-      "suspendNotReadOnly": "Unlike read-only (an unpaid subscription), the customer cannot sign in, view or export data.",
+      "suspendNotReadOnly": "Unlike read-only, the customer cannot sign in, view or export data.",
       "suspendAudit": "The reason is written to the audit log.",
       "suspendUndo": "You can reactivate the customer at any time.",
       "suspendAck": "I understand that {tenant} stops completely",
@@ -4748,7 +4762,9 @@
       "pendingAbout": "These parts of a customer come with steps 34 and 35 of the core and with new API listed in the API gaps; the sample console shows them only for sample customers.",
       "reactivateTitle": "Resume {tenant}?",
       "reactivateBack": "Every request to this customer works again (other servers see it within a few seconds).",
-      "files": "File storage"
+      "files": "File storage",
+      "settings": "Settings of this customer",
+      "settingsAbout": "Business settings the installed modules take per customer (languages, comment moderation, form retention…). A setting left unset uses the server-wide configuration; the customer’s servers use a new value within AUTOXIDE_TENANCY_CACHE_SECONDS. The customer’s own admins can change them too."
     },
     "provision": {
       "button": "Provision a customer",
@@ -5140,6 +5156,25 @@
       "noKey": "No access key stored",
       "unreadable": "Cannot be read",
       "unreadableHint": "The stored settings cannot be decrypted with the configured AUTOXIDE_SECRET_KEY: file operations of its customers fail. Set it again with autoxide placement storage."
+    },
+    "readOnly": {
+      "badge": "Read-only",
+      "title": "Read-only",
+      "about": "Make the customer read-only, for example during an investigation or before closing the account: its staff can still sign in, view and export its data, but every change is refused. Unlike suspending, nothing stops being visible.",
+      "isOn": "This customer is read-only: its staff sign in, view and export data, and every change is refused with 403 tenant_read_only.",
+      "turnOn": "Make read-only",
+      "turnOff": "Make writable again",
+      "onTitle": "Make {tenant} read-only?",
+      "onKeeps": "Its staff still sign in, view and export their data; its website keeps showing what is published.",
+      "onBlocks": "Every change (selling, publishing, editing, settings) is refused with 403 tenant_read_only.",
+      "onJobs": "Background jobs and events already queued keep running.",
+      "onNotSuspend": "This is not a suspension: suspending stops every request, sign-in included.",
+      "onUndo": "You can make it writable again at any time.",
+      "onDone": "{tenant} is read-only.",
+      "offTitle": "Make {tenant} writable again?",
+      "offWrites": "Its staff can change data again from the next request.",
+      "offJobs": "Nothing was lost while it was read-only; refused changes have to be made again.",
+      "offDone": "{tenant} is writable again."
     }
   },
   "catalog": {

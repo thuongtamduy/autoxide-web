@@ -1,3 +1,4 @@
+import Form from "next/form";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Chips } from "@/components/engage/common";
@@ -14,19 +15,26 @@ import { NewTenantDialog } from "@/components/platform/new-tenant";
 import { ProvisionDialog } from "@/components/platform/provision-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { load } from "@/lib/core";
-import { oneOf, type SearchParams } from "@/lib/engage";
+import type { SearchParams } from "@/lib/engage";
 import { formatMoney } from "@/lib/format";
 import { initialsOf } from "@/lib/initials";
 import { PROVISION, TENANTS_MANAGE, TENANTS_READ } from "@/lib/permissions";
 import {
   daysUntil,
-  matchesFilter,
+  matchesQuery,
   orderTree,
-  TENANT_FILTERS,
-  type TenantFilter,
+  PLACEMENT_KINDS,
+  type PlatformTenant,
+  parseTenantQuery,
+  SCHEMA_STATES,
+  sameQuery,
+  TENANT_VIEWS,
+  type TenantQuery,
   type TenantRow,
+  tenantQueryHref,
 } from "@/lib/platform";
 import {
+  filteredTenants,
   type PlatformData,
   platformData,
   platformGate,
@@ -40,7 +48,8 @@ const ENDPOINTS =
   "GET /api/v1/plans/subscriptions, GET /api/v1/plans/tenants/{id}/usage, GET /api/v1/plans/plans (bước 35)";
 
 // Màn "Khách hàng" của mặt điều khiển: sổ khách và placement THẬT của core (bước 33) — tên, trạng
-// thái, cây khách, nơi lưu, migration; tạo khách mới bằng `POST /kernel/tenants`. Gói, thuê bao, hạn
+// thái, cây khách, nơi lưu, migration, cờ chỉ đọc; lọc theo chỉ đọc / loại placement / trạng thái
+// migration do core lọc (D-296, tham số trên địa chỉ trang); tạo khách mới bằng `POST /kernel/tenants`. Gói, thuê bao, hạn
 // mức (bước 35) và khách chỉ có trong luồng cấp phát mẫu là dữ liệu mẫu (W-014), chỉ khi bật dữ liệu
 // mẫu. Không có dữ liệu nghiệp vụ của khách ở đây.
 export default async function TenantsPage(props: { searchParams: Promise<SearchParams> }) {
@@ -49,7 +58,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
   const t = await getTranslations("platform");
   const locale = await getLocale();
   const params = await props.searchParams;
-  const filter: TenantFilter = oneOf(params, "filter", TENANT_FILTERS) ?? "all";
+  const query = parseTenantQuery(params);
   const sample = sampleDataEnabled();
   let data: PlatformData;
   try {
@@ -60,29 +69,36 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
     throw error;
   }
   const { tenants, placements } = data;
-  const [{ data: subs }, { data: plans }] = sample
-    ? await Promise.all([listSubscriptions(), listPlans()])
-    : [{ data: [] }, { data: [] }];
+  const [{ data: subs }, { data: plans }, listed] = await Promise.all([
+    sample ? listSubscriptions() : { data: [] },
+    sample ? listPlans() : { data: [] },
+    filteredTenants(query, data),
+  ]);
   const usage = sample ? await Promise.all(tenants.map((x) => getUsage(x.id))) : [];
-  const rows: TenantRow[] = tenants.map((tenant, index) => {
+  const rowOf = (tenant: PlatformTenant): TenantRow => {
     const subscription = subs.find((s) => s.tenant_id === tenant.id) ?? null;
     return {
       tenant,
-      placement: placements.find((p) => p.id === tenant.placement_id) ?? null,
+      // Placement đi kèm sổ khách (`expand=placement`); khách mẫu: placement mẫu cùng id.
+      placement: tenant.placement ?? placements.find((p) => p.id === tenant.placement_id) ?? null,
       subscription,
       plan: plans.find((p) => p.id === subscription?.plan_id) ?? null,
-      nearest: nearestLimit(usage[index]?.data ?? []),
+      nearest: nearestLimit(usage[tenants.indexOf(tenant)]?.data ?? []),
       children: tenants.filter((x) => x.parent_id === tenant.id).length,
     };
-  });
+  };
+  const rows = tenants.map(rowOf);
   const shown = orderTree(
-    rows.map((row) => ({
-      ...row,
-      id: row.tenant.id,
-      name: row.tenant.name,
-      parent_id: row.tenant.parent_id,
-    })),
-  ).filter(({ item }) => matchesFilter(item, filter));
+    listed
+      .map((tenant) => rows.find((row) => row.tenant.id === tenant.id) ?? rowOf(tenant))
+      .filter((row) => matchesQuery(row, query))
+      .map((row) => ({
+        ...row,
+        id: row.tenant.id,
+        name: row.tenant.name,
+        parent_id: row.tenant.parent_id,
+      })),
+  );
   const [provision, manage] = await Promise.all([can(PROVISION), can(TENANTS_MANAGE)]);
   const mode = await currentMode();
   const customers = rows.filter((row) => !row.tenant.is_platform);
@@ -138,9 +154,6 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
     }
     return null;
   };
-  const counts = Object.fromEntries(
-    TENANT_FILTERS.map((f) => [f, rows.filter((row) => matchesFilter(row, f)).length]),
-  );
 
   return (
     <div className="page">
@@ -190,13 +203,15 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         </TipHeading>
         <Chips
           label={t("tenants.filterLabel")}
-          chips={TENANT_FILTERS.map((f) => ({
-            href: f === "all" ? "/platform" : `/platform?filter=${f}`,
-            label: t(`tenants.filter.${f}`),
-            on: f === filter,
-            count: counts[f],
+          chips={TENANT_VIEWS.map((view) => ({
+            href: tenantQueryHref(view.query),
+            label: t(`tenants.filter.${view.key}`),
+            on: sameQuery(view.query, query),
+            // Số trên chip đếm trong sổ đầy đủ đã đọc cho trang, theo cùng luật với core.
+            count: rows.filter((row) => matchesQuery(row, view.query)).length,
           }))}
         />
+        <TenantFilterForm query={query} />
         <div className="card tcard">
           <Table cards className="pf-table">
             <thead>
@@ -236,6 +251,9 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                               className={TENANT_BADGE[tenant.status]}
                               label={t(`tenantStatus.${tenant.status}`)}
                             />
+                          ) : null}
+                          {tenant.read_only ? (
+                            <StatusBadge className="badge b-warn" label={t("readOnly.badge")} />
                           ) : null}
                         </span>
                       </span>
@@ -368,6 +386,66 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         </section>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Lọc kết hợp (chip chỉ chọn một): ba ô chọn là tham số của `GET /kernel/tenants`. Form GET: kết quả
+ * nằm trên địa chỉ, chạy cả khi chưa có JS; "cần để ý" đang bật thì giữ lại.
+ */
+async function TenantFilterForm({ query }: { query: TenantQuery }) {
+  const t = await getTranslations("platform");
+  return (
+    <Form
+      action="/platform"
+      className="pf-filters"
+      role="search"
+      aria-label={t("tenants.filterForm")}
+    >
+      {query.attention ? <input type="hidden" name="attention" value="true" /> : null}
+      <label>
+        <span className="vh">{t("tenants.filterReadOnly")}</span>
+        <select
+          className="inp"
+          name="read_only"
+          defaultValue={query.read_only === undefined ? "" : String(query.read_only)}
+        >
+          <option value="">{t("tenants.anyWrite")}</option>
+          <option value="true">{t("tenants.onlyReadOnly")}</option>
+          <option value="false">{t("tenants.onlyWritable")}</option>
+        </select>
+      </label>
+      <label>
+        <span className="vh">{t("tenants.filterKind")}</span>
+        <select className="inp" name="placement_kind" defaultValue={query.placement_kind ?? ""}>
+          <option value="">{t("tenants.anyKind")}</option>
+          {PLACEMENT_KINDS.map((kind) => (
+            <option key={kind} value={kind}>
+              {t(`placementKind.${kind}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span className="vh">{t("tenants.filterSchema")}</span>
+        <select className="inp" name="schema_state" defaultValue={query.schema_state ?? ""}>
+          <option value="">{t("tenants.anySchema")}</option>
+          {SCHEMA_STATES.map((state) => (
+            <option key={state} value={state}>
+              {t(`schema.${state}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="submit" className="btn">
+        {t("tenants.apply")}
+      </button>
+      {tenantQueryHref(query) !== "/platform" ? (
+        <Link className="btn ghost" href="/platform">
+          {t("tenants.clear")}
+        </Link>
+      ) : null}
+    </Form>
   );
 }
 

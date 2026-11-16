@@ -12,7 +12,15 @@
 //   `GET …/moves/{id}`. Khách nền tảng không dời được (`tenant_move_platform`);
 // - placement `eu-db` có nơi lưu file riêng (S3, chỉ phần không bí mật) để thử `storage`;
 // - cài đặt bí mật không bao giờ trả giá trị. Ngoài `kernel.public_url` (như core), có thêm
-//   `mail.smtp_url` (bí mật) để thử cách hiện secret.
+//   `mail.smtp_url` (bí mật) để thử cách hiện secret, và cấu hình nghiệp vụ của D-296 (kiểm giá trị
+//   như core: 422 `validation_failed`, lỗi ở ô `value`). Mỗi khách một bộ giá trị; nhân sự nền tảng
+//   đặt cho khách bất kỳ ở `…/tenants/{id}/settings…` (khách `moving` → 409 `tenant_moving`);
+// - sổ khách lọc `read_only`, `placement_kind`, `schema_state`; `subscription_status`, `near_limit=true`
+//   luôn trả trang rỗng, `expand=placement,subscription,usage` thêm `expanded` (thuê bao, hạn mức
+//   `null`) — như core trước bước 35; giá trị lạ → 422 theo ô;
+// - `read_only` (D-296) độc lập với `status`, khách nền tảng không chỉ đọc được (422 ô `read_only`);
+// - `POST /__own-tenant {"read_only": true}`: người đăng nhập thuộc một khách thường đang chỉ đọc
+//   (`GET /kernel/tenant`); mock-core từ chối mọi lệnh ghi của họ bằng 403 `tenant_read_only`.
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { type Account, empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
@@ -65,7 +73,30 @@ const TABLES: Schemas["TenantTableRows"][] = [
   { table: "notes_note", rows: 12 },
 ];
 
-const SETTINGS: { name: string; description: string; secret: boolean }[] = [
+/** Bộ kiểm giá trị (như `TenantSetting::checked` của core): câu lỗi của ô `value`, hay `null`. */
+type Check = (value: string) => string | null;
+const LOCALE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
+const locales: Check = (value) => {
+  const list = value
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+  return list.length > 0 && list.every((x) => LOCALE.test(x))
+    ? null
+    : "must be comma-separated language codes like `en` or `pt-BR`";
+};
+const wholeNumber =
+  (max: number): Check =>
+  (value) =>
+    /^\d+$/.test(value.trim()) && Number(value) <= max
+      ? null
+      : `must be a whole number from 0 to ${max}`;
+const moderation: Check = (value) =>
+  ["pre", "first_time", "post"].includes(value.trim())
+    ? null
+    : "must be `pre`, `first_time` or `post`";
+
+const SETTINGS: { name: string; description: string; secret: boolean; check?: Check }[] = [
   {
     name: "kernel.public_url",
     description:
@@ -77,17 +108,69 @@ const SETTINGS: { name: string; description: string; secret: boolean }[] = [
     description: "SMTP server of this tenant, with its password.",
     secret: true,
   },
+  {
+    name: "comments.max_links",
+    description:
+      "A comment with more links than this is held for approval (0 to 100), instead of the server's AUTOXIDE_COMMENTS_MAX_LINKS.",
+    secret: false,
+    check: wholeNumber(100),
+  },
+  {
+    name: "comments.guest_moderation",
+    description:
+      "When a guest's comment needs approval: `pre`, `first_time` or `post`, instead of the server's AUTOXIDE_COMMENTS_GUEST_MODERATION.",
+    secret: false,
+    check: moderation,
+  },
+  {
+    name: "content.default_locale",
+    description:
+      "Language used when a request names none, instead of the server's AUTOXIDE_CONTENT_DEFAULT_LOCALE.",
+    secret: false,
+    check: (value) =>
+      LOCALE.test(value.trim()) ? null : "must be a language code like `en` or `pt-BR`",
+  },
+  {
+    name: "content.locales",
+    description:
+      "Languages this tenant's content may be written in, comma-separated BCP 47 codes (e.g. `en,vi`), instead of the server's AUTOXIDE_CONTENT_LOCALES.",
+    secret: false,
+    check: locales,
+  },
+  {
+    name: "forms.retention_days",
+    description:
+      "Days a submission is kept before the daily job deletes it (0 to 36500), instead of the server's AUTOXIDE_FORMS_RETENTION_DAYS.",
+    secret: false,
+    check: wholeNumber(36_500),
+  },
+  {
+    name: "media.alt_locales",
+    description:
+      "Languages this tenant's text alternatives (`alt`) may be translated into, comma-separated BCP 47 codes, instead of the server's AUTOXIDE_MEDIA_ALT_LOCALES.",
+    secret: false,
+    check: locales,
+  },
 ];
+// Như core: sổ cấu hình xếp theo tên.
+SETTINGS.sort((a, b) => a.name.localeCompare(b.name));
+
+/** Khách thường dùng khi người đăng nhập "thuộc" một khách chỉ đọc (`POST /__own-tenant`). */
+const CUSTOMER_TENANT = "00000000-0000-7000-8000-0000000000c1";
 
 let mode: "single" | "multi" = "single";
 let tenants: Tenant[] = [];
-let values = new Map<string, { value: string; updated_at: string }>();
+/** Giá trị cấu hình theo khách: id khách → tên → giá trị. */
+let values = new Map<string, Map<string, { value: string; updated_at: string }>>();
 let moves: Schemas["TenantMove"][] = [];
+/** Khách của người đăng nhập (mặc định khách nền tảng). */
+let own = PLATFORM_TENANT;
 
 export function resetTenants() {
   mode = "single";
   values = new Map();
   moves = [];
+  own = PLATFORM_TENANT;
   tenants = [
     {
       id: PLATFORM_TENANT,
@@ -96,6 +179,7 @@ export function resetTenants() {
       status: "active",
       placement: "main",
       parent_id: null,
+      read_only: false,
       created_at: "2026-11-01T00:00:00Z",
       updated_at: "2026-11-01T00:00:00Z",
     },
@@ -103,10 +187,19 @@ export function resetTenants() {
 }
 resetTenants();
 
+function valuesOf(tenant: string) {
+  let map = values.get(tenant);
+  if (!map) {
+    map = new Map();
+    values.set(tenant, map);
+  }
+  return map;
+}
+
 const etagOf = (tenant: Tenant) => `"${Date.parse(tenant.updated_at)}"`;
 
-function state(setting: (typeof SETTINGS)[number]): SettingState {
-  const stored = values.get(setting.name);
+function state(setting: (typeof SETTINGS)[number], tenant = own): SettingState {
+  const stored = valuesOf(tenant).get(setting.name);
   return {
     name: setting.name,
     description: setting.description,
@@ -210,6 +303,110 @@ export function knownTenant(raw: string): boolean {
   return tenants.some((x) => x.id === raw || x.slug === raw);
 }
 
+/** Khách của người đăng nhập đang chỉ đọc: mock-core từ chối mọi lệnh ghi (như `ensure_writable`). */
+export function ownReadOnly(): boolean {
+  return tenants.find((x) => x.id === own)?.read_only === true;
+}
+
+/**
+ * Cấu hình cho giao diện theo khách của credential (D-296): ngôn ngữ của nội dung và của `alt` mà
+ * khách tự đặt thay giá trị chung.
+ */
+export function ownClientConfig(
+  base: Schemas["ClientConfigResponse"],
+): Schemas["ClientConfigResponse"] {
+  const mine = valuesOf(own);
+  const list = (name: string) =>
+    mine
+      .get(name)
+      ?.value.split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  const contentLocales = list("content.locales");
+  const altLocales = list("media.alt_locales");
+  const defaultLocale = mine.get("content.default_locale")?.value.trim();
+  return {
+    ...base,
+    content: {
+      ...base.content,
+      ...(contentLocales ? { locales: contentLocales } : {}),
+      ...(defaultLocale ? { default_locale: defaultLocale } : {}),
+    },
+    media: { ...base.media, ...(altLocales ? { alt_locales: altLocales } : {}) },
+  };
+}
+
+/**
+ * `POST /__own-tenant {"read_only": true}`: người đăng nhập thuộc khách thường `acme-ro` đang chỉ
+ * đọc; `false` thì về khách nền tảng.
+ */
+export async function setOwnTenant(request: IncomingMessage, response: ServerResponse) {
+  const body = await json(request);
+  if (body.read_only === true) {
+    if (!tenants.some((x) => x.id === CUSTOMER_TENANT)) {
+      tenants.push({
+        id: CUSTOMER_TENANT,
+        slug: "acme-ro",
+        name: "Acme Read-only",
+        status: "active",
+        placement: "main",
+        parent_id: null,
+        read_only: true,
+        created_at: "2026-11-03T00:00:00Z",
+        updated_at: "2026-11-03T00:00:00Z",
+      });
+    }
+    own = CUSTOMER_TENANT;
+  } else {
+    own = PLATFORM_TENANT;
+  }
+  send(response, 204);
+}
+
+/** Câu lỗi của một giá trị lọc không nhận (như core: gom mọi ô sai một lần). */
+function listProblems(url: URL): Schemas["ProblemField"][] {
+  const errors: Schemas["ProblemField"][] = [];
+  const kind = url.searchParams.get("placement_kind");
+  if (kind && kind !== "shared" && kind !== "dedicated") {
+    errors.push({
+      field: "placement_kind",
+      code: "invalid",
+      detail: "must be `shared` or `dedicated`",
+    });
+  }
+  const schema = url.searchParams.get("schema_state");
+  if (schema && !["ready", "behind", "migrating"].includes(schema)) {
+    errors.push({
+      field: "schema_state",
+      code: "invalid",
+      detail: "must be one of ready, behind, migrating",
+    });
+  }
+  const sub = url.searchParams.get("subscription_status");
+  if (
+    sub &&
+    !["trialing", "active", "past_due", "suspended", "canceled", "deleted"].includes(sub)
+  ) {
+    errors.push({
+      field: "subscription_status",
+      code: "invalid",
+      detail: "must be one of trialing, active, past_due, suspended, canceled, deleted",
+    });
+  }
+  const expand = (url.searchParams.get("expand") ?? "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+  if (expand.some((x) => !["placement", "subscription", "usage"].includes(x))) {
+    errors.push({
+      field: "expand",
+      code: "invalid",
+      detail: "can only list placement, subscription and usage",
+    });
+  }
+  return errors;
+}
+
 /** `POST /__tenancy {mode}`: đổi chế độ của bản cài giả. */
 export async function setTenancy(request: IncomingMessage, response: ServerResponse) {
   mode = text(await json(request), "mode") === "multi" ? "multi" : "single";
@@ -230,15 +427,16 @@ export async function tenantRoutes(
     problem(response, 403, "permission_denied", `Missing permission \`${permission}\`.`);
 
   if (path === "/api/v1/kernel/tenant" && method === "GET") {
-    const own = tenants.find((x) => x.id === PLATFORM_TENANT) as Tenant;
+    const mine = tenants.find((x) => x.id === own) as Tenant;
     send(response, 200, {
       data: {
-        id: own.id,
-        slug: own.slug,
-        name: own.name,
-        status: own.status,
+        id: mine.id,
+        slug: mine.slug,
+        name: mine.name,
+        status: mine.status,
         mode,
-        platform: true,
+        platform: mine.id === PLATFORM_TENANT,
+        read_only: mine.read_only === true,
       },
     } satisfies Schemas["Data_CurrentTenant"]);
     return true;
@@ -260,12 +458,47 @@ export async function tenantRoutes(
     }
     for (const m of moves) advance(m);
     if (path === "/api/v1/kernel/tenants" && method === "GET") {
+      const errors = listProblems(url);
+      if (errors.length > 0) {
+        problem(response, 422, "validation_failed", "The request has invalid fields.", errors);
+        return true;
+      }
       const status = url.searchParams.get("status");
       const parent = url.searchParams.get("parent_id");
+      const readOnly = url.searchParams.get("read_only");
+      const kind = url.searchParams.get("placement_kind");
+      const schema = url.searchParams.get("schema_state");
+      // Thuê bao và hạn mức là của bước 35: chưa có thì không khách nào khớp.
+      const nothing =
+        url.searchParams.has("subscription_status") ||
+        url.searchParams.get("near_limit") === "true";
+      const placementOf = (x: Tenant) => PLACEMENTS.find((p) => p.name === x.placement);
       const list = [...tenants]
         .reverse()
-        .filter((x) => (!status || x.status === status) && (!parent || x.parent_id === parent));
-      send(response, 200, page(list, url) satisfies Schemas["Page_Tenant"]);
+        .filter(
+          (x) =>
+            !nothing &&
+            (!status || x.status === status) &&
+            (!parent || x.parent_id === parent) &&
+            (readOnly === null || String(x.read_only === true) === readOnly) &&
+            (!kind || placementOf(x)?.kind === kind) &&
+            (!schema || placementOf(x)?.schema_state === schema),
+        );
+      const expand = url.searchParams.get("expand");
+      const result = page(list, url);
+      send(response, 200, {
+        ...result,
+        data: expand
+          ? result.data.map((x) => ({
+              ...x,
+              expanded: {
+                placement: expand.includes("placement") ? (placementOf(x) ?? null) : null,
+                subscription: null,
+                usage: null,
+              },
+            }))
+          : result.data,
+      } satisfies Schemas["Page_Tenant"]);
       return true;
     }
     if (path === "/api/v1/kernel/tenants" && method === "POST") {
@@ -318,6 +551,7 @@ export async function tenantRoutes(
         status: "active",
         placement,
         parent_id: parent,
+        read_only: false,
         created_at: now,
         updated_at: now,
       };
@@ -406,6 +640,17 @@ export async function tenantRoutes(
       problem(response, 404, "tenant_move_not_found", "No move of this tenant has this id.");
       return true;
     }
+    const settingsMatch = path.match(
+      /^\/api\/v1\/kernel\/tenants\/([^/]+)\/settings(?:\/([^/]+))?$/,
+    );
+    if (settingsMatch) {
+      const owner = tenants.find((x) => x.id === settingsMatch[1] || x.slug === settingsMatch[1]);
+      if (!owner) {
+        problem(response, 404, "tenant_not_found", "No tenant has this id.");
+        return true;
+      }
+      return settingRoute(request, response, method, owner, settingsMatch[2]);
+    }
     const key = decodeURIComponent(path.slice("/api/v1/kernel/tenants/".length));
     const tenant = tenants.find((x) => x.id === key || x.slug === key);
     if (!tenant) {
@@ -444,12 +689,21 @@ export async function tenantRoutes(
           detail: "the platform tenant cannot be suspended",
         });
       }
+      const readOnly = typeof body.read_only === "boolean" ? body.read_only : null;
+      if (tenant.id === PLATFORM_TENANT && readOnly === true) {
+        errors.push({
+          field: "read_only",
+          code: "invalid",
+          detail: "the platform tenant cannot be made read-only",
+        });
+      }
       if (errors.length > 0) {
         problem(response, 422, "validation_failed", "The request has invalid fields.", errors);
         return true;
       }
       if (name !== null) tenant.name = name;
       if (status !== null) tenant.status = status;
+      if (readOnly !== null) tenant.read_only = readOnly;
       tenant.updated_at = new Date(
         Math.max(Date.now(), Date.parse(tenant.updated_at) + 1),
       ).toISOString();
@@ -465,36 +719,80 @@ export async function tenantRoutes(
       denied("kernel.settings.manage");
       return true;
     }
-    if (path === "/api/v1/kernel/settings" && method === "GET") {
-      send(response, 200, {
-        data: SETTINGS.map(state),
-      } satisfies Schemas["Data_Vec_TenantSettingState"]);
+    const name =
+      path === "/api/v1/kernel/settings"
+        ? undefined
+        : path.slice("/api/v1/kernel/settings/".length);
+    return settingRoute(
+      request,
+      response,
+      method,
+      tenants.find((x) => x.id === own) as Tenant,
+      name,
+    );
+  }
+  return false;
+}
+
+/**
+ * Cấu hình theo khách của `tenant`: cả sổ (`name` trống, GET), đặt (PUT), bỏ (DELETE). Dùng cho
+ * `/kernel/settings…` (khách của người đăng nhập) và `/kernel/tenants/{id}/settings…` (nhân sự nền
+ * tảng); khách đang dời thì ghi bị từ chối `tenant_moving`, như core.
+ */
+async function settingRoute(
+  request: IncomingMessage,
+  response: ServerResponse,
+  method: string,
+  tenant: Tenant,
+  raw: string | undefined,
+): Promise<boolean> {
+  if (raw === undefined) {
+    if (method !== "GET") return false;
+    send(response, 200, {
+      data: SETTINGS.map((s) => state(s, tenant.id)),
+    } satisfies Schemas["Data_Vec_TenantSettingState"]);
+    return true;
+  }
+  const name = decodeURIComponent(raw);
+  const setting = SETTINGS.find((s) => s.name === name);
+  if (!setting) {
+    problem(response, 422, "tenant_setting_unknown", `No module takes the setting \`${name}\`.`);
+    return true;
+  }
+  if ((method === "PUT" || method === "DELETE") && tenant.status === "moving") {
+    problem(
+      response,
+      409,
+      "tenant_moving",
+      "The tenant is being moved to another placement; try again when the move is done.",
+    );
+    return true;
+  }
+  if (method === "PUT") {
+    const value = text(await json(request), "value");
+    if (!value || value.length > 4000) {
+      problem(response, 422, "validation_failed", "The request has invalid fields.", [
+        { field: "value", code: "length", detail: "must be 1 to 4000 characters long" },
+      ]);
       return true;
     }
-    const name = decodeURIComponent(path.slice("/api/v1/kernel/settings/".length));
-    const setting = SETTINGS.find((s) => s.name === name);
-    if (!setting) {
-      problem(response, 422, "tenant_setting_unknown", `No module takes the setting \`${name}\`.`);
+    const wrong = setting.check?.(value) ?? null;
+    if (wrong) {
+      problem(response, 422, "validation_failed", "The request has invalid fields.", [
+        { field: "value", code: "invalid", detail: wrong },
+      ]);
       return true;
     }
-    if (method === "PUT") {
-      const value = text(await json(request), "value");
-      if (!value || value.length > 4000) {
-        problem(response, 422, "validation_failed", "The request has invalid fields.", [
-          { field: "value", code: "length", detail: "must be 1 to 4000 characters long" },
-        ]);
-        return true;
-      }
-      values.set(name, { value, updated_at: new Date().toISOString() });
-      send(response, 200, { data: state(setting) } satisfies Schemas["Data_TenantSettingState"]);
-      return true;
-    }
-    if (method === "DELETE") {
-      values.delete(name);
-      empty(response, 204);
-      return true;
-    }
-    return false;
+    valuesOf(tenant.id).set(name, { value, updated_at: new Date().toISOString() });
+    send(response, 200, {
+      data: state(setting, tenant.id),
+    } satisfies Schemas["Data_TenantSettingState"]);
+    return true;
+  }
+  if (method === "DELETE") {
+    valuesOf(tenant.id).delete(name);
+    empty(response, 204);
+    return true;
   }
   return false;
 }
