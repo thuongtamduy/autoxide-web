@@ -283,3 +283,17 @@ for (const width of [360, 390, 430, 768, 820, 1024, 1280, 1440]) {
     await expectNoOrphanCard(page, ".dl-grid");
   });
 }
+
+test("tên miền không thuộc cửa hàng nào (core nhiều khách): 404, không phải trang lỗi", async ({
+  page,
+}) => {
+  // Website chuyển tên miền người đọc mở cho core; core giả trả `400 tenant_required` cho tên miền này.
+  await page.setExtraHTTPHeaders({ "X-Forwarded-Host": "unknown-shop.example" });
+  for (const path of ["/", "/blog", "/en/blog"]) {
+    const response = await page.goto(path);
+    expect(response?.status(), path).toBe(404);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      path.startsWith("/en") ? "Page not found" : "Không tìm thấy trang",
+    );
+  }
+});

@@ -2,8 +2,9 @@ import "server-only";
 
 import { type AutoxideClient, createAutoxideClient, toApiError } from "@autoxide/sdk";
 import { headers } from "next/headers";
+import { notFound, unstable_rethrow } from "next/navigation";
 import { coreUrl, siteUrlSetting, tenantSetting } from "./env";
-import { publicOrigin, tenantHeaders } from "./tenant";
+import { isUnknownShop, publicOrigin, tenantHeaders } from "./tenant";
 
 // Website công khai chỉ gọi endpoint công khai của core (`…/public/…`), từ máy chủ Next.js, như
 // khách: không có token nào, trình duyệt không bao giờ gọi core trực tiếp (trừ ảnh, đi qua route
@@ -81,7 +82,8 @@ type Result<T> = { data?: T; error?: unknown; response: Response };
 
 /**
  * Lấy dữ liệu công khai. Không có (404) thì `null` để trang tự hiện "không tìm thấy" hay dùng
- * phần thay thế; lỗi khác ném `ApiError` (trang rơi vào `error.tsx`).
+ * phần thay thế; tên miền không thuộc cửa hàng nào (core nhiều khách) thì cả trang 404 (`notFound()`);
+ * lỗi khác ném `ApiError` (trang rơi vào `error.tsx`).
  */
 export async function loadPublic<T>(
   locale: string,
@@ -89,15 +91,36 @@ export async function loadPublic<T>(
 ): Promise<T | null> {
   const { data, error, response } = await call(publicClient(locale));
   if (data !== undefined) return data;
-  if (response.status === 404) return null;
-  throw toApiError(response, error);
+  const failure = toApiError(response, error);
+  if (isUnknownShop(failure.status, failure.code)) notFound();
+  // `AUTOXIDE_STOREFRONT_TENANT` trỏ tới khách không có: lỗi cấu hình, không phải "không có bài".
+  if (response.status === 404 && failure.code !== "tenant_not_found") return null;
+  throw failure;
 }
 
 /**
  * Như `loadPublic`, nhưng mọi lỗi (core tắt, mạng hỏng, 5xx) cũng thành `null`: cho phần phụ của
- * trang (menu, bài viết ở trang chủ, bản tin ở chân trang) — hỏng phần phụ không làm hỏng trang.
+ * một trang (bài viết ở trang chủ, chủ đề ở `/blog`, bình luận) — hỏng phần phụ không làm hỏng trang.
+ * Riêng tên miền không thuộc cửa hàng nào thì vẫn 404 cả trang (`unstable_rethrow` để `notFound()` đi
+ * qua `catch`).
  */
 export async function loadOptional<T>(
+  locale: string,
+  call: (client: AutoxideClient) => Promise<Result<T>>,
+): Promise<T | null> {
+  try {
+    return await loadPublic(locale, call);
+  } catch (failure) {
+    unstable_rethrow(failure);
+    return null;
+  }
+}
+
+/**
+ * Cho đầu trang và chân trang (nằm trong layout): mọi lỗi thành `null`, kể cả tên miền lạ — `notFound()`
+ * ném từ layout thì Next.js không dựng được trang 404 của website; trang bên trong tự trả 404.
+ */
+export async function loadChrome<T>(
   locale: string,
   call: (client: AutoxideClient) => Promise<Result<T>>,
 ): Promise<T | null> {

@@ -1727,3 +1727,24 @@ tên và nhóm.
 
 Đã cân nhắc: gom cài đặt của một kết nối thành một form nhiều ô (như bản mẫu) — chờ `POST /settings/{name}/test`
 của core (bước 51) để form có nút kiểm tra thật.
+
+## W-038 · Website: tên miền không thuộc cửa hàng nào trả 404 — 2026-11-16 — agent quyết
+
+Quyết định: core nhiều khách trả `400 tenant_required` khi tên miền người đọc mở chưa gắn (hay chưa xác minh) cho
+khách nào. `loadPublic` (`apps/storefront/src/lib/core.ts`) gặp mã này thì gọi `notFound()`: cả trang thành 404 với
+trang "không tìm thấy" của website. `loadOptional` (phần phụ của một trang: bài ở trang chủ, chủ đề, bình luận) để
+`notFound()` đi qua bằng `unstable_rethrow`, nên trang chủ cũng 404. Đầu trang và chân trang nằm trong layout dùng
+hàm mới `loadChrome` (mọi lỗi thành `null`, như trước): `notFound()` ném từ layout thì Next.js không dựng được trang
+404 của website. Khách tạm khoá, bảo trì, đang dời vẫn là lỗi (`error.tsx`); `tenant_not_found` (biến
+`AUTOXIDE_STOREFRONT_TENANT` trỏ tới khách không có) cũng là lỗi, không còn bị coi là "không có dữ liệu" (404 → `null`).
+Hàm thuần `isUnknownShop` (`tenant.ts`, có test); core giả trả `tenant_required` cho tên miền `unknown-shop.*` (e2e).
+
+Lý do: chạy thử với core thật (hai khách, hai tên miền đã xác minh) thấy tên miền lạ làm trang 500 và ghi log lỗi
+mỗi lượt xem; máy tìm kiếm và bot quét tên miền trỏ nhầm sẽ thấy lỗi máy chủ thay vì "không có trang này".
+
+Đã cân nhắc: kiểm khách một lần ở proxy — thêm một lời gọi core mỗi lượt xem; chuyển hướng về một trang chung — không
+có trang chung nào đúng cho mọi cách triển khai.
+
+Ghi thêm khi chạy thử: máy chủ Next.js tự đặt `X-Forwarded-Proto: http` khi request không có header này, nên nhánh
+"`https` khi chạy thật" của `publicOrigin` (W-036) chỉ dùng khi chạy ngoài máy chủ Next.js. README nói rõ reverse
+proxy phải đặt `X-Forwarded-Proto` (Caddy tự đặt).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { publicOrigin, tenantHeaders } from "./tenant";
+import { isUnknownShop, publicOrigin, tenantHeaders } from "./tenant";
 
 describe("khách của website khi core chạy nhiều khách", () => {
   it("đặt AUTOXIDE_STOREFRONT_TENANT thì gửi Autoxide-Tenant, bỏ qua tên miền", () => {
@@ -41,5 +41,18 @@ describe("publicOrigin", () => {
   it("tên miền sai dạng hay không có thì về địa chỉ chạy thử", () => {
     expect(publicOrigin("", "evil.example/path", "https", true)).toBe("http://localhost:3000");
     expect(publicOrigin("", null, null, true)).toBe("http://localhost:3000");
+  });
+});
+
+describe("tên miền không thuộc cửa hàng nào", () => {
+  it("core không nhận ra khách thì trang 404", () => {
+    expect(isUnknownShop(400, "tenant_required")).toBe(true);
+  });
+
+  it("khách tạm khoá, bảo trì hay cấu hình sai vẫn là lỗi", () => {
+    expect(isUnknownShop(403, "tenant_suspended")).toBe(false);
+    expect(isUnknownShop(503, "tenant_maintenance")).toBe(false);
+    expect(isUnknownShop(404, "tenant_not_found")).toBe(false);
+    expect(isUnknownShop(400, "bad_request")).toBe(false);
   });
 });

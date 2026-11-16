@@ -38,3 +38,14 @@ export function publicOrigin(
   const scheme = proto === "http" || proto === "https" ? proto : production ? "https" : "http";
   return `${scheme}://${host}`;
 }
+
+/**
+ * Core nhiều khách không nhận ra cửa hàng của tên miền người đọc mở (`400 tenant_required`): tên miền
+ * chưa gắn hay chưa xác minh cho khách nào. Website trả 404 cho cả trang thay vì trang lỗi 500. Khách tạm
+ * khoá, đang bảo trì, đang dời, hay `AUTOXIDE_STOREFRONT_TENANT` trỏ tới khách không có
+ * (`tenant_not_found`) vẫn là lỗi (`error.tsx`): cửa hàng có thật nhưng tạm không phục vụ, hoặc website
+ * cấu hình sai.
+ */
+export function isUnknownShop(status: number, code: string): boolean {
+  return status === 400 && code === "tenant_required";
+}

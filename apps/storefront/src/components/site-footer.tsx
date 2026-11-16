@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { loadOptional } from "@/lib/core";
+import { loadChrome } from "@/lib/core";
 import { footerColumns } from "@/lib/menu";
 import { loadMenu } from "@/lib/menus-server";
 import type { SiteIdentity } from "@/lib/site";
@@ -21,7 +21,7 @@ export async function SiteFooter({ locale, site }: { locale: Locale; site: SiteI
   const tn = await getTranslations({ locale, namespace: "newsletter" });
   const footer = await loadMenu("footer", locale);
   const columns = footerColumns(footer.menu?.items ?? []);
-  const lists = await loadOptional(locale, (client) =>
+  const lists = await loadChrome(locale, (client) =>
     client.GET("/api/v1/newsletter/public/lists", { params: { query: { locale } } }),
   );
   const publicLists = lists?.data.lists ?? [];

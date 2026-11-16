@@ -233,7 +233,10 @@ https:// {
 }
 ```
 
-Caddy chuyển tiếp `Host` của người đọc và đặt `X-Forwarded-Proto`, website chỉ cần vậy. Tên cửa hàng ở
+Caddy chuyển tiếp `Host` của người đọc và đặt `X-Forwarded-Proto`, website chỉ cần vậy. Dùng reverse
+proxy khác thì cũng cho nó đặt `X-Forwarded-Proto`: thiếu header này, máy chủ Next.js coi là `http` và link
+canonical sẽ bắt đầu bằng `http://`. Tên miền chưa cửa hàng nào xác minh nhận trang "không tìm thấy" (404)
+của website. Tên cửa hàng ở
 đầu trang vẫn lấy từ `AUTOXIDE_STOREFRONT_NAME` (một tên cho mọi cửa hàng) cho tới khi core công bố hồ
 sơ công khai của từng khách.
 
