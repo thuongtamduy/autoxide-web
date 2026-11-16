@@ -1808,3 +1808,24 @@ Lý do: chủ dự án gửi bản thiết kế và giao bám sát nó mà khôn
 
 Đã cân nhắc: thanh báo bảo trì trong khung (thiết kế vẽ như dải báo) — core từ chối mọi lời gọi khi bảo trì nên khung
 không dựng được, trang thay cả khung là cách duy nhất cho thấy được câu báo.
+
+## W-043 · Bám thiết kế, nhóm "core đã có API": Ctrl K tìm dữ liệu, duyệt và đăng ở danh sách, kiểm trước khi đăng, khác biệt menu — 2026-11-16 — agent quyết
+
+Quyết định:
+
+- **Ctrl K** có ba nhóm như thiết kế: "Tạo mới" (bài viết, trang, chiến dịch bản tin, role — khung tính theo
+  permission và màn thấy được), "Đi tới" (màn), "Kết quả" (Server Action `searchEverything`: `GET /content/entries?q`,
+  `GET /media?q`, `GET /auth/users?search`, mỗi nguồn 5 kết quả, chỉ gọi nguồn người xem có permission đọc; nguồn lỗi
+  thì bỏ qua). Gọi sau khi ngừng gõ 250 ms, từ 2 ký tự. Chữ trong ô xoá khi đóng bảng, không phải khi mở (sự kiện
+  `toggle` tới trễ, xoá lúc mở làm mất chữ gõ ngay sau Ctrl K). Phần thuần tách ra `command-items.ts`.
+- **"Duyệt và đăng"** trên dòng bài chờ duyệt của danh sách (người đăng được bài): Server Action `approveEntry` đọc
+  `ETag` hiện tại rồi đăng đúng phiên bản đó; bài có phần AI viết phải tick "đã đọc lại" như hộp Đăng.
+- **Kiểm trước khi đăng** trong hộp Đăng: hàm thuần `publishChecklist` gom kết quả `seo-check` của core thành bốn dòng
+  (tiêu đề trùng, alt ảnh, bản dịch, phần còn lại cho máy tìm kiếm — mã lạ rơi vào dòng cuối). Chỉ nhắc, vẫn đăng được.
+- **Menu bị 412**: đọc lại bản mới của máy chủ (giữ bản nháp), "Xem khác biệt" hiện hai cột so với bản bắt đầu sửa
+  (hàm thuần `menuChanges`: thêm / sửa trường nào / chuyển chỗ / xoá, chuyển chỗ chỉ tính đổi cha hay đổi thứ tự giữa
+  anh em giữ nguyên cha) và mục cả hai cùng sửa. Trong lúc đọc lại, cột của họ hiện "Đang đọc bản mới…".
+
+Lý do: bản thiết kế (W-042); các việc này core đã có API. Đã chạy thử với core thật (nhiều khách, SQLite).
+
+Đã cân nhắc: hợp nhất tự động hai bản menu — dễ sai thứ tự cây; người dùng tự làm lại phần của mình sau khi tải bản mới.

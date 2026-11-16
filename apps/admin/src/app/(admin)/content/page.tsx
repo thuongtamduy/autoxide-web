@@ -111,6 +111,7 @@ export default async function ContentPage(props: PageProps<"/content">) {
                 entries={page.data}
                 authors={names}
                 filtered={hasFilters(filters) || filters.status !== "all"}
+                canPublish={can.publish}
               />
             ) : (
               <UpcomingTable schedules={page.data} entries={page.entries} />

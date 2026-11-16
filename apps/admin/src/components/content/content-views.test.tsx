@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { type Entry, localToIso } from "@/lib/content";
 import { renderIntl } from "@/test/render";
 import { BodyView } from "./body-view";
 import { EntryTable, UpcomingTable } from "./entry-list";
+
+// Server Action không chạy được trong jsdom; bảng chỉ cần tham chiếu tới nó.
+vi.mock("@/app/(admin)/content/actions", () => ({ approveEntry: vi.fn() }));
 
 afterEach(cleanup);
 
@@ -48,6 +51,20 @@ function entry(change: Partial<Entry> = {}): Entry {
 }
 
 describe("EntryTable", () => {
+  it("người đăng được bài: bài chờ duyệt có nút Duyệt và đăng, bài khác không", () => {
+    const list = [
+      entry({ review_requested_at: "2026-11-15T03:00:00Z" }),
+      entry({ id: "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e13", title: "Bài khác" }),
+    ];
+    renderIntl(<EntryTable entries={list} authors={{}} filtered={false} canPublish />);
+    expect(screen.getAllByRole("button", { name: /^Approve and publish/ })).toHaveLength(1);
+    cleanup();
+    // Không đăng được: không có cột thao tác.
+    renderIntl(<EntryTable entries={list} authors={{}} filtered={false} />);
+    expect(screen.queryByRole("button", { name: /^Approve and publish/ })).toBeNull();
+    expect(screen.queryByRole("columnheader", { name: "Actions" })).toBeNull();
+  });
+
   it("mỗi bài một dòng: link tới trình soạn, trạng thái, nhãn cột cho thẻ điện thoại", () => {
     renderIntl(
       <EntryTable

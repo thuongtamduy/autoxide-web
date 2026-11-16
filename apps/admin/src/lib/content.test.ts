@@ -11,6 +11,7 @@ import {
   listQuery,
   parseFilters,
   postPathPrefix,
+  publishChecklist,
   toCoreBody,
   upcomingRows,
 } from "./content";
@@ -344,5 +345,39 @@ describe("entryErrors", () => {
         detail: "Changed.",
       }).message,
     ).toBe("Changed.");
+  });
+});
+
+describe("publishChecklist", () => {
+  const finding = (code: string, level: "error" | "warning" = "warning") => ({
+    code,
+    level,
+    field: "title",
+    message: "…",
+  });
+
+  it("core không trả lời thì không có danh sách", () => {
+    expect(publishChecklist(null)).toBeNull();
+  });
+
+  it("không có điểm nào: bốn dòng đều ổn", () => {
+    expect(publishChecklist([])?.map((c) => c.state)).toEqual(["ok", "ok", "ok", "ok"]);
+  });
+
+  it("gom theo dòng, lấy mức cao nhất; mã lạ rơi vào dòng SEO", () => {
+    const list = publishChecklist([
+      finding("seo.title_duplicate", "error"),
+      finding("seo.image_alt_missing"),
+      finding("seo.image_alt_missing"),
+      finding("seo.translation_missing"),
+      finding("seo.meta_title_missing"),
+      finding("seo.something_new", "error"),
+    ]);
+    expect(list).toEqual([
+      { id: "title", state: "error", count: 1 },
+      { id: "alt", state: "warning", count: 2 },
+      { id: "translation", state: "warning", count: 1 },
+      { id: "seo", state: "error", count: 2 },
+    ]);
   });
 });

@@ -164,6 +164,12 @@ test("tạo bài, sửa, đăng, rồi mở link xem trước không cần đăn
   await expect(page.getByTestId("save-state")).toContainText("Saved");
 
   await page.getByRole("button", { name: "Publish", exact: true }).click();
+  // Kiểm trước khi đăng: gom từ kết quả kiểm SEO của core (bài mới chưa có tiêu đề SEO, tóm tắt).
+  const checks = dialog(page).getByTestId("publish-checks");
+  await expect(checks).toContainText("No other post has this title");
+  await expect(checks).toContainText("Images have alt text");
+  await expect(checks).toContainText("No translation is missing");
+  await expect(checks).toContainText("1 search engine detail to review (SEO tab)");
   await dialog(page).getByRole("button", { name: "Publish now" }).click();
   await expect(toast(page)).toContainText("Published");
   await expect(page.locator(".ce-meta")).toContainText("Published");
@@ -263,4 +269,45 @@ test("gửi duyệt, danh mục, gỡ đăng có xác nhận, khôi phục phiê
   await page.getByRole("button", { name: "Create blank translation" }).click();
   await expect(page).toHaveURL(/\/content\/[0-9a-f-]{36}$/);
   await expect(page.locator(".ce-strip")).toContainText("English");
+});
+
+test("Ctrl K: Tạo mới theo permission, Kết quả tìm bài viết và người dùng thật của core", async ({
+  page,
+}) => {
+  await signIn(page, "/content");
+  await page.keyboard.press("Control+k");
+  const sheet = page.getByRole("dialog", { name: "Search" });
+  await expect(sheet.getByTestId("qs-create")).toContainText("New post");
+  await expect(sheet.getByTestId("qs-create")).toContainText("New role");
+
+  // Gõ không dấu: tìm cả bài viết của core (sau khi ngừng gõ).
+  await sheet.getByRole("searchbox").fill("thot go");
+  const results = sheet.getByTestId("qs-results");
+  await expect(results).toContainText("Vệ sinh thớt gỗ đúng cách");
+  await expect(results).toContainText("Post · Published");
+  await results.getByRole("option", { name: /Vệ sinh thớt gỗ/ }).click();
+  await expect(page).toHaveURL(/\/content\/[0-9a-f-]+$/);
+
+  // Người dùng: theo email.
+  await page.keyboard.press("Control+k");
+  await sheet.getByRole("searchbox").fill("admin@example");
+  await expect(sheet.getByTestId("qs-results")).toContainText("admin@example.com");
+  // Lối tắt "Tạo mới" cũng lọc theo chữ gõ: "post" chỉ còn "New post".
+  await sheet.getByRole("searchbox").fill("new post");
+  await expect(sheet.getByTestId("qs-create").getByRole("option")).toHaveCount(1);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/content\/new$/);
+});
+
+test("Duyệt và đăng ngay ở danh sách bài chờ duyệt", async ({ page }) => {
+  await signIn(page, "/content?status=review");
+  const row = rows(page).filter({ hasText: "Bảo quản dao bếp" });
+  await row.getByRole("button", { name: "Approve and publish" }).click();
+  await expect(dialog(page)).toContainText("Approve and publish “Bảo quản dao bếp”?");
+  await dialog(page).getByRole("button", { name: "Approve and publish" }).click();
+  await expect(toast(page)).toHaveText("Published");
+  // Đã đăng: rời tab chờ duyệt.
+  await expect(rows(page)).toHaveCount(0);
+  await page.getByRole("link", { name: "All", exact: true }).click();
+  await expect(page.locator("tr", { hasText: "Bảo quản dao bếp" })).toContainText("Published");
 });

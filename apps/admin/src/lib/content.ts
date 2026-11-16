@@ -438,3 +438,40 @@ export function defined<T extends object>(value: T): { [K in keyof T]: Exclude<T
     [K in keyof T]: Exclude<T[K], undefined>;
   };
 }
+
+// ---------------------------------------------------------------- Kiểm trước khi đăng
+
+/** Một dòng của danh sách kiểm trong hộp Đăng (thiết kế "Soạn bài"). */
+export interface PublishCheck {
+  id: "title" | "alt" | "translation" | "seo";
+  /** `ok`: không có gì; `warning` / `error`: mức cao nhất của các điểm core báo cho dòng này. */
+  state: "ok" | "warning" | "error";
+  /** Số điểm core báo cho dòng này. */
+  count: number;
+}
+
+const CHECK_CODES: Record<PublishCheck["id"], (code: string) => boolean> = {
+  title: (code) => code === "seo.title_duplicate",
+  alt: (code) => code === "seo.image_alt_missing",
+  translation: (code) => code === "seo.translation_missing",
+  seo: (code) =>
+    !["seo.title_duplicate", "seo.image_alt_missing", "seo.translation_missing"].includes(code),
+};
+
+/**
+ * Gom kết quả kiểm SEO của core (`GET /content/entries/{id}/seo-check`) thành bốn dòng: tiêu đề không
+ * trùng, ảnh có alt, đủ bản dịch, phần còn lại cho máy tìm kiếm. Mã lạ (core thêm sau) rơi vào dòng
+ * cuối, không bị bỏ sót. `null` (core không trả lời) thì không có danh sách.
+ */
+export function publishChecklist(findings: readonly SeoFinding[] | null): PublishCheck[] | null {
+  if (findings === null) return null;
+  return (Object.keys(CHECK_CODES) as PublishCheck["id"][]).map((id) => {
+    const hits = findings.filter((finding) => CHECK_CODES[id](finding.code));
+    const state = hits.some((f) => f.level === "error")
+      ? "error"
+      : hits.length > 0
+        ? "warning"
+        : "ok";
+    return { id, state, count: hits.length };
+  });
+}

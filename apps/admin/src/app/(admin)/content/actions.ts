@@ -186,6 +186,30 @@ export async function publishEntry(
   return result.ok ? result : afterSave(result, saved);
 }
 
+/**
+ * "Duyệt và đăng" ngay ở danh sách bài chờ duyệt (thiết kế "Nội dung › Bài viết"): đọc phiên bản hiện
+ * tại của bài (`ETag`) rồi đăng đúng phiên bản đó — người duyệt đăng cái họ đã đọc; ai sửa xen giữa
+ * thì core trả 412 như ở trình soạn.
+ */
+export async function approveEntry(
+  entryId: string,
+  aiReviewed: boolean,
+): Promise<EntryOutcome | Failure> {
+  if (!id.safeParse(entryId).success) return invalid();
+  const current = await withVersion((client) =>
+    client.GET("/api/v1/content/entries/{id}", { params: { path: { id: entryId } } }),
+  );
+  if (!current.ok) return current;
+  const result = await withVersion((client) =>
+    client.POST("/api/v1/content/entries/{id}/publish", {
+      params: { path: { id: entryId }, header: { "If-Match": current.version } },
+      body: aiReviewed ? { ai_reviewed: true } : {},
+    }),
+  );
+  if (result.ok) refresh();
+  return result;
+}
+
 type StateChange = "unpublish" | "archive" | "request-review" | "withdraw-review";
 
 /** Gỡ đăng, lưu trữ, gửi duyệt, rút yêu cầu duyệt: cùng một hình dạng (`If-Match`, trả bài). */

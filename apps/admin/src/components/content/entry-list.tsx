@@ -12,6 +12,7 @@ import {
   type Schedule,
   upcomingRows,
 } from "@/lib/content";
+import { ApproveDialog } from "./approve-dialog";
 import { EntryStatusBadges } from "./status";
 
 /**
@@ -130,17 +131,22 @@ export function EntryTable({
   entries,
   authors,
   filtered,
+  canPublish = false,
 }: {
   entries: Entry[];
   /** Tên hiển thị theo id hồ sơ tác giả. */
   authors: Record<string, string>;
   filtered: boolean;
+  /** Người xem đăng được bài: bài chờ duyệt có nút "Duyệt và đăng" ngay trên dòng. */
+  canPublish?: boolean;
 }) {
   const t = useTranslations("content.list");
   const kinds = useTranslations("content.kinds");
   if (entries.length === 0) {
     return <p className="empty">{filtered ? t("noMatch") : t("empty")}</p>;
   }
+  // Cột thao tác chỉ khi trang có bài chờ duyệt mà người xem duyệt được.
+  const approving = canPublish && entries.some((entry) => entry.review_requested_at);
   return (
     <Table cards>
       <thead>
@@ -150,6 +156,7 @@ export function EntryTable({
           <Th>{t("colLocale")}</Th>
           <Th>{t("colAuthors")}</Th>
           <Th>{t("colUpdated")}</Th>
+          {approving ? <Th>{t("colActions")}</Th> : null}
         </tr>
       </thead>
       <tbody>
@@ -185,6 +192,17 @@ export function EntryTable({
               <Td label={t("colUpdated")} className="ce-nowrap">
                 <Time value={entry.updated_at} />
               </Td>
+              {approving ? (
+                <Td label={t("colActions")}>
+                  {entry.review_requested_at ? (
+                    <ApproveDialog
+                      id={entry.id}
+                      title={entry.title || t("untitled")}
+                      aiGenerated={entry.ai_generated}
+                    />
+                  ) : null}
+                </Td>
+              ) : null}
             </tr>
           );
         })}

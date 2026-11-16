@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { setTheme, signOut } from "@/app/actions";
 import { Help } from "@/components/help/help-panel";
 import { LanguageSwitch } from "@/components/language-switch";
-import { CommandPalette } from "@/components/shell/command-palette";
+import { CommandPalette, type CreateShortcut } from "@/components/shell/command-palette";
 import { Icon } from "@/components/shell/icon";
 import {
   AreasGrid,
@@ -26,6 +26,7 @@ import { tenantBlock } from "@/lib/tenant-state";
 import { getCurrentTenant, getMe, getModules } from "@/lib/viewer";
 import {
   ACCOUNT_PAGE,
+  holds,
   NAV,
   NAV_PLATFORM,
   NAV_SELLER,
@@ -132,6 +133,37 @@ export async function AdminShell({
   ) {
     others.push({ page: toTenant, icon: "home" });
   }
+  // Lối tắt "Tạo mới" của Ctrl K (thiết kế "Khung quản trị"): chỉ ở không gian của khách, chỉ khi người
+  // xem có permission tạo và thấy màn chứa nó (module đã cài). Core vẫn kiểm ở mỗi lời gọi.
+  const visible = (href: string) => groups.some((g) => g.pages.some((p) => p.href === href));
+  const create: CreateShortcut[] =
+    workspace === "tenant"
+      ? (
+          [
+            ["newPost", "/content/new", "/content", ["content.write", "content.write_own"]],
+            [
+              "newPage",
+              "/content/new?kind=page",
+              "/content",
+              ["content.write", "content.write_own"],
+            ],
+            [
+              "newCampaign",
+              "/marketing/newsletter/campaigns/new",
+              "/marketing/newsletter",
+              ["newsletter.manage"],
+            ],
+            ["newRole", "/org/access/roles/new", "/org/access", ["auth.roles.manage"]],
+          ] as const
+        )
+          .filter(([, , area, permission]) => visible(area) && holds(viewer, permission))
+          .map(([id, href]) => ({
+            key: `create/${id}`,
+            label: t(`shell.create.${id}`),
+            context: "",
+            href,
+          }))
+      : [];
   const account: ShellPage = {
     id: ACCOUNT_PAGE.id,
     label: t("nav.pages.account"),
@@ -284,11 +316,15 @@ export async function AdminShell({
       <CommandPalette
         groups={groups}
         extra={[account, ...others.map((o) => o.page)]}
+        create={create}
         labels={{
           title: t("shell.search"),
           placeholder: t("shell.searchPlaceholder"),
           goTo: t("shell.goTo"),
           none: t("shell.noMatch"),
+          create: t("shell.createNew"),
+          results: t("shell.results.title"),
+          searching: t("shell.results.searching"),
         }}
       />
 

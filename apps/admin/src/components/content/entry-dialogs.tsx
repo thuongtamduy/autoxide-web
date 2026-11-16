@@ -3,11 +3,12 @@
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId, useState } from "react";
 import { makePreview, publishEntry, scheduleEntry } from "@/app/(admin)/content/actions";
+import { Icon } from "@/components/shell/icon";
 import { Dialog } from "@/components/ui/dialog";
 import { CheckField, DialogButtons, Field } from "@/components/ui/form";
 import { Time } from "@/components/ui/time";
 import { useToast } from "@/components/ui/toast";
-import { localToIso, type SeoFinding } from "@/lib/content";
+import { localToIso, publishChecklist, type SeoFinding } from "@/lib/content";
 import { useEditorApi } from "./context";
 
 /** Hỏi lại trước một thao tác có hệ quả (gỡ đăng, lưu trữ, khôi phục), nêu rõ hệ quả. */
@@ -114,14 +115,37 @@ export function PublishDialog({
           </p>
           {api.dirty ? <p>{t("savesFirst")}</p> : null}
           {nothingNew ? <p>{t("nothingNew")}</p> : null}
-          {(findings?.filter((f) => f.level === "error").length ?? 0) > 0 ? (
-            <p className="ce-warn">{t("seoErrors")}</p>
-          ) : null}
+          <PublishChecklist findings={findings} />
         </>
       }
     >
       {(close) => <PublishForm close={close} aiUsed={aiUsed} />}
     </Dialog>
+  );
+}
+
+/**
+ * Kiểm trước khi đăng (thiết kế "Soạn bài"): bốn dòng gom từ lần kiểm SEO của core lúc mở bài —
+ * tiêu đề không trùng, ảnh có alt, đủ bản dịch, phần cho máy tìm kiếm. Chỉ để nhắc: vẫn đăng được.
+ */
+function PublishChecklist({ findings }: { findings: SeoFinding[] | null }) {
+  const t = useTranslations("content.publish.checks");
+  const checks = publishChecklist(findings);
+  if (checks === null) return <p className="ce-muted">{t("unavailable")}</p>;
+  return (
+    <ul className="ce-checks" aria-label={t("label")} data-testid="publish-checks">
+      {checks.map((check) => (
+        <li key={check.id} data-state={check.state}>
+          <Icon name={check.state === "ok" ? "check" : "warn"} />
+          <span>
+            {check.state === "ok"
+              ? t(`${check.id}.ok`)
+              : t(`${check.id}.problem`, { count: check.count })}
+          </span>
+        </li>
+      ))}
+      <li className="ce-muted">{t("when")}</li>
+    </ul>
   );
 }
 

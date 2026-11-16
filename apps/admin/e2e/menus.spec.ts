@@ -78,6 +78,12 @@ test("menu thật: lỗi trước khi gửi, lỗi 422 của core, 412, lưu, xe
   await page.getByRole("button", { name: "Save menu" }).click();
   await expect(page.locator(".mn-alert")).toHaveAttribute("data-code", "precondition_failed");
   await expect(row(page, "Giảm giá tháng này")).toBeVisible();
+  // Khác biệt: bản của họ thêm "Người khác thêm"; bản của bạn thêm "Giảm giá tháng này"; không trùng.
+  await page.getByRole("button", { name: "Show differences" }).click();
+  await expect(page.getByTestId("diff-theirs")).toContainText("Added");
+  await expect(page.getByTestId("diff-theirs")).toContainText("Người khác thêm");
+  await expect(page.getByTestId("diff-mine")).toContainText("Giảm giá tháng này");
+  await expect(page.getByTestId("diff-clash")).toContainText("You did not change the same items");
   await page.getByRole("button", { name: "Load the new version" }).click();
   await expect(row(page, "Người khác thêm")).toBeVisible();
   await expect(row(page, "Giảm giá tháng này")).toHaveCount(0);

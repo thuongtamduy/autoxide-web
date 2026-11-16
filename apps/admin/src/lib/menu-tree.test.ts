@@ -6,6 +6,7 @@ import {
   type FlatItem,
   flatten,
   indent,
+  menuChanges,
   moveDown,
   moveUp,
   outdent,
@@ -102,5 +103,46 @@ describe("cây menu dạng phẳng", () => {
     expect(badgeShown({ ...badge, from: null, until: null }, "2030-01-01T00:00:00Z")).toBe(true);
     expect(badgeShown({ ...badge, text: " " }, "2026-11-15T00:00:00Z")).toBe(false);
     expect(badgeShown(null, "2026-11-15T00:00:00Z")).toBe(false);
+  });
+});
+
+describe("khác biệt giữa hai bản menu", () => {
+  const base = rows([
+    ["a", 0],
+    ["a1", 1],
+    ["a2", 1],
+    ["b", 0],
+  ]);
+
+  it("thêm, sửa, xoá; thêm hay xoá mục khác không làm mục còn lại thành chuyển chỗ", () => {
+    const after = rows([
+      ["a", 0],
+      ["a2", 1],
+      ["b", 0],
+      ["c", 0],
+    ]).map((row) => (row.id === "b" ? { ...row, label: "Bếp", url: "/bep" } : row));
+    expect(menuChanges(base, after)).toEqual([
+      { kind: "edited", id: "b", fields: ["label", "url"] },
+      { kind: "added", id: "c", fields: [] },
+      { kind: "removed", id: "a1", fields: [] },
+    ]);
+  });
+
+  it("đổi cha hay đổi thứ tự giữa anh em là chuyển chỗ", () => {
+    const after = rows([
+      ["b", 0],
+      ["a", 0],
+      ["a2", 1],
+      ["a1", 2],
+    ]);
+    expect(menuChanges(base, after).map((c) => `${c.kind}:${c.id}`)).toEqual([
+      "moved:b",
+      "moved:a",
+      "moved:a1",
+    ]);
+  });
+
+  it("hai bản như nhau thì không có thay đổi", () => {
+    expect(menuChanges(base, base)).toEqual([]);
   });
 });
