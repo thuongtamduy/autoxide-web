@@ -211,6 +211,11 @@
     "searchHint": "Search all areas…",
     "searchPlaceholder": "Find a page, a post, a file or a person…",
     "goTo": "Go to",
+    "recent": "Recent",
+    "keys": {
+      "move": "Move",
+      "open": "Open"
+    },
     "noMatch": "Nothing matches. Try the name of an area, such as \"modules\", or two letters of a title.",
     "quickNav": "Quick navigation",
     "close": "Close",
