@@ -6703,13 +6703,19 @@
       "none": "Không theo dõi",
       "ledgerNote": "Số “có” bằng tổng sổ biến động của dòng này. Muốn đổi thì ghi biến động (điều chỉnh, chuyển, nhập), không sửa số trực tiếp.",
       "viewLedger": "Xem sổ của dòng này",
-      "foot": "Hiện {shown} dòng · {low} dòng dưới mức tối thiểu.",
-      "next": "Trang sau",
       "valueTitle": "Giá trị tồn theo kho",
       "valueAbout": "Tồn nhân giá vốn bình quân gia quyền của từng kho. Giá vốn tính lại mỗi lần nhập hàng.",
       "oversellTitle": "Không bao giờ bán quá tồn",
       "oversellStrong": "Không bao giờ bán quá tồn.",
-      "oversell": "Đặt hàng giữ chỗ bằng một lệnh trừ “sẵn bán” có điều kiện, nên nhiều người mua cùng lúc cũng không vượt số còn. Chỗ giữ hết hạn thanh toán thì job trả lại tự động."
+      "oversell": "Đặt hàng giữ chỗ bằng một lệnh trừ “sẵn bán” có điều kiện, nên nhiều người mua cùng lúc cũng không vượt số còn. Chỗ giữ hết hạn thanh toán thì job trả lại tự động.",
+      "setMinimum": "Đặt mức tối thiểu",
+      "minimumField": "Mức tối thiểu mới",
+      "copySku": "Chép SKU",
+      "actions": "Thao tác",
+      "view": "Xem chi tiết",
+      "hide": "Ẩn chi tiết",
+      "transferHere": "Chuyển hàng về đây",
+      "footLow": "{low} dòng dưới mức tối thiểu ở mọi kho."
     },
     "moves": {
       "about": "Sổ chỉ thêm: mọi lần nhập, xuất, chuyển, điều chỉnh, kiểm kê, hết hạn lô là một dòng. Không sửa, không xoá; ghi sai thì ghi một dòng ngược lại kèm lý do. Đây là chứng từ kho, lưu ít nhất 10 năm.",
@@ -6736,7 +6742,16 @@
       "quickAbout": "Dùng khi hàng hỏng, mất, tìm thấy hoặc sửa lần nhập sai. Lý do là bắt buộc để kế toán và người kiểm tra hiểu vì sao tồn đổi.",
       "whoTitle": "Ai được làm gì",
       "whoStrong": "Quyền theo kho.",
-      "who": "Xem sổ cần inventory.read; điều chỉnh cần inventory.adjust ở đúng kho đó. Nhân viên một cửa hàng không xem hay sửa được tồn của cửa hàng khác."
+      "who": "Xem sổ cần inventory.read; điều chỉnh cần inventory.adjust ở đúng kho đó. Nhân viên một cửa hàng không xem hay sửa được tồn của cửa hàng khác.",
+      "byDate": "Lọc theo ngày",
+      "from": "Từ ngày (giờ Việt Nam)",
+      "to": "Đến ngày",
+      "clearDates": "Bỏ lọc ngày",
+      "actions": "Thao tác",
+      "view": "Xem chi tiết",
+      "hide": "Ẩn chi tiết",
+      "copySource": "Chép mã chứng từ",
+      "copied": "Đã chép mã chứng từ"
     },
     "adjust": {
       "button": "Điều chỉnh tồn",
@@ -6828,7 +6843,13 @@
         "received": "Đã nhận đủ. Đóng phiếu để kết thúc.",
         "closed": "Đã đóng.",
         "cancelled": "Đã huỷ; tồn chưa từng đổi."
-      }
+      },
+      "view": "Xem các dòng",
+      "hide": "Ẩn các dòng",
+      "bulkShipTitle": "Gửi đi các phiếu chuyển đã chọn?",
+      "bulkShipPoint": "Hàng rời kho nguồn của từng phiếu ngay; ở kho đích hiện thành “đang về”.",
+      "bulkDraftOnly": "Chỉ phiếu nháp đổi được; phiếu khác được báo lỗi và vẫn được chọn.",
+      "bulkCancelTitle": "Huỷ các phiếu chuyển đã chọn?"
     },
     "count": {
       "button": "Mở phiếu kiểm kê",
@@ -6872,7 +6893,14 @@
       "notCounted": "chưa đếm",
       "expected": "lúc đếm có {count}",
       "diff": "lệch {diff}",
-      "reason": "Lý do"
+      "reason": "Lý do",
+      "created": "Ngày tạo",
+      "actions": "Thao tác",
+      "view": "Mở phiếu",
+      "hide": "Đóng phiếu",
+      "bulkApplyTitle": "Áp dụng các phiếu kiểm kê đã chọn?",
+      "bulkApplyReasons": "Phiếu còn dòng lệch chưa có lý do thì không áp dụng; phiếu đó được báo lỗi và vẫn được chọn.",
+      "bulkCancelTitle": "Huỷ các phiếu kiểm kê đã chọn?"
     },
     "lots": {
       "title": "Lô và hạn dùng",
@@ -6890,7 +6918,9 @@
       "writeOffSubmit": "Loại bỏ",
       "writtenOff": "Đã loại bỏ lô",
       "legalStrong": "Căn cứ chưa chắc.",
-      "legal": "Không có quy định chung buộc “hết hạn trước xuất trước”; việc không bán hàng quá hạn thuộc luật chất lượng hàng hoá và an toàn thực phẩm. Cần người có chuyên môn xác nhận cho từng ngành hàng."
+      "legal": "Không có quy định chung buộc “hết hạn trước xuất trước”; việc không bán hàng quá hạn thuộc luật chất lượng hàng hoá và an toàn thực phẩm. Cần người có chuyên môn xác nhận cho từng ngành hàng.",
+      "bulkWriteOffTitle": "Loại bỏ các lô đã chọn?",
+      "bulkWriteOffPoint": "Toàn bộ phần còn của từng lô bị trừ khỏi tồn với lý do “hết hạn”."
     },
     "serials": {
       "title": "Số serial",
@@ -6910,7 +6940,9 @@
       "writeOffTitle": "Loại bỏ {serial}?",
       "writeOffPoint": "Chiếc này không bán được nữa. Không hoàn tác được.",
       "writeOffSubmit": "Loại bỏ",
-      "writtenOff": "Đã loại bỏ serial"
+      "writtenOff": "Đã loại bỏ serial",
+      "bulkWriteOffTitle": "Loại bỏ các serial đã chọn?",
+      "copy": "Chép serial"
     },
     "purchasing": {
       "kpis": "Tóm tắt nhập hàng",
@@ -6957,7 +6989,14 @@
       "returnNo": "Phiếu",
       "supplierReason": "Nhà cung cấp · lý do",
       "fromReceipt": "từ {number}",
-      "ledgerNote": "Job ghi sổ cái chạy lại an toàn: sổ cái chống trùng theo mã inventory.receipt + mã phiếu."
+      "ledgerNote": "Job ghi sổ cái chạy lại an toàn: sổ cái chống trùng theo mã inventory.receipt + mã phiếu.",
+      "created": "Ngày tạo",
+      "view": "Xem các dòng",
+      "hide": "Ẩn các dòng",
+      "bulkPlaceTitle": "Đặt hàng các đơn đã chọn?",
+      "bulkPlacePoint": "Từng đơn gửi cho nhà cung cấp; số lượng hiện thành “đang về” ở kho nhận.",
+      "bulkDraftOnly": "Chỉ đơn nháp đặt được; đơn khác được báo lỗi và vẫn được chọn.",
+      "bulkCancelTitle": "Huỷ các đơn đặt mua đã chọn?"
     },
     "po": {
       "button": "Tạo đơn đặt mua",
@@ -8079,7 +8118,13 @@
       "usedOf": "{used} / {limit} lượt",
       "everything": "Mọi hàng tại {org}",
       "minOrder": "Đơn từ {amount}",
-      "groups": "Nhóm khách {groups}"
+      "groups": "Nhóm khách {groups}",
+      "actions": "Thao tác",
+      "view": "Xem chi tiết",
+      "hide": "Ẩn chi tiết",
+      "bulkActivateTitle": "Bật các chương trình đã chọn?",
+      "bulkActivateEach": "Mỗi chương trình được kiểm riêng; cái không đạt được báo lỗi và vẫn được chọn.",
+      "exportSelected": "Xuất CSV"
     },
     "limits": {
       "title": "Trần pháp luật đang hiệu lực",

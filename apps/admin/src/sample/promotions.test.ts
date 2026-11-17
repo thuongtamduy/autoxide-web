@@ -21,6 +21,7 @@ import {
   evaluateCart,
   evaluateWith,
   exportNotice,
+  exportPromotions,
   extendPromotion,
   generateCodes,
   getPromotion,
@@ -450,5 +451,40 @@ describe("mã giảm giá và thông báo", () => {
     const csv = await exportNotice(PROMOTION_ID.christmas, "csv");
     expect(csv.ok && csv.data.body.startsWith("field,value")).toBe(true);
     expect(csv.ok && csv.data.body).toContain("Giảm giá 20%");
+  });
+});
+
+describe("bảng chương trình (bộ công cụ bảng, W-058)", () => {
+  it("sắp theo tên, ngày bắt đầu, lượt dùng; trống thì đang chạy trước", async () => {
+    const plain = (await listPromotions({ locale: "vi" })).data;
+    expect(plain[0]?.status).toBe("active");
+    const byTitle = (await listPromotions({ locale: "vi", sort: { field: "title", dir: "asc" } }))
+      .data;
+    const titles = byTitle.map((p) => p.title);
+    expect(titles).toEqual(
+      [...titles].sort((a, b) => a.localeCompare(b, "vi", { sensitivity: "base", numeric: true })),
+    );
+    const used = (await listPromotions({ locale: "vi", sort: { field: "used", dir: "desc" } }))
+      .data;
+    for (let i = 1; i < used.length; i++) {
+      expect((used[i - 1] as Promotion).usage_count).toBeGreaterThanOrEqual(
+        (used[i] as Promotion).usage_count,
+      );
+    }
+    const starts = (await listPromotions({ locale: "vi", sort: { field: "starts", dir: "desc" } }))
+      .data;
+    expect(starts.map((p) => p.starts_at)).toEqual(
+      [...starts.map((p) => p.starts_at)].sort().reverse(),
+    );
+  });
+
+  it("xuất CSV chỉ các chương trình đã chọn; trống là tất cả", async () => {
+    const all = await exportPromotions();
+    const lines = all.data.csv.trim().split("\r\n");
+    expect(lines[0]).toBe("title,kind,trigger,status,starts_at,ends_at,usage_limit,usage_count");
+    expect(lines).toHaveLength((await listPromotions()).data.length + 1);
+    const one = await exportPromotions([PROMOTION_ID.christmas]);
+    expect(one.data.csv.trim().split("\r\n")).toHaveLength(2);
+    expect(one.data.file_name).toMatch(/^khuyen-mai-\d{4}-\d{2}-\d{2}\.csv$/);
   });
 });

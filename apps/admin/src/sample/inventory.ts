@@ -1303,7 +1303,13 @@ export interface LevelQuery {
   q?: string;
   limit?: number;
   cursor?: string | null;
+  /** Sắp theo cột (dự kiến `sort=`); trống thì dòng cần xử lý trước. */
+  sort?: { field: LevelSort; dir: SortDir } | null;
 }
+
+/** Cột của bảng tồn mà hàm mẫu sắp được (core dự kiến; hiện chỉ có thứ tự mặc định). */
+export const LEVEL_SORTS = ["name", "warehouse", "available"] as const;
+export type LevelSort = (typeof LEVEL_SORTS)[number];
 
 // Thay bằng GET /api/v1/inventory/levels?org_id=&variant_id=&below_reorder= (bước 42) khi core có.
 // Tìm không dấu theo tên và SKU (dự kiến `q`). Dòng cần xử lý trước: hết, dưới mức, rồi đủ.
@@ -1330,7 +1336,20 @@ export async function listLevels(query: LevelQuery = {}): Promise<SamplePage<Lev
         a.name.localeCompare(b.name) ||
         a.org_name.localeCompare(b.org_name),
     );
-  return samplePage(rows, { limit: query.limit ?? 50, cursor: query.cursor ?? null });
+  const sort = query.sort;
+  const sorted = sort
+    ? sortRows(
+        rows,
+        (l) =>
+          sort.field === "name"
+            ? `${l.name} ${l.variant_label}`
+            : sort.field === "warehouse"
+              ? l.org_name
+              : l.available,
+        sort.dir,
+      )
+    : rows;
+  return samplePage(sorted, { limit: query.limit ?? 50, cursor: query.cursor ?? null });
 }
 
 // Thay bằng GET /api/v1/inventory/levels/{id} (bước 42) khi core có. Kèm chỗ đang giữ, lô, serial
@@ -1428,8 +1447,26 @@ export interface MovementQuery {
   org_id?: string;
   kind?: MovementKind | "transfer";
   level_id?: string;
+  /** Khoảng ngày theo giờ Việt Nam, `YYYY-MM-DD`, tính cả hai đầu (dự kiến `from=` / `to=`). */
+  from?: string;
+  to?: string;
+  /** Chiều sắp theo thời gian; mặc định mới trước. */
+  dir?: SortDir;
   limit?: number;
   cursor?: string | null;
+}
+
+/** Ngày `YYYY-MM-DD` hợp lệ, hoặc chuỗi rỗng (ô lọc ngày trên địa chỉ). */
+export function cleanDay(value: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+  const at = Date.parse(`${value}T00:00:00Z`);
+  return Number.isNaN(at) || new Date(at).toISOString().slice(0, 10) !== value ? "" : value;
+}
+
+/** Thời điểm `iso` có rơi vào khoảng ngày [from, to] theo giờ Việt Nam không (đầu trống = không chặn). */
+export function inDays(iso: string, from: string, to: string): boolean {
+  const day = vietnamDay(Date.parse(iso));
+  return (!from || day >= from) && (!to || day <= to);
 }
 
 // Thay bằng GET /api/v1/inventory/movements?org_id=&variant_id=&kind=&from=&to= (bước 42) khi core
@@ -1446,7 +1483,12 @@ export async function listMovements(query: MovementQuery = {}): Promise<SamplePa
           ? m.kind === "transfer_in" || m.kind === "transfer_out"
           : m.kind === query.kind,
     )
-    .sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id))
+    .filter((m) => inDays(m.created_at, query.from ?? "", query.to ?? ""))
+    .sort(
+      (a, b) =>
+        (b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id)) *
+        (query.dir === "asc" ? -1 : 1),
+    )
     .map((m) => {
       const v = variants.get(m.variant_id);
       return {
@@ -1603,14 +1645,22 @@ async function transferRows(list: readonly StockTransfer[]): Promise<TransferRow
   }));
 }
 
+/** Cột của bảng chuyển kho mà hàm mẫu sắp được (dự kiến `sort=`). */
+export const TRANSFER_SORTS = ["number", "created"] as const;
+export type TransferSort = (typeof TRANSFER_SORTS)[number];
+
 // Thay bằng GET /api/v1/inventory/transfers?status= (bước 42) khi core có. Mới trước.
 export async function listTransfers(
-  query: { status?: TransferStatus } = {},
+  query: { status?: TransferStatus; sort?: { field: TransferSort; dir: SortDir } | null } = {},
 ): Promise<{ data: TransferRow[] }> {
   const list = store()
     .transfers.filter((t) => !query.status || t.status === query.status)
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
-  return { data: await transferRows(list) };
+  const sort = query.sort;
+  const sorted = sort
+    ? sortRows(list, (t) => (sort.field === "number" ? t.number : t.created_at), sort.dir)
+    : list;
+  return { data: await transferRows(sorted) };
 }
 
 /** Một dòng "SKU × số lượng" (hay "SKU x 10", "SKU 10"); mỗi dòng một biến thể. */
@@ -1868,11 +1918,20 @@ async function countRows(list: readonly StockCount[]): Promise<CountRow[]> {
   });
 }
 
+/** Cột của bảng kiểm kê mà hàm mẫu sắp được (dự kiến `sort=`). */
+export const COUNT_SORTS = ["number", "created"] as const;
+export type CountSort = (typeof COUNT_SORTS)[number];
+
 // Thay bằng GET /api/v1/inventory/counts?status= (bước 42) khi core có. Mới trước.
-export async function listCounts(): Promise<{ data: CountRow[] }> {
+export async function listCounts(
+  sort: { field: CountSort; dir: SortDir } | null = null,
+): Promise<{ data: CountRow[] }> {
+  const list = [...store().counts].sort((a, b) => b.created_at.localeCompare(a.created_at));
   return {
     data: await countRows(
-      [...store().counts].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+      sort
+        ? sortRows(list, (c) => (sort.field === "number" ? c.number : c.created_at), sort.dir)
+        : list,
     ),
   };
 }
@@ -2016,16 +2075,29 @@ function lotRow(lot: Lot, level: LevelRow): LotRow {
 
 // Thay bằng GET /api/v1/inventory/lots?status= (dự kiến; đặc tả 42 có bảng `inventory_lots` nhưng chưa
 // có endpoint danh sách) khi core có. Hết hạn sớm trước.
-export async function listLots(locale = "vi"): Promise<{ data: LotRow[] }> {
+export const LOT_SORTS = ["lot", "expires", "left"] as const;
+export type LotSort = (typeof LOT_SORTS)[number];
+
+export async function listLots(
+  locale = "vi",
+  sort: { field: LotSort; dir: SortDir } | null = null,
+): Promise<{ data: LotRow[] }> {
   const s = store();
   const { variants, orgName } = await lookups(locale);
+  const rows = s.lots
+    .map((lot) => {
+      const level = s.levels.find((l) => l.id === lot.level_id) as Level;
+      return lotRow(lot, levelRow(level, variants, orgName));
+    })
+    .sort((a, b) => (a.expires_on ?? "9999").localeCompare(b.expires_on ?? "9999"));
+  if (!sort) return { data: rows };
   return {
-    data: s.lots
-      .map((lot) => {
-        const level = s.levels.find((l) => l.id === lot.level_id) as Level;
-        return lotRow(lot, levelRow(level, variants, orgName));
-      })
-      .sort((a, b) => (a.expires_on ?? "9999").localeCompare(b.expires_on ?? "9999")),
+    data: sortRows(
+      rows,
+      (l) =>
+        sort.field === "lot" ? l.lot_code : sort.field === "expires" ? l.expires_on : l.on_hand,
+      sort.dir,
+    ),
   };
 }
 
@@ -2229,20 +2301,37 @@ export interface PurchaseRow extends PurchaseOrder {
   received: number;
 }
 
+/** Cột của bảng đơn đặt mua mà hàm mẫu sắp được (dự kiến `sort=`). */
+export const PURCHASE_SORTS = ["number", "total", "created"] as const;
+export type PurchaseSort = (typeof PURCHASE_SORTS)[number];
+
 // Thay bằng GET /api/v1/inventory/purchase-orders?status= (bước 42) khi core có. Mới trước.
-export async function listPurchaseOrders(): Promise<{ data: PurchaseRow[] }> {
+export async function listPurchaseOrders(
+  sort: { field: PurchaseSort; dir: SortDir } | null = null,
+): Promise<{ data: PurchaseRow[] }> {
   const s = store();
   const { orgName } = await lookups();
+  const list = [...s.purchaseOrders].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const sorted = sort
+    ? sortRows(
+        list,
+        (p) =>
+          sort.field === "number"
+            ? p.number
+            : sort.field === "total"
+              ? Number(p.total.amount)
+              : p.created_at,
+        sort.dir,
+      )
+    : list;
   return {
-    data: [...s.purchaseOrders]
-      .sort((a, b) => b.created_at.localeCompare(a.created_at))
-      .map((p) => ({
-        ...structuredClone(p),
-        supplier_name: s.suppliers.find((x) => x.id === p.supplier_id)?.name ?? p.supplier_id,
-        org_name: orgName(p.org_id),
-        quantity: p.lines.reduce((n, l) => n + l.quantity, 0),
-        received: p.lines.reduce((n, l) => n + l.received_quantity, 0),
-      })),
+    data: sorted.map((p) => ({
+      ...structuredClone(p),
+      supplier_name: s.suppliers.find((x) => x.id === p.supplier_id)?.name ?? p.supplier_id,
+      org_name: orgName(p.org_id),
+      quantity: p.lines.reduce((n, l) => n + l.quantity, 0),
+      received: p.lines.reduce((n, l) => n + l.received_quantity, 0),
+    })),
   };
 }
 

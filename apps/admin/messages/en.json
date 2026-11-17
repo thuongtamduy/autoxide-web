@@ -6703,13 +6703,19 @@
       "none": "Not tracked",
       "ledgerNote": "“On hand” equals the sum of this row’s ledger. To change it, record a movement (adjustment, transfer, receipt) — never edit the number.",
       "viewLedger": "Ledger of this row",
-      "foot": "Showing {shown} rows · {low} below minimum.",
-      "next": "Next page",
       "valueTitle": "Stock value by warehouse",
       "valueAbout": "On hand × weighted average cost of each warehouse; the cost is recalculated at every receipt.",
       "oversellTitle": "Never oversold",
       "oversellStrong": "Never sells more than there is.",
-      "oversell": "An order reserves stock with one conditional decrease of “available”, so many buyers at once cannot exceed what is left. A reservation that is not paid in time is released by a job."
+      "oversell": "An order reserves stock with one conditional decrease of “available”, so many buyers at once cannot exceed what is left. A reservation that is not paid in time is released by a job.",
+      "setMinimum": "Set minimum",
+      "minimumField": "New minimum",
+      "copySku": "Copy SKU",
+      "actions": "Actions",
+      "view": "View details",
+      "hide": "Hide details",
+      "transferHere": "Transfer here",
+      "footLow": "{low} rows below minimum across all warehouses."
     },
     "moves": {
       "about": "Append-only: every receipt, sale, transfer, adjustment, count and lot expiry is one row. Nothing is edited or deleted; a mistake is corrected with a reverse row and a reason. These are stock records kept for at least 10 years.",
@@ -6736,7 +6742,16 @@
       "quickAbout": "For damaged, lost or found goods, or a wrong receipt. The reason is required so accounting and auditors understand why stock changed.",
       "whoTitle": "Who can do what",
       "whoStrong": "Permissions by warehouse.",
-      "who": "Reading the ledger needs inventory.read; adjusting needs inventory.adjust at that warehouse. Staff of one store cannot see or change another store’s stock."
+      "who": "Reading the ledger needs inventory.read; adjusting needs inventory.adjust at that warehouse. Staff of one store cannot see or change another store’s stock.",
+      "byDate": "Filter by date",
+      "from": "From (Vietnam time)",
+      "to": "To",
+      "clearDates": "Clear dates",
+      "actions": "Actions",
+      "view": "View details",
+      "hide": "Hide details",
+      "copySource": "Copy document reference",
+      "copied": "Document reference copied"
     },
     "adjust": {
       "button": "Adjust stock",
@@ -6828,7 +6843,13 @@
         "received": "Everything arrived. Close the transfer to finish.",
         "closed": "Closed.",
         "cancelled": "Cancelled; stock never moved."
-      }
+      },
+      "view": "View lines",
+      "hide": "Hide lines",
+      "bulkShipTitle": "Ship the selected transfers?",
+      "bulkShipPoint": "Stock leaves each source warehouse now; the goods show as incoming at the destination.",
+      "bulkDraftOnly": "Only drafts can be changed; any other transfer is reported and stays selected.",
+      "bulkCancelTitle": "Cancel the selected transfers?"
     },
     "count": {
       "button": "Open stock count",
@@ -6872,7 +6893,14 @@
       "notCounted": "not counted yet",
       "expected": "on hand when counted: {count}",
       "diff": "difference {diff}",
-      "reason": "Reason"
+      "reason": "Reason",
+      "created": "Created",
+      "actions": "Actions",
+      "view": "Open count",
+      "hide": "Close count",
+      "bulkApplyTitle": "Apply the selected counts?",
+      "bulkApplyReasons": "A count with differences still missing a reason is not applied; it is reported and stays selected.",
+      "bulkCancelTitle": "Cancel the selected counts?"
     },
     "lots": {
       "title": "Lots and expiry dates",
@@ -6890,7 +6918,9 @@
       "writeOffSubmit": "Write off",
       "writtenOff": "Lot written off",
       "legalStrong": "Legal basis not settled.",
-      "legal": "No general rule requires “first expired, first out”; not selling expired goods falls under product quality and food safety law. A specialist should confirm for each kind of goods."
+      "legal": "No general rule requires “first expired, first out”; not selling expired goods falls under product quality and food safety law. A specialist should confirm for each kind of goods.",
+      "bulkWriteOffTitle": "Write off the selected lots?",
+      "bulkWriteOffPoint": "Everything left in each lot is removed from stock with the reason “expired”."
     },
     "serials": {
       "title": "Serial numbers",
@@ -6910,7 +6940,9 @@
       "writeOffTitle": "Write off {serial}?",
       "writeOffPoint": "The unit can no longer be sold. This cannot be undone.",
       "writeOffSubmit": "Write off",
-      "writtenOff": "Serial written off"
+      "writtenOff": "Serial written off",
+      "bulkWriteOffTitle": "Write off the selected serials?",
+      "copy": "Copy serials"
     },
     "purchasing": {
       "kpis": "Receiving at a glance",
@@ -6957,7 +6989,14 @@
       "returnNo": "Return",
       "supplierReason": "Supplier · reason",
       "fromReceipt": "from {number}",
-      "ledgerNote": "Ledger jobs run again safely: the ledger refuses a second entry with the same reference (inventory.receipt + receipt id)."
+      "ledgerNote": "Ledger jobs run again safely: the ledger refuses a second entry with the same reference (inventory.receipt + receipt id).",
+      "created": "Created",
+      "view": "View lines",
+      "hide": "Hide lines",
+      "bulkPlaceTitle": "Place the selected orders?",
+      "bulkPlacePoint": "Each order goes to its supplier; its quantities show as incoming at the warehouse.",
+      "bulkDraftOnly": "Only drafts can be placed; any other order is reported and stays selected.",
+      "bulkCancelTitle": "Cancel the selected orders?"
     },
     "po": {
       "button": "Create purchase order",
@@ -8079,7 +8118,13 @@
       "usedOf": "{used} / {limit} uses",
       "everything": "Everything at {org}",
       "minOrder": "Orders from {amount}",
-      "groups": "Customer group {groups}"
+      "groups": "Customer group {groups}",
+      "actions": "Actions",
+      "view": "View details",
+      "hide": "Hide details",
+      "bulkActivateTitle": "Switch on the selected programs?",
+      "bulkActivateEach": "Each program is checked on its own; one that fails is reported and stays selected.",
+      "exportSelected": "Export CSV"
     },
     "limits": {
       "title": "Legal caps in force",
