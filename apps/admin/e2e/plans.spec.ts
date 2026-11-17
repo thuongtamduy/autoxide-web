@@ -77,13 +77,7 @@ test("nền tảng: tạo gói (lỗi hạn mức theo dòng), thêm giá, bán,
 }) => {
   await signIn(page, "/platform/plans");
   await expect(page.getByText(/Sample data/)).toHaveCount(0);
-  // Mỗi gói một thẻ: giá, số khách đang dùng, module bằng tên dễ đọc; nút Sửa mở hộp thoại sửa gói.
-  const basic = page.locator(".pf-pcard", { hasText: "Cơ bản" });
-  await expect(basic.locator(".pf-pcard-tenants")).toContainText("0");
-  await expect(basic.locator(".pf-pcard-price")).toBeVisible();
-  await basic.getByRole("button", { name: "Edit" }).click();
-  await expect(dialog(page).getByLabel("Name")).toHaveValue("Cơ bản");
-  await page.keyboard.press("Escape");
+  await expect(page.locator("tbody tr", { hasText: "Cơ bản" })).toContainText("0");
   await page.getByRole("button", { name: "Create plan" }).click();
   await dialog(page).getByLabel("Plan code").fill("doanh-nghiep");
   await dialog(page).getByLabel("Name").fill("Doanh nghiệp");

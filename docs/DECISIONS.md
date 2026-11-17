@@ -2160,7 +2160,8 @@ Tiếp W-054. Làm lại các màn chấm dưới 2,5/5, theo mẫu của sản 
   lại"; nút "Thêm sản phẩm" chỉ ở Tổng quan / Sản phẩm, khoá kèm lý do khi gian hàng không được bán (trạng thái
   rỗng cũng dùng đúng nút có khoá đó, nên không trái ý của W-054).
 - **Màn nhỏ**: tài khoản người mua (tìm, biểu tượng xác thực), Module (tên và mô tả dễ đọc, chi tiết kỹ thuật thu
-  gọn), Event và Lịch sử nội dung (trạng thái rỗng có ví dụ; "bài vừa sửa"), Gói của nền tảng thành thẻ.
+  gọn), Event và Lịch sử nội dung (trạng thái rỗng có ví dụ; "bài vừa sửa"). Phần Gói / Thuê bao / Hỗ trợ của
+  nền tảng xung đột với W-055 (dùng API mới của core) nên giữ bản của W-055; làm lại giao diện ở đợt 3.
 
 Cần ở core (gửi khi gom đợt sau): phiên bản riêng từng module; danh sách event gần đây; `?q=` cho tài khoản người
 mua (bước 34); email người gửi của bản tin.
