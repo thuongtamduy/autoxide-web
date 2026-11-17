@@ -72,8 +72,11 @@ test("tạo biểu mẫu: gom lỗi, lỗi của core dưới đúng thẻ, mã 
 
   await page.getByLabel("Name", { exact: true }).fill("Liên hệ mới");
   await expect(page.getByLabel("Form key")).toHaveValue("lien-he-moi");
-  await page.getByLabel("New field type").selectOption("radio");
   await page.getByRole("button", { name: "Add field" }).click();
+  await page
+    .getByRole("group", { name: "New field type" })
+    .getByRole("button", { name: "One choice" })
+    .click();
   const card = page.getByRole("listitem", { name: /Field 4/ });
   await card.getByLabel("Field key").fill("size");
   await card.getByLabel("Label (Vietnamese)").fill("Cỡ");
@@ -97,6 +100,83 @@ test("tạo biểu mẫu: gom lỗi, lỗi của core dưới đúng thẻ, mã 
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Closed");
   await toast(page).getByRole("button", { name: "Undo" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Open");
+});
+
+test("trình dựng biểu mẫu: hai cột, thẻ gập, xem trước sống, thanh nút dính đáy", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signIn(page, "/marketing/forms/new");
+  const preview = page.getByTestId("form-preview");
+  const submit = page.getByRole("button", { name: "Create form" });
+  // Hai cột: xem trước nằm bên phải danh sách trường; nút Tạo thấy ngay, không phải cuộn.
+  const list = await page.getByRole("tabpanel").boundingBox();
+  const side = await preview.boundingBox();
+  expect(list && side && side.x > list.x + list.width).toBe(true);
+  await expect(submit).toBeInViewport();
+  // Thẻ gập sẵn: chỉ thấy đầu thẻ; ba trường có sẵn hiện ở bản xem trước.
+  await expect(page.getByLabel("Field key")).toHaveCount(0);
+  await expect(preview).toContainText("Name*");
+  await expect(preview).toContainText("Message*");
+
+  // Xem trước theo tên và nhãn đang gõ, đổi ngôn ngữ xem trước.
+  await page.getByLabel("Name", { exact: true }).fill("Đặt lịch");
+  await expect(preview.getByRole("heading", { includeHidden: true })).toHaveText("Đặt lịch");
+  await page
+    .getByRole("listitem", { name: /Field 3/ })
+    .getByRole("button")
+    .first()
+    .click();
+  await page.getByLabel("Label (English)").fill("Your note");
+  await expect(preview).toContainText("Your note*");
+  await page.getByRole("button", { name: "Tiếng Việt" }).click();
+  await expect(preview).toContainText("Lời nhắn*");
+
+  // Đổi chỗ bằng nút ↑ (kéo thả cũng được).
+  await page.getByRole("button", { name: "Move field 3 up" }).click();
+  await expect(page.getByRole("listitem", { name: /Field 2: Lời nhắn/ })).toBeVisible();
+
+  // Cài đặt ở tab riêng; vẫn gửi đi cùng form.
+  await page.getByRole("tab", { name: "Settings" }).click();
+  await page.getByLabel("Takes submissions").selectOption("closed");
+  await expect(preview).toContainText("This form is closed");
+  await page.getByLabel("Message after sending (Vietnamese)").fill("Hẹn gặp bạn.");
+  await expect(preview).toContainText("After sending: Hẹn gặp bạn.");
+
+  // Cuộn tới đâu nút Tạo vẫn ở đáy màn hình.
+  await page.mouse.wheel(0, 2000);
+  await expect(submit).toBeInViewport();
+  await submit.click();
+  await expect(page).toHaveURL(/\/marketing\/forms\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Closed");
+  await expect(page.getByText("Name *, Your note *, Email *")).toBeVisible();
+});
+
+test("sửa biểu mẫu dùng cùng trình dựng; điện thoại một cột, không tràn ngang", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, "/marketing/forms");
+  await page.getByRole("link", { name: "Liên hệ" }).click();
+  await page.getByRole("link", { name: "Edit form" }).click();
+  await expect(page).toHaveURL(/\/edit$/);
+  const preview = page.getByTestId("form-preview");
+  await expect(preview).toContainText("Liên hệ");
+  await expect(preview).toContainText("Topic");
+  // Một cột: xem trước nằm dưới danh sách trường.
+  const list = await page.getByRole("tabpanel").boundingBox();
+  const side = await preview.boundingBox();
+  expect(list && side && side.y > list.y).toBe(true);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+  const save = page.getByRole("button", { name: "Save form" });
+  await expect(save).toBeInViewport();
+  await page.getByRole("button", { name: "Remove field 4" }).click();
+  await save.click();
+  await expect(page).toHaveURL(/\/marketing\/forms\/[0-9a-f-]{36}(\?saved=1)?$/);
+  await expect(page.getByText("Name *, Email *, Topic")).toBeVisible();
 });
 
 test("xuất CSV qua máy chủ của giao diện; dữ liệu theo email tra và xoá", async ({ page }) => {

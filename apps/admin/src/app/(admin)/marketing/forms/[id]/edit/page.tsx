@@ -36,6 +36,7 @@ export default async function EditFormPage(props: PageProps<"/marketing/forms/[i
       <FormEditor
         action={updateForm}
         submit={t("editor.save")}
+        cancelHref={`/marketing/forms/${id}`}
         initial={{
           id: form.id,
           expect: form.updated_at,
