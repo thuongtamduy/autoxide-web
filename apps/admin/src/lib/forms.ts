@@ -320,3 +320,50 @@ export function retention(
 export function fieldLabel(field: { key: string; label: Schemas["Localized"] }, locale: string) {
   return pickText(field.label, locale) || field.key;
 }
+
+/** Tên ô của phần "Cài đặt" trong trình sửa (tab riêng): lỗi ở các ô này thì mở tab đó. */
+export const SETTINGS_ERROR_KEYS: readonly string[] = [
+  "status",
+  "retention_days",
+  "success_message",
+  "notify_emails",
+  "reply_to_field",
+  "allowed_origins",
+  "ip_limit_per_hour",
+  "email_limit_per_hour",
+];
+
+/**
+ * Lỗi của core nằm ở đâu trong trình sửa: số lỗi ở tab Trường (`fields`, `fields[2].key`…), số lỗi
+ * ở tab Cài đặt, và các thẻ trường có lỗi (để mở thẻ ra cho thấy ô sai).
+ */
+export function errorPlaces(errors: Record<string, string> | undefined): {
+  fields: number;
+  settings: number;
+  cards: number[];
+} {
+  const cards = new Set<number>();
+  let fields = 0;
+  let settings = 0;
+  for (const path of Object.keys(errors ?? {})) {
+    if (path === "fields" || path.startsWith("fields[")) {
+      fields += 1;
+      const index = /^fields\[(\d+)\]/.exec(path)?.[1];
+      if (index !== undefined) cards.add(Number(index));
+    } else if (SETTINGS_ERROR_KEYS.includes(path.split(/[.[]/)[0] ?? "")) {
+      settings += 1;
+    }
+  }
+  return { fields, settings, cards: [...cards].sort((a, b) => a - b) };
+}
+
+/** Đưa phần tử ở `from` tới chỗ `to` (nút lên / xuống, kéo thả); chỉ số ngoài danh sách thì giữ nguyên. */
+export function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || from >= list.length || to < 0 || to >= list.length) {
+    return [...list];
+  }
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  if (item !== undefined) next.splice(to, 0, item);
+  return next;
+}

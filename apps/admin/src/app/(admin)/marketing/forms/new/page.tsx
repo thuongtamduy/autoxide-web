@@ -18,6 +18,7 @@ export default async function NewFormPage() {
       <FormEditor
         action={createForm}
         submit={t("editor.create")}
+        cancelHref="/marketing/forms"
         initial={{
           name: "",
           key: "",
