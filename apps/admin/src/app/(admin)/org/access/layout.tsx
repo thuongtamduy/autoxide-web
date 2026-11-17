@@ -14,12 +14,9 @@ import {
   USERS_READ,
 } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
-import { sampleDataEnabled } from "@/sample";
 
 // Màn "Người dùng và role" của phân hệ Tổ chức. Mỗi tab một đường dẫn con; tab chỉ hiện khi
-// người xem có permission đọc của nó. Người dùng, role và hồ sơ công khai gọi core thật. Lời mời,
-// uỷ quyền, quyền vào hỗ trợ còn dựng bằng dữ liệu mẫu (W-006), chỉ hiện khi bật dữ liệu mẫu, có
-// nhãn "mẫu" (core đã có API ở bước 34: nối ở đợt sau).
+// người xem có permission đọc của nó. Mọi tab gọi core thật (bước 34 của core).
 export default async function AccessLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations();
   const [users, roles, manage, units] = await Promise.all([
@@ -36,20 +33,22 @@ export default async function AccessLayout({ children }: { children: ReactNode }
       />
     );
   }
-  const sample = sampleDataEnabled();
-  const sampleTabs: [string, string, string][] = [
-    ["invitations", "/org/access/invitations", INVITATIONS_MANAGE],
-    ["delegations", "/org/access/delegations", DELEGATIONS_READ],
-    ["support", "/org/access/support", SUPPORT_ACCESS_READ],
-  ];
-  const allowed = sample ? await Promise.all(sampleTabs.map(([, , p]) => can(p))) : [];
+  const [invitations, delegations, support] = await Promise.all([
+    can(INVITATIONS_MANAGE),
+    can(DELEGATIONS_READ),
+    can(SUPPORT_ACCESS_READ),
+  ]);
   const tabs: PageTab[] = [
     ...(users ? [{ href: "/org/access/users", label: t("access.tabs.users"), nested: true }] : []),
     ...(roles ? [{ href: "/org/access/roles", label: t("access.tabs.roles"), nested: true }] : []),
+    ...(invitations
+      ? [{ href: "/org/access/invitations", label: t("access.tabs.invitations") }]
+      : []),
+    ...(delegations
+      ? [{ href: "/org/access/delegations", label: t("access.tabs.delegations") }]
+      : []),
     ...(units ? [{ href: "/org/access/public", label: t("access.tabs.public") }] : []),
-    ...sampleTabs
-      .filter((_, index) => allowed[index])
-      .map(([id, href]) => ({ href, label: t(`access.tabs.${id}`), badge: t("sample.tab") })),
+    ...(support ? [{ href: "/org/access/support", label: t("access.tabs.support") }] : []),
   ];
   return (
     <ToastProvider>

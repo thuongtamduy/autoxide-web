@@ -8,10 +8,13 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
 - SDK ghim core ở commit `5b35b99` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
-  một khách — D-303 tới D-328). Quyết định mới nhất của repo này: W-045.
+  một khách — D-303 tới D-328). Quyết định mới nhất của repo này: W-046.
 - Đợt 8 (17/11): nối đợt 1 của bước 34 (W-045): màn Cây tổ chức thật, bộ chọn nút góc trên trái (lọc bài, media, form,
   menu theo nút), tab Hồ sơ công khai thật (địa chỉ theo danh mục hành chính của core), tên cửa hàng của website lấy
   từ hồ sơ công khai của nút gốc. Đã chạy thử với core thật.
+- Đợt 9 (17/11): nối đợt 2 của bước 34 (W-046): role theo độ sâu và bắt buộc MFA (dải nhắc bật MFA), lời mời thật và
+  trang nhận lời mời, đăng nhập bằng link qua email, uỷ quyền, quyền vào hỗ trợ phía khách, sửa hồ sơ (tên, ngôn ngữ,
+  múi giờ), "Nơi bạn làm việc", role ở các nút khác gốc. Đã chạy thử với core thật.
 - Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
   hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị
   khi khách chỉ đọc: dải báo hiện, lưu cài đặt và lưu bài bị từ chối với thông báo `tenant_read_only` của core.
@@ -49,15 +52,12 @@ Core phát triển trên `main` của nó, không chờ bản phát hành (W-025
 
 **Core đã có API, chưa nối** (làm tiếp theo thứ tự, mỗi đợt gate xanh và thử với core thật):
 
-- **Đợt 2 — bước 34 phần còn lại:** role theo độ sâu (`grants`, `requires_mfa`) ở trình sửa role; báo người dùng phải
-  bật MFA (`mfa_required` của `GET /auth/me`); lời mời thật (`/auth/invitations`, màn nhận lời mời
-  `/auth/invitations/accept`) — thay tab mẫu và đặt lại nút "Mời" ở màn Cây tổ chức; đăng nhập bằng link email
-  (`/auth/login/link`); uỷ quyền (`/auth/delegations`), quyền vào hỗ trợ (`/auth/support-grants`, `/auth/support-access`)
-  thay tab mẫu; tài khoản: ngôn ngữ và múi giờ (`PATCH /auth/me`), "Nơi bạn làm việc" (`/auth/me/memberships`,
-  `/auth/me/tenants`), xác nhận lại danh tính (`/auth/me/reauth`) cho lệnh nhạy cảm; phần "khách hàng khác" của bộ chọn
-  nút; người mua tách khỏi nhân sự (`/auth/customers`); gán membership theo nút ở trang người dùng
-  (`/auth/users/{id}/memberships`).
-- **Đợt 3 — bước 35:** Gói và giá, Thuê bao, kỳ thanh toán (`/plans/*`), thẻ hạn mức trên Tổng quan
+- **Còn lại của bước 34:** chuyển khách đang làm việc (bộ chọn góc trên trái, phần "khách hàng khác":
+  `GET /auth/me/tenants`, gửi `Autoxide-Tenant` với mọi lời gọi khi vào khách qua uỷ quyền / hỗ trợ); xác nhận lại danh
+  tính (`/auth/me/reauth`) cho lệnh nhạy cảm của tài khoản chỉ có passkey; người mua tách khỏi nhân sự
+  (`/auth/customers`); đổi `requires_mfa` của role `admin`.
+- **Đợt 3 — bước 35:** Gói và giá, Thuê bao, kỳ thanh toán (`/plans/*`), màn "Vào dữ liệu khách" của mặt điều
+  khiển nền tảng (`/auth/support-grants`), thẻ hạn mức trên Tổng quan
   (`/plans/usage`), nhãn "Pro" theo `features` của `GET /kernel/modules` và `/plans/entitlements`, sổ khách lọc
   `subscription_status` / `near_limit`, xuất dữ liệu một khách (`/kernel/tenants/{id}/exports`).
 - Website: ô địa chỉ khi đặt hàng dùng danh mục hành chính công khai của core (`GET /address/provinces`,
@@ -98,4 +98,7 @@ Tự làm được, chưa làm:
 - Core thật trên máy thử: danh mục hành chính cần `autoxide task address.import` một lần; chỉ có loại nút `tenant`,
   tạo thêm bằng `POST /organizations/unit-types`. Script thử bấm nhanh dễ chạm giới hạn 600 lời / phút của core (mọi
   lời đi từ một máy chủ Next.js): khi thử đặt `AUTOXIDE_HTTP_RATE_LIMIT_PER_MINUTE=0` ở core.
+- Thử lời mời và đăng nhập bằng link với core thật: đặt ở core `AUTOXIDE_AUTH_LOGIN_LINK=true`,
+  `AUTOXIDE_AUTH_INVITATION_URL=http://localhost:<cổng>/invitation?token={token}`,
+  `AUTOXIDE_AUTH_LOGIN_LINK_URL=http://localhost:<cổng>/sign-in/link?token={token}`; thư nằm ở `data/mail` của core.
 - Hai gate không chạy cùng lúc trên một máy (e2e dùng chung cổng 4010, 3100, 4012, 3200–3203).

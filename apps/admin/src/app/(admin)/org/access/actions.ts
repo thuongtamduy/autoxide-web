@@ -115,6 +115,38 @@ export async function setUserRoles(state: FormState, formData: FormData): Promis
   return { done: nextDone(state) };
 }
 
+/**
+ * Đặt role của người dùng ở một nút (không phải gốc): đọc mọi membership hiện có
+ * (`GET /users/{id}/memberships`), thay phần của nút đó (bỏ hết role = rời nút), rồi gửi lại cả danh
+ * sách (`PUT …/memberships` thay toàn bộ). Role ở gốc vẫn đổi bằng `setUserRoles`.
+ */
+export async function setUnitRoles(state: FormState, formData: FormData): Promise<FormState> {
+  const id = idOf(formData);
+  const orgId = String(formData.get("org_id") ?? "");
+  const roleIds = formData.getAll("role_id").map(String);
+  if (!orgId) {
+    const t = await getTranslations("access.required");
+    return { fields: { org_id: t("org") } };
+  }
+  const current = await send((client) =>
+    client.GET("/api/v1/auth/users/{id}/memberships", { params: { path: { id } } }),
+  );
+  if (!current.ok) return problemState(current.problem, []);
+  const memberships = current.data.data
+    .filter((m) => m.org_id !== orgId)
+    .map((m) => ({ org_id: m.org_id, role_ids: m.roles.map((r) => r.id) }));
+  if (roleIds.length > 0) memberships.push({ org_id: orgId, role_ids: roleIds });
+  const result = await send((client) =>
+    client.PUT("/api/v1/auth/users/{id}/memberships", {
+      params: { path: { id } },
+      body: { memberships },
+    }),
+  );
+  if (!result.ok) return problemState(result.problem, ["org_id", "role_id"]);
+  refresh();
+  return { done: nextDone(state) };
+}
+
 const PasswordForm = z.object({ password: z.string().min(1) });
 
 /** Đặt mật khẩu đầu tiên cho tài khoản tạo không có mật khẩu (core không cho thay mật khẩu đã có). */
@@ -232,11 +264,27 @@ const RoleForm = z.object({
   description: z.string().trim().optional(),
 });
 
+/**
+ * Thân role cho core: permission có ô độ sâu khác "cả khách" (`scope:<permission>`) đi vào
+ * `grants`, còn lại vào `permissions` (độ sâu cả khách, như trước bước 34).
+ */
 function roleBody(formData: FormData, input: z.output<typeof RoleForm>) {
+  const permissions: string[] = [];
+  const grants: { permission: string; scope: "own" | "unit" | "subtree" }[] = [];
+  for (const permission of formData.getAll("permission").map(String)) {
+    const scope = String(formData.get(`scope:${permission}`) ?? "tenant");
+    if (scope === "own" || scope === "unit" || scope === "subtree") {
+      grants.push({ permission, scope });
+    } else {
+      permissions.push(permission);
+    }
+  }
   return {
     name: input.role_name,
     description: input.description ?? "",
-    permissions: formData.getAll("permission").map(String),
+    permissions,
+    grants,
+    requires_mfa: formData.get("requires_mfa") === "on",
   };
 }
 
@@ -255,7 +303,7 @@ function roleProblem(problem: Parameters<typeof problemState>[0]): FormState {
         }
       : {}),
   };
-  return problemState(renamed, ["role_name", "description", "permissions"], {
+  return problemState(renamed, ["role_name", "description", "permissions", "grants"], {
     "auth.role_name_taken": "role_name",
   });
 }

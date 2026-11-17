@@ -229,7 +229,7 @@ test("role: dựng sẵn chỉ xem; tạo bằng bộ chọn permission, sửa, 
   await expect(page.getByTestId("chosen-count")).toHaveText("3 of 8 chosen");
 
   await page.getByLabel("Description (optional)").fill("Answers customers");
-  await page.getByLabel(/notes\.write/).uncheck();
+  await page.getByRole("checkbox", { name: /notes\.write/ }).uncheck();
   await page.getByRole("button", { name: "Save role" }).click();
   await expect(toast(page)).toHaveText("Role saved.");
   await page.reload();
@@ -273,46 +273,6 @@ test("điện thoại: bảng người dùng thành thẻ có nhãn cột", asyn
     () => document.documentElement.scrollWidth - window.innerWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
-});
-
-test("tab dữ liệu mẫu: lời mời, uỷ quyền, quyền vào hỗ trợ", async ({ page }) => {
-  await signIn(page, "/org/access/invitations");
-  await expect(page.getByText("Sample data · waiting for API step 34")).toBeVisible();
-  await expect(rows(page)).toHaveCount(5);
-  await page.getByRole("link", { name: "Pending" }).click();
-  await expect(rows(page)).toHaveCount(2);
-
-  await page.getByRole("button", { name: "Invite staff" }).click();
-  await dialog(page).getByRole("button", { name: "Send invitation" }).click();
-  await expect(dialog(page).getByRole("alert")).toHaveText("2 fields need fixing.");
-  await expect(dialog(page).getByText("Choose at least one role.")).toBeVisible();
-  await dialog(page).getByLabel("Email").fill("new.staff@example.com");
-  await dialog(page).getByLabel("editor").check();
-  await dialog(page).getByRole("button", { name: "Send invitation" }).click();
-  await expect(toast(page)).toHaveText("Invitation sent; follow it in this list.");
-  await expect(rows(page)).toHaveCount(3);
-  const added = rows(page).filter({ hasText: "new.staff@example.com" });
-  await added.getByRole("button", { name: "Revoke" }).click();
-  await dialog(page).getByRole("button", { name: "Revoke invitation" }).click();
-  await expect(toast(page)).toHaveText("Invitation revoked.");
-  await expect(rows(page)).toHaveCount(2);
-
-  await page.getByRole("link", { name: /Delegation/ }).click();
-  await page.getByRole("button", { name: "New delegation" }).click();
-  await dialog(page).getByLabel("Reason").fill("short");
-  await dialog(page).getByRole("button", { name: "Delegate" }).click();
-  await expect(dialog(page).getByText("Write 10 to 500 characters.")).toBeVisible();
-  await dialog(page).getByLabel("Reason").fill("Monthly reconciliation");
-  await dialog(page).getByRole("button", { name: "Delegate" }).click();
-  await expect(toast(page)).toHaveText("Delegated; the event is recorded at both customers.");
-  await expect(rows(page)).toHaveCount(4);
-
-  await page.getByRole("link", { name: /Support access/ }).click();
-  await expect(page).toHaveURL(/\/org\/access\/support$/);
-  await page.getByRole("button", { name: "Revoke" }).click();
-  await dialog(page).getByRole("button", { name: "Revoke now" }).click();
-  await expect(toast(page)).toHaveText("Access revoked.");
-  await expect(page.getByRole("button", { name: "Revoke" })).toHaveCount(0);
 });
 
 test("quản trị viên xem và gỡ passkey của người mất thiết bị (một chiếc, rồi tất cả)", async ({

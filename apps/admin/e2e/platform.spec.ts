@@ -240,9 +240,7 @@ test("đội database: chạy thử cả đội, migrate cần gõ đúng chữ 
   );
 });
 
-test("vào dữ liệu khách: cấp có hạn, có lý do; khách thấy ở Phân quyền › Quyền vào hỗ trợ", async ({
-  page,
-}) => {
+test("vào dữ liệu khách (mẫu): cấp có hạn, có lý do", async ({ page }) => {
   await signIn(page, "/platform/support");
   await expect(page.getByText("Sample data · waiting for API step 34")).toBeVisible();
   await page.getByRole("button", { name: "Grant access" }).click();
@@ -254,9 +252,7 @@ test("vào dữ liệu khách: cấp có hạn, có lý do; khách thấy ở Ph
   await dialog(page).getByRole("button", { name: "Grant access" }).click();
   await expect(toast(page)).toContainText("Access granted");
   await expect(page.locator("tbody tr", { hasText: "phiếu #e2e-31" })).toContainText("In effect");
-
-  await page.goto("/org/access/support");
-  await expect(page.getByText("Khách báo lỗi đồng bộ kho, phiếu #e2e-31")).toBeVisible();
+  // Phía khách (Phân quyền › Quyền vào hỗ trợ) đọc core thật từ W-046: xem `team.spec.ts`.
 });
 
 /** Bật nhiều khách ở core giả rồi thêm khách `name` trên placement `placement` qua giao diện. */

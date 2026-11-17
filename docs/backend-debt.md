@@ -39,7 +39,11 @@ hàng: việc của web, `NEXT.md`); `reason` khi tạm khoá khách (bước 35
    số, địa chỉ đăng ký, logo đã thông báo Bộ Công Thương) vào hồ sơ công khai; (b) một endpoint công khai trả hồ sơ
    của **website đang được gọi** (nút mà tên miền hay `?site=` chọn) — `GET /organizations/public/stores` chỉ liệt kê
    cửa hàng, nên tên miền gắn với một cửa hàng con vẫn hiện tên của nút gốc.
-3. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` không có mô tả trong
+3. **Gặp khi nối đợt 2 (17/11, W-046):** (a) `GET /auth/me/memberships` chỉ có `org_id`: người không có
+   `organizations.units.read` không biết tên nút mình làm việc — nên kèm tên nút; (b) khách cha chưa có danh sách khách
+   con để chọn khi uỷ quyền (`GET /kernel/tenants?parent_id=` chỉ cho khách nền tảng); (c) `GET /kernel/client-config`
+   nên nói đăng nhập bằng link có bật không (`auth.login_link`), để giao diện chỉ hiện link khi dùng được.
+4. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` không có mô tả trong
    `openapi.json` (mã nguồn có: "với `org_id` và `inherited=true` thì tính cả membership ở nút trên"); thiếu nó thì
    người được gán ở nút cha không hiện ở nút con.
 

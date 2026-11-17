@@ -1,11 +1,11 @@
-// Dữ liệu mẫu của phân hệ Tổ chức, cho bốn tab của màn Phân quyền mà core chưa có API: lời mời,
-// uỷ quyền, hồ sơ công khai của nút, quyền vào hỗ trợ. Hình dạng theo đặc tả bước 34 của core
+// Dữ liệu mẫu của phân hệ Tổ chức cho các màn còn dùng mẫu: cây nút mẫu của các màn thương mại,
+// và quyền vào hỗ trợ của màn "Vào dữ liệu khách" (mặt điều khiển nền tảng, `sample/platform.ts`).
+// Màn Tổ chức của khách đã dùng API thật (W-045). Hình dạng theo đặc tả bước 34 của core
 // (`docs/steps/34-organizations-identity.md`, mục "API REST" và "Bổ sung theo D-200"). Nội dung
 // mẫu lấy từ bản thiết kế (chuỗi "Bếp Mộc"); mọi email dùng miền `example.com`.
 //
 // Lệnh ghi đổi một kho trong bộ nhớ của tiến trình máy chủ; khởi động lại thì về ban đầu.
 import type { Problem } from "@autoxide/sdk";
-import { type SamplePage, samplePage } from "./index";
 
 export type SampleOutcome<T> = { ok: true; data: T } | { ok: false; problem: Problem };
 
@@ -593,145 +593,6 @@ export async function setUnitStatus(
   }
   unit.status = status;
   return { ok: true, data: { ...unit } };
-}
-
-// ---------------------------------------------------------------- Lời mời
-
-/** Trạng thái lúc đọc: lời mời còn chờ mà quá hạn thì là `expired`. */
-export function invitationStatus(invitation: Invitation, now = Date.now()): InvitationStatus {
-  if (invitation.status === "pending" && Date.parse(invitation.expires_at) <= now) {
-    return "expired";
-  }
-  return invitation.status;
-}
-
-/** Thay bằng GET /api/v1/auth/invitations?status= (bước 34) khi core có. Mới nhất trước. */
-export async function listInvitations(
-  query: { status?: InvitationStatus; limit?: number; cursor?: string } = {},
-): Promise<SamplePage<Invitation>> {
-  const now = Date.now();
-  const all = store()
-    .invitations.map((i) => ({ ...i, status: invitationStatus(i, now) }))
-    .filter((i) => !query.status || i.status === query.status)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
-  return samplePage(all, query);
-}
-
-/** Thay bằng POST /api/v1/auth/invitations (bước 34) khi core có. Hạn 7 ngày. */
-export async function createInvitation(input: NewInvitation): Promise<SampleOutcome<Invitation>> {
-  const email = input.email.trim().toLowerCase();
-  const errors: NonNullable<Problem["errors"]> = [];
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    errors.push({ field: "email", code: "email", detail: "is not an email address" });
-  }
-  if (!store().units.some((u) => u.id === input.org_id)) {
-    errors.push({ field: "org_id", code: "unknown", detail: "is not a unit of this customer" });
-  }
-  if (input.role_ids.length === 0) {
-    errors.push({ field: "role_ids", code: "min_one", detail: "needs at least one role" });
-  }
-  if (errors.length > 0) return invalid(errors, "The request has invalid fields.");
-  const invitation: Invitation = {
-    id: newId(),
-    email,
-    name: input.name?.trim() || null,
-    org_id: input.org_id,
-    role_ids: input.role_ids,
-    roles: input.roles,
-    invited_by: { id: "me", name: "—" },
-    status: "pending",
-    expires_at: at(7 * DAY),
-    created_at: at(0),
-  };
-  store().invitations.push(invitation);
-  return { ok: true, data: invitation };
-}
-
-function findInvitation(id: string): Invitation | undefined {
-  return store().invitations.find((i) => i.id === id);
-}
-
-/** Thay bằng POST /api/v1/auth/invitations/{id}/resend (bước 34): link cũ hết hiệu lực, hạn mới. */
-export async function resendInvitation(id: string): Promise<SampleOutcome<Invitation>> {
-  const invitation = findInvitation(id);
-  if (!invitation) return failed(404, "auth.invitation_not_found", `No invitation ${id}.`);
-  if (invitation.status !== "pending") {
-    return failed(400, "auth.invitation_invalid", "The invitation was used or revoked.");
-  }
-  invitation.expires_at = at(7 * DAY);
-  return { ok: true, data: invitation };
-}
-
-/** Thay bằng DELETE /api/v1/auth/invitations/{id} (bước 34): link không dùng được nữa. */
-export async function revokeInvitation(id: string): Promise<SampleOutcome<undefined>> {
-  const invitation = findInvitation(id);
-  if (!invitation) return failed(404, "auth.invitation_not_found", `No invitation ${id}.`);
-  if (invitationStatus(invitation) !== "pending") {
-    return failed(400, "auth.invitation_invalid", "Only a pending invitation can be revoked.");
-  }
-  invitation.status = "revoked";
-  return { ok: true, data: undefined };
-}
-
-// ---------------------------------------------------------------- Uỷ quyền
-
-export type DelegationStatus = "active" | "revoked" | "expired";
-
-export function delegationStatus(delegation: Delegation, now = Date.now()): DelegationStatus {
-  if (delegation.revoked_at) return "revoked";
-  if (delegation.expires_at && Date.parse(delegation.expires_at) <= now) return "expired";
-  return "active";
-}
-
-/** Thay bằng GET /api/v1/auth/delegations?direction=outgoing (bước 34) khi core có. */
-export async function listDelegations(): Promise<SamplePage<Delegation>> {
-  const all = [...store().delegations].sort((a, b) => b.created_at.localeCompare(a.created_at));
-  return samplePage(all);
-}
-
-/** Thay bằng POST /api/v1/auth/delegations (bước 34) khi core có. */
-export async function createDelegation(input: NewDelegation): Promise<SampleOutcome<Delegation>> {
-  const child = SAMPLE_CHILD_TENANTS.find((c) => c.id === input.child_tenant_id);
-  const errors: NonNullable<Problem["errors"]> = [];
-  if (!child) {
-    errors.push({ field: "child_tenant_id", code: "unknown", detail: "is not a child customer" });
-  }
-  const reason = input.reason.trim();
-  if (reason.length < 10 || reason.length > 500) {
-    errors.push({
-      field: "reason",
-      code: "length_10_500",
-      detail: "must be between 10 and 500 characters long",
-    });
-  }
-  if (input.expires_at && Date.parse(input.expires_at) <= Date.now()) {
-    errors.push({ field: "expires_at", code: "past", detail: "must be in the future" });
-  }
-  if (errors.length > 0 || !child) return invalid(errors, "The request has invalid fields.");
-  const delegation: Delegation = {
-    id: newId(),
-    child_tenant: child,
-    role: input.role,
-    org: { id: "root", name: "Gốc" },
-    reason,
-    granted_by: { id: "me", name: "—" },
-    expires_at: input.expires_at,
-    revoked_at: null,
-    created_at: at(0),
-  };
-  store().delegations.push(delegation);
-  return { ok: true, data: delegation };
-}
-
-/** Thay bằng DELETE /api/v1/auth/delegations/{id} (bước 34) khi core có. */
-export async function revokeDelegation(id: string): Promise<SampleOutcome<undefined>> {
-  const delegation = store().delegations.find((d) => d.id === id);
-  if (!delegation) return failed(404, "auth.delegation_not_found", `No delegation ${id}.`);
-  if (delegationStatus(delegation) !== "active") {
-    return failed(409, "auth.delegation_not_active", "The delegation is no longer active.");
-  }
-  delegation.revoked_at = at(0);
-  return { ok: true, data: undefined };
 }
 
 // ---------------------------------------------------------------- Quyền vào hỗ trợ

@@ -33,14 +33,14 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 - [ ] Nhãn "Pro" cho tính năng của gói cao hơn — mẫu (bước 35), M
 - [ ] Thanh đáy điện thoại 5 mục (thêm Việc, Tìm) — S
 - [ ] "Phân hệ chưa bật cho gói", trang "không có quyền" có nút "Gửi yêu cầu quyền" — mẫu, M
-- [ ] Màn nhận lời mời (tạo passkey hoặc đặt mật khẩu) — mẫu (bước 34), M
+- [x] Màn nhận lời mời (`/invitation`: đặt mật khẩu hoặc bỏ trống để đăng nhập bằng link / passkey; đã có tài khoản thì đăng nhập rồi nhận) — API (17/11, W-046)
 
 ### Tài khoản, phân quyền, cài đặt, nhà phát triển
 
 - [x] Nhân bản role — API (16/11)
 - [ ] Số người giữ role, "Xem người giữ role" — cần core thêm `role_id` cho `GET /auth/users`, M
-- [ ] Lưới quyền (permission × độ sâu) — mẫu (bước 34), M
-- [ ] Tài khoản: "Nơi bạn làm việc" (`GET /kernel/tenant`, `GET /me/permissions`) — API một phần, S–M
+- [x] Lưới quyền (permission × độ sâu): ô độ sâu cạnh permission có phạm vi trong trình sửa role, cờ "bắt buộc MFA" — API (17/11, W-046)
+- [x] Tài khoản: "Nơi bạn làm việc" (`GET /auth/me/memberships`, `GET /auth/me/tenants`) — API (17/11, W-046); tên nút chỉ hiện khi đọc được cây (core chưa trả tên kèm membership)
 - [ ] Tài khoản: ngôn ngữ ưa thích nhớ theo tài khoản (`PUT /me/flags/{key}`) — API, S
 - [ ] Nhật ký request: chi tiết một dòng (Request ID, Idempotency-Key, trace) — mẫu, S
 - [ ] Nhà phát triển: tab "Job lỗi" dùng lại bảng của Cài đặt › Job — mẫu, S

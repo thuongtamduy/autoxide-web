@@ -7,7 +7,7 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ModuleInfo } from "@autoxide/sdk";
-import { ADMIN_ROLE } from "./mock-access.ts";
+import { ADMIN_ROLE, roleById } from "./mock-access.ts";
 import { json, problem, type Schemas, send } from "./mock-http.ts";
 
 type Unit = Schemas["UnitResponse"];
@@ -63,6 +63,11 @@ const CATALOG: Schemas["SettingResponse"][] = [
     default: "UTC",
   },
   { key: "organizations.currency", description: "Currency (ISO 4217, e.g. `VND`).", default: null },
+  {
+    key: "auth.support_access",
+    description: "Whether platform staff may be granted time-limited access for support.",
+    default: true,
+  },
   {
     key: "organizations.languages",
     description: "Languages of the website, the first is the default.",
@@ -253,6 +258,36 @@ export async function setRootName(request: IncomingMessage, response: ServerResp
 /** Người dùng trong cây (cho `GET /auth/users/{id}`); `undefined` khi không phải người của cây. */
 export function orgPerson(id: string): Schemas["UserResponse"] | undefined {
   return ORG_PEOPLE.find((p) => p.id === id);
+}
+
+/** Membership của một người, gom theo nút (`mock-team.ts`). */
+export function membershipsOf(userId: string): { org_id: string; role_ids: string[] }[] {
+  const out = new Map<string, string[]>();
+  for (const row of memberships.filter((m) => m.user_id === userId)) {
+    out.set(row.org_id, [...(out.get(row.org_id) ?? []), row.role_id]);
+  }
+  return [...out].map(([org_id, role_ids]) => ({ org_id, role_ids }));
+}
+
+/** Thay mọi membership của một người (`PUT /auth/users/{id}/memberships`). */
+export function setMembershipsOf(
+  userId: string,
+  list: readonly { org_id: string; role_ids: readonly string[] }[],
+) {
+  memberships = memberships.filter((m) => m.user_id !== userId);
+  for (const m of list) {
+    for (const role of m.role_ids) {
+      memberships.push({
+        id: randomUUID(),
+        user_id: userId,
+        org_id: m.org_id,
+        role_id: role,
+        role_name: roleById(role)?.name ?? role,
+        inherited: false,
+        created_at: new Date().toISOString(),
+      });
+    }
+  }
 }
 
 /** Danh sách cửa hàng công khai (`GET /organizations/public/stores`, cũng cho website). */

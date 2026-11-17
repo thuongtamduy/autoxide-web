@@ -59,6 +59,8 @@ async function copyOf(
         name: copyName(role.name),
         description: role.description,
         permissions: role.permissions,
+        grants: role.grants,
+        requires_mfa: role.requires_mfa,
       },
     };
   } catch (error) {

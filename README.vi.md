@@ -34,7 +34,12 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 - **Tổ chức › Người dùng và role**: tài khoản kèm role, lọc theo trạng thái và lần đăng nhập gần nhất,
   role với bộ chọn permission (permission rủi ro có nhãn), đặt mật khẩu đầu tiên và tắt xác thực hai
   bước chỉ khi cần, đăng xuất mọi nơi, gỡ passkey của người mất thiết bị; hồ sơ công khai của các nút
-  (tên, địa chỉ theo danh mục hành chính chính thức, giờ mở cửa, nhận tại quầy) hiện trên website.
+  (tên, địa chỉ theo danh mục hành chính chính thức, giờ mở cửa, nhận tại quầy) hiện trên website; role
+  với độ sâu cho từng permission (bản ghi của mình, nút, nút và các nút dưới, cả khách) và "bắt buộc xác
+  thực hai bước"; role của một người ở các nút khác; mời qua email (và trang nhận lời mời), uỷ quyền
+  cho khách con, quyền vào hỗ trợ của nhân sự nền tảng (thu hồi, tắt).
+- **Đăng nhập bằng link qua email** và **Tài khoản › Hồ sơ**: tên, ngôn ngữ và múi giờ ưa thích, nơi
+  bạn làm việc (các nút và role của bạn, các khách bạn làm việc được).
 - **Cây tổ chức**: các nút theo loại, ai làm việc ở mỗi nút (cả người được gán ở nút trên), cài đặt
   đang có hiệu lực kèm nút đặt nó, thêm nút con có Hoàn tác. Bộ chọn nút ở góc trên trái thu hẹp bài,
   media, form và menu về một nút (cái tạo mới thuộc nút đó).
@@ -104,6 +109,10 @@ chạy):
 AUTOXIDE_AUTH_EMAIL_VERIFICATION_URL=https://admin.example.com/verify-email?token={token}
 AUTOXIDE_AUTH_PASSWORD_RESET_URL=https://admin.example.com/reset-password?token={token}
 AUTOXIDE_AUTH_EMAIL_CHANGE_REPORT_URL=https://admin.example.com/not-me?token={token}
+AUTOXIDE_AUTH_INVITATION_URL=https://admin.example.com/invitation?token={token}
+AUTOXIDE_AUTH_LOGIN_LINK_URL=https://admin.example.com/sign-in/link?token={token}
+# Đăng nhập bằng link qua email tắt cho tới khi core bật:
+AUTOXIDE_AUTH_LOGIN_LINK=true
 ```
 
 Core đặt token vào chỗ `{token}`. Không đặt thì thư chứa token và bảo người đọc gọi API. Khi chạy

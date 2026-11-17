@@ -50,8 +50,8 @@ export const PERMISSION_CATALOG: Schemas["PermissionResponse"][] = [
     risk: "read",
     scoped: false,
   },
-  { name: "notes.read", description: "Read notes.", risk: "read", scoped: false },
-  { name: "notes.write", description: "Write notes.", risk: "write", scoped: false },
+  { name: "notes.read", description: "Read notes.", risk: "read", scoped: true },
+  { name: "notes.write", description: "Write notes.", risk: "write", scoped: true },
 ];
 
 type Role = Schemas["RoleResponse"];
@@ -87,6 +87,16 @@ let roles = seedRoles();
 const usedTokens = new Set<string>();
 /** Email đã xin thư đặt lại (test kiểm trang "Quên mật khẩu?" có gọi core). */
 export const resetRequests: string[] = [];
+
+/** Một role theo id (cho membership của `mock-team.ts`). */
+export function roleById(id: string): Role | undefined {
+  return roles.find((r) => r.id === id);
+}
+
+/** Có role nào của tài khoản bắt buộc xác thực hai bước không (cho `mfa_required` của `/auth/me`). */
+export function needsMfa(roleIds: readonly string[]): boolean {
+  return roles.some((r) => roleIds.includes(r.id) && r.requires_mfa);
+}
 
 export function resetAccess() {
   roles = seedRoles();
@@ -152,8 +162,12 @@ function roleInput(body: Record<string, unknown>): {
   name: string;
   description: string;
   permissions: string[];
+  grants: Schemas["RoleGrant"][];
+  requiresMfa: boolean;
 } {
   const name = text(body, "name");
+  // Như core (D-304): permission không `scoped` mà nêu độ sâu hẹp hơn cả khách → lỗi ô `grants`.
+  const grants = (Array.isArray(body.grants) ? body.grants : []) as Schemas["RoleGrant"][];
   const permissions = Array.isArray(body.permissions) ? body.permissions.map(String) : [];
   const errors: Schemas["ProblemField"][] = [];
   if (!ROLE_NAME.test(name)) {
@@ -167,7 +181,24 @@ function roleInput(body: Record<string, unknown>): {
       detail: `unknown: ${unknown.join(", ")}`,
     });
   }
-  return { errors, name, description: text(body, "description"), permissions };
+  const unscoped = grants.filter(
+    (g) => g.scope !== "tenant" && !PERMISSION_CATALOG.find((c) => c.name === g.permission)?.scoped,
+  );
+  if (unscoped.length > 0) {
+    errors.push({
+      field: "grants",
+      code: "scope_not_supported",
+      detail: `cannot be granted below the whole tenant: ${unscoped.map((g) => g.permission).join(", ")}`,
+    });
+  }
+  return {
+    errors,
+    name,
+    description: text(body, "description"),
+    permissions,
+    grants,
+    requiresMfa: body.requires_mfa === true,
+  };
 }
 
 function page<T extends { id: string }>(
@@ -533,8 +564,8 @@ export async function accessRoutes(
       id: randomUUID(),
       name: input.name,
       description: input.description,
-      grants: [],
-      requires_mfa: false,
+      grants: input.grants,
+      requires_mfa: input.requiresMfa,
       all_permissions: false,
       permissions: [...new Set(input.permissions)].sort(),
       created_at: now,
@@ -588,6 +619,8 @@ export async function accessRoutes(
       role.name = input.name;
       role.description = input.description;
       role.permissions = [...new Set(input.permissions)].sort();
+      role.grants = input.grants;
+      role.requires_mfa = input.requiresMfa;
       role.updated_at = new Date(
         Math.max(Date.now(), Date.parse(role.updated_at) + 1),
       ).toISOString();

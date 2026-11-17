@@ -3,9 +3,10 @@
 import { useTranslations } from "next-intl";
 import { type FormEvent, useMemo, useRef, useState } from "react";
 import { createRole, updateRole } from "@/app/(admin)/org/access/actions";
-import { Field, FormAlert, useFocusInvalid, useSubmit } from "@/components/ui/form";
+import { CheckField, Field, FormAlert, useFocusInvalid, useSubmit } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { useHydrated } from "@/lib/hydrated";
+import type { Scope } from "@/lib/org";
 import type { PermissionInfo } from "@/lib/permission-groups";
 import { PermissionPicker } from "./permission-picker";
 
@@ -14,10 +15,15 @@ export interface EditedRole {
   name: string;
   description: string;
   permissions: readonly string[];
+  /** Permission cấp với độ sâu hẹp hơn cả khách (bước 34 của core). */
+  grants?: readonly { permission: string; scope: Scope }[];
+  /** Permission của role chỉ có hiệu lực với tài khoản đã bật xác thực hai bước. */
+  requires_mfa?: boolean;
 }
 
 /**
- * Biểu mẫu role: tên, mô tả và bộ chọn permission (`PermissionPicker`).
+ * Biểu mẫu role: tên, mô tả, "bắt buộc xác thực hai bước" và bộ chọn permission
+ * (`PermissionPicker`) kèm độ sâu cho permission có phạm vi.
  * Ô chọn là controlled (giữ trong state), và form gửi qua `onSubmit` chứ không qua `action`,
  * để lựa chọn không bị React đặt lại khi core báo lỗi. Permission bị ẩn do ô tìm vẫn được gửi.
  */
@@ -42,9 +48,19 @@ export function RoleEditor({
   const start = role ?? template;
   const [name, setName] = useState(start?.name ?? "");
   const [description, setDescription] = useState(start?.description ?? "");
-  const [chosen, setChosen] = useState<Set<string>>(() => new Set(start?.permissions ?? []));
+  const [chosen, setChosen] = useState<Set<string>>(
+    () =>
+      new Set([...(start?.permissions ?? []), ...(start?.grants ?? []).map((g) => g.permission)]),
+  );
+  const [scopes, setScopes] = useState<Map<string, Scope>>(
+    () => new Map((start?.grants ?? []).map((g) => [g.permission, g.scope])),
+  );
+  const [mfa, setMfa] = useState(start?.requires_mfa ?? false);
   // Hằng số ổn định cho bộ chọn (mảng mới mỗi lần render làm nó nhóm lại vô ích).
-  const extra = useMemo(() => start?.permissions ?? [], [start?.permissions]);
+  const extra = useMemo(
+    () => [...(start?.permissions ?? []), ...(start?.grants ?? []).map((g) => g.permission)],
+    [start?.permissions, start?.grants],
+  );
   const [state, submit, pending] = useSubmit(role ? updateRole : createRole, () =>
     toast(t("saved")),
   );
@@ -80,6 +96,14 @@ export function RoleEditor({
           error={state.fields?.description}
           disabled={!editable}
         />
+        <CheckField
+          name="requires_mfa"
+          label={t("requiresMfa")}
+          hint={t("requiresMfaHint")}
+          checked={mfa}
+          onChange={(event) => setMfa(event.target.checked)}
+          disabled={!editable}
+        />
       </div>
 
       <PermissionPicker
@@ -88,7 +112,11 @@ export function RoleEditor({
         chosen={chosen}
         onChange={setChosen}
         editable={editable}
-        error={state.fields?.permissions}
+        error={state.fields?.permissions ?? state.fields?.grants}
+        scopes={scopes}
+        onScope={(permission, scope) =>
+          setScopes((current) => new Map(current).set(permission, scope))
+        }
       />
       {editable ? (
         <div className="role-foot">

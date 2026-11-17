@@ -286,6 +286,14 @@ export async function AdminShell({
               <b>{t("shell.readOnlyTitle")}</b> {t("shell.readOnlyBody")}
             </p>
           ) : null}
+          {/* Role bắt buộc xác thực hai bước mà tài khoản chưa bật: core bỏ permission của role đó
+              (D-308), người dùng vẫn đăng nhập được để bật. */}
+          {me.mfa_required ? (
+            <p className="note warn" role="status" data-testid="mfa-banner">
+              <b>{t("shell.mfaTitle")}</b> {t("shell.mfaBody")}{" "}
+              <Link href="/account/security">{t("shell.mfaLink")}</Link>
+            </p>
+          ) : null}
           {children}
         </main>
       </div>
