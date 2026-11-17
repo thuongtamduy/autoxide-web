@@ -19,8 +19,10 @@ import {
   addListing,
   answerDispute,
   appealPenalty,
+  editListing,
   getSeller,
   setPayoutAccount,
+  shipSellerOrder,
   submitForReview,
   submitSellerDocument,
   updateShop,
@@ -158,6 +160,26 @@ export async function addListingAction(state: DialogState, formData: FormData) {
   }
   refresh();
   return { done: nextDone(state), go: "/seller/products" };
+}
+
+/** Sửa tên / giá một sản phẩm: thành bản sửa mới chờ sàn duyệt lại. */
+export async function editListingAction(state: DialogState, formData: FormData) {
+  const who = await mine();
+  if ("blocked" in who) return who.blocked;
+  const values = typed(formData, ["name", "price"]);
+  const outcome = await editListing(who.ctx.seller.org_id, String(formData.get("id") ?? ""), {
+    name: values.name ?? "",
+    price: values.price ?? "",
+  });
+  return finishCommerce("market", state, outcome, ["name", "price"], values);
+}
+
+/** Đã đóng gói và giao đơn cho hãng vận chuyển: đơn chuyển sang "đang giao". */
+export async function shipOrderAction(state: FormState, formData: FormData) {
+  const who = await mine();
+  if ("blocked" in who) return who.blocked;
+  const outcome = await shipSellerOrder(who.ctx.seller.org_id, String(formData.get("id") ?? ""));
+  return finishCommerce("market", state, outcome, []);
 }
 
 export async function replyDisputeAction(state: DialogState, formData: FormData) {

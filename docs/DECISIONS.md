@@ -2140,3 +2140,30 @@ Quyết định:
   `kernel.tenants.delete`; gõ lại tên ngắn của khách và ghi lý do; hộp xác nhận nêu chứng từ kế toán vẫn được giữ.
 
 Lý do: core trả lời đúng các yêu cầu giao diện gửi (#71, #73, #76); dùng ngay để bỏ dữ liệu mẫu và cách làm tạm.
+
+## W-056 · Chuẩn hoá giao diện đợt 2: làm lại các màn tệ nhất — 2026-11-17 — chủ dự án yêu cầu
+
+Tiếp W-054. Làm lại các màn chấm dưới 2,5/5, theo mẫu của sản phẩm lớn trong từng mảng:
+
+- **Soạn bản tin** (Mailchimp): hai cột, xem trước hộp thư sống (máy tính / điện thoại), HTML chỉ hiện trong
+  `<iframe sandbox srcdoc>`; tab Soạn / HTML vì core chỉ nhận `body_text` + `body_html`. Gửi thử, hẹn giờ vẫn ở trang
+  chiến dịch (cần id, có sau khi lưu nháp).
+- **Tạo / sửa biểu mẫu** (Tally, Typeform): thẻ trường gập được, kéo thả hoặc ↑↓, tab Cài đặt, xem trước sống, thanh
+  nút dính đáy; dữ liệu gửi core không đổi.
+- **Kết nối đối tác** (Shopify Apps): nhóm theo loại có biểu tượng, thẻ có tên và mô tả theo `messages` (khoá lạ dùng
+  mô tả của core), khoá kỹ thuật chỉ là chữ phụ trong hộp thoại; một hộp thoại lưu mọi ô của một kết nối bằng các lần
+  gọi `setTenantSetting` như cũ.
+- **Lịch giao**: lịch tháng (ngày lấy hàng, ngày nghỉ, giờ chốt), giờ 24h và ngày dd/mm bằng `Intl`, giờ chốt chọn
+  trong danh sách thay ô `type=time`. **Tin đăng kênh bán**: gom theo sản phẩm, chip trạng thái từng kênh, hành
+  động trong dòng mở rộng.
+- **Trung tâm người bán**: đơn có chip lọc, tìm, "Giao cho hãng"; sản phẩm có ảnh, tồn, lý do từ chối, "Sửa và gửi
+  lại"; nút "Thêm sản phẩm" chỉ ở Tổng quan / Sản phẩm, khoá kèm lý do khi gian hàng không được bán (trạng thái
+  rỗng cũng dùng đúng nút có khoá đó, nên không trái ý của W-054).
+- **Màn nhỏ**: tài khoản người mua (tìm, biểu tượng xác thực), Module (tên và mô tả dễ đọc, chi tiết kỹ thuật thu
+  gọn), Event và Lịch sử nội dung (trạng thái rỗng có ví dụ; "bài vừa sửa"). Phần Gói / Thuê bao / Hỗ trợ của
+  nền tảng xung đột với W-055 (dùng API mới của core) nên giữ bản của W-055; làm lại giao diện ở đợt 3.
+
+Cần ở core (gửi khi gom đợt sau): phiên bản riêng từng module; danh sách event gần đây; `?q=` cho tài khoản người
+mua (bước 34); email người gửi của bản tin.
+
+Lý do: chủ dự án yêu cầu (17/11). Chưa vẽ vào artifact thiết kế (làm thẳng code cho nhanh); chưa chạy với core thật.

@@ -77,8 +77,8 @@ test("khách hàng: hồ sơ từ đơn thật, dữ liệu cá nhân che bớt,
 
   // Tài khoản người mua (API thật `/auth/customers`): tìm không dấu, khoá có xác nhận, mở lại.
   await page.goto("/customers/accounts");
-  await page.getByRole("searchbox", { name: "Email or name" }).fill("duc");
-  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByRole("searchbox", { name: "Search accounts" }).fill("duc");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   const buyer = page.getByTestId("buyer-accounts").locator("tbody tr");
   await expect(buyer).toHaveCount(1);
   await expect(buyer).toContainText("Trần Minh Đức");

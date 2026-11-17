@@ -15,6 +15,7 @@ import { CUSTOMER_TABS, ENDPOINTS_47, storeOptions } from "./shared";
 import "@/components/engage/engage.css";
 import "@/components/catalog/catalog.css";
 import "@/components/orders/orders.css";
+import "@/components/customers/customers.css";
 
 // Màn "Khách hàng" (bản thiết kế Customers): hồ sơ khách và giữ chân khách. Phần lớn dựng bằng dữ liệu
 // mẫu (W-006, W-019) vì core chưa có module `customers` (bước 47); tab "Tài khoản người mua" là API thật

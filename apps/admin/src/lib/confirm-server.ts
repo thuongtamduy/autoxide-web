@@ -81,9 +81,20 @@ async function reauth(body: {
 }): Promise<{ ok: true; body: ProofBody } | { ok: false; state: FormState }> {
   const result = await send((client) => client.POST("/api/v1/auth/me/reauth", { body }));
   if (!result.ok) {
+    // Core báo mã sai ở ô `code` (tên ô của bước nhập mã khi đăng nhập), còn form gửi `totp_code`.
+    const problem = {
+      ...result.problem,
+      ...(result.problem.errors
+        ? {
+            errors: result.problem.errors.map((e) =>
+              e.field === "code" ? { ...e, field: "totp_code" } : e,
+            ),
+          }
+        : {}),
+    };
     return {
       ok: false,
-      state: problemState(result.problem, ["totp_code"], { "auth.invalid_mfa_code": "totp_code" }),
+      state: problemState(problem, ["totp_code"], { "auth.invalid_mfa_code": "totp_code" }),
     };
   }
   const token = result.data.data.reauth_token;

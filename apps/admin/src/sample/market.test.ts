@@ -11,6 +11,7 @@ import {
   cancelFeeRule,
   commissionFor,
   decideListing,
+  editListing,
   type FeeRule,
   getSeller,
   inviteSeller,
@@ -21,15 +22,19 @@ import {
   listPayouts,
   listSellerOrders,
   listSettlements,
+  type MarketOrder,
+  orderStats,
   parseRateBp,
   previewFees,
   resetSampleMarket,
   resolveDispute,
   retryPayout,
   SELLER,
+  sellerOrderStats,
   sendPayout,
   setPayoutAccount,
   settle,
+  shipSellerOrder,
   statementCsv,
   submitForReview,
   submitSellerDocument,
@@ -288,6 +293,33 @@ describe("duyệt sản phẩm", () => {
   });
 });
 
+describe("người bán sửa sản phẩm", () => {
+  it("sửa sản phẩm bị từ chối: bản sửa mới chờ duyệt, bỏ lý do cũ, giữ giá cũ để so", async () => {
+    const { data } = await listListingReviews({ seller: SELLER.khanBong, status: "rejected" });
+    const apron = data[0];
+    expect(apron?.reason).toContain("logo");
+    const bad = await editListing(SELLER.khanBong, apron?.id ?? "", { name: "", price: "abc" });
+    expect(!bad.ok && bad.problem.errors?.map((e) => e.field)).toEqual(["name", "price"]);
+    const foreign = await editListing(SELLER.gomSu, apron?.id ?? "", {
+      name: "Tạp dề",
+      price: "1",
+    });
+    expect(!foreign.ok && foreign.problem.code).toBe("marketplace.listing_not_found");
+    const ok = await editListing(SELLER.khanBong, apron?.id ?? "", {
+      name: apron?.product_name ?? "",
+      price: "155.000",
+    });
+    expect(ok.ok && ok.data).toMatchObject({
+      status: "pending",
+      reason: null,
+      change: "price",
+      revision: 2,
+      price: { amount: "155000" },
+      previous_price: { amount: "145000" },
+    });
+  });
+});
+
 describe("phí sàn có ngày hiệu lực", () => {
   it("thêm dòng mới tự đóng dòng cũ; không thêm trong quá khứ; huỷ dòng chưa hiệu lực mở lại dòng cũ", async () => {
     const past = await addFeeRule(
@@ -398,6 +430,62 @@ describe("quyết toán và chi trả", () => {
     const page = await listSellerOrders(SELLER.gomSu);
     expect(page.data.every((o) => o.seller_org_id === SELLER.gomSu)).toBe(true);
     expect(page.data.length).toBe(4);
+  });
+
+  it("đơn lọc theo trạng thái và tìm không dấu theo mã đơn / tên người mua", async () => {
+    const paid = await listSellerOrders(SELLER.gomSu, { status: "paid" });
+    expect(paid.data.map((o) => o.number)).toEqual(["BM-2611-0413"]);
+    const byBuyer = await listSellerOrders(SELLER.gomSu, { q: "ngoc anh" });
+    expect(byBuyer.data.map((o) => o.buyer_name)).toEqual(["Võ Ngọc Ánh"]);
+    const byNumber = await listSellerOrders(SELLER.gomSu, { q: "0393" });
+    expect(byNumber.data.map((o) => o.number)).toEqual(["BM-2611-0393"]);
+    const other = await listSellerOrders(SELLER.gomSu, { q: "0417" });
+    expect(other.data).toEqual([]);
+  });
+
+  it("số đơn theo trạng thái; doanh thu 7 ngày bỏ đơn huỷ và đơn cũ", () => {
+    const now = Date.parse("2026-11-17T00:00:00Z");
+    const order = (status: MarketOrder["status"], daysAgo: number, total: number): MarketOrder => ({
+      id: `${status}-${daysAgo}`,
+      number: "BM",
+      seller_org_id: "s",
+      placed_at: new Date(now - daysAgo * 86_400_000).toISOString(),
+      total: { amount: String(total), currency: "VND" },
+      items: 1,
+      buyer_name: "A",
+      status,
+    });
+    const stats = orderStats(
+      [
+        order("paid", 1, 100_000),
+        order("shipping", 7, 50_000),
+        order("cancelled", 2, 900_000),
+        order("completed", 8, 300_000),
+      ],
+      now,
+    );
+    expect(stats.by_status).toEqual({
+      paid: 1,
+      shipping: 1,
+      delivered: 0,
+      completed: 1,
+      cancelled: 1,
+    });
+    expect(stats.revenue_7d).toEqual({ amount: "150000", currency: "VND" });
+    expect(stats.orders_7d).toBe(2);
+  });
+
+  it("giao cho hãng: chỉ đơn chờ gửi của chính người bán", async () => {
+    const [order] = (await listSellerOrders(SELLER.gomSu, { status: "paid" })).data;
+    const foreign = await shipSellerOrder(SELLER.nhaNa, order?.id ?? "");
+    expect(!foreign.ok && foreign.problem.code).toBe("marketplace.order_not_found");
+    const ok = await shipSellerOrder(SELLER.gomSu, order?.id ?? "");
+    expect(ok.ok && ok.data.status).toBe("shipping");
+    const again = await shipSellerOrder(SELLER.gomSu, order?.id ?? "");
+    expect(!again.ok && again.problem.code).toBe("marketplace.invalid_transition");
+    const { data } = await sellerOrderStats(SELLER.gomSu);
+    expect(data.by_status.paid).toBe(0);
+    expect(data.by_status.shipping).toBe(1);
   });
 });
 

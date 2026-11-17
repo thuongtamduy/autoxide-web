@@ -783,6 +783,12 @@ async function mine(
   if (route === "POST /api/v1/auth/me/reauth") {
     // Như core: mã của app xác thực hay passkey (mật khẩu thì gửi thẳng ở lệnh nhạy cảm).
     const method = text(body, "method");
+    // Mã sai: core báo ở ô `code` (như bước nhập mã khi đăng nhập), không ở `totp_code`.
+    if (method === "totp" && account.mfa && text(body, "totp_code") !== "123456") {
+      return problem(response, 422, "validation_failed", "The request has invalid fields.", [
+        { field: "code", code: "invalid", detail: "is not a current code from your app" },
+      ]);
+    }
     const refused = confirmation(
       method === "totp"
         ? { totp_code: body.totp_code }
