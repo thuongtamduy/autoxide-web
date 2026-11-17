@@ -1,0 +1,366 @@
+/* Biểu đồ (`src/components/ui/charts/`): nét mảnh, lưới một sợi tóc nhạt, chữ trục màu chữ phụ. Màu chuỗi
+   là `--viz-N` (globals.css, sáng và tối đã chọn riêng, kiểm mù màu bằng bộ kiểm của skill dataviz). Khung
+   vẽ SVG 0…100 co theo bề rộng; nét giữ 2px nhờ `vector-effect: non-scaling-stroke`. */
+
+.chart {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  min-width: 0;
+  container-type: inline-size;
+}
+.chart-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chart-key {
+  display: inline-block;
+  width: 14px;
+  border-top: 2px solid;
+  border-radius: 1px;
+  flex: none;
+}
+/* Nét đứt vẽ bằng nền lặp: viền "dashed" trên vạch 14px trông như nét liền. */
+.chart-key.dashed {
+  height: 2px;
+  border-top: 0;
+  background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px);
+}
+.chart-key.bar {
+  height: 10px;
+  border-top-width: 10px;
+  border-radius: 2px;
+}
+
+/* Lưới: cột nhãn trục Y | vùng vẽ; hàng vùng vẽ | nhãn trục X. Chiều cao gồm cả hàng trục X. */
+.chart-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: var(--chart-h, 200px) 22px;
+  column-gap: 8px;
+}
+.chart-y {
+  position: relative;
+  min-width: 28px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.chart-y span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  line-height: 1;
+}
+/* Nhãn dài nhất, ẩn, giữ bề rộng cột trục (các nhãn khác đặt tuyệt đối theo % để thẳng hàng lưới). */
+.chart-y .chart-y-sizer {
+  position: static;
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transform: none;
+}
+.chart-plot {
+  position: relative;
+  min-width: 0;
+}
+.chart-canvas {
+  position: absolute;
+  inset: 0;
+}
+.chart-canvas svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.chart-gridline {
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.chart-line.previous {
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+.chart-area {
+  fill-opacity: 0.1;
+  stroke: none;
+}
+.chart-threshold {
+  stroke: var(--bad);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+}
+.chart-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  /* Vòng 2px màu nền tách chấm khỏi nét. */
+  box-shadow: 0 0 0 2px var(--sheet);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.chart-x {
+  grid-column: 2;
+  position: relative;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.chart-xl {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  line-height: 1;
+}
+.chart-xl.start {
+  transform: none;
+}
+.chart-xl.end {
+  transform: translateX(-100%);
+}
+@container (max-width: 480px) {
+  .chart-xl.alt {
+    display: none;
+  }
+}
+
+/* Cột: khối HTML trong từng ô cách đều, cách nhau 2px, đầu bo 4px, đáy vuông. */
+.chart-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+.chart-slot {
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+}
+.chart-bar {
+  width: 100%;
+  max-width: 24px;
+  border-radius: 4px 4px 0 0;
+}
+
+/* Lớp rê chuột: vạch dọc / dải sáng, chấm tại mốc, tooltip (số đậm trước, tên sau). */
+.chart-hover {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+.chart-hover:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.chart-cross {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line-2);
+  pointer-events: none;
+}
+.chart-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--hover);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.chart-tip {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  gap: 4px;
+  min-width: 140px;
+  max-width: 240px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--sheet);
+  box-shadow: var(--pop);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  transform: translateX(12px);
+  pointer-events: none;
+}
+.chart-tip.left {
+  transform: translateX(calc(-100% - 12px));
+}
+.chart-tip-head {
+  color: var(--ink-3);
+}
+.chart-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.chart-tip-row b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.chart-tip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bảng "Xem số liệu". */
+.chart-data summary {
+  width: fit-content;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.chart-data-scroll {
+  max-height: 280px;
+  margin-top: 8px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.chart-data table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.chart-data th,
+.chart-data td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.chart-data thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.chart-data tbody th {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.chart-data .r {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Số tổng + thay đổi so với kỳ trước (màu theo hướng tốt / xấu, luôn kèm dấu và chữ). */
+.chart-figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.chart-figure-value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.chart-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.chart-delta.up {
+  color: var(--ok);
+}
+.chart-delta.down {
+  color: var(--bad);
+}
+.chart-delta.flat {
+  color: var(--ink-3);
+}
+.chart-delta-note {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+/* Sparkline trong ô số liệu. */
+.spark {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin-top: 2px;
+}
+.spark svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.spark-line {
+  stroke: var(--line-2);
+  stroke-width: 1.75;
+}
+.spark-dot {
+  position: absolute;
+  left: 100%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--sheet);
+  transform: translate(-50%, -50%);
+}
+
+@media (forced-colors: active) {
+  .chart-line,
+  .chart-threshold {
+    stroke: CanvasText;
+  }
+  .chart-bar,
+  .chart-dot,
+  .spark-dot {
+    background: CanvasText;
+  }
+}

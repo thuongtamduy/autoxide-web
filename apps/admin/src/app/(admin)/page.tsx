@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Chips } from "@/components/engage/common";
 import { PlanCard } from "@/components/plans/plan-card";
 import { SampleBadge } from "@/components/sample-badge";
 import { Icon } from "@/components/shell/icon";
+import { ChangeFigure, Sparkline, TimeSeriesChart } from "@/components/ui/charts";
 import { ToastProvider } from "@/components/ui/toast";
 import { ActivityList } from "@/components/work/activity-list";
 import { TaskList } from "@/components/work/task-list";
+import {
+  dayPoints,
+  dayRange,
+  formatChange,
+  percentChange,
+  periodWithPrevious,
+  shiftDay,
+} from "@/lib/chart";
 import { formatCount, formatMoney } from "@/lib/format";
 import { ORDERS_POS_SELL, ORDERS_READ } from "@/lib/orders";
 import { enabledModuleNames } from "@/lib/plans-server";
@@ -16,7 +26,7 @@ import { ordersState } from "@/sample/orders";
 import { dayText, renderMessage } from "@/work/format";
 import { readMetrics } from "@/work/metrics";
 import { vietnamDayOf } from "@/work/registry";
-import { lastRevenueDay, revenueOn, revenueToday } from "@/work/revenue";
+import { lastRevenueDay, revenueByDay, revenueOn, revenueToday } from "@/work/revenue";
 import { assignCandidates, recentActivity, waiting, workContext, workRows } from "@/work/server";
 import { readSetup, SETUP_ENDPOINT } from "@/work/setup";
 import type { MetricView } from "@/work/types";
@@ -27,13 +37,17 @@ import { TipHeading } from "@/components/help/info-tip";
 /** Số việc gấp nhất hiện ở Tổng quan; đủ mọi việc ở màn Việc và hoạt động. */
 const TOP = 8;
 const VN = "Asia/Ho_Chi_Minh";
+/** Kỳ chọn được của biểu đồ doanh thu (ngày); mặc định kỳ đầu. */
+const REVENUE_PERIODS = [7, 30] as const;
+/** Sparkline của ô "Doanh thu hôm nay": bấy nhiêu ngày gần nhất. */
+const TILE_TREND_DAYS = 14;
 
 // Tổng quan (W-020): lời chào, số liệu của các phân hệ đã bật (mỗi ô ghi nguồn: API thật hay dữ liệu
 // mẫu), hộp việc rút gọn, việc thiết lập theo mô hình, doanh thu hôm nay theo nút, hoạt động gần đây và
 // lối vào các phân hệ. Mọi khối theo permission của người xem; số và việc gom từ sổ nguồn ở `src/work/`
 // (bước 51 của core: `kernel/summary`, `kernel/work`, `kernel/setup`, `audit/activity`).
-export default async function DashboardPage() {
-  const [t, w, nav, locale, me, installed, ctx] = await Promise.all([
+export default async function DashboardPage(props: PageProps<"/">) {
+  const [t, w, nav, locale, me, installed, ctx, params, tc] = await Promise.all([
     getTranslations("dashboard"),
     getTranslations("work"),
     getTranslations("nav"),
@@ -41,11 +55,14 @@ export default async function DashboardPage() {
     getMe(),
     getModules(),
     workContext(),
+    props.searchParams,
+    getTranslations("charts"),
   ]);
+  const period = REVENUE_PERIODS.find((days) => String(days) === params.rev) ?? REVENUE_PERIODS[0];
   const sample = sampleDataEnabled();
   // Module gói của khách bật: lối vào các phân hệ không mời vào phần core sẽ từ chối.
   const modules = await enabledModuleNames(installed);
-  const [{ rows, incomplete, now }, metrics, setup, activity, candidates, revenue] =
+  const [{ rows, incomplete, now }, metrics, setup, activity, candidates, orders] =
     await Promise.all([
       workRows(),
       readMetrics(ctx),
@@ -53,15 +70,35 @@ export default async function DashboardPage() {
       recentActivity(6),
       sample ? assignCandidates() : Promise.resolve([]),
       sample && ctx.can(ORDERS_READ)
-        ? ordersState().then(({ orders }) => {
-            const today = revenueToday(orders, ctx.now);
-            if (today.total > 0) return { ...today, day: null };
-            // Hôm nay chưa thu: hiện ngày gần nhất có thu, ghi rõ ngày đó.
-            const last = lastRevenueDay(orders, vietnamDayOf(ctx.now));
-            return last ? { ...revenueOn(orders, last), day: last } : { ...today, day: null };
-          })
+        ? ordersState().then(({ orders }) => orders)
         : Promise.resolve(null),
     ]);
+  const todayDay = vietnamDayOf(ctx.now);
+  const revenue = orders
+    ? (() => {
+        const today = revenueToday(orders, ctx.now);
+        // Hôm nay chưa thu: hiện ngày gần nhất có thu, ghi rõ ngày đó.
+        const last = today.total > 0 ? null : lastRevenueDay(orders, todayDay);
+        return last ? { ...revenueOn(orders, last), day: last } : { ...today, day: null };
+      })()
+    : null;
+  // Biểu đồ doanh thu: kỳ đang chọn và kỳ liền trước cùng độ dài (dữ liệu mẫu, W-006).
+  const trend = orders
+    ? (() => {
+        const { current, previous } = periodWithPrevious(todayDay, period);
+        const values = revenueByDay(orders, current);
+        const before = revenueByDay(orders, previous);
+        const total = values.reduce((a, b) => a + b, 0);
+        const change = percentChange(
+          total,
+          before.reduce((a, b) => a + b, 0),
+        );
+        return { current, values, before, total, change };
+      })()
+    : null;
+  const tileTrend = orders
+    ? revenueByDay(orders, dayRange(shiftDay(todayDay, -(TILE_TREND_DAYS - 1)), todayDay))
+    : null;
   const open = waiting(rows);
   const groups = visibleNav({
     allPermissions: me.all_permissions,
@@ -137,6 +174,16 @@ export default async function DashboardPage() {
                   {w(`metrics.labels.${metric.id.replace(".", "_")}`)}
                 </span>
                 <span className="dash-tile-value num">{value(metric)}</span>
+                {metric.id === "orders.revenue_today" && tileTrend ? (
+                  <Sparkline
+                    values={tileTrend}
+                    label={tc("trend", {
+                      label: tc("dashboard.tileTrend"),
+                      first: formatMoney(tileTrend[0] ?? 0, "VND", locale),
+                      last: formatMoney(tileTrend.at(-1) ?? 0, "VND", locale),
+                    })}
+                  />
+                ) : null}
                 {metric.note ? <span className="dash-tile-note">{say(metric.note)}</span> : null}
                 <span className="dash-tile-src">
                   {metric.sample ? (
@@ -149,6 +196,73 @@ export default async function DashboardPage() {
                 </span>
               </Link>
             ))}
+          </section>
+        ) : null}
+
+        {trend ? (
+          <section className="card dash-card dash-chart" aria-labelledby="dash-chart-h">
+            <div className="dash-head">
+              <h2 id="dash-chart-h" className="h2">
+                {tc("dashboard.title")}
+              </h2>
+              <SampleBadge
+                step="45"
+                endpoint="GET /api/v1/kernel/summary?group=sales (doanh thu theo ngày, kỳ trước)"
+              />
+              <Chips
+                label={tc("dashboard.period")}
+                chips={REVENUE_PERIODS.map((days) => ({
+                  href: `/?rev=${days}#dash-chart-h`,
+                  label: tc("dashboard.days", { days }),
+                  on: days === period,
+                }))}
+              />
+            </div>
+            <ChangeFigure
+              value={formatMoney(trend.total, "VND", locale)}
+              change={trend.change}
+              changeText={trend.change === null ? "" : formatChange(trend.change, locale)}
+              note={trend.change === null ? tc("noPrevious") : tc("vsPrevious", { days: period })}
+            />
+            <TimeSeriesChart
+              label={tc("dashboard.title")}
+              summary={tc("dashboard.summary", {
+                total: formatMoney(trend.total, "VND", locale),
+                change:
+                  trend.change === null
+                    ? tc("noPrevious")
+                    : `${formatChange(trend.change, locale)} ${tc("vsPrevious", { days: period })}`,
+              })}
+              x={dayPoints(trend.current, locale)}
+              series={[
+                {
+                  id: "current",
+                  label: tc("dashboard.current", { days: period }),
+                  values: trend.values,
+                  color: 1,
+                },
+                // Kỳ trước không có số liệu (bằng 0 cả kỳ) thì không vẽ đường phẳng gây hiểu lầm.
+                ...(trend.change === null
+                  ? []
+                  : [
+                      {
+                        id: "previous",
+                        label: tc("dashboard.previous", { days: period }),
+                        values: trend.before,
+                        previous: true,
+                      },
+                    ]),
+              ]}
+              area
+              unit="money"
+              locale={locale}
+              text={{
+                data: tc("viewData"),
+                x: tc("day"),
+                hint: tc("hintDays", { title: tc("dashboard.title") }),
+              }}
+            />
+            <p className="dash-hint">{tc("dashboard.about")}</p>
           </section>
         ) : null}
 

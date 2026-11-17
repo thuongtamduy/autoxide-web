@@ -13003,5 +13003,49 @@
     "support": {
       "body": "Khi khách cho phép đội hỗ trợ vào xem dữ liệu của họ, lần cấp quyền hiện ở đây kèm người được cấp và thời hạn."
     }
+  },
+  "charts": {
+    "viewData": "Xem số liệu",
+    "day": "Ngày",
+    "hour": "Giờ",
+    "week": "Tuần tính tới",
+    "hintDays": "Biểu đồ {title}: dùng phím mũi tên trái, phải để xem từng ngày",
+    "hintHours": "Biểu đồ {title}: dùng phím mũi tên trái, phải để xem từng giờ",
+    "hintWeeks": "Biểu đồ {title}: dùng phím mũi tên trái, phải để xem từng tuần",
+    "vsPrevious": "so với {days} ngày trước đó",
+    "noPrevious": "Kỳ trước chưa có số liệu để so",
+    "trend": "{label}: từ {first} tới {last}",
+    "dashboard": {
+      "title": "Doanh thu",
+      "about": "Tiền thu thành công theo ngày thu (giờ Việt Nam), gồm thuế, chưa trừ hoàn tiền. Nét đứt là kỳ liền trước cùng độ dài.",
+      "period": "Kỳ doanh thu",
+      "days": "{days} ngày",
+      "current": "{days} ngày qua",
+      "previous": "{days} ngày trước đó",
+      "summary": "Tổng {total}; {change}",
+      "tileTrend": "Doanh thu 14 ngày qua"
+    },
+    "channels": {
+      "presets": "Chọn nhanh kỳ báo cáo",
+      "days": "{days} ngày",
+      "title": "Doanh thu theo ngày",
+      "about": "Mỗi kênh một đường, cùng cách tính với bảng theo kênh: theo ngày đặt, đã trừ đơn huỷ và tiền hoàn.",
+      "summary": "{count, plural, other {# kênh}}, tổng {total}",
+      "empty": "Không có đơn nào trong kỳ này."
+    },
+    "health": {
+      "jobsTrend": "Job chờ 24 giờ qua",
+      "deadTrend": "Dead-letter 24 giờ qua",
+      "deadTitle": "Job mới vào dead-letter theo giờ",
+      "deadAbout": "Số job hỏng hết lượt thử lại trong từng giờ của 24 giờ qua, mọi database.",
+      "deadSeries": "Job hỏng mới",
+      "deadSummary": "{total} job hỏng mới trong 24 giờ, nhiều nhất {max} trong một giờ"
+    },
+    "seller": {
+      "title": "Xu hướng 90 ngày",
+      "about": "Chỉ số 90 ngày cuốn chiếu, mỗi tuần một điểm. Nét đứt đỏ là ngưỡng của sàn.",
+      "onTimeGoal": "Mục tiêu 95%",
+      "cancelLimit": "Ngưỡng 2%"
+    }
   }
 }

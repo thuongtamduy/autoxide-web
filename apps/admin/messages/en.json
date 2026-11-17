@@ -13003,5 +13003,49 @@
     "support": {
       "body": "When a customer lets the support team access their data, the grant shows here with who received it and until when."
     }
+  },
+  "charts": {
+    "viewData": "View data",
+    "day": "Day",
+    "hour": "Hour",
+    "week": "Week ending",
+    "hintDays": "{title} chart: use the left and right arrow keys to read each day",
+    "hintHours": "{title} chart: use the left and right arrow keys to read each hour",
+    "hintWeeks": "{title} chart: use the left and right arrow keys to read each week",
+    "vsPrevious": "vs the {days} days before",
+    "noPrevious": "No data in the previous period to compare",
+    "trend": "{label}: from {first} to {last}",
+    "dashboard": {
+      "title": "Revenue",
+      "about": "Payments that succeeded, by day received (Vietnam time), tax included, refunds not deducted. The dashed line is the previous period of the same length.",
+      "period": "Revenue period",
+      "days": "{days} days",
+      "current": "Last {days} days",
+      "previous": "The {days} days before",
+      "summary": "Total {total}; {change}",
+      "tileTrend": "Revenue, last 14 days"
+    },
+    "channels": {
+      "presets": "Quick report periods",
+      "days": "{days} days",
+      "title": "Revenue by day",
+      "about": "One line per channel, counted like the by-channel table: by order date, cancelled orders and refunds deducted.",
+      "summary": "{count, plural, one {# channel} other {# channels}}, total {total}",
+      "empty": "No orders in this period."
+    },
+    "health": {
+      "jobsTrend": "Pending jobs, last 24 hours",
+      "deadTrend": "Dead letters, last 24 hours",
+      "deadTitle": "New dead-letter jobs by hour",
+      "deadAbout": "Jobs that used up their retries in each of the last 24 hours, across all databases.",
+      "deadSeries": "New failed jobs",
+      "deadSummary": "{total} new failed jobs in 24 hours, at most {max} in one hour"
+    },
+    "seller": {
+      "title": "90-day trend",
+      "about": "Rolling 90-day metrics, one point a week. The red dashed line is the marketplace threshold.",
+      "onTimeGoal": "Goal 95%",
+      "cancelLimit": "Limit 2%"
+    }
   }
 }
