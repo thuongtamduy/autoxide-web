@@ -1027,7 +1027,6 @@
       "isOn": "Nhân sự nền tảng được vào khi bạn báo lỗi.",
       "isOff": "Chỉ yêu cầu của cơ quan có thẩm quyền (có số văn bản) mới được cấp.",
       "revokeNoteTitle": "Thu hồi từ phía bạn",
-      "revokeNote": "Bước 34 của core chỉ cho nhà vận hành thu hồi. Nút \"Thu hồi\" dưới đây theo API đề xuất: bạn là bên kiểm soát dữ liệu nên nên tự kết thúc được quyền vào.",
       "grants": "Các lần cấp và lần vào",
       "staff": "Nhân sự nền tảng",
       "basis": "Căn cứ, lý do",
@@ -1359,11 +1358,9 @@
       "added": "Đã thêm tên miền. Hãy tạo bản ghi TXT.",
       "addSubmit": "Thêm tên miền",
       "unitTitle": "Dùng một tên miền cho một cửa hàng hay chi nhánh",
-      "unitAbout": "Core đã cho gắn tên miền với một cửa hàng hay chi nhánh của tổ chức (để website của chi nhánh đó trả lời trên tên miền ấy), nhưng cây tổ chức thì tới bước 34 của core mới có. Trước đó mọi tên miền thuộc cả không gian làm việc.",
       "node": "Dành cho nút tổ chức"
     },
     "connections": {
-      "agentNote": "Agent không ghi được secret: không có tool MCP nào đặt hay đọc secret. Kiểm tra kết nối, lần dùng cuối và lỗi gần nhất cần API mới (ghi ở danh sách chỗ thiếu API).",
       "ai": {
         "title": "AI",
         "text": "Sinh văn bản",
@@ -1440,7 +1437,6 @@
       }
     },
     "jobs": {
-      "cliNote": "Chưa có API: core chỉ có lệnh máy chủ autoxide jobs cho nhà vận hành. Danh sách theo khách, tiến độ và chạy lại có audit chờ bước 52.",
       "title": "Job gần đây",
       "about": "Việc chạy nền: xuất file, in phiếu, gửi hoá đơn, xử lý ảnh. Xem tiến độ, lỗi và dead-letter queue; chạy lại có ghi audit.",
       "filter": "Lọc job theo trạng thái",
@@ -1552,7 +1548,6 @@
       }
     },
     "audit": {
-      "kindNote": "Lọc theo agent và dịch vụ cần API: nhật ký chỉ phân \"user\" và \"system\"; loại API key (người / agent / dịch vụ) thuộc bước 51 và chưa có tham số lọc theo loại người thực hiện.",
       "title": "Nhật ký",
       "about": "Ai đổi gì, lúc nào, trước và sau ra sao. Cần audit.read.",
       "filter": "Lọc nhật ký audit",
@@ -1612,7 +1607,6 @@
       "revokeNoUndo": "Không hoàn tác được.",
       "revokeSubmit": "Thu hồi key",
       "revoked": "Đã thu hồi {name}.",
-      "kindNote": "Loại key (người, agent, dịch vụ) và duyệt lệnh rủi ro của agent có ở bước 51 của core.",
       "breadcrumb": "Về danh sách API key",
       "back": "Mọi API key",
       "newTitle": "API key mới",
@@ -1731,7 +1725,6 @@
       "filter": "Lọc theo trạng thái",
       "all": "Tất cả",
       "noEndpoints": "Chưa có endpoint nào. Thêm ở Cài đặt › Webhook.",
-      "resendNote": "Gửi lại một lần giao cần API (bước 52); lần giao lỗi được tự thử lại trong khoảng hai giờ.",
       "requests": "Nhật ký request",
       "requestsAbout": "Đường dẫn mẫu (không có ID thật), mã trạng thái, mã lỗi, thời gian và API key. Giữ 14 ngày.",
       "anyStatus": "Mọi mã trạng thái",
@@ -3708,7 +3701,22 @@
       "eraseNoUndo": "Không hoàn tác được. Nếu người đó xin bản sao thì tải dữ liệu trước.",
       "eraseVerify": "Chỉ làm khi yêu cầu của chủ dữ liệu đã được xác minh.",
       "eraseSubmit": "Xoá vĩnh viễn",
-      "erased": "Đã xoá dữ liệu."
+      "erased": "Đã xoá dữ liệu.",
+      "stepsTitle": "Xử lý một yêu cầu của chủ dữ liệu",
+      "steps": {
+        "verify": {
+          "title": "Xác minh người yêu cầu",
+          "body": "Gửi thư tới đúng địa chỉ đó và chờ họ trả lời, hoặc đối chiếu giấy tờ. Không đưa dữ liệu cho người chưa xác minh."
+        },
+        "lookup": {
+          "title": "Tra theo email",
+          "body": "Nhập địa chỉ ở trên. Kết quả gồm mọi thứ phân hệ này giữ về địa chỉ đó."
+        },
+        "deliver": {
+          "title": "Gửi bản sao hoặc xoá",
+          "body": "Tải JSON để gửi cho họ; xoá vĩnh viễn nếu họ yêu cầu. Lưu lại thời điểm xử lý để trả lời đúng hạn."
+        }
+      }
     }
   },
   "orgtree": {
@@ -4419,7 +4427,6 @@
           "click_wrap": "bấm đồng ý",
           "signature": "chữ ký"
         },
-        "countNote": "Số người đã chấp nhận theo phiên bản cần API; hiện core chỉ có danh sách bằng chứng từng người.",
         "evidenceLaw": "Mỗi lần chấp nhận lưu người, phiên bản, kênh, thời điểm và SHA-256 của bản đã hiện."
       },
       "cases": {
@@ -5686,7 +5693,7 @@
         "length": "Dài (mm)",
         "width": "Rộng (mm)",
         "height": "Cao (mm)",
-        "shippingHint": "Kích thước khi đóng gói, phân hệ vận chuyển dùng (bước 44).",
+        "shippingHint": "Kích thước khi đóng gói, dùng để tính phí giao.",
         "variant": "Biến thể",
         "package": "Cân nặng · đóng gói",
         "price": "Giá (trụ sở)",
@@ -10347,7 +10354,6 @@
       "empty": "Không còn việc nào. Việc mới hiện ở đây khi các phân hệ có dữ liệu cần xử lý.",
       "emptyFilter": "Không có việc nào khớp bộ lọc.",
       "incomplete": "{count, plural, other {# nguồn việc không trả lời}}: {names}. Việc của nguồn đó chưa có trong danh sách; tải lại trang để thử lại.",
-      "sampleNote": "Việc có nhãn \"mẫu\" đọc từ dữ liệu mẫu của phân hệ chưa có API; bình luận, bài nộp biểu mẫu và bài chờ duyệt đọc từ core thật. Hoãn và giao việc giữ trong dữ liệu mẫu tới khi core có API.",
       "blocking": "Gấp",
       "due": {
         "overdue": "Quá hạn {when}",
@@ -10541,7 +10547,7 @@
     "activity": {
       "title": "Hoạt động gần đây",
       "about": "Câu đọc được dựng từ nhật ký audit của core: ai làm gì, lúc nào. Đăng nhập và đổi mật khẩu là việc riêng của từng người, không hiện ở đây.",
-      "forbidden": "Cần quyền {permission} để xem hoạt động. Khi core có API hoạt động theo quyền đọc từng bản ghi (bước 51), mọi người sẽ thấy hoạt động trong phạm vi của mình.",
+      "forbidden": "Cần quyền {permission} để xem hoạt động.",
       "empty": "Chưa có hoạt động nào.",
       "unnamed": "không tên",
       "actors": {
@@ -10681,9 +10687,7 @@
         }
       },
       "save": "Lưu tuỳ chọn",
-      "saved": "Đã lưu tuỳ chọn thông báo",
-      "languageTitle": "Ngôn ngữ của thông báo gửi chậm.",
-      "languageNote": "Thông báo gửi sau (email tóm tắt, nhắc việc) chưa biết ngôn ngữ của bạn vì core chưa lưu \"ngôn ngữ ưa thích\"; đã ghi ở chỗ thiếu API."
+      "saved": "Đã lưu tuỳ chọn thông báo"
     }
   },
   "customers": {
@@ -10856,7 +10860,7 @@
       "unlocked": "Đã mở khoá; người mua đăng nhập lại được.",
       "registered": "Đăng ký",
       "lastLogin": "Đăng nhập gần nhất",
-      "phoneVerify": "Xác thực SĐT (bước 37)",
+      "phoneVerify": "Xác thực SĐT",
       "lockedBy": "Khoá bởi",
       "lockedAt": "Khoá lúc",
       "lockReason": "Lý do",
@@ -10871,11 +10875,11 @@
       "saved": "Đã lưu cài đặt đăng ký.",
       "unverifiedTitle": "Số điện thoại chưa xác thực",
       "unverifiedCount": "{n} tài khoản chưa xác thực số điện thoại.",
-      "unverifiedText": "Họ vẫn mua hàng được nhưng chưa bình luận, đánh giá được (NĐ 147/2024 — cần đối chiếu văn bản gốc). Xác thực SĐT thuộc phần Tuân thủ (bước 37)."
+      "unverifiedText": "Họ vẫn mua hàng được nhưng chưa bình luận, đánh giá được cho tới khi xác thực số điện thoại (NĐ 147/2024 — cần đối chiếu văn bản gốc)."
     },
     "segments": {
       "title": "Nhóm",
-      "about": "Nhóm làm tay hoặc theo quy tắc. Nhóm được đánh giá lại khi hồ sơ đổi và mỗi đêm; bảng giá (bước 41) và khuyến mại (bước 43) dùng nhóm qua mã nhóm, không đọc dữ liệu khách.",
+      "about": "Nhóm làm tay hoặc theo quy tắc. Nhóm được đánh giá lại khi hồ sơ đổi và mỗi đêm; bảng giá và khuyến mại dùng nhóm qua mã nhóm.",
       "group": "Nhóm",
       "how": "Cách vào nhóm",
       "members": "Hồ sơ",
@@ -12492,5 +12496,44 @@
   "planLock": {
     "badge": "Cần gói cao hơn",
     "hint": "Gói hiện tại chưa có phần này. Mở Cài đặt › Gói và thuê bao để đổi gói."
+  },
+  "emptyStates": {
+    "apiKeys": {
+      "body": "API key cho phần mềm khác hay AI agent gọi Autoxide thay bạn, chỉ với những quyền bạn chọn. Key hiện một lần khi tạo.",
+      "action": "Tạo API key"
+    },
+    "apiKeysAll": {
+      "body": "Khi nhân sự tạo API key, key hiện ở đây để bạn xem quyền, lần dùng cuối và thu hồi khi cần."
+    },
+    "webhooks": {
+      "body": "Webhook báo cho hệ thống khác mỗi khi có sự kiện, như đơn mới hay bài được đăng. Thêm một endpoint để bắt đầu.",
+      "action": "Thêm endpoint"
+    },
+    "invitations": {
+      "body": "Mời nhân sự bằng email. Lời mời nằm ở đây tới khi người nhận chấp nhận hoặc hết hạn; bạn gửi lại hay thu hồi được."
+    },
+    "print": {
+      "body": "Chọn đơn ở danh sách Đơn hàng, rồi bấm \"In phiếu giao\" để in nhiều phiếu một lần.",
+      "action": "Chọn đơn để in"
+    },
+    "bans": {
+      "body": "Cấm theo email, tài khoản hay địa chỉ IP khi có người gửi rác hay lăng mạ. Lệnh cấm có thể đặt hạn và gỡ bất cứ lúc nào."
+    },
+    "suppressions": {
+      "body": "Email trả lỗi, bị đánh dấu thư rác hay người nhận tự huỷ sẽ vào đây và không nhận thư nữa. Bạn cũng tự thêm được."
+    },
+    "lists": {
+      "body": "Danh sách gom người nhận theo chủ đề (khuyến mại, tin bếp…). Tạo một danh sách rồi gắn vào form đăng ký trên website."
+    },
+    "pages": {
+      "body": "Trang dùng cho nội dung ít đổi như Giới thiệu, Chính sách đổi trả, Liên hệ. Trang xếp thành cây để tạo đường dẫn.",
+      "action": "Tạo trang"
+    },
+    "overrides": {
+      "body": "Ghi đè thêm hay bớt module, hạn mức của một khách so với gói họ đang dùng, khi có thoả thuận riêng."
+    },
+    "support": {
+      "body": "Khi khách cho phép đội hỗ trợ vào xem dữ liệu của họ, lần cấp quyền hiện ở đây kèm người được cấp và thời hạn."
+    }
   }
 }

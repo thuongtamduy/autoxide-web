@@ -2090,7 +2090,34 @@ Quyết định:
 
 Lý do: chủ dự án yêu cầu (17/11); giữ đúng luật cũ — máy chủ là nguồn sự thật về giá, khuyến mại, tồn.
 
-## W-054 · Dùng các trả lời của core D-335 – D-339 — 2026-11-17 — agent quyết
+## W-054 · Chuẩn hoá giao diện đợt 1: bố cục, trạng thái rỗng, nút trên dòng, lọc tự chạy, ô tiền — 2026-11-17 — chủ dự án yêu cầu
+
+Chủ dự án yêu cầu mọi màn đạt chuẩn của các sản phẩm lớn (Shopify, Stripe, Linear…). Đã chụp và chấm 160 màn; khoảng
+30 màn dưới 2,5/5. Đợt 1 sửa phần dùng chung, nâng nhiều màn một lúc:
+
+- **Bố cục**: bảng, thẻ, hàng số liệu đặt thẳng trong `.blocks` chiếm cả hàng (trước co theo nội dung: bảng còn
+  ~520px, thẻ số liệu xếp dọc). Nhãn `.tag` và nút trong `.cell2` không bị kéo giãn. Ô số liệu trang Tổng quan tối
+  thiểu 150px để 6 ô vừa một hàng.
+- **Trạng thái rỗng**: `.empty` có biểu tượng và chữ rõ (áp cho mọi chỗ đang dùng); component `EmptyState` (biểu
+  tượng, tiêu đề, giải thích, nút) cho các màn rỗng tệ nhất. Không đặt nút tạo mới ở trạng thái rỗng khi đầu trang đã
+  có nút đó (nút đầu trang mới tôn trọng khoá theo gói).
+- **Nút trên dòng bảng**: một hàng, không xếp chồng; nút chính và nút nguy hiểm trong dòng hiện như nút phụ, màu chỉ
+  khi rê chuột.
+- **Lọc tự chạy** (`AutoFilter`, 24 form lọc GET): chọn là lọc ngay, gõ thì lọc sau 400 ms; bấm ra ngoài form thì huỷ
+  lần lọc đang chờ. Nút "Lọc" ẩn khi có JavaScript. Không áp cho form tra cứu một bản ghi (event, đích bình luận,
+  chạy thử).
+- **Ô tiền** (`Field money`, 19 ô): hiện dấu phân cách nghìn khi gõ, gửi chữ số qua ô ẩn cùng `name` nên máy chủ
+  không đổi. Chữ không phải số nguyên ("1.000,50") giữ nguyên để máy chủ báo lỗi.
+- **Ghi chú nội bộ** ("chờ API bước N", lệnh máy chủ) bỏ khỏi giao diện; nhãn "Dữ liệu mẫu" là đủ.
+- Ngày giờ trong bảng không gãy dòng. Màn "Dữ liệu theo email" có ba bước xử lý yêu cầu của chủ dữ liệu.
+
+Chưa làm ở đợt 1 (đợt 2, 3): chọn nhiều và thao tác hàng loạt (core còn thiếu endpoint hàng loạt), sắp xếp theo cột
+và phân trang có tổng số (cần tham số của core), menu "⋯" trên dòng, làm lại các màn tệ nhất (soạn bản tin, tạo
+biểu mẫu, kết nối đối tác, lịch giao, tin đăng kênh bán…), biểu đồ.
+
+Lý do: chủ dự án yêu cầu (17/11); sửa ở chỗ dùng chung trước để nhiều màn lên điểm cùng lúc.
+
+## W-055 · Dùng các trả lời của core D-335 – D-339 — 2026-11-17 — agent quyết
 
 Quyết định:
 

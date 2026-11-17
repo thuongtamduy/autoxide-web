@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
 import { CreateWebhookDialog } from "@/components/settings/webhook-forms";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -25,6 +26,7 @@ const BADGE: Record<EndpointState, string> = {
 // danh sách chứ không chỉ trang đang xem.
 export default async function WebhooksPage(props: PageProps<"/settings/webhooks">) {
   const t = await getTranslations();
+  const e = await getTranslations("emptyStates");
   const params = await props.searchParams;
   const cursor = typeof params.cursor === "string" ? params.cursor : undefined;
   const status: Status | null = STATUSES.find((s) => s === params.status) ?? null;
@@ -86,7 +88,9 @@ export default async function WebhooksPage(props: PageProps<"/settings/webhooks"
         </nav>
         <div className="card tcard">
           {rows.length === 0 ? (
-            <p className="empty">{t("settings.webhooks.empty")}</p>
+            <EmptyState icon="bolt" title={t("settings.webhooks.empty")}>
+              {e("webhooks.body")}
+            </EmptyState>
           ) : (
             <Table cards>
               <thead>

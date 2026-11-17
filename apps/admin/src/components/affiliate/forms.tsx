@@ -92,6 +92,7 @@ function RuleFields({
           error={state.fields?.rate}
         />
         <Field
+          money
           label={t("cap")}
           name="cap"
           inputMode="numeric"
@@ -389,6 +390,7 @@ export function ProgramForm({
               error={state.fields?.mode}
             />
             <Field
+              money
               label={t("min")}
               name="min"
               inputMode="numeric"

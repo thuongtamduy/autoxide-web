@@ -154,7 +154,6 @@ export default async function ConnectionsPage() {
         <p className="fhint">{t("ai.about")}</p>
       </section>
 
-      {samples?.length ? <p className="note warn">{t("agentNote")}</p> : null}
       {samples?.length ? (
         <section className="block" aria-labelledby="conn-h">
           <div className="block-head">

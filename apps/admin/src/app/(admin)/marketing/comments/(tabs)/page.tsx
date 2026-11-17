@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { moderateComment } from "@/app/(admin)/marketing/comments/actions";
 import { ChangeButtons, type Move } from "@/components/engage/actions";
 import { Chips, Forbidden, Pager } from "@/components/engage/common";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -103,6 +104,7 @@ export default async function QueuePage(props: PageProps<"/marketing/comments">)
           }))}
         />
         <form method="get" action={BASE} className="filters">
+          <AutoFilter />
           {status !== "pending" ? <input type="hidden" name="status" value={status} /> : null}
           {target ? <input type="hidden" name="target" value={target} /> : null}
           <label className="fld grow">

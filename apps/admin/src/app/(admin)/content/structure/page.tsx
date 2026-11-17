@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { EntryStatusBadges } from "@/components/content/status";
 import { MessagePanel } from "@/components/message-panel";
 import { MovePageDialog } from "@/components/structure/forms";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, Td, Th } from "@/components/ui/table";
 import { contentLocales } from "@/lib/client-config";
 import { abilities, type Entry, entryPath } from "@/lib/content";
@@ -17,6 +18,7 @@ import { getMe } from "@/lib/viewer";
 // của cả cây con và tự tạo chuyển hướng từ đường dẫn cũ. Mở trang thì dùng trình soạn có sẵn.
 export default async function PagesTab(props: PageProps<"/content/structure">) {
   const t = await getTranslations("structure.pages");
+  const e = await getTranslations("emptyStates");
   const { locale: wanted } = await props.searchParams;
   const { content: localeList } = await contentLocales();
   const locale = localeList.includes(String(wanted)) ? String(wanted) : "";
@@ -87,7 +89,17 @@ export default async function PagesTab(props: PageProps<"/content/structure">) {
         </nav>
         <div className="card tcard">
           {rows.length === 0 ? (
-            <p className="empty">{t("empty")}</p>
+            <EmptyState
+              icon="page"
+              title={t("empty")}
+              actions={
+                <Link className="btn pri" href="/content/new?kind=page">
+                  {e("pages.action")}
+                </Link>
+              }
+            >
+              {e("pages.body")}
+            </EmptyState>
           ) : (
             <Table cards>
               <thead>

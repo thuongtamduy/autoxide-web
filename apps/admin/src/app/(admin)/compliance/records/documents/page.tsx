@@ -175,7 +175,6 @@ export default async function DocumentsTab() {
             </tbody>
           </Table>
         </div>
-        <p className="fhint">{t("countNote")}</p>
         <Basis rule={ruleAt("documents.evidence")} lead={t("evidenceLaw")} />
       </section>
     </div>

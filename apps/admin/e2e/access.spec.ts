@@ -59,14 +59,12 @@ test("thanh bên có Tổ chức; danh sách người dùng có role, trạng th
   await byStatus.getByRole("link", { name: "All" }).click();
 
   await page.getByRole("searchbox", { name: "Find users" }).fill("view");
-  await page.getByRole("button", { name: "Find" }).click();
   await expect(page).toHaveURL(/search=view/);
   await expect(rows(page)).toHaveCount(1);
   await page.getByRole("link", { name: "Clear" }).click();
   await expect(rows(page)).toHaveCount(3);
 
   await page.getByRole("searchbox", { name: "Find users" }).fill("nobody");
-  await page.getByRole("button", { name: "Find" }).click();
   await expect(page.getByText("No user matches “nobody”.")).toBeVisible();
 });
 

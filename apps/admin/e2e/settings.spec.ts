@@ -46,7 +46,7 @@ test("webhook: tạo (lỗi gom dưới ô), secret một lần, lần giao, t�
   request,
 }) => {
   await signIn(page, "/settings/webhooks");
-  await expect(page.locator(".empty")).toHaveText("No endpoints here.");
+  await expect(page.getByRole("heading", { name: "No endpoints here." })).toBeVisible();
 
   await page.getByRole("button", { name: "Add endpoint" }).click();
   await dialog(page).getByLabel("Address").fill("http://crm.example.com/hook");
@@ -102,7 +102,7 @@ test("webhook: tạo (lỗi gom dưới ô), secret một lần, lần giao, t�
   await dialog(page).getByRole("button", { name: "Delete endpoint" }).click();
   await expect(page).toHaveURL(/\/settings\/webhooks$/);
   await expect(toast(page)).toHaveText("Endpoint deleted.");
-  await expect(page.locator(".empty")).toHaveText("No endpoints here.");
+  await expect(page.getByRole("heading", { name: "No endpoints here." })).toBeVisible();
 });
 
 test("Nhà phát triển: lần giao của mọi endpoint, lọc lỗi, tải OpenAPI", async ({
@@ -127,7 +127,7 @@ test("Nhà phát triển: lần giao của mọi endpoint, lọc lỗi, tải Op
   await expect(rows(page).filter({ hasText: "ok.example.com/in" })).toContainText("Receiving");
   await page.getByRole("link", { name: "Turned off" }).click();
   await expect(page).toHaveURL(/status=disabled/);
-  await expect(page.locator(".empty")).toHaveText("No endpoints here.");
+  await expect(page.getByRole("heading", { name: "No endpoints here." })).toBeVisible();
 
   await page.goto("/settings/developers");
   await expect(rows(page)).toHaveCount(2);
@@ -152,7 +152,7 @@ test("Nhà phát triển: lần giao của mọi endpoint, lọc lỗi, tải Op
 
 test("API key: lỗi gom một lần, sai mật khẩu, khoá hiện một lần, thu hồi", async ({ page }) => {
   await signIn(page, "/settings/api-keys");
-  await expect(page.locator(".empty")).toHaveText("You have no API keys.");
+  await expect(page.getByRole("heading", { name: "You have no API keys." })).toBeVisible();
   await page.getByRole("link", { name: "Create API key" }).click();
   await expect(page).toHaveURL(/\/settings\/api-keys\/new$/);
 
@@ -183,7 +183,7 @@ test("API key: lỗi gom một lần, sai mật khẩu, khoá hiện một lần
   await expect(dialog(page)).toContainText("Requests with this key get 401 at once.");
   await dialog(page).getByRole("button", { name: "Revoke key" }).click();
   await expect(toast(page)).toHaveText("Revoked nightly-report.");
-  await expect(page.locator(".empty")).toHaveText("You have no API keys.");
+  await expect(page.getByRole("heading", { name: "You have no API keys." })).toBeVisible();
 
   await page.getByRole("link", { name: "MCP connection" }).click();
   await expect(page.getByTestId("mcp-endpoint")).toHaveText("http://127.0.0.1:4010/mcp");
@@ -324,10 +324,8 @@ test("lệnh chờ duyệt (mẫu): hộp xác nhận nêu hệ quả, lệnh r�
 
 test("nhật ký audit: lọc theo module, mở một mục thấy trước / sau", async ({ page }) => {
   await signIn(page, "/settings/audit");
-  await expect(page.locator(".note.warn")).toContainText("Filtering by AI agent or service");
   await expect(rows(page)).toHaveCount(1);
   await page.getByLabel("Module").selectOption("notes");
-  await page.getByRole("button", { name: "Filter" }).click();
   await expect(page).toHaveURL(/module=notes/);
   await expect(page.locator(".empty")).toHaveText("No entries match.");
   await page.getByRole("link", { name: "Clear filters" }).click();
@@ -393,7 +391,6 @@ test("dữ liệu mẫu: kết nối đối tác có AI thật, job chạy lại
   );
 
   await page.goto("/settings/jobs");
-  await expect(page.locator(".note.warn")).toContainText("autoxide jobs");
   const dead = rows(page).filter({ hasText: "Dead-letter" });
   await dead.getByRole("button", { name: "Retry" }).click();
   await expect(dialog(page)).toContainText("written to the audit log");

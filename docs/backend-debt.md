@@ -50,12 +50,12 @@ placement bằng API, số người giữ role, `reason` khi sửa khách.
    (`GET /organizations/public/site`, D-331) và **đã dùng** (W-050).
 3. **Gặp khi nối đợt 2 (17/11, W-046):** **đã có cả ba** (D-333) và **đã dùng** (W-050): tên nút trong membership,
    danh sách khách cấp dưới, `auth` trong client-config.
-4. **Gặp khi nối bước 35 (17/11, W-047):** **đã có cả ba** (D-335) và **đã dùng** (W-054): kỳ thanh toán của một khách
+4. **Gặp khi nối bước 35 (17/11, W-047):** **đã có cả ba** (D-335) và **đã dùng** (W-055): kỳ thanh toán của một khách
    cho nhân sự nền tảng, danh sách ghi đè của mọi khách, `subscriber_count`.
-5. **Gặp khi nối bước 35 đợt 3b (17/11, W-049):** **đã có cả năm** (D-335) và **đã dùng** (W-054): `expand`
+5. **Gặp khi nối bước 35 đợt 3b (17/11, W-049):** **đã có cả năm** (D-335) và **đã dùng** (W-055): `expand`
    thuê bao / hạn mức, danh sách lần cấp không cần `tenant_id`, trần thời hạn trong client-config, `…/allowed`, tên gói
    trong thuê bao.
-6. **Gặp khi nối chuyển khách (17/11, W-051):** **đã có** (D-339) và **đã dùng** (W-054): `GET /auth/me` ở khách đang
+6. **Gặp khi nối chuyển khách (17/11, W-051):** **đã có** (D-339) và **đã dùng** (W-055): `GET /auth/me` ở khách đang
    vào trả quyền ở đó.
 7. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
 

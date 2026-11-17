@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { TipHeading } from "@/components/help/info-tip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { load } from "@/lib/core";
@@ -22,6 +23,7 @@ export default async function DeliveriesPage(props: PageProps<"/settings/develop
   if (!(await can(WEBHOOKS_MANAGE))) redirect("/settings/developers/requests");
   const t = await getTranslations("settings.developers");
   const w = await getTranslations("settings.webhooks");
+  const e = await getTranslations("emptyStates");
   const { status } = await props.searchParams;
   const current = STATUSES.find((s) => s === status);
   const { data: endpoints } = await load((client) =>
@@ -73,7 +75,21 @@ export default async function DeliveriesPage(props: PageProps<"/settings/develop
         </nav>
         <div className="card tcard">
           {rows.length === 0 ? (
-            <p className="empty">{endpoints.length === 0 ? t("noEndpoints") : w("noDeliveries")}</p>
+            endpoints.length === 0 ? (
+              <EmptyState
+                icon="bolt"
+                title={t("noEndpoints")}
+                actions={
+                  <Link className="btn pri" href="/settings/webhooks">
+                    {e("webhooks.action")}
+                  </Link>
+                }
+              >
+                {e("webhooks.body")}
+              </EmptyState>
+            ) : (
+              <p className="empty">{w("noDeliveries")}</p>
+            )
           ) : (
             <Table cards>
               <thead>
@@ -131,7 +147,6 @@ export default async function DeliveriesPage(props: PageProps<"/settings/develop
             </Table>
           )}
         </div>
-        <p className="note">{t("resendNote")}</p>
       </section>
     </div>
   );

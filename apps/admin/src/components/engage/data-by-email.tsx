@@ -65,6 +65,24 @@ export function DataByEmail({
         </form>
         {state.error ? <FormAlert state={state} /> : null}
       </section>
+      {found ? null : (
+        <section className="block" aria-labelledby="data-steps-h">
+          <h2 id="data-steps-h" className="h2">
+            {t("stepsTitle")}
+          </h2>
+          <ol className="eg-steps">
+            {(["verify", "lookup", "deliver"] as const).map((step, i) => (
+              <li key={step} className="card">
+                <span className="eg-step-n" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <b>{t(`steps.${step}.title`)}</b>
+                <span>{t(`steps.${step}.body`)}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
       {found && state.email ? (
         <Result
           kind={kind}

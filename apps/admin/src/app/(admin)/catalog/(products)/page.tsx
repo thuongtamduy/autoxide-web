@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PRODUCT_BADGE } from "@/components/catalog/badges";
 import { SuggestionActions } from "@/components/catalog/suggestion-actions";
 import { Thumb } from "@/components/catalog/thumb";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -151,6 +152,7 @@ export default async function ProductsPage(props: PageProps<"/catalog">) {
         </nav>
         <search aria-label={t("products.search")}>
           <form className="filters" action="/catalog">
+            <AutoFilter />
             {one("status") ? <input type="hidden" name="status" value={one("status")} /> : null}
             <div className="fld grow">
               <label className="lab" htmlFor="cat-q">

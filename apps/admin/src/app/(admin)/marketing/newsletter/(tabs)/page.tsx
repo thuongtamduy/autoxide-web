@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Chips, Forbidden, Pager } from "@/components/engage/common";
 import { SendSetup } from "@/components/engage/send-setup";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -84,6 +85,7 @@ export default async function CampaignsPage(props: PageProps<"/marketing/newslet
         />
         {lists.length > 1 ? (
           <form method="get" action={BASE} className="filters">
+            <AutoFilter />
             {status ? <input type="hidden" name="status" value={status} /> : null}
             <label className="fld">
               <span className="lab">{t("list")}</span>

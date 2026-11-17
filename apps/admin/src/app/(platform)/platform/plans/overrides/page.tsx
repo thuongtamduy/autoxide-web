@@ -6,6 +6,7 @@ import {
   setOverrideAction,
   undoOverrideAction,
 } from "@/app/(platform)/platform/plan-actions";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -22,6 +23,7 @@ import { can, getModules } from "@/lib/viewer";
 export default async function OverridesPage() {
   const t = await getTranslations("platform.overrides");
   const tp = await getTranslations("platform");
+  const e = await getTranslations("emptyStates");
   const locale = await getLocale();
   const [{ tenants: all }, manage, modules] = await Promise.all([
     platformData(),
@@ -173,7 +175,11 @@ export default async function OverridesPage() {
               ))}
             </tbody>
           </Table>
-          {overrides.length === 0 ? <p className="empty">{t("none")}</p> : null}
+          {overrides.length === 0 ? (
+            <EmptyState icon="swap" title={t("none")}>
+              {e("overrides.body")}
+            </EmptyState>
+          ) : null}
         </div>
       </section>
     </div>

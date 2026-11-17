@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { revokeApiKey } from "@/app/(admin)/settings/actions";
 import { TipHeading } from "@/components/help/info-tip";
 import { ConfirmAction } from "@/components/ui/confirm";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { load } from "@/lib/core";
@@ -20,6 +21,7 @@ export default async function ApiKeysPage(props: PageProps<"/settings/api-keys">
     }),
   );
   const k = (key: string, values?: Record<string, string>) => t(`settings.apiKeys.${key}`, values);
+  const e = await getTranslations("emptyStates");
   const now = Date.now();
   const next = page.pagination.next_cursor;
   return (
@@ -33,7 +35,9 @@ export default async function ApiKeysPage(props: PageProps<"/settings/api-keys">
         <p className="fhint">{k("about")}</p>
         <div className="card tcard">
           {page.data.length === 0 ? (
-            <p className="empty">{k("empty")}</p>
+            <EmptyState icon="key" title={k("empty")}>
+              {e("apiKeys.body")}
+            </EmptyState>
           ) : (
             <Table cards>
               <thead>
@@ -118,7 +122,6 @@ export default async function ApiKeysPage(props: PageProps<"/settings/api-keys">
             ) : null}
           </nav>
         ) : null}
-        <p className="note">{k("kindNote")}</p>
       </section>
     </div>
   );

@@ -33,7 +33,6 @@ export default async function JobsPage(props: PageProps<"/settings/jobs">) {
   ]);
   return (
     <div className="blocks">
-      <p className="note warn">{t("cliNote")}</p>
       <section className="block" aria-labelledby="jobs-h">
         <div className="block-head">
           <h2 id="jobs-h" className="h2">

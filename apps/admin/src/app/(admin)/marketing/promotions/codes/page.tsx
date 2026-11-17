@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { commerceGate } from "@/app/(admin)/catalog/gate";
 import { GenerateCodesForm } from "@/components/promotions/forms";
 import { Meter } from "@/components/promotions/meter";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatCount, formatMoney } from "@/lib/format";
 import { PROMOTIONS_CODES_MANAGE, usedPercent, vnDateTime, vnDay } from "@/lib/promotions";
@@ -80,6 +81,7 @@ export default async function CodesPage(props: PageProps<"/marketing/promotions/
         </nav>
         <search aria-label={t("vouchers.search")}>
           <form className="filters" action="/marketing/promotions/codes">
+            <AutoFilter />
             {state ? <input type="hidden" name="state" value={state} /> : null}
             <div className="fld grow">
               <label className="lab" htmlFor="code-q">

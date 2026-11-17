@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
 import { TermDialog } from "@/components/structure/forms";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { ConfirmAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { contentLocaleFor } from "@/lib/client-config";
@@ -144,6 +145,7 @@ export default async function TermsTab(props: PageProps<"/content/structure/term
   return (
     <div className="blocks">
       <form method="get" action="/content/structure/terms" className="filters st-search">
+        <AutoFilter />
         <label className="fld grow">
           <span className="lab">{t("search")}</span>
           <input

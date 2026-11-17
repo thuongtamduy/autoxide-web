@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { grantSupport, revokeSupport } from "@/app/(platform)/platform/support-actions";
 import { GRANT_BADGE, StatusBadge } from "@/components/platform/common";
 import { ConfirmAction } from "@/components/ui/confirm";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -96,8 +97,14 @@ export async function SupportGrantTable({
 }) {
   const t = await getTranslations("platform.support");
   const tp = await getTranslations("platform");
+  const e = await getTranslations("emptyStates");
   const now = Date.now();
-  if (grants.length === 0) return <p className="empty">{t("none")}</p>;
+  if (grants.length === 0)
+    return (
+      <EmptyState icon="shield" title={t("none")}>
+        {e("support.body")}
+      </EmptyState>
+    );
   return (
     <Table cards>
       <thead>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Forbidden, Pager } from "@/components/engage/common";
 import { CreateListDialog } from "@/components/engage/list-form";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { isForbidden, load } from "@/lib/core";
@@ -23,6 +24,7 @@ const BASE = "/marketing/newsletter/lists";
 // công khai ở trang đăng ký, và cách xử lý khi Nội dung đăng bài mới.
 export default async function ListsPage(props: PageProps<"/marketing/newsletter/lists">) {
   const t = await getTranslations("engage.newsletter");
+  const e = await getTranslations("emptyStates");
   const locale = await getLocale();
   const params = await props.searchParams;
   const cursor = one(params, "cursor", 500);
@@ -62,7 +64,9 @@ export default async function ListsPage(props: PageProps<"/marketing/newsletter/
         <p className="fhint">{t("listsAbout")}</p>
         <div className="card tcard">
           {page.data.length === 0 ? (
-            <p className="empty">{t("noLists")}</p>
+            <EmptyState icon="users" title={t("noLists")}>
+              {e("lists.body")}
+            </EmptyState>
           ) : (
             <Table cards>
               <thead>

@@ -6,6 +6,7 @@ import { IntroCard } from "@/components/help/intro-card";
 import { ORDER_BADGE } from "@/components/orders/badges";
 import { AskFilter, BulkForm, SaveViewDialog } from "@/components/orders/forms";
 import { SampleBadge } from "@/components/sample-badge";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { hintDismissed } from "@/help/flags";
@@ -142,6 +143,7 @@ export default async function OrdersPage(props: PageProps<"/sales/orders">) {
         </div>
         <search aria-label={t("list.filters")}>
           <form className="filters" action="/sales/orders">
+            <AutoFilter />
             <div className="fld">
               <label className="lab" htmlFor="f-status">
                 {t("list.status")}

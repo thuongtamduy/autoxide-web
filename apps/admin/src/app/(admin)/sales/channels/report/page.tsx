@@ -10,6 +10,7 @@ import {
   OpenLink,
   param,
 } from "@/components/growth/blocks";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatDay } from "@/lib/catalog";
 import { formatCount, formatMoney } from "@/lib/format";
@@ -53,6 +54,7 @@ export default async function ReportPage(props: PageProps<"/sales/channels/repor
   return (
     <div className="blocks">
       <form className="filters" action="/sales/channels/report" aria-label={t("report.period")}>
+        <AutoFilter />
         <div className="fld">
           <label className="lab" htmlFor="rep-from">
             {t("report.from")}

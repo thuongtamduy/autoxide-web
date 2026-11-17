@@ -3,6 +3,7 @@ import { liftBan } from "@/app/(admin)/marketing/comments/actions";
 import { ConfirmButton } from "@/components/engage/actions";
 import { BanDialog } from "@/components/engage/comment-forms";
 import { Chips, Forbidden, Pager } from "@/components/engage/common";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { BAN_KINDS, type CommentBan } from "@/lib/comments";
@@ -17,6 +18,7 @@ const BASE = "/marketing/comments/bans";
 export default async function BansPage(props: PageProps<"/marketing/comments/bans">) {
   if (!(await can(COMMENTS_MANAGE))) return <Forbidden permission={COMMENTS_MANAGE} />;
   const t = await getTranslations("engage.comments");
+  const e = await getTranslations("emptyStates");
   const params = await props.searchParams;
   const all = one(params, "all") === "1";
   const kind = oneOf(params, "kind", BAN_KINDS);
@@ -71,7 +73,9 @@ export default async function BansPage(props: PageProps<"/marketing/comments/ban
         />
         <div className="card tcard">
           {page.data.length === 0 ? (
-            <p className="empty">{t("noBans")}</p>
+            <EmptyState icon="shield" title={t("noBans")}>
+              {e("bans.body")}
+            </EmptyState>
           ) : (
             <Table cards>
               <thead>

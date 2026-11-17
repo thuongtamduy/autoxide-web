@@ -108,7 +108,6 @@ test("danh mục: tạo, sửa theo ngôn ngữ, gắn vào bài; thẻ; tác gi
   // Tìm theo tên ở mọi ngôn ngữ, không dấu (`q` của core).
   await page.goto("/content/structure/terms");
   await page.getByLabel("Find a category or tag").fill("meo dung");
-  await page.getByRole("button", { name: "Find" }).click();
   await expect(page).toHaveURL(/q=meo\+dung/);
   await expect(page.locator("tr", { hasText: "Kitchen tips" })).toBeVisible();
   await expect(page.locator("tr", { hasText: "Chọn mua" })).toHaveCount(0);
@@ -124,7 +123,6 @@ test("danh mục: tạo, sửa theo ngôn ngữ, gắn vào bài; thẻ; tác gi
   await expect(toast(page)).toContainText("Author added");
   await expect(page.getByText("Biên tập Góc bếp")).toBeVisible();
   await page.getByLabel("Find an author").fill("thu ha");
-  await page.getByRole("button", { name: "Find" }).click();
   await expect(page.locator(".st-tile")).toHaveCount(1);
   await expect(page.locator(".st-tile")).toContainText("Thu Hà");
 });

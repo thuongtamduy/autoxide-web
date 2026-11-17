@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { historyText } from "@/components/promotions/views";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatMoney } from "@/lib/format";
 import { bpPercent, vnDateTime } from "@/lib/promotions";
@@ -63,6 +64,7 @@ export default async function VersionsPage(props: PageProps<"/marketing/promotio
         <p className="fhint">{t("versions.about")}</p>
         <search aria-label={t("versions.filter")}>
           <form className="filters" action="/marketing/promotions/versions">
+            <AutoFilter />
             <div className="fld grow">
               <label className="lab" htmlFor="ver-p">
                 {t("versions.program")}

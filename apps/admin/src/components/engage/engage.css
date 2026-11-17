@@ -246,3 +246,35 @@
 .ax .eg-detailhead .block-head {
   flex-wrap: wrap;
 }
+
+/* Dữ liệu theo email: ba bước xử lý yêu cầu của chủ dữ liệu */
+.ax .eg-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 12px;
+}
+.ax .eg-steps > li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+}
+.ax .eg-steps > li > span:last-child {
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+.ax .eg-step-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  font-weight: 700;
+  font-size: 13px;
+}
