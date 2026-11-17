@@ -13,6 +13,7 @@ import {
 } from "@/components/platform/common";
 import { NewTenantDialog } from "@/components/platform/new-tenant";
 import { ProvisionDialog } from "@/components/platform/provision-dialog";
+import { RowMenu, type RowMenuItem } from "@/components/ui/row-menu";
 import { Table, Td, Th } from "@/components/ui/table";
 import { load } from "@/lib/core";
 import type { SearchParams } from "@/lib/engage";
@@ -51,11 +52,15 @@ import type { SubscriptionStatus } from "@/sample/platform-data";
 // migration / thuê bao / gần chạm hạn mức do core lọc (D-296, bước 35; tham số trên địa chỉ trang);
 // tạo khách mới bằng `POST /kernel/tenants`. Gói và thuê bao của module `plans` (đợt 3b): đọc mọi
 // thuê bao và mức dùng đi kèm sổ khách (`expand=subscription,usage`, D-335). Khách chỉ có trong luồng
-// cấp phát mẫu là dữ liệu mẫu (W-014). Không có dữ liệu nghiệp vụ của khách ở đây.
+// cấp phát mẫu là dữ liệu mẫu (W-014). Không có dữ liệu nghiệp vụ của khách ở đây. Bộ bảng (W-058): sổ
+// khách là cây (con nằm dưới cha) nên không sắp theo cột, không phân trang; core không có lệnh hàng loạt
+// cho khách nên không chọn nhiều. Mỗi dòng một "⋯" dẫn sang trang khách và từng phần của nó (nơi lưu,
+// cấu hình, dời khách); mọi lệnh nằm ở trang khách.
 export default async function TenantsPage(props: { searchParams: Promise<SearchParams> }) {
   const gate = await platformGate(TENANTS_READ);
   if (gate) return gate;
   const t = await getTranslations("platform");
+  const tt = await getTranslations("table");
   const locale = await getLocale();
   const params = await props.searchParams;
   const query = parseTenantQuery(params);
@@ -136,6 +141,21 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
       sub: t("tenants.kpi.migrationSub", { count: placements.length }),
     },
   ];
+  // "⋯" của một dòng: chỉ dẫn sang trang khách (khách mẫu chỉ có trang tổng quan).
+  const menu = (tenant: PlatformTenant): RowMenuItem[] => {
+    const href = `/platform/tenants/${tenant.id}`;
+    if (tenant.source !== "core") return [{ label: t("tenants.open"), href }];
+    return [
+      { label: t("tenants.open"), href },
+      { label: t("tenant.place"), href: `${href}#pf-t-place` },
+      ...(tenant.is_platform
+        ? []
+        : [
+            { label: t("tenant.settings"), href: `${href}#pf-t-settings` },
+            ...(manage ? [{ label: t("tenant.move.title"), href: `${href}#pf-t-move` }] : []),
+          ]),
+    ];
+  };
   const subNote = (row: TenantRow): string | null => {
     const sub = row.subscription;
     if (!sub) return null;
@@ -218,6 +238,9 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                 <Th>{t("tenants.col.place")}</Th>
                 {billing ? <Th>{t("tenants.col.subscription")}</Th> : null}
                 {billing ? <Th>{t("tenants.col.limit")}</Th> : null}
+                <Th>
+                  <span className="vh">{t("tenant.actions")}</span>
+                </Th>
               </tr>
             </thead>
             <tbody>
@@ -331,6 +354,9 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                         )}
                       </Td>
                     ) : null}
+                    <Td className="rt-acts">
+                      <RowMenu label={tt("moreFor", { name: tenant.name })} items={menu(tenant)} />
+                    </Td>
                   </tr>
                 );
               })}

@@ -49,8 +49,20 @@ export function resetTeam() {
   profiles = new Map();
   platformGrants = [];
   buyers = [
-    buyer("01a1e900-0000-7000-8000-0000000000b1", "Nguyễn Thu Hà", "thuha@example.com", true),
-    buyer("01a1e900-0000-7000-8000-0000000000b2", "Trần Minh Đức", "minhduc@example.com", false),
+    buyer(
+      "01a1e900-0000-7000-8000-0000000000b1",
+      "Nguyễn Thu Hà",
+      "thuha@example.com",
+      true,
+      "2026-11-05T00:00:00Z",
+    ),
+    buyer(
+      "01a1e900-0000-7000-8000-0000000000b2",
+      "Trần Minh Đức",
+      "minhduc@example.com",
+      false,
+      "2026-11-01T00:00:00Z",
+    ),
   ];
   entries = [];
   const now = Date.now();
@@ -403,11 +415,15 @@ export async function teamRoutes(
         .toLowerCase();
     const q = fold(url.searchParams.get("q") ?? "");
     const status = url.searchParams.get("status");
-    const list = buyers.filter(
-      (b) =>
-        (!q || fold(`${b.email} ${b.name}`).includes(q)) &&
-        (!status || (status === "disabled") === Boolean(b.disabled_at)),
-    );
+    // `order` như core: theo thời gian tạo, mặc định mới trước.
+    const asc = url.searchParams.get("order") === "asc";
+    const list = buyers
+      .filter(
+        (b) =>
+          (!q || fold(`${b.email} ${b.name}`).includes(q)) &&
+          (!status || (status === "disabled") === Boolean(b.disabled_at)),
+      )
+      .sort((a, b) => (asc ? 1 : -1) * a.created_at.localeCompare(b.created_at));
     send(response, 200, { data: list, pagination: { limit: 50, next_cursor: null } });
     return true;
   }
@@ -685,6 +701,7 @@ function buyer(
   name: string,
   email: string,
   verified: boolean,
+  created: string,
 ): Schemas["CustomerResponse"] {
   return {
     id,
@@ -692,7 +709,7 @@ function buyer(
     email,
     email_verified_at: verified ? "2026-11-10T08:00:00Z" : null,
     disabled_at: null,
-    created_at: "2026-11-01T00:00:00Z",
-    updated_at: "2026-11-01T00:00:00Z",
+    created_at: created,
+    updated_at: created,
   };
 }

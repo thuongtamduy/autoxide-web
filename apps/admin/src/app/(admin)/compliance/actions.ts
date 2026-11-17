@@ -4,12 +4,19 @@
 // `src/sample/compliance*.ts` thay cho API của bước 37 của core, cùng cách trả lỗi (Problem → lỗi
 // theo ô) như phần gọi core thật, để khi có API chỉ thay lời gọi. Riêng danh sách trang nguồn của
 // văn bản pháp lý đọc từ core thật (`GET /api/v1/content/entries`).
+import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import type { DialogState } from "@/components/ui/form-dialog";
 import { loadPublishedPages } from "@/lib/compliance-server";
 import type { ChangeState } from "@/lib/engage";
 import { type FormState, nextDone } from "@/lib/form";
-import { finishSample, type SampleOutcome, sampleGuard } from "@/lib/sample-action";
+import {
+  finishSample,
+  type SampleOutcome,
+  sampleGuard,
+  translateSample,
+} from "@/lib/sample-action";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { getMe } from "@/lib/viewer";
 import {
   advanceIncident,
@@ -99,6 +106,30 @@ export async function approveKycAction(state: FormState, formData: FormData): Pr
   const off = await sampleGuard();
   if (off) return off;
   return finish(state, await approveKyc(text(formData, "id")), []);
+}
+
+/**
+ * Chạy một hàm mẫu cho từng id đã chọn (thanh hàng loạt; hàm mẫu chỉ có lệnh từng cái), gom lỗi theo
+ * dòng bằng câu đã dịch.
+ */
+async function bulkSample<T>(
+  input: BulkInput,
+  run: (id: string) => Promise<SampleOutcome<T>>,
+): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const off = await sampleGuard();
+  if (off) return bulkBlocked(ids, off.error ?? "");
+  const result = await eachId(ids, async (id) => {
+    const outcome = await run(id);
+    return outcome.ok ? null : (await translateSample(outcome.problem)).detail;
+  });
+  refresh();
+  return result;
+}
+
+/** Duyệt nhiều hồ sơ KYC đang chờ (thanh hàng loạt); hồ sơ không ở trạng thái chờ thì báo lỗi. */
+export async function bulkApproveKycAction(input: BulkInput): Promise<BulkResult> {
+  return bulkSample(input, approveKyc);
 }
 
 export async function rejectKycAction(
@@ -352,4 +383,14 @@ export async function moveRequest(state: DialogState, formData: FormData): Promi
   }
   const outcome = await moveSubjectRequest(text(formData, "id"), status, sent.reason ?? "");
   return finish(state, outcome, ["reason"], sent);
+}
+
+/** Chuyển nhiều yêu cầu chủ thể sang "đang xử lý" (đã xác minh người yêu cầu). */
+export async function bulkVerifyRequestsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkSample(input, (id) => moveSubjectRequest(id, "in_progress"));
+}
+
+/** Đánh dấu nhiều yêu cầu chủ thể đang xử lý là đã xong. */
+export async function bulkFinishRequestsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkSample(input, (id) => moveSubjectRequest(id, "done"));
 }

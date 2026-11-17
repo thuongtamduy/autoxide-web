@@ -3,28 +3,48 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { Pager } from "@/components/ui/pager";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { actorNames, auditFilter, auditHref } from "@/lib/audit";
 import { isForbidden, load } from "@/lib/core";
 import { AUDIT_READ } from "@/lib/permissions";
+import { type Keep, readSort, withQuery } from "@/lib/table";
 import { getModules } from "@/lib/viewer";
 
 const BASE = "/settings/audit";
 
 // Tab "Nhật ký audit": ai đổi gì, lúc nào; lọc theo module, loại thay đổi, bản ghi, người làm
-// (bấm tên người để lọc). Theo trang bằng con trỏ của core.
+// (bấm tên người để lọc). Theo trang bằng con trỏ của core (không có tổng). Bộ bảng (W-058): sắp theo
+// thời điểm bằng `order` của core (mặc định mới trước); nhật ký chỉ đọc nên không có thao tác hàng loạt.
 export default async function AuditPage(props: PageProps<"/settings/audit">) {
   const t = await getTranslations();
   const params = await props.searchParams;
   const filter = auditFilter(params);
   const cursor = typeof params.cursor === "string" ? params.cursor : undefined;
+  const sort = readSort(params, ["when"], { field: "when", dir: "desc" });
+  const order = typeof params.sort === "string" ? sort.dir : undefined;
+  // Tham số của trang (bộ lọc, cách sắp) giữ khi đổi trang hay sắp.
+  const filterKeep: Keep = {
+    module: filter.module,
+    action: filter.action,
+    subject: filter.subject,
+    actor: filter.actor_user_id,
+  };
+  const keep: Keep = { ...filterKeep, ...(order ? { sort: "when", dir: order } : {}) };
   let page: components["schemas"]["Page_AuditEntryResponse"];
   try {
     page = await load((client) =>
       client.GET("/api/v1/audit", {
         params: {
-          query: { ...filter, include: "actor", limit: 50, ...(cursor ? { cursor } : {}) },
+          query: {
+            ...filter,
+            include: "actor",
+            limit: 50,
+            ...(order ? { order } : {}),
+            ...(cursor ? { cursor } : {}),
+          },
         },
       }),
     );
@@ -95,6 +115,8 @@ export default async function AuditPage(props: PageProps<"/settings/audit">) {
           {filter.actor_user_id ? (
             <input type="hidden" name="actor" value={filter.actor_user_id} />
           ) : null}
+          {order ? <input type="hidden" name="sort" value="when" /> : null}
+          {order ? <input type="hidden" name="dir" value={order} /> : null}
           <div className="filters-acts">
             <button type="submit" className="btn pri">
               {a("apply")}
@@ -120,7 +142,9 @@ export default async function AuditPage(props: PageProps<"/settings/audit">) {
             <Table cards>
               <thead>
                 <tr>
-                  <Th>{a("when")}</Th>
+                  <SortTh field="when" sort={sort} base={BASE} keep={filterKeep} first="desc">
+                    {a("when")}
+                  </SortTh>
                   <Th>{a("actor")}</Th>
                   <Th>{a("action")}</Th>
                   <Th>{a("subject")}</Th>
@@ -169,20 +193,10 @@ export default async function AuditPage(props: PageProps<"/settings/audit">) {
             </Table>
           )}
         </div>
-        {cursor || next ? (
-          <nav className="pager" aria-label={t("access.pages")}>
-            {cursor ? (
-              <Link className="btn sm" href={auditHref(BASE, filter)}>
-                {t("access.first")}
-              </Link>
-            ) : null}
-            {next ? (
-              <Link className="btn sm" href={auditHref(BASE, filter, next)}>
-                {t("access.next")}
-              </Link>
-            ) : null}
-          </nav>
-        ) : null}
+        <Pager
+          first={cursor ? withQuery(BASE, keep) : null}
+          next={next ? withQuery(BASE, keep, { cursor: next }) : null}
+        />
       </section>
     </div>
   );

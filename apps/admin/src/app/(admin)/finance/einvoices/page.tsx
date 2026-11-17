@@ -5,13 +5,18 @@ import { Chips, Facts } from "@/components/engage/common";
 import { DOCUMENT_BADGE, StatusBadge } from "@/components/finance/badges";
 import { TaxBasis } from "@/components/finance/basis";
 import { SampleBadge } from "@/components/sample-badge";
+import { type BulkActionSpec, BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
 import { FormDialog } from "@/components/ui/form-dialog";
+import { Pager } from "@/components/ui/pager";
+import { RowMenu, type RowMenuItem } from "@/components/ui/row-menu";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { formatDay } from "@/lib/catalog";
 import { INVOICES_CORRECT, INVOICES_ISSUE, INVOICES_READ } from "@/lib/finance";
 import { formatCount, formatMoney } from "@/lib/format";
+import { readPage, readSort, slicePage, sortRows } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   CORRECTION_KINDS,
@@ -24,6 +29,8 @@ import {
 import { listConnections } from "@/sample/settings";
 import { listTaxRules, taxRuleOn } from "@/sample/tax";
 import {
+  bulkIssueDocumentsAction,
+  bulkRefreshDocumentsAction,
   correctDocumentAction,
   deleteDraftAction,
   issueDocumentAction,
@@ -37,12 +44,17 @@ const CHIPS: DocumentFilter[] = ["rejected", "submitting", "accepted", "draft", 
 
 // Tab "Hoá đơn điện tử": hoá đơn lập khi giao hàng; số cấp tuần tự theo ký hiệu, không nhảy số (nháp
 // chưa có số). Bị nhà cung cấp trả lỗi thì sửa trường bị báo và gửi lại cùng số; hoá đơn đã có mã của
-// cơ quan thuế chỉ sửa bằng chứng từ điều chỉnh / thay thế, hay huỷ theo thông báo sai sót.
+// cơ quan thuế chỉ sửa bằng chứng từ điều chỉnh / thay thế, hay huỷ theo thông báo sai sót. Bộ bảng
+// (W-058): chọn nhiều để phát hành nháp / hỏi lại nhà cung cấp (lặp lệnh từng cái của hàm mẫu), "⋯" trên
+// dòng (chi tiết và việc theo trạng thái), sắp theo ngày / tổng tiền, phân trang có tổng.
+const BASE = "/finance/einvoices";
+
 export default async function EinvoicesPage(props: PageProps<"/finance/einvoices">) {
   const gate = await tabGate(INVOICES_READ);
   if (gate) return gate;
-  const [t, locale, params] = await Promise.all([
+  const [t, tt, locale, params] = await Promise.all([
     getTranslations("finance.einvoices"),
+    getTranslations("table"),
     getLocale(),
     props.searchParams,
   ]);
@@ -50,7 +62,7 @@ export default async function EinvoicesPage(props: PageProps<"/finance/einvoices
   const filter = CHIPS.find((c) => c === one("f"));
   const open = one("open");
   const [
-    { data: docs },
+    { data: listed },
     { data: all },
     stats,
     { data: connections },
@@ -68,10 +80,35 @@ export default async function EinvoicesPage(props: PageProps<"/finance/einvoices
   ]);
   const money = (m: { amount: string; currency: string }) =>
     formatMoney(m.amount, m.currency, locale);
+  const sort = readSort(params, ["date", "total"], { field: "date", dir: "desc" });
+  const paging = readPage(params);
+  // Không chọn cách sắp: giữ thứ tự của hàm mẫu (bị trả lỗi, nháp trước).
+  const page = slicePage(
+    one("sort")
+      ? sortRows(
+          listed,
+          (d) => (sort.field === "total" ? Number(d.total.amount) : d.issue_date),
+          sort.dir,
+        )
+      : listed,
+    paging.page,
+    paging.per,
+  );
+  const docs = page.data;
+  const keep = {
+    f: filter ?? null,
+    ...(one("sort") ? { sort: sort.field, dir: sort.dir } : {}),
+  };
   const href = (over: { f?: string | null; open?: string | null }) => {
     const query = new URLSearchParams();
     const f = over.f === undefined ? (filter ?? null) : over.f;
     if (f) query.set("f", f);
+    if (over.f === undefined) {
+      if (one("sort")) query.set("sort", sort.field);
+      if (one("sort")) query.set("dir", sort.dir);
+      if (paging.page > 1) query.set("page", String(paging.page));
+      if (paging.per !== 25) query.set("per", String(paging.per));
+    }
     if (over.open) query.set("open", over.open);
     const text = query.toString();
     return text ? `/finance/einvoices?${text}` : "/finance/einvoices";
@@ -135,6 +172,151 @@ export default async function EinvoicesPage(props: PageProps<"/finance/einvoices
       sub: t("kpis.registerSub"),
     },
   ];
+  // Việc làm được trên một hoá đơn theo trạng thái (mỗi việc là một hộp thoại), dùng cho "⋯" của dòng
+  // và khung chi tiết.
+  const actions = (
+    d: InvoiceDocument,
+  ): { label: string; danger?: boolean; dialog: ReactNode }[] => {
+    if (d.status === "rejected" && issue) {
+      return [
+        {
+          label: t("fix.button"),
+          dialog: (
+            <FormDialog
+              action={resubmitDocumentAction}
+              label={t("fix.button")}
+              title={t("fix.title")}
+              intro={t("fix.intro")}
+              submit={t("fix.submit")}
+              done={t("fix.done")}
+              triggerClass="btn sm pri"
+              fields={[
+                { kind: "hidden", name: "id", value: d.id },
+                {
+                  kind: "text",
+                  name: "buyer_tax_code",
+                  label: t("fix.taxCode"),
+                  mono: true,
+                  placeholder: t("fix.taxCodePlaceholder"),
+                  hint: t("fix.taxCodeHint"),
+                },
+                {
+                  kind: "text",
+                  name: "buyer_name",
+                  label: t("fix.name"),
+                  defaultValue: d.buyer.name,
+                },
+                {
+                  kind: "text",
+                  name: "buyer_address",
+                  label: t("fix.address"),
+                  placeholder: t("fix.addressPlaceholder"),
+                },
+              ]}
+            />
+          ),
+        },
+      ];
+    }
+    if (d.status === "accepted" && correct) {
+      return [
+        {
+          label: t("correct.button"),
+          dialog: (
+            <FormDialog
+              action={correctDocumentAction}
+              label={t("correct.button")}
+              title={t("correct.title", { number: numberText(d.number) })}
+              intro={t("correct.intro")}
+              points={[t("correct.adjustment"), t("correct.replacement"), t("correct.cancel")]}
+              submit={t("correct.submit")}
+              done={t("correct.done")}
+              fields={[
+                { kind: "hidden", name: "id", value: d.id },
+                {
+                  kind: "select",
+                  name: "how",
+                  label: t("correct.how"),
+                  options: CORRECTION_KINDS.map((k) => ({
+                    value: k,
+                    label: t(`correct.kinds.${k}`),
+                  })),
+                },
+                {
+                  kind: "textarea",
+                  name: "reason",
+                  label: t("correct.reason"),
+                  hint: t("correct.reasonHint"),
+                },
+              ]}
+            />
+          ),
+        },
+      ];
+    }
+    if (d.status === "draft" && issue) {
+      return [
+        {
+          label: t("issue.button"),
+          dialog: (
+            <ConfirmAction
+              action={issueDocumentAction}
+              id={d.id}
+              label={t("issue.button")}
+              title={t("issue.title", { symbol: d.symbol })}
+              points={[t("issue.number"), t("issue.keep"), t("issue.send")]}
+              submit={t("issue.submit")}
+              done={t("issue.done")}
+              danger={false}
+            />
+          ),
+        },
+        {
+          label: t("delete.button"),
+          danger: true,
+          dialog: (
+            <ConfirmAction
+              action={deleteDraftAction}
+              id={d.id}
+              label={t("delete.button")}
+              title={t("delete.title")}
+              points={[t("delete.point")]}
+              submit={t("delete.submit")}
+              done={t("delete.done")}
+            />
+          ),
+        },
+      ];
+    }
+    return [];
+  };
+  const menu = (d: InvoiceDocument): RowMenuItem[] => [
+    {
+      label: open === d.id ? t("close") : t("details"),
+      href: open === d.id ? href({}) : `${href({ open: d.id })}#fin-inv-h`,
+    },
+    ...actions(d).map((a) => ({
+      label: a.label,
+      dialog: a.dialog,
+      ...(a.danger ? { danger: true } : {}),
+    })),
+  ];
+  const bulk: BulkActionSpec[] = issue
+    ? [
+        {
+          key: "issue",
+          label: t("issue.button"),
+          tone: "pri",
+          run: bulkIssueDocumentsAction,
+          confirm: {
+            title: t("bulkIssueTitle"),
+            points: [t("issue.number"), t("issue.keep"), t("bulkIssueDrafts")],
+            submit: t("issue.submit"),
+          },
+        },
+        { key: "refresh", label: t("refresh"), run: bulkRefreshDocumentsAction },
+      ]
+    : [];
   return (
     <div className="blocks">
       <section className="block" aria-label={t("kpis.label")}>
@@ -185,239 +367,176 @@ export default async function EinvoicesPage(props: PageProps<"/finance/einvoices
           {docs.length === 0 ? (
             <p className="empty">{t("empty")}</p>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("number")}</Th>
-                  <Th>{t("buyer")}</Th>
-                  <Th>{t("order")}</Th>
-                  <Th className="text-right">{t("total")}</Th>
-                  <Th>{t("date")}</Th>
-                  <Th>{t("state")}</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {docs.map((d) => {
-                  const isOpen = open === d.id;
-                  return [
-                    <tr key={d.id} data-current={isOpen ? "" : undefined}>
-                      <Td className="rt-title">
-                        <span className="cell2">
-                          <Link
-                            className={d.number === null ? "open" : "open mono"}
-                            href={isOpen ? href({}) : `${href({ open: d.id })}#fin-inv-h`}
-                            scroll={false}
-                            aria-expanded={isOpen}
-                          >
-                            {label(d)}
-                          </Link>
-                          <span className="sub">
-                            <span className="mono">{d.symbol}</span> · {t(`kindsShort.${d.kind}`)}
-                            {d.correction ? ` · ${t(`corrections.${d.correction}`)}` : ""}
+            <BulkTable ids={docs.map((d) => d.id)} actions={bulk}>
+              <Table cards>
+                <thead>
+                  <tr>
+                    {issue ? <SelectAllTh /> : null}
+                    <Th>{t("number")}</Th>
+                    <Th>{t("buyer")}</Th>
+                    <Th>{t("order")}</Th>
+                    <SortTh
+                      field="total"
+                      sort={sort}
+                      base={BASE}
+                      keep={keep}
+                      first="desc"
+                      className="text-right"
+                    >
+                      {t("total")}
+                    </SortTh>
+                    <SortTh field="date" sort={sort} base={BASE} keep={keep} first="desc">
+                      {t("date")}
+                    </SortTh>
+                    <Th>{t("state")}</Th>
+                    <Th>
+                      <span className="vh">{t("actions")}</span>
+                    </Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {docs.map((d) => {
+                    const isOpen = open === d.id;
+                    return [
+                      <tr key={d.id} data-current={isOpen ? "" : undefined}>
+                        {issue ? (
+                          <SelectTd id={d.id} name={`${label(d)} · ${d.buyer.name}`} />
+                        ) : null}
+                        <Td className="rt-title">
+                          <span className="cell2">
+                            <Link
+                              className={d.number === null ? "open" : "open mono"}
+                              href={isOpen ? href({}) : `${href({ open: d.id })}#fin-inv-h`}
+                              scroll={false}
+                              aria-expanded={isOpen}
+                            >
+                              {label(d)}
+                            </Link>
+                            <span className="sub">
+                              <span className="mono">{d.symbol}</span> · {t(`kindsShort.${d.kind}`)}
+                              {d.correction ? ` · ${t(`corrections.${d.correction}`)}` : ""}
+                            </span>
                           </span>
-                        </span>
-                      </Td>
-                      <Td label={t("buyer")}>
-                        <span className="cell2">
-                          <span className="ell">{d.buyer.name}</span>
-                          <span className="sub">
-                            {d.buyer.kind === "business" ? t("business") : t("consumer")}
+                        </Td>
+                        <Td label={t("buyer")}>
+                          <span className="cell2">
+                            <span className="ell">{d.buyer.name}</span>
+                            <span className="sub">
+                              {d.buyer.kind === "business" ? t("business") : t("consumer")}
+                            </span>
                           </span>
-                        </span>
-                      </Td>
-                      <Td label={t("order")} className="mono">
-                        {d.source_id}
-                      </Td>
-                      <Td label={t("total")} className="text-right mono">
-                        {money(d.total)}
-                      </Td>
-                      <Td label={t("date")}>
-                        {d.issue_date ? formatDay(d.issue_date, locale) : "—"}
-                      </Td>
-                      <Td label={t("state")}>
-                        <StatusBadge className={DOCUMENT_BADGE[d.status]}>
-                          {t(`status.${d.status}`)}
-                        </StatusBadge>
-                      </Td>
-                    </tr>,
-                    isOpen ? (
-                      <tr key={`${d.id}-open`} className="cat-detail-row">
-                        <td colSpan={6}>
-                          <div className="cat-detail">
-                            <h3 className="h2">
-                              {d.number === null
-                                ? t("draftTitle", { symbol: d.symbol })
-                                : t("detailTitle", {
-                                    number: numberText(d.number),
-                                    symbol: d.symbol,
-                                  })}
-                            </h3>
-                            <Facts items={facts(d)} />
-                            {d.provider_error ? (
-                              <p className="note warn" role="note">
-                                <b>{t("providerError")}</b> “{d.provider_error.message}” ·{" "}
-                                <span className="mono">{d.provider_error.code}</span> ·{" "}
-                                <Time value={d.provider_error.at} />
-                              </p>
-                            ) : null}
-                            {d.lines.length > 0 ? (
-                              <>
-                                <h4 className="lab">{t("lines")}</h4>
-                                <ul className="cat-lines">
-                                  {d.lines.map((l) => (
-                                    <li key={l.line_no}>
-                                      <span>
-                                        {l.description} × {l.quantity}
-                                      </span>
-                                      <b className="mono">{money(l.total)}</b>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </>
-                            ) : null}
-                            <ul className="cat-lines">
-                              <li>
-                                <span>{t("subtotal")}</span>
-                                <b className="mono">{money(d.subtotal)}</b>
-                              </li>
-                              <li>
-                                <span>{t("tax")}</span>
-                                <b className="mono">{money(d.tax)}</b>
-                              </li>
-                              <li>
-                                <span>{t("grand")}</span>
-                                <b className="mono">{money(d.total)}</b>
-                              </li>
-                            </ul>
-                            {d.history.length > 0 ? (
-                              <>
-                                <h4 className="lab">{t("history")}</h4>
-                                <ol className="timeline">
-                                  {[...d.history].reverse().map((h) => (
-                                    <li key={`${h.at}-${h.event}`}>
-                                      <span>
-                                        {t(`events.${h.event}`)}
-                                        {h.note ? ` · ${h.note}` : ""}
-                                      </span>
-                                      <span className="sub">
-                                        <Time value={h.at} />
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ol>
-                              </>
-                            ) : null}
-                            <p className="fhint">{t(`notes.${d.status}`)}</p>
-                            <div className="eg-acts">
-                              {d.status === "rejected" && issue ? (
-                                <FormDialog
-                                  action={resubmitDocumentAction}
-                                  label={t("fix.button")}
-                                  title={t("fix.title")}
-                                  intro={t("fix.intro")}
-                                  submit={t("fix.submit")}
-                                  done={t("fix.done")}
-                                  triggerClass="btn sm pri"
-                                  fields={[
-                                    { kind: "hidden", name: "id", value: d.id },
-                                    {
-                                      kind: "text",
-                                      name: "buyer_tax_code",
-                                      label: t("fix.taxCode"),
-                                      mono: true,
-                                      placeholder: t("fix.taxCodePlaceholder"),
-                                      hint: t("fix.taxCodeHint"),
-                                    },
-                                    {
-                                      kind: "text",
-                                      name: "buyer_name",
-                                      label: t("fix.name"),
-                                      defaultValue: d.buyer.name,
-                                    },
-                                    {
-                                      kind: "text",
-                                      name: "buyer_address",
-                                      label: t("fix.address"),
-                                      placeholder: t("fix.addressPlaceholder"),
-                                    },
-                                  ]}
-                                />
+                        </Td>
+                        <Td label={t("order")} className="mono">
+                          {d.source_id}
+                        </Td>
+                        <Td label={t("total")} className="text-right mono">
+                          {money(d.total)}
+                        </Td>
+                        <Td label={t("date")}>
+                          {d.issue_date ? formatDay(d.issue_date, locale) : "—"}
+                        </Td>
+                        <Td label={t("state")}>
+                          <StatusBadge className={DOCUMENT_BADGE[d.status]}>
+                            {t(`status.${d.status}`)}
+                          </StatusBadge>
+                        </Td>
+                        <Td className="rt-acts">
+                          <RowMenu label={tt("moreFor", { name: label(d) })} items={menu(d)} />
+                        </Td>
+                      </tr>,
+                      isOpen ? (
+                        <tr key={`${d.id}-open`} className="cat-detail-row">
+                          <td colSpan={issue ? 8 : 7}>
+                            <div className="cat-detail">
+                              <h3 className="h2">
+                                {d.number === null
+                                  ? t("draftTitle", { symbol: d.symbol })
+                                  : t("detailTitle", {
+                                      number: numberText(d.number),
+                                      symbol: d.symbol,
+                                    })}
+                              </h3>
+                              <Facts items={facts(d)} />
+                              {d.provider_error ? (
+                                <p className="note warn" role="note">
+                                  <b>{t("providerError")}</b> “{d.provider_error.message}” ·{" "}
+                                  <span className="mono">{d.provider_error.code}</span> ·{" "}
+                                  <Time value={d.provider_error.at} />
+                                </p>
                               ) : null}
-                              {d.status === "submitting" && issue ? (
-                                <InlineAction
-                                  action={refreshDocumentAction}
-                                  id={d.id}
-                                  label={t("refresh")}
-                                  done={t("refreshed")}
-                                />
-                              ) : null}
-                              {d.status === "accepted" && correct ? (
-                                <FormDialog
-                                  action={correctDocumentAction}
-                                  label={t("correct.button")}
-                                  title={t("correct.title", { number: numberText(d.number) })}
-                                  intro={t("correct.intro")}
-                                  points={[
-                                    t("correct.adjustment"),
-                                    t("correct.replacement"),
-                                    t("correct.cancel"),
-                                  ]}
-                                  submit={t("correct.submit")}
-                                  done={t("correct.done")}
-                                  fields={[
-                                    { kind: "hidden", name: "id", value: d.id },
-                                    {
-                                      kind: "select",
-                                      name: "how",
-                                      label: t("correct.how"),
-                                      options: CORRECTION_KINDS.map((k) => ({
-                                        value: k,
-                                        label: t(`correct.kinds.${k}`),
-                                      })),
-                                    },
-                                    {
-                                      kind: "textarea",
-                                      name: "reason",
-                                      label: t("correct.reason"),
-                                      hint: t("correct.reasonHint"),
-                                    },
-                                  ]}
-                                />
-                              ) : null}
-                              {d.status === "draft" && issue ? (
+                              {d.lines.length > 0 ? (
                                 <>
-                                  <ConfirmAction
-                                    action={issueDocumentAction}
-                                    id={d.id}
-                                    label={t("issue.button")}
-                                    title={t("issue.title", { symbol: d.symbol })}
-                                    points={[t("issue.number"), t("issue.keep"), t("issue.send")]}
-                                    submit={t("issue.submit")}
-                                    done={t("issue.done")}
-                                    danger={false}
-                                  />
-                                  <ConfirmAction
-                                    action={deleteDraftAction}
-                                    id={d.id}
-                                    label={t("delete.button")}
-                                    title={t("delete.title")}
-                                    points={[t("delete.point")]}
-                                    submit={t("delete.submit")}
-                                    done={t("delete.done")}
-                                  />
+                                  <h4 className="lab">{t("lines")}</h4>
+                                  <ul className="cat-lines">
+                                    {d.lines.map((l) => (
+                                      <li key={l.line_no}>
+                                        <span>
+                                          {l.description} × {l.quantity}
+                                        </span>
+                                        <b className="mono">{money(l.total)}</b>
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </>
                               ) : null}
+                              <ul className="cat-lines">
+                                <li>
+                                  <span>{t("subtotal")}</span>
+                                  <b className="mono">{money(d.subtotal)}</b>
+                                </li>
+                                <li>
+                                  <span>{t("tax")}</span>
+                                  <b className="mono">{money(d.tax)}</b>
+                                </li>
+                                <li>
+                                  <span>{t("grand")}</span>
+                                  <b className="mono">{money(d.total)}</b>
+                                </li>
+                              </ul>
+                              {d.history.length > 0 ? (
+                                <>
+                                  <h4 className="lab">{t("history")}</h4>
+                                  <ol className="timeline">
+                                    {[...d.history].reverse().map((h) => (
+                                      <li key={`${h.at}-${h.event}`}>
+                                        <span>
+                                          {t(`events.${h.event}`)}
+                                          {h.note ? ` · ${h.note}` : ""}
+                                        </span>
+                                        <span className="sub">
+                                          <Time value={h.at} />
+                                        </span>
+                                      </li>
+                                    ))}
+                                  </ol>
+                                </>
+                              ) : null}
+                              <p className="fhint">{t(`notes.${d.status}`)}</p>
+                              <div className="eg-acts">
+                                {d.status === "submitting" && issue ? (
+                                  <InlineAction
+                                    action={refreshDocumentAction}
+                                    id={d.id}
+                                    label={t("refresh")}
+                                    done={t("refreshed")}
+                                  />
+                                ) : null}
+                                {actions(d).map((a) => (
+                                  <span key={a.label}>{a.dialog}</span>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : null,
-                  ];
-                })}
-              </tbody>
-            </Table>
+                          </td>
+                        </tr>
+                      ) : null,
+                    ];
+                  })}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
+        <Pager total={page.total} page={page.page} per={paging.per} base={BASE} keep={keep} />
         <TaxBasis rule={taxRuleOn(rules, "einvoice.issue_on_delivery")} lead={t("basisIssue")} />
         <TaxBasis rule={taxRuleOn(rules, "einvoice.correction")} lead={t("basisCorrection")} />
       </section>

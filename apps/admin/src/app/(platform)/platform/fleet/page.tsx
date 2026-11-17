@@ -11,6 +11,7 @@ import { MovePoll } from "@/components/platform/move";
 import { PlacementStorageView } from "@/components/platform/storage";
 import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
 import { FormDialog } from "@/components/ui/form-dialog";
+import { RowMenu } from "@/components/ui/row-menu";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { isForbidden, load } from "@/lib/core";
@@ -65,12 +66,16 @@ async function loadRuns() {
 // riêng, backend, trạng thái migration, nơi lưu file riêng (`storage`, D-293; không bao giờ có khoá)
 // — và số khách trên mỗi placement. Dời khách nằm ở trang của từng khách (W-032). Migrate placement của
 // core bằng `POST /kernel/placements/migrations` (D-334): từng placement hay mọi placement, chạy bằng job;
-// các lượt chạy ở `GET …/migrations`. Placement chỉ có trong dữ liệu mẫu giữ nút mẫu cũ (W-014).
+// các lượt chạy ở `GET …/migrations`. Placement chỉ có trong dữ liệu mẫu giữ nút mẫu cũ (W-014). Bộ bảng
+// (W-058): dòng hiện tối đa một nút (Migrate, hay Chạy thử với placement mẫu), việc còn lại vào "⋯";
+// danh sách ngắn, không sắp, không phân trang. Không có thao tác hàng loạt: core chạy migration bằng
+// job, từng placement hay cả đội (nút "Migrate cả đội" ở đầu trang).
 export default async function FleetPage(props: { searchParams: Promise<SearchParams> }) {
   const gate = await platformGate(PLACEMENTS_READ);
   if (gate) return gate;
   const t = await getTranslations("platform.fleet");
   const tp = await getTranslations("platform");
+  const tt = await getTranslations("table");
   const state = oneOf(await props.searchParams, "state", STATES);
   const sample = sampleDataEnabled();
   let data: PlatformData;
@@ -332,7 +337,7 @@ export default async function FleetPage(props: { searchParams: Promise<SearchPar
                         />
                       ) : null}
                       {manage && p.schema_state === "behind" && p.source === "sample" ? (
-                        <div className="eg-acts">
+                        <span className="row-acts">
                           <InlineAction
                             action={dryRunMigrations}
                             id={p.id}
@@ -344,21 +349,32 @@ export default async function FleetPage(props: { searchParams: Promise<SearchPar
                             })}
                           />
                           {planned || fleet ? (
-                            <ConfirmAction
-                              action={migratePlacement}
-                              id={p.id}
-                              label={t("migrate")}
-                              title={t("migrateTitle", { name: p.name })}
-                              points={[
-                                t("migrateList", { list: p.pending_migrations.join(", ") }),
-                                t("run503", { count }),
-                                t("runStop"),
+                            <RowMenu
+                              label={tt("moreFor", { name: p.name })}
+                              items={[
+                                {
+                                  label: t("migrate"),
+                                  danger: true,
+                                  dialog: (
+                                    <ConfirmAction
+                                      action={migratePlacement}
+                                      id={p.id}
+                                      label={t("migrate")}
+                                      title={t("migrateTitle", { name: p.name })}
+                                      points={[
+                                        t("migrateList", { list: p.pending_migrations.join(", ") }),
+                                        t("run503", { count }),
+                                        t("runStop"),
+                                      ]}
+                                      submit={t("migrate")}
+                                      done={t("migrateDone", { name: p.name })}
+                                    />
+                                  ),
+                                },
                               ]}
-                              submit={t("migrate")}
-                              done={t("migrateDone", { name: p.name })}
                             />
                           ) : null}
-                        </div>
+                        </span>
                       ) : null}
                     </Td>
                   </tr>
