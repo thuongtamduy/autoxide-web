@@ -130,6 +130,23 @@ const SETTINGS: {
     group: "connection",
     formerly: "mail.from",
   },
+  // Như module `ai` của core: khoá API và mô hình riêng của khách (nhóm `connection`, D-297).
+  {
+    name: "ai.connection.text.api_key",
+    description:
+      "API key this tenant's AI requests use (its own account with the provider the server is set up for); unset: the server's key.",
+    secret: true,
+    group: "connection",
+    formerly: "ai.api_key",
+  },
+  {
+    name: "ai.connection.text.model",
+    description:
+      "Model this tenant's AI requests use, from the provider the server is set up for; unset: the server's model.",
+    secret: false,
+    group: "connection",
+    formerly: "ai.model",
+  },
   {
     name: "comments.max_links",
     description:

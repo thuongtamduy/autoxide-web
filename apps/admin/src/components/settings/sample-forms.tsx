@@ -124,26 +124,40 @@ export interface ConnectionField {
   secret: boolean;
   is_set: boolean;
   value: string | null;
+  /** Nhãn đã dịch; tên kỹ thuật chỉ hiện nhỏ dưới ô. */
+  label: string;
+  hint?: string | undefined;
 }
 
 /**
- * Đặt hay đổi cài đặt của một kết nối. Ô secret không bao giờ hiện giá trị cũ: để trống thì giữ
+ * Đặt hay đổi cài đặt của một kết nối mẫu (nhà cung cấp core chưa nhận). Ô secret không bao giờ hiện giá trị cũ: để trống thì giữ
  * giá trị đang dùng, nhập mới thì thay.
  */
 export function ConnectionDialog({
   id,
   title,
   label,
+  ariaLabel,
+  about,
+  primary = false,
   fields,
 }: {
   id: string;
   title: string;
   label: string;
+  ariaLabel: string;
+  about: string;
+  primary?: boolean;
   fields: readonly ConnectionField[];
 }) {
-  const t = useTranslations("settings.connections");
   return (
-    <Dialog label={label} title={title} intro={t("formIntro")}>
+    <Dialog
+      label={label}
+      ariaLabel={ariaLabel}
+      title={title}
+      triggerClass={primary ? "btn sm pri" : "btn sm"}
+      intro={<p>{about}</p>}
+    >
       {(close) => <ConnectionForm id={id} fields={fields} close={close} />}
     </Dialog>
   );
@@ -170,19 +184,25 @@ function ConnectionForm({
   return (
     <form ref={form} action={action} noValidate className="dlg-form">
       <input type="hidden" name="id" value={id} />
-      {fields.map((field) => (
-        <Field
-          key={field.name}
-          label={field.name}
-          name={field.name}
-          mono
-          autoComplete="off"
-          type={field.secret ? "password" : "text"}
-          defaultValue={field.secret ? "" : (state.values?.[field.name] ?? field.value ?? "")}
-          hint={field.secret ? (field.is_set ? t("secretKeep") : t("secretNew")) : undefined}
-          error={state.fields?.[field.name]}
-        />
-      ))}
+      {fields.map((field) => {
+        const secretHint = field.secret ? (field.is_set ? t("secretKeep") : t("secretNew")) : "";
+        const hint = [field.hint, secretHint].filter(Boolean).join(" ");
+        return (
+          <div className="conn-field" key={field.name}>
+            <Field
+              label={field.label}
+              name={field.name}
+              mono
+              autoComplete="off"
+              type={field.secret ? "password" : "text"}
+              defaultValue={field.secret ? "" : (state.values?.[field.name] ?? field.value ?? "")}
+              hint={hint || undefined}
+              error={state.fields?.[field.name]}
+            />
+            <code className="conn-key mono">{field.name}</code>
+          </div>
+        );
+      })}
       <FormAlert state={state} />
       <DialogButtons submit={t("save")} pending={pending} close={close} />
     </form>

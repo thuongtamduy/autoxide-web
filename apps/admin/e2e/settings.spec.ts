@@ -271,44 +271,76 @@ test("API key: xác nhận bằng passkey hay mã của app; quản trị viên 
   await expect(rows(page).first()).toContainText("passkey-agent");
 });
 
-test("cài đặt của khách (core thật): đặt, secret không hiện lại, gỡ", async ({ page }) => {
+test("kết nối đối tác (core thật): nhóm theo loại, tên dễ hiểu, secret không hiện lại, gỡ", async ({
+  page,
+}) => {
+  await signIn(page, "/settings/connections");
+  // Không lộ khoá kỹ thuật hay biến môi trường của máy chủ trên trang (chỉ trong hộp thoại).
+  await expect(page.locator(".conn")).not.toContainText("AUTOXIDE_");
+  await expect(page.getByText("mail.connection.smtp.url")).toHaveCount(0);
+
+  // Kết nối của core (nhóm `connection`) thành thẻ trong đúng loại; cấu hình nghiệp vụ khối riêng.
+  const mail = page.getByTestId("conn-cat-email").getByTestId("conn-mail.smtp");
+  await expect(mail).toContainText("Your own mail server (SMTP)");
+  await expect(mail).toContainText("Not set up");
+  await expect(page.getByTestId("conn-cat-ai").getByTestId("conn-ai.text")).toBeVisible();
+  await expect(page.getByTestId("conn-cat-ai").getByTestId("ai-status")).toBeVisible();
+  await expect(
+    page.getByTestId("tset-business").getByTestId("tset-kernel.public_url"),
+  ).toBeVisible();
+
+  await mail.getByRole("button", { name: "Set up Your own mail server (SMTP)" }).click();
+  await expect(dialog(page)).toContainText("mail.connection.smtp.url");
+  await expect(dialog(page).getByLabel("SMTP server address")).toHaveAttribute("type", "password");
+  await dialog(page).getByLabel("SMTP server address").fill("smtp://user:secret@mail.example:587");
+  await dialog(page).getByRole("button", { name: "Save" }).click();
+  await expect(toast(page)).toHaveText("Saved Your own mail server (SMTP).");
+  await expect(mail).toContainText("Connected");
+  await expect(mail.getByRole("button", { name: /Set up/ })).toHaveText("Edit");
+  await expect(page.getByText("secret@mail.example")).toHaveCount(0);
+  await mail.getByRole("button", { name: "Set up Your own mail server (SMTP)" }).click();
+  await expect(dialog(page).getByLabel("SMTP server address")).toHaveValue("");
+  await expect(dialog(page)).toContainText("Leave empty to keep the current value.");
+  await dialog(page).getByRole("button", { name: "Disconnect" }).click();
+  await dialog(page).getByRole("button", { name: "Disconnect" }).click();
+  await expect(toast(page)).toHaveText(
+    "Removed Your own mail server (SMTP); the server-wide configuration applies.",
+  );
+  await expect(mail).toContainText("Not set up");
+});
+
+test("cấu hình nghiệp vụ (core thật): tên tiếng Việt / Anh, lỗi dưới ô, về mặc định", async ({
+  page,
+}) => {
   await signIn(page, "/settings/connections");
   const url = page.getByTestId("tset-kernel.public_url");
-  await expect(url).toContainText("the server-wide configuration applies");
-  await url.getByRole("button", { name: "Set kernel.public_url" }).click();
+  await expect(url).toContainText("Website address");
+  await expect(url).toContainText("Using the server-wide configuration.");
+  await url.getByRole("button", { name: "Set up Website address" }).click();
+  await expect(dialog(page)).toContainText("kernel.public_url");
   await dialog(page).getByRole("button", { name: "Save" }).click();
   await expect(dialog(page).getByLabel("Value")).toHaveAttribute("aria-invalid", "true");
   await dialog(page).getByLabel("Value").fill("https://shop.example");
   await dialog(page).getByRole("button", { name: "Save" }).click();
-  await expect(toast(page)).toHaveText("Saved kernel.public_url.");
+  await expect(toast(page)).toHaveText("Saved Website address.");
   await expect(url).toContainText("https://shop.example");
+  await expect(url).toContainText("Custom");
 
-  // Kết nối đối tác (nhóm `connection` của core) đứng riêng một khối, trước cấu hình nghiệp vụ.
-  await expect(
-    page.getByTestId("tset-connections").getByTestId("tset-mail.connection.smtp.from"),
-  ).toBeVisible();
-  await expect(
-    page.getByTestId("tset-business").getByTestId("tset-kernel.public_url"),
-  ).toBeVisible();
-  await expect(
-    page.getByTestId("tset-connections").getByTestId("tset-kernel.public_url"),
-  ).toHaveCount(0);
-
-  const smtp = page.getByTestId("tset-mail.connection.smtp.url");
-  await smtp.getByRole("button", { name: "Set mail.connection.smtp.url" }).click();
-  await expect(dialog(page).getByLabel("Value")).toHaveAttribute("type", "password");
-  await dialog(page).getByLabel("Value").fill("smtp://user:secret@mail.example:587");
+  // Core kiểm giá trị: lỗi 422 hiện dưới ô.
+  const links = page.getByTestId("tset-comments.max_links");
+  await links.getByRole("button", { name: "Set up Maximum links" }).click();
+  await dialog(page).getByLabel("Value").fill("500");
   await dialog(page).getByRole("button", { name: "Save" }).click();
-  await expect(toast(page)).toHaveText("Saved mail.connection.smtp.url.");
-  await expect(smtp).toContainText("set");
-  await expect(page.getByText("secret@mail.example")).toHaveCount(0);
+  await expect(dialog(page).getByLabel("Value")).toHaveAttribute("aria-invalid", "true");
+  await page.keyboard.press("Escape");
 
-  await url.getByRole("button", { name: "Remove" }).click();
-  await dialog(page).getByRole("button", { name: "Remove" }).click();
+  await url.getByRole("button", { name: "Set up Website address" }).click();
+  await dialog(page).getByRole("button", { name: "Reset to default" }).click();
+  await dialog(page).getByRole("button", { name: "Reset to default" }).click();
   await expect(toast(page)).toHaveText(
-    "Removed kernel.public_url; the server-wide configuration applies.",
+    "Removed Website address; the server-wide configuration applies.",
   );
-  await expect(url).toContainText("the server-wide configuration applies");
+  await expect(url).toContainText("Using the server-wide configuration.");
 });
 
 test("lệnh chờ duyệt (mẫu): hộp xác nhận nêu hệ quả, lệnh rủi ro dùng nút đỏ", async ({ page }) => {
@@ -388,14 +420,27 @@ test("tên miền: một khách thì giải thích; nhiều khách thì thêm, b
 test("dữ liệu mẫu: kết nối đối tác có AI thật, job chạy lại", async ({ page }) => {
   await signIn(page, "/settings/connections");
   await expect(page.getByTestId("ai-status")).toContainText("Off");
-  // Thư đã có cài đặt thật của core (`mail.connection.smtp.…`): bản mẫu của nó không hiện nữa.
+  // Thư đã có cài đặt thật của core (`mail.connection.smtp.…`): bản mẫu của nó không hiện nữa,
+  // mỗi đối tác chỉ một thẻ.
   await expect(page.getByTestId("conn-mail")).toHaveCount(0);
-  const sms = page.getByTestId("conn-sms");
-  await sms.getByRole("button", { name: /Set up|Change/ }).click();
-  await expect(dialog(page).getByLabel("sms.connection.gateway.api_key")).toHaveAttribute(
-    "type",
-    "password",
+  await expect(page.getByTestId("conn-cat-email").locator(".conn-card")).toHaveCount(1);
+  const sms = page.getByTestId("conn-cat-messaging").getByTestId("conn-sms");
+  await expect(sms).toContainText("SMS brand name");
+  await expect(sms).toContainText("Not set up");
+  await expect(sms.locator(".badge[data-sample]")).toBeVisible();
+  await expect(page.getByTestId("conn-cat-einvoice").getByTestId("conn-einvoice")).toContainText(
+    "Error",
   );
+  await expect(page.getByTestId("conn-cat-payment").getByTestId("conn-payment")).toContainText(
+    "Connected",
+  );
+  await sms.getByRole("button", { name: "Set up SMS brand name" }).click();
+  await expect(dialog(page).getByLabel("API key")).toHaveAttribute("type", "password");
+  await expect(dialog(page)).toContainText("sms.connection.gateway.api_key");
+  await dialog(page).getByLabel("Provider").fill("Nhà mạng (mẫu)");
+  await dialog(page).getByRole("button", { name: "Save" }).click();
+  await expect(dialog(page).getByLabel("Brand name")).toHaveAttribute("aria-invalid", "true");
+  await page.keyboard.press("Escape");
 
   await page.goto("/settings/jobs");
   const dead = rows(page).filter({ hasText: "Dead-letter" });
@@ -423,7 +468,12 @@ test("người thiếu permission: Cài đặt chỉ còn API key; mở thẳng 
 test("điện thoại: bảng thành thẻ, không tràn ngang", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signIn(page, "/settings/plan");
-  for (const path of ["/settings/plan", "/settings/webhooks", "/settings/api-keys/mcp"]) {
+  for (const path of [
+    "/settings/plan",
+    "/settings/webhooks",
+    "/settings/api-keys/mcp",
+    "/settings/connections",
+  ]) {
     await page.goto(path);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,

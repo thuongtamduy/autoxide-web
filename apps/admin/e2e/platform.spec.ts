@@ -358,7 +358,7 @@ test("cấu hình theo khách (D-296): nhân sự nền tảng đặt cho một 
   // Giá trị là của khách đó: cài đặt của chính khách nền tảng không đổi.
   await page.goto("/settings/connections");
   await expect(page.getByTestId("tset-comments.max_links")).toContainText(
-    "the server-wide configuration applies",
+    "Using the server-wide configuration.",
   );
 });
 
@@ -372,7 +372,7 @@ test("khách của người đăng nhập chỉ đọc (D-296): dải báo ở k
   await expect(banner).toContainText("This workspace is read-only.");
   await expect(banner).toContainText("changes are refused");
   const url = page.getByTestId("tset-kernel.public_url");
-  await url.getByRole("button", { name: "Set kernel.public_url" }).click();
+  await url.getByRole("button", { name: "Set up Website address" }).click();
   await dialog(page).getByLabel("Value").fill("https://shop.example");
   await dialog(page).getByRole("button", { name: "Save" }).click();
   await expect(dialog(page).getByRole("alert")).toHaveAttribute("data-code", "tenant_read_only");

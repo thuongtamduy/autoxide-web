@@ -112,3 +112,183 @@
     padding-left: 44px;
   }
 }
+
+/* Cài đặt › Kết nối đối tác. Lớp `conn-`, đặt dưới `.ax`; thẻ dùng lại `.card`, `.sq-ic`, `.badge`
+   của khung. Mọi khối chiếm cả hàng (trước đây khối kết nối co theo nội dung, hẹp hơn khối khác). */
+
+.ax .conn > .conn-intro {
+  flex: 1 1 100%;
+  max-width: 760px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  text-wrap: pretty;
+}
+
+/* Đầu nhóm: biểu tượng của loại đối tác, tên, một dòng giải thích */
+.ax .conn-cat {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.ax .conn-cat-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .conn-cat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ax .conn-cat-about {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+/* Lưới thẻ: các thẻ cùng bề rộng, tự xuống hàng; điện thoại một cột */
+.ax .conn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.ax .conn-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+}
+.ax .conn-card[data-status="error"] {
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+}
+.ax .conn-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ax .conn-name {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  min-height: 32px;
+}
+.ax .conn-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.ax .conn-about {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.ax .conn-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .conn-error {
+  color: var(--bad);
+}
+/* Nút luôn ở đáy thẻ, các thẻ trong một hàng thẳng nhau */
+.ax .conn-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* Cấu hình nghiệp vụ: mỗi module một thẻ danh sách */
+.ax .conn-business {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ax .conn-module {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ax .conn-row {
+  padding: 12px 14px;
+}
+.ax .conn-value {
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* Hộp thoại: tên kỹ thuật chỉ là chữ phụ nhỏ dưới ô */
+.ax .conn-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ax .conn-key {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+.ax .conn-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ax .conn-foot > .dlg-acts {
+  flex: 1 1 auto;
+}
+.ax .conn-ask {
+  margin: 0;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* Máy tính: tên nhóm cột trái, thẻ cột phải (như trang cài đặt của Stripe); mọi nhóm cùng bề rộng,
+   trang ngắn lại thay vì mỗi nhóm một hàng thẻ lẻ. */
+@media (min-width: 1100px) {
+  .ax .conn > .conn-sec {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px 28px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+  .ax .conn > .conn-sec:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .ax .conn-sec .conn-cat {
+    position: sticky;
+    top: 16px;
+  }
+}
+
+@media (max-width: 720px) {
+  .ax .conn-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ax .conn-foot {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
