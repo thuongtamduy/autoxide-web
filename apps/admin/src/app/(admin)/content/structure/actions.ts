@@ -15,6 +15,7 @@ import { z } from "zod";
 import { type Outcome, send } from "@/lib/action";
 import { LOCALE_CODE } from "@/lib/content";
 import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
+import { type BulkInput, type BulkResult, cleanIds, eachId } from "@/lib/table";
 
 type Result<T> = { data?: T; error?: unknown; response: Response };
 
@@ -165,6 +166,22 @@ export async function deleteTerm(state: FormState, formData: FormData): Promise<
   return { done: nextDone(state) };
 }
 
+/**
+ * Xoá nhiều danh mục / thẻ (thanh hàng loạt). Core chỉ có `DELETE /content/terms/{id}`: lặp từng id;
+ * danh mục còn danh mục con bị core từ chối, lỗi đó báo đúng dòng.
+ */
+export async function bulkDeleteTerms(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (termId) => {
+    if (!uuid.safeParse(termId).success) return (await invalidState()).error ?? "";
+    const deleted = await send((client) =>
+      client.DELETE("/api/v1/content/terms/{id}", { params: { path: { id: termId } } }),
+    );
+    return deleted.ok ? null : deleted.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
 // ---------------------------------------------------------------- Tác giả
 
 const AuthorForm = z.object({
@@ -300,6 +317,19 @@ export async function deleteRedirect(state: FormState, formData: FormData): Prom
   if (!result.ok) return problemState(result.problem, []);
   refresh();
   return { done: nextDone(state) };
+}
+
+/** Xoá nhiều chuyển hướng: lặp `DELETE /content/redirects/{id}` (core chưa có lệnh hàng loạt). */
+export async function bulkDeleteRedirects(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (redirectId) => {
+    if (!uuid.safeParse(redirectId).success) return (await invalidState()).error ?? "";
+    const deleted = await send((client) =>
+      client.DELETE("/api/v1/content/redirects/{id}", { params: { path: { id: redirectId } } }),
+    );
+    return deleted.ok ? null : deleted.problem.detail;
+  });
+  refresh();
+  return result;
 }
 
 // ---------------------------------------------------------------- Phiên bản

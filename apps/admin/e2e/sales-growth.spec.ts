@@ -82,11 +82,14 @@ test("khách hàng: hồ sơ từ đơn thật, dữ liệu cá nhân che bớt,
   const buyer = page.getByTestId("buyer-accounts").locator("tbody tr");
   await expect(buyer).toHaveCount(1);
   await expect(buyer).toContainText("Trần Minh Đức");
-  await buyer.getByRole("button", { name: "Lock" }).click();
+  // Bộ bảng (W-058): khoá / mở nằm trong "⋯" của dòng.
+  await buyer.getByRole("button", { name: "More actions for Trần Minh Đức" }).click();
+  await page.getByRole("menuitem", { name: "Lock" }).click();
   await dialog(page).getByRole("button", { name: "Lock" }).click();
   await expect(toast(page)).toContainText("Locked; every session of this person was revoked.");
   await expect(buyer).toContainText("Locked");
-  await buyer.getByRole("button", { name: "Unlock" }).click();
+  await buyer.getByRole("button", { name: "More actions for Trần Minh Đức" }).click();
+  await page.getByRole("menuitem", { name: "Unlock" }).click();
   await expect(toast(page)).toContainText("Unlocked");
   await page.getByLabel("Let buyers register themselves").uncheck();
   await page.getByRole("button", { name: "Save" }).click();
@@ -164,10 +167,9 @@ test("kênh bán: tạm dừng có Hoàn tác, khoá sai báo dưới ô, gắn 
   }
   await page
     .getByRole("row", { name: /Matched/ })
-    .getByRole("link")
     .first()
+    .getByRole("button", { name: "Post to ledger" })
     .click();
-  await page.getByRole("button", { name: "Post to ledger" }).click();
   await expect(dialog(page)).toContainText("This cannot be undone");
   await expect(dialog(page).getByRole("button", { name: "Cancel" })).toBeFocused();
   await dialog(page).getByRole("button", { name: "Post", exact: true }).click();

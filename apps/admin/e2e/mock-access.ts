@@ -337,11 +337,12 @@ export async function accessRoutes(
         problem(response, 400, "bad_request", "A query parameter has an invalid value.");
         return true;
       }
-      const list = live()
+      const found = live()
         .filter((a) => !search || a.email.includes(search) || a.name.toLowerCase().includes(search))
-        .filter((a) => !status || (status === "disabled") === Boolean(a.disabledAt))
-        .reverse()
-        .map((a) => userView(a, include === "roles"));
+        .filter((a) => !status || (status === "disabled") === Boolean(a.disabledAt));
+      // `order` như core: theo thời gian tạo, mặc định mới trước.
+      if (url.searchParams.get("order") !== "asc") found.reverse();
+      const list = found.map((a) => userView(a, include === "roles"));
       send(response, 200, page(list, url) satisfies Schemas["Page_UserResponse"]);
       return true;
     }

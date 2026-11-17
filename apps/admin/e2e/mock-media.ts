@@ -182,7 +182,17 @@ export async function mediaRoutes(
       .filter(
         (i) => q.get("alt_missing") === null || missingAlt(i) === (q.get("alt_missing") === "true"),
       )
-      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+      // `sort` = `created_at` (mặc định) / `name` / `size`, chiều theo `order` (mặc định `desc`), như core.
+      .sort((a, b) => {
+        const by = q.get("sort");
+        const diff =
+          by === "name"
+            ? a.name.localeCompare(b.name)
+            : by === "size"
+              ? a.size - b.size
+              : a.created_at.localeCompare(b.created_at);
+        return q.get("order") === "asc" ? diff : -diff;
+      });
     const limit = Number(q.get("limit") ?? 50);
     const start = Number(q.get("cursor") ?? 0);
     const withName = q.get("include") === "uploader";

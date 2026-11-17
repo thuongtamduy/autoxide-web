@@ -2,13 +2,19 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
 import { SampleBadge } from "@/components/sample-badge";
+import { type BulkActionSpec, BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { ConfirmAction } from "@/components/ui/confirm";
+import { Pager } from "@/components/ui/pager";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { formatCount } from "@/lib/format";
 import { DEVTOOLS_READ } from "@/lib/permissions";
+import { readPage, readSort, slicePage, sortRows } from "@/lib/table";
 import { type JobStatus, listJobs } from "@/sample/settings";
-import { retryJobAction } from "../../sample-actions";
+import { bulkRetryJobsAction, retryJobAction } from "../../sample-actions";
+
+const BASE = "/settings/jobs";
 
 const STATUSES: JobStatus[] = ["running", "retrying", "dead", "done"];
 const BADGE: Record<JobStatus, string> = {
@@ -19,18 +25,43 @@ const BADGE: Record<JobStatus, string> = {
 };
 
 // Tab "Job" (dữ liệu mẫu, chờ bàn kỹ thuật của bước 52): việc chạy nền của khách, tiến độ, lỗi,
-// dead-letter queue và chạy lại. Core hiện chỉ có lệnh CLI `autoxide jobs` cho nhà vận hành.
+// dead-letter queue và chạy lại. Core hiện chỉ có lệnh CLI `autoxide jobs` cho nhà vận hành. Bộ bảng
+// (W-058): chọn nhiều để chạy lại (lặp lệnh từng cái của hàm mẫu; job không ở dead-letter queue báo
+// lỗi), sắp theo lúc bắt đầu, phân trang có tổng (hàm mẫu trả đủ danh sách).
 export default async function JobsPage(props: PageProps<"/settings/jobs">) {
   const gate = await sampleGate(DEVTOOLS_READ);
   if (gate) return gate;
   const t = await getTranslations("settings.jobs");
   const locale = await getLocale();
-  const { status } = await props.searchParams;
-  const current = STATUSES.find((s) => s === status);
-  const [page, all] = await Promise.all([
-    listJobs(current ? { status: current } : {}),
+  const params = await props.searchParams;
+  const current = STATUSES.find((s) => s === params.status);
+  const [found, all] = await Promise.all([
+    listJobs(current ? { status: current, limit: 200 } : { limit: 200 }),
     listJobs({ limit: 200 }),
   ]);
+  const sort = readSort(params, ["started"], { field: "started", dir: "desc" });
+  const paging = readPage(params);
+  const page = slicePage(
+    sortRows(found.data, (job) => job.started_at, sort.dir),
+    paging.page,
+    paging.per,
+  );
+  const keep = {
+    status: current,
+    ...(typeof params.sort === "string" ? { sort: sort.field, dir: sort.dir } : {}),
+  };
+  const bulk: BulkActionSpec[] = [
+    {
+      key: "retry",
+      label: t("retry"),
+      run: bulkRetryJobsAction,
+      confirm: {
+        title: t("bulkRetryTitle"),
+        points: [t("retryFrom"), t("retryAudit"), t("bulkRetryDead")],
+        submit: t("retrySubmit"),
+      },
+    },
+  ];
   return (
     <div className="blocks">
       <section className="block" aria-labelledby="jobs-h">
@@ -44,7 +75,7 @@ export default async function JobsPage(props: PageProps<"/settings/jobs">) {
         <nav className="chips" aria-label={t("filter")}>
           <Link
             className={current ? "chip" : "chip on"}
-            href="/settings/jobs"
+            href={BASE}
             aria-current={current ? undefined : "page"}
           >
             {t("all")} <span className="cnt">{all.data.length}</span>
@@ -65,88 +96,95 @@ export default async function JobsPage(props: PageProps<"/settings/jobs">) {
           {page.data.length === 0 ? (
             <p className="empty">{t("empty")}</p>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("job")}</Th>
-                  <Th>{t("started")}</Th>
-                  <Th>{t("progress")}</Th>
-                  <Th>{t("state")}</Th>
-                  <Th>
-                    <span className="vh">{t("actions")}</span>
-                  </Th>
-                </tr>
-              </thead>
-              <tbody>
-                {page.data.map((job) => {
-                  const p = job.progress;
-                  return (
-                    <tr key={job.id}>
-                      <Td className="rt-title">
-                        <span className="cell2">
-                          <b>{job.title}</b>
-                          <span className="sub">
-                            <span className="mono">{job.kind}</span> ·{" "}
-                            {job.requested_by?.name ?? t("system")}
+            <BulkTable ids={page.data.map((job) => job.id)} actions={bulk}>
+              <Table cards>
+                <thead>
+                  <tr>
+                    <SelectAllTh />
+                    <Th>{t("job")}</Th>
+                    <SortTh field="started" sort={sort} base={BASE} keep={keep} first="desc">
+                      {t("started")}
+                    </SortTh>
+                    <Th>{t("progress")}</Th>
+                    <Th>{t("state")}</Th>
+                    <Th>
+                      <span className="vh">{t("actions")}</span>
+                    </Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {page.data.map((job) => {
+                    const p = job.progress;
+                    return (
+                      <tr key={job.id}>
+                        <SelectTd id={job.id} name={job.title} />
+                        <Td className="rt-title">
+                          <span className="cell2">
+                            <b>{job.title}</b>
+                            <span className="sub">
+                              <span className="mono">{job.kind}</span> ·{" "}
+                              {job.requested_by?.name ?? t("system")}
+                            </span>
+                            {job.last_error ? <span className="sub">{job.last_error}</span> : null}
                           </span>
-                          {job.last_error ? <span className="sub">{job.last_error}</span> : null}
-                        </span>
-                      </Td>
-                      <Td className="whitespace-nowrap" label={t("started")}>
-                        <Time value={job.started_at} />
-                      </Td>
-                      <Td label={t("progress")}>
-                        <span className="cell2">
-                          <span className="sub">
-                            {job.status === "retrying"
-                              ? t("attempt", { n: job.attempts, max: job.max_attempts })
-                              : p
-                                ? p.total
-                                  ? t("of", {
-                                      done: formatCount(p.done, locale),
-                                      total: formatCount(p.total, locale),
-                                      unit: t(`units.${p.unit}`),
-                                    })
-                                  : `${formatCount(p.done, locale)} ${t(`units.${p.unit}`)}`
-                                : "—"}
+                        </Td>
+                        <Td className="whitespace-nowrap" label={t("started")}>
+                          <Time value={job.started_at} />
+                        </Td>
+                        <Td label={t("progress")}>
+                          <span className="cell2">
+                            <span className="sub">
+                              {job.status === "retrying"
+                                ? t("attempt", { n: job.attempts, max: job.max_attempts })
+                                : p
+                                  ? p.total
+                                    ? t("of", {
+                                        done: formatCount(p.done, locale),
+                                        total: formatCount(p.total, locale),
+                                        unit: t(`units.${p.unit}`),
+                                      })
+                                    : `${formatCount(p.done, locale)} ${t(`units.${p.unit}`)}`
+                                  : "—"}
+                            </span>
+                            {p ? (
+                              <progress
+                                className="bar"
+                                max={p.total ?? 1}
+                                value={p.total ? p.done : 1}
+                                aria-label={t("progress")}
+                              />
+                            ) : null}
                           </span>
-                          {p ? (
-                            <progress
-                              className="bar"
-                              max={p.total ?? 1}
-                              value={p.total ? p.done : 1}
-                              aria-label={t("progress")}
+                        </Td>
+                        <Td label={t("state")}>
+                          <span className={BADGE[job.status]}>
+                            <span className="dot" />
+                            {t(`status.${job.status}`)}
+                          </span>
+                        </Td>
+                        <Td className="rt-acts">
+                          {job.status === "dead" ? (
+                            <ConfirmAction
+                              action={retryJobAction}
+                              id={job.id}
+                              label={t("retry")}
+                              title={t("retryTitle", { job: job.title })}
+                              points={[t("retryFrom"), t("retryAudit")]}
+                              submit={t("retrySubmit")}
+                              done={t("retried")}
+                              danger={false}
                             />
                           ) : null}
-                        </span>
-                      </Td>
-                      <Td label={t("state")}>
-                        <span className={BADGE[job.status]}>
-                          <span className="dot" />
-                          {t(`status.${job.status}`)}
-                        </span>
-                      </Td>
-                      <Td className="rt-acts">
-                        {job.status === "dead" ? (
-                          <ConfirmAction
-                            action={retryJobAction}
-                            id={job.id}
-                            label={t("retry")}
-                            title={t("retryTitle", { job: job.title })}
-                            points={[t("retryFrom"), t("retryAudit")]}
-                            submit={t("retrySubmit")}
-                            done={t("retried")}
-                            danger={false}
-                          />
-                        ) : null}
-                      </Td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
+                        </Td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
+        <Pager total={page.total} page={page.page} per={paging.per} base={BASE} keep={keep} />
       </section>
     </div>
   );

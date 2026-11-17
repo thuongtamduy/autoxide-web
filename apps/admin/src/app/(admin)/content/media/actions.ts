@@ -12,6 +12,7 @@ import { type Outcome, send } from "@/lib/action";
 import { defined } from "@/lib/content";
 import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
 import type { AltSuggestion, MediaItem } from "@/lib/media";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 
 const id = z.uuid();
 const version = z.string().min(1).max(200);
@@ -179,6 +180,68 @@ export async function restoreMedia(state: FormState, formData: FormData): Promis
 /** Xoá hẳn (cần `media.purge`); không hoàn tác được. */
 export async function purgeMedia(state: FormState, formData: FormData): Promise<FormState> {
   return trashCall(state, formData, "purge");
+}
+
+// ---------------------------------------------------------------- Hàng loạt (bảng tệp)
+
+/**
+ * Core chỉ có lệnh từng tệp: lặp từng id (không bịa endpoint hàng loạt), gom lỗi của core theo dòng
+ * (vd tệp đã ở thùng rác, thiếu `media.purge`).
+ */
+async function bulkTrash(input: BulkInput, call: "trash" | "restore" | "purge") {
+  const result = await eachId(cleanIds(input.ids), async (itemId) => {
+    if (!id.safeParse(itemId).success) return invalid().problem.detail;
+    const params = { params: { path: { id: itemId } } };
+    const done = await send((client) => {
+      switch (call) {
+        case "trash":
+          return client.DELETE("/api/v1/media/{id}", params);
+        case "restore":
+          return client.POST("/api/v1/media/{id}/restore", params);
+        case "purge":
+          return client.POST("/api/v1/media/{id}/purge", params);
+      }
+    });
+    return done.ok ? null : done.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkTrashMedia(input: BulkInput): Promise<BulkResult> {
+  return bulkTrash(input, "trash");
+}
+
+export async function bulkRestoreMedia(input: BulkInput): Promise<BulkResult> {
+  return bulkTrash(input, "restore");
+}
+
+export async function bulkPurgeMedia(input: BulkInput): Promise<BulkResult> {
+  return bulkTrash(input, "purge");
+}
+
+/**
+ * Chuyển nhiều tệp sang một thư mục (`value`: id thư mục, hay `root` = ngoài mọi thư mục). Mỗi tệp:
+ * đọc `ETag` rồi `PATCH folder_id` kèm `If-Match`, như khi sửa ở khung chi tiết.
+ */
+export async function bulkMoveMedia(input: BulkInput): Promise<BulkResult> {
+  const target = input.value === "root" ? null : (input.value ?? "");
+  if (target !== null && !id.safeParse(target).success) {
+    return bulkBlocked(cleanIds(input.ids), invalid().problem.detail);
+  }
+  const result = await eachId(cleanIds(input.ids), async (itemId) => {
+    const current = await readMedia(itemId);
+    if (!current.ok) return current.problem.detail;
+    const moved = await send((client) =>
+      client.PATCH("/api/v1/media/{id}", {
+        params: { path: { id: itemId }, header: { "If-Match": current.version || "*" } },
+        body: { folder_id: target },
+      }),
+    );
+    return moved.ok ? null : moved.problem.detail;
+  });
+  refresh();
+  return result;
 }
 
 // ---------------------------------------------------------------- Thư mục

@@ -3,6 +3,7 @@
 // Server Action của màn "Vận chuyển" (module `shipping` của core chưa có, bước 44): gọi hàm mẫu của
 // `src/sample/shipping.ts` thay cho API (W-006, W-015), cùng cách trả lỗi như phần gọi core thật —
 // lỗi theo ô, gom mọi lỗi một lần, mã lỗi `shipping.*`. Khi có API chỉ thay lời gọi hàm mẫu.
+import { refresh } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   commerceGuard,
@@ -20,6 +21,7 @@ import {
   SHIPPING_SETTINGS_MANAGE,
   SHIPPING_SHIPMENTS_MANAGE,
 } from "@/lib/shipping";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   addHoliday,
@@ -28,10 +30,15 @@ import {
   createMethod,
   createShipment,
   importStatement,
+  listCarrierAccounts,
+  listDiscrepancies,
+  listMethods,
+  listShipments,
   type Quote,
   quote,
   replaceCarrierKey,
   resolveDiscrepancy,
+  type SampleOutcome,
   saveCalendar,
   setCarrierActive,
   setMethodActive,
@@ -323,4 +330,153 @@ export async function createCarrierAction(
     org_id: values.org_id ?? "",
   });
   return finishCommerce("shipping", state, outcome, CARRIER_FIELDS, values);
+}
+
+// ---- Hàng loạt
+
+/**
+ * Chạy một lệnh mẫu cho từng id (hàm mẫu, như core bước 44, chỉ có lệnh từng cái; không bịa endpoint
+ * hàng loạt), gom lỗi đã dịch theo `shipping.codes.*`. `undo`: id đã đổi, cho nút Hoàn tác.
+ */
+async function eachSample(
+  ids: string[],
+  permission: string | readonly string[],
+  run: (id: string) => Promise<SampleOutcome<unknown> | string>,
+  names: ReadonlyMap<string, string>,
+): Promise<BulkResult> {
+  const blocked = await guard(permission);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const result = await eachId(
+    ids,
+    async (id) => {
+      const outcome = await run(id);
+      if (typeof outcome === "string") return outcome;
+      return outcome.ok ? null : (await translateCommerce(outcome.problem, "shipping")).detail;
+    },
+    (id) => names.get(id) ?? id,
+  );
+  refresh();
+  const failed = new Set(result.errors.map((e) => e.id));
+  return { ...result, undo: ids.filter((id) => !failed.has(id)) };
+}
+
+async function shipmentNames(): Promise<Map<string, string>> {
+  const { data } = await listShipments({ limit: 1000 });
+  return new Map(data.map((x) => [x.id, x.order_number]));
+}
+
+/** Đặt hãng cho nhiều vận đơn chờ đặt; vận đơn không ở trạng thái chờ hay hãng lỗi báo riêng dòng. */
+export async function bulkBookAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(
+    cleanIds(input.ids),
+    SHIPPING_SHIPMENTS_MANAGE,
+    (id) => changeShipment(id, "book"),
+    await shipmentNames(),
+  );
+}
+
+/** Hỏi lại hành trình ở hãng cho nhiều vận đơn. */
+export async function bulkTrackAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(
+    cleanIds(input.ids),
+    [SHIPPING_SHIPMENTS_MANAGE, SHIPPING_COD_MANAGE],
+    (id) => trackShipment(id),
+    await shipmentNames(),
+  );
+}
+
+/**
+ * Dòng lệch COD "hãng báo chưa giao": hỏi lại hành trình của vận đơn để tự khớp. Dòng lệch loại khác
+ * không hỏi được (báo riêng dòng).
+ */
+export async function bulkTrackDiscrepancyAction(input: BulkInput): Promise<BulkResult> {
+  const { data } = await listDiscrepancies();
+  const t = await getTranslations("shipping.cod");
+  return eachSample(
+    cleanIds(input.ids),
+    SHIPPING_COD_MANAGE,
+    async (id) => {
+      const d = data.find((x) => x.id === id);
+      if (d?.status !== "open" || !d.shipment_id || d.kind !== "not_delivered") {
+        return t("bulkTrackSkip");
+      }
+      return trackShipment(d.shipment_id);
+    },
+    new Map(data.map((d) => [d.id, d.tracking_number])),
+  );
+}
+
+/** Đóng nhiều dòng lệch COD với cùng một lý do (người dùng gõ trong hộp hỏi lại). Không đảo được. */
+export async function bulkResolveDiscrepancyAction(input: BulkInput): Promise<BulkResult> {
+  const { data } = await listDiscrepancies();
+  return eachSample(
+    cleanIds(input.ids),
+    SHIPPING_COD_MANAGE,
+    (id) => resolveDiscrepancy(id, input.value ?? ""),
+    new Map(data.map((d) => [d.id, d.tracking_number])),
+  );
+}
+
+/** Bật / tắt nhiều hãng; Hoàn tác đảo lại đúng các hãng đã đổi. */
+async function carriersTo(ids: string[], active: boolean): Promise<BulkResult> {
+  const { data } = await listCarrierAccounts();
+  const changed: string[] = [];
+  const result = await eachSample(
+    ids,
+    SHIPPING_CARRIERS_MANAGE,
+    async (id) => {
+      const outcome = await setCarrierActive(id, active);
+      if (outcome.ok && outcome.data.previous !== active) changed.push(id);
+      return outcome;
+    },
+    new Map(data.map((c) => [c.id, c.name])),
+  );
+  return { ...result, undo: changed };
+}
+
+export async function bulkCarrierOffAction(input: BulkInput): Promise<BulkResult> {
+  return carriersTo(cleanIds(input.ids), false);
+}
+export async function bulkCarrierOnAction(input: BulkInput): Promise<BulkResult> {
+  return carriersTo(cleanIds(input.ids), true);
+}
+export async function undoCarrierOffAction(ids: string[]): Promise<BulkResult> {
+  const { total, done, errors } = await carriersTo(cleanIds(ids), true);
+  return { total, done, errors };
+}
+export async function undoCarrierOnAction(ids: string[]): Promise<BulkResult> {
+  const { total, done, errors } = await carriersTo(cleanIds(ids), false);
+  return { total, done, errors };
+}
+
+/** Bật / tắt nhiều phương thức giao; Hoàn tác đảo lại đúng các phương thức đã đổi. */
+async function methodsTo(ids: string[], active: boolean): Promise<BulkResult> {
+  const [{ data }, locale] = await Promise.all([listMethods(), getLocale()]);
+  const changed: string[] = [];
+  const result = await eachSample(
+    ids,
+    SHIPPING_SETTINGS_MANAGE,
+    async (id) => {
+      const outcome = await setMethodActive(id, active);
+      if (outcome.ok && outcome.data.previous !== active) changed.push(id);
+      return outcome;
+    },
+    new Map(data.map((m) => [m.id, m.names[locale] ?? m.names.vi ?? m.code])),
+  );
+  return { ...result, undo: changed };
+}
+
+export async function bulkMethodOffAction(input: BulkInput): Promise<BulkResult> {
+  return methodsTo(cleanIds(input.ids), false);
+}
+export async function bulkMethodOnAction(input: BulkInput): Promise<BulkResult> {
+  return methodsTo(cleanIds(input.ids), true);
+}
+export async function undoMethodOffAction(ids: string[]): Promise<BulkResult> {
+  const { total, done, errors } = await methodsTo(cleanIds(ids), true);
+  return { total, done, errors };
+}
+export async function undoMethodOnAction(ids: string[]): Promise<BulkResult> {
+  const { total, done, errors } = await methodsTo(cleanIds(ids), false);
+  return { total, done, errors };
 }

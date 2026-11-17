@@ -3,6 +3,7 @@
 // Server Action của màn "Khuyến mại" (module `promotions` của core chưa có, bước 43): gọi hàm mẫu của
 // `src/sample/promotions.ts` thay cho API (W-006, W-015), cùng cách trả lỗi như phần gọi core thật —
 // lỗi theo ô, gom mọi lỗi một lần, mã lỗi `promotions.*`. Khi có API chỉ thay lời gọi hàm mẫu.
+import type { Problem } from "@autoxide/sdk";
 import { refresh } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
@@ -32,6 +33,7 @@ import {
   evaluateCart,
   extendPromotion,
   generateCodes,
+  listPromotions,
   recordNotice,
   setFlashPrice,
   setPromotionRunning,
@@ -55,6 +57,50 @@ export async function bulkDisableCodesAction(input: BulkInput): Promise<BulkResu
   });
   refresh();
   return result;
+}
+
+/**
+ * Một lệnh cho nhiều chương trình (bảng Chương trình): hàm mẫu (và API dự kiến của bước 43) chỉ có
+ * lệnh từng chương trình, lặp và gom lỗi. `undo` là id đã đổi, cho nút Hoàn tác.
+ */
+async function bulkPromotions(
+  input: BulkInput,
+  run: (id: string) => Promise<{ ok: true } | { ok: false; problem: Problem }>,
+): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(PROMOTIONS_PUBLISH);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const { data } = await listPromotions({ locale: await getLocale() });
+  const names = new Map(data.map((p) => [p.id, p.title]));
+  const result = await eachId(
+    ids,
+    async (id) => {
+      const outcome = await run(id);
+      return outcome.ok ? null : (await translateCommerce(outcome.problem, "promotions")).detail;
+    },
+    (id) => names.get(id) ?? id,
+  );
+  const failed = new Set(result.errors.map((e) => e.id));
+  refresh();
+  return { ...result, undo: ids.filter((id) => !failed.has(id)) };
+}
+
+/** Tạm dừng nhiều chương trình đang chạy; Hoàn tác chạy lại đúng những cái vừa dừng. */
+export async function bulkPauseAction(input: BulkInput | string[]): Promise<BulkResult> {
+  const value = Array.isArray(input) ? { ids: input } : input;
+  return bulkPromotions(value, (id) => setPromotionRunning(id, "paused"));
+}
+
+/** Chạy lại nhiều chương trình đang tạm dừng; Hoàn tác dừng lại đúng những cái vừa chạy. */
+export async function bulkResumeAction(input: BulkInput | string[]): Promise<BulkResult> {
+  const value = Array.isArray(input) ? { ids: input } : input;
+  return bulkPromotions(value, (id) => setPromotionRunning(id, "active"));
+}
+
+/** Bật nhiều bản nháp: mỗi cái qua đủ bước kiểm (trần pháp luật, thông báo…); cái bị chặn báo lỗi riêng. */
+export async function bulkActivateAction(input: BulkInput): Promise<BulkResult> {
+  const result = await bulkPromotions(input, (id) => activatePromotion(id));
+  return { ...result, undo: [] };
 }
 
 function idOf(formData: FormData): string {

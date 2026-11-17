@@ -148,7 +148,8 @@ test("chuyển hướng: thêm, lỗi của core dưới ô, lọc theo nguồn,
   await page.getByRole("link", { name: "Manual" }).click();
   const manual = page.locator("tbody tr");
   await expect(manual).toHaveCount(1);
-  await manual.getByRole("button", { name: "Delete" }).click();
+  await manual.getByRole("button", { name: "More actions for /gioi-thieu" }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(dialog(page)).toContainText("stops redirecting");
   await dialog(page).getByRole("button", { name: "Delete" }).click();
   await expect(toast(page)).toContainText("Redirect deleted");

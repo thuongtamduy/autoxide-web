@@ -6,7 +6,9 @@ import {
   kindOf,
   type MediaItem,
   mediaHref,
+  mediaKeep,
   mediaQuery,
+  mediaSort,
   mediaSrc,
   missingAlt,
   parseMediaFilters,
@@ -82,6 +84,24 @@ describe("bộ lọc của thư viện media", () => {
     expect(mediaHref({ trash: true, item: ID }, { trash: false, item: undefined })).toBe(
       "/content/media",
     );
+  });
+
+  it("sắp theo tên, kích thước, giờ tải lên: tham số `sort` / `order` của core, giữ khi đổi bộ lọc", () => {
+    const filters = parseMediaFilters({ sort: "size", dir: "asc", cursor: "c1", item: ID });
+    expect(filters.sort).toEqual({ field: "size", dir: "asc" });
+    expect(mediaQuery(filters)).toMatchObject({ sort: "size", order: "asc" });
+    expect(mediaQuery({})).toMatchObject({ sort: "created_at", order: "desc" });
+    expect(mediaSort({})).toEqual({ field: "created", dir: "desc" });
+    // Cột lạ: không đổi cách sắp.
+    expect(parseMediaFilters({ sort: "alt", dir: "asc" }).sort).toBeUndefined();
+    expect(mediaHref(filters, { q: "logo" })).toBe(
+      `/content/media?q=logo&sort=size&dir=asc&item=${ID}`,
+    );
+    // Tham số giữ cho tiêu đề cột: không con trỏ, không cách sắp, không tệp đang mở.
+    expect(mediaKeep({ ...filters, view: "table", trash: true })).toEqual({
+      trash: "1",
+      view: "table",
+    });
   });
 
   it("tham số gửi core theo đúng tên của openapi.json", () => {

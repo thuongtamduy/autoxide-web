@@ -2,6 +2,9 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   activateAction,
+  bulkActivateAction,
+  bulkPauseAction,
+  bulkResumeAction,
   cancelPromotionAction,
   endPromotionAction,
   runningAction,
@@ -11,7 +14,11 @@ import { EvaluateForm, ExtendDialog } from "@/components/promotions/forms";
 import { Meter } from "@/components/promotions/meter";
 import { Checks, historyText, STATUS_BADGE } from "@/components/promotions/views";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { type BulkActionSpec, BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { ConfirmAction } from "@/components/ui/confirm";
+import { Pager } from "@/components/ui/pager";
+import { RowMenu, type RowMenuItem } from "@/components/ui/row-menu";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatDay, toVietnamInput } from "@/lib/catalog";
 import { formatCount, formatMoney } from "@/lib/format";
@@ -23,11 +30,13 @@ import {
   vnDateTime,
   vnRange,
 } from "@/lib/promotions";
+import { readPage, readSort, slicePage, withQuery } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   getPromotion,
   listLegalLimits,
   listPromotions,
+  PROMOTION_SORTS,
   type PromotionDetail,
   type PromotionSummary,
   promotionStats,
@@ -37,12 +46,18 @@ import {
 const FILTERS = ["active", "scheduled", "draft", "blocked", "paused", "ended"] as const;
 type Filter = (typeof FILTERS)[number];
 
+const BASE = "/marketing/promotions";
+
 // Tab "Chương trình": bản nháp → đã lên lịch → đang chạy ↔ tạm dừng → đã kết thúc. Bật là lúc kiểm
 // trần pháp luật, hồ sơ thông báo và mục tiêu. Mở một dòng để xem điều kiện, giá trước / sau khuyến
-// mại, lịch sử và thao tác. Cuối trang: trần pháp luật đang hiệu lực và "Thử giỏ hàng".
+// mại, lịch sử và thao tác. Cuối trang: trần pháp luật đang hiệu lực và "Thử giỏ hàng". Bộ bảng chuẩn
+// (W-058): chọn nhiều để tạm dừng / chạy lại (có Hoàn tác), bật bản nháp (mỗi cái qua đủ bước kiểm,
+// cái bị chặn báo riêng) hay xuất CSV; "⋯" trên dòng; sắp theo tên, thời gian, lượt dùng; phân trang
+// có tổng (hàm mẫu có đủ danh sách).
 export default async function ProgramsPage(props: PageProps<"/marketing/promotions">) {
-  const [t, locale, params] = await Promise.all([
+  const [t, tt, locale, params] = await Promise.all([
     getTranslations("promotions"),
+    getTranslations("table"),
     getLocale(),
     props.searchParams,
   ]);
@@ -50,8 +65,11 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
   const status = FILTERS.find((s) => s === one("status"));
   const q = one("q").slice(0, 200);
   const open = one("open");
+  const sorted = one("sort") !== "";
+  const sort = readSort(params, PROMOTION_SORTS, { field: "starts", dir: "asc" });
+  const paging = readPage(params);
   const [
-    { data: rows },
+    { data: listed },
     { data: all },
     { data: stats },
     detail,
@@ -60,7 +78,7 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
     publish,
     write,
   ] = await Promise.all([
-    listPromotions({ ...(status ? { status } : {}), q, locale }),
+    listPromotions({ ...(status ? { status } : {}), q, locale, sort: sorted ? sort : null }),
     listPromotions({ locale }),
     promotionStats(),
     open ? getPromotion(open, locale) : Promise.resolve(null),
@@ -69,13 +87,156 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
     can(PROMOTIONS_PUBLISH),
     can(PROMOTIONS_WRITE),
   ]);
-  const href = (change: Record<string, string | null>) => {
-    const next = new URLSearchParams();
-    const merged = { status: status ?? "", q, ...change };
-    for (const [key, value] of Object.entries(merged)) if (value) next.set(key, value);
-    const query = next.toString();
-    return query ? `/marketing/promotions?${query}` : "/marketing/promotions";
+  const page = slicePage(listed, paging.page, paging.per);
+  const rows = page.data;
+  const keep = {
+    status: status ?? "",
+    q,
+    ...(sorted ? { sort: sort.field, dir: sort.dir } : {}),
   };
+  const href = (change: Record<string, string | null>) =>
+    withQuery(
+      BASE,
+      {
+        ...keep,
+        ...(page.page > 1 ? { page: page.page } : {}),
+        ...(paging.per !== 25 ? { per: paging.per } : {}),
+      },
+      change,
+    );
+  const undo = { label: t("undo"), done: t("undone") };
+  const menu = (p: PromotionSummary, isOpen: boolean): RowMenuItem[] => [
+    {
+      label: isOpen ? t("programs.hide") : t("programs.view"),
+      href: isOpen ? href({ open: null }) : `${href({ open: p.id })}#programs-h`,
+    },
+    ...(publish && p.status === "draft"
+      ? [
+          {
+            label: t("actions.activate"),
+            dialog: (
+              <ConfirmAction
+                action={activateAction}
+                id={p.id}
+                label={t("actions.activate")}
+                title={t("actions.activateTitle", { title: p.title })}
+                points={[
+                  t("actions.activateChecks"),
+                  t("actions.activateLocked"),
+                  t("actions.activateVersion"),
+                ]}
+                submit={t("actions.activateSubmit")}
+                done={t("actions.activated")}
+                danger={false}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(publish && (p.status === "active" || p.status === "paused")
+      ? [
+          {
+            label: p.status === "active" ? t("actions.pause") : t("actions.resume"),
+            change: {
+              action: runningAction,
+              id: p.id,
+              expect: p.updated_at,
+              value: p.status === "active" ? "paused" : "active",
+              done: p.status === "active" ? t("actions.paused") : t("actions.resumed"),
+              undo,
+            },
+          },
+        ]
+      : []),
+    ...(write && (p.status === "active" || p.status === "paused" || p.status === "scheduled")
+      ? [
+          {
+            label: t("extend.button"),
+            dialog: (
+              <ExtendDialog
+                id={p.id}
+                title={p.title}
+                ends={toVietnamInput(p.ends_at).replace("T", " ")}
+                limit={p.usage_limit}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(publish && (p.status === "active" || p.status === "paused")
+      ? [
+          {
+            label: t("actions.end"),
+            danger: true,
+            dialog: (
+              <ConfirmAction
+                action={endPromotionAction}
+                id={p.id}
+                label={t("actions.end")}
+                title={t("actions.endTitle", { title: p.title })}
+                points={[t("actions.endNow"), t("actions.endHeld"), t("actions.endFinal")]}
+                submit={t("actions.endSubmit")}
+                done={t("actions.ended")}
+              />
+            ),
+          },
+        ]
+      : []),
+    ...(publish && (p.status === "draft" || p.status === "scheduled")
+      ? [
+          {
+            label: t("actions.cancel"),
+            danger: true,
+            dialog: (
+              <ConfirmAction
+                action={cancelPromotionAction}
+                id={p.id}
+                label={t("actions.cancel")}
+                title={t("actions.cancelTitle", { title: p.title })}
+                points={[t("actions.cancelFinal"), t("actions.cancelCodes")]}
+                submit={t("actions.cancelSubmit")}
+                done={t("actions.cancelled")}
+              />
+            ),
+          },
+        ]
+      : []),
+  ];
+  const actions: BulkActionSpec[] = [
+    ...(publish
+      ? [
+          {
+            key: "pause",
+            label: t("actions.pause"),
+            run: bulkPauseAction,
+            undo: bulkResumeAction,
+          },
+          {
+            key: "resume",
+            label: t("actions.resume"),
+            run: bulkResumeAction,
+            undo: bulkPauseAction,
+          },
+          {
+            key: "activate",
+            label: t("actions.activate"),
+            tone: "pri" as const,
+            run: bulkActivateAction,
+            confirm: {
+              title: t("programs.bulkActivateTitle"),
+              points: [t("actions.activateChecks"), t("programs.bulkActivateEach")],
+              submit: t("actions.activateSubmit"),
+            },
+          },
+        ]
+      : []),
+    {
+      key: "export",
+      label: t("programs.exportSelected"),
+      href: "/marketing/promotions/export.csv",
+      download: true,
+    },
+  ];
   const count = (f: Filter) =>
     all.filter((p) => (f === "blocked" ? p.blocked : p.status === f)).length;
 
@@ -97,7 +258,7 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
             <span className="kpi-label">{t("programs.kpiBlocked")}</span>
             <b className="kpi-value">{formatCount(stats.blocked, locale)}</b>
             <span className="kpi-sub">
-              <Link className="open" href={href({ status: "blocked", open: null })}>
+              <Link className="open" href={href({ status: "blocked", open: null, page: null })}>
                 {t("programs.kpiBlockedSub")}
               </Link>
             </span>
@@ -120,7 +281,7 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
         <nav className="chips" aria-label={t("programs.byStatus")}>
           <Link
             className={status ? "chip" : "chip on"}
-            href={href({ status: null, open: null })}
+            href={href({ status: null, open: null, page: null })}
             aria-current={status ? undefined : "page"}
           >
             {t("programs.all")} <span className="cnt">{all.length}</span>
@@ -129,7 +290,7 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
             <Link
               key={f}
               className={status === f ? "chip on" : "chip"}
-              href={href({ status: f, open: null })}
+              href={href({ status: f, open: null, page: null })}
               aria-current={status === f ? "page" : undefined}
             >
               {t(`filters.${f}`)} <span className="cnt">{count(f)}</span>
@@ -140,6 +301,12 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
           <form className="filters" action="/marketing/promotions">
             <AutoFilter />
             {status ? <input type="hidden" name="status" value={status} /> : null}
+            {sorted ? (
+              <>
+                <input type="hidden" name="sort" value={sort.field} />
+                <input type="hidden" name="dir" value={sort.dir} />
+              </>
+            ) : null}
             <div className="fld grow">
               <label className="lab" htmlFor="pm-q">
                 {t("programs.search")}
@@ -165,90 +332,117 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
           {rows.length === 0 ? (
             <p className="empty">{t("programs.empty")}</p>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("programs.program")}</Th>
-                  <Th>{t("programs.appliesTo")}</Th>
-                  <Th>{t("programs.window")}</Th>
-                  <Th>{t("programs.used")}</Th>
-                  <Th>{t("programs.state")}</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((p) => {
-                  const isOpen = open === p.id && detail !== null;
-                  return [
-                    <tr key={p.id} data-current={isOpen ? "" : undefined}>
-                      <Td className="rt-title">
-                        <span className="cell2">
-                          <Link
-                            className="open"
-                            href={
-                              isOpen ? href({ open: null }) : `${href({ open: p.id })}#programs-h`
-                            }
-                            scroll={false}
-                            aria-expanded={isOpen}
-                          >
-                            {p.title}
-                          </Link>
-                          <span className="sub">
-                            {p.first_code ? `${t("programs.code", { code: p.first_code })} · ` : ""}
-                            {t(`kinds.${p.kind}`)}
-                          </span>
-                        </span>
-                      </Td>
-                      <Td label={t("programs.appliesTo")}>
-                        <AppliesTo p={p} locale={locale} t={t} />
-                      </Td>
-                      <Td label={t("programs.window")}>
-                        {vnRange(p.starts_at, p.ends_at, locale)}
-                      </Td>
-                      <Td label={t("programs.used")}>
-                        <Meter
-                          label={
-                            p.status === "draft" || p.status === "scheduled"
-                              ? t("programs.notStarted")
-                              : p.usage_limit === null
-                                ? t("programs.usedNoLimit", {
-                                    used: formatCount(p.usage_count, locale),
-                                  })
-                                : t("programs.usedOf", {
-                                    used: formatCount(p.usage_count, locale),
-                                    limit: formatCount(p.usage_limit, locale),
-                                  })
-                          }
-                          percent={usedPercent(p.usage_count, p.usage_limit)}
-                        />
-                      </Td>
-                      <Td label={t("programs.state")}>
-                        <span className="cell2">
-                          <span className={STATUS_BADGE[p.status]}>
-                            <span className="dot" />
-                            {t(`status.${p.status}`)}
-                          </span>
-                          {p.blocked ? (
-                            <span className="badge b-bad">
-                              <span className="dot" />
-                              {t("filters.blocked")}
+            <BulkTable ids={rows.map((p) => p.id)} actions={actions}>
+              <Table cards>
+                <thead>
+                  <tr>
+                    <SelectAllTh />
+                    <SortTh field="title" sort={sort} base={BASE} keep={keep}>
+                      {t("programs.program")}
+                    </SortTh>
+                    <Th>{t("programs.appliesTo")}</Th>
+                    <SortTh field="starts" sort={sort} base={BASE} keep={keep}>
+                      {t("programs.window")}
+                    </SortTh>
+                    <SortTh field="used" sort={sort} base={BASE} keep={keep} first="desc">
+                      {t("programs.used")}
+                    </SortTh>
+                    <Th>{t("programs.state")}</Th>
+                    <Th>
+                      <span className="vh">{t("programs.actions")}</span>
+                    </Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((p) => {
+                    const isOpen = open === p.id && detail !== null;
+                    return [
+                      <tr key={p.id} data-current={isOpen ? "" : undefined}>
+                        <SelectTd id={p.id} name={p.title} />
+                        <Td className="rt-title">
+                          <span className="cell2">
+                            <Link
+                              className="open"
+                              href={
+                                isOpen ? href({ open: null }) : `${href({ open: p.id })}#programs-h`
+                              }
+                              scroll={false}
+                              aria-expanded={isOpen}
+                            >
+                              {p.title}
+                            </Link>
+                            <span className="sub">
+                              {p.first_code
+                                ? `${t("programs.code", { code: p.first_code })} · `
+                                : ""}
+                              {t(`kinds.${p.kind}`)}
                             </span>
-                          ) : null}
-                        </span>
-                      </Td>
-                    </tr>,
-                    isOpen && detail ? (
-                      <tr key={`${p.id}-open`} className="cat-detail-row">
-                        <td colSpan={5}>
-                          <Detail p={detail.data} locale={locale} publish={publish} write={write} />
-                        </td>
-                      </tr>
-                    ) : null,
-                  ];
-                })}
-              </tbody>
-            </Table>
+                          </span>
+                        </Td>
+                        <Td label={t("programs.appliesTo")}>
+                          <AppliesTo p={p} locale={locale} t={t} />
+                        </Td>
+                        <Td label={t("programs.window")}>
+                          {vnRange(p.starts_at, p.ends_at, locale)}
+                        </Td>
+                        <Td label={t("programs.used")}>
+                          <Meter
+                            label={
+                              p.status === "draft" || p.status === "scheduled"
+                                ? t("programs.notStarted")
+                                : p.usage_limit === null
+                                  ? t("programs.usedNoLimit", {
+                                      used: formatCount(p.usage_count, locale),
+                                    })
+                                  : t("programs.usedOf", {
+                                      used: formatCount(p.usage_count, locale),
+                                      limit: formatCount(p.usage_limit, locale),
+                                    })
+                            }
+                            percent={usedPercent(p.usage_count, p.usage_limit)}
+                          />
+                        </Td>
+                        <Td label={t("programs.state")}>
+                          <span className="cell2">
+                            <span className={STATUS_BADGE[p.status]}>
+                              <span className="dot" />
+                              {t(`status.${p.status}`)}
+                            </span>
+                            {p.blocked ? (
+                              <span className="badge b-bad">
+                                <span className="dot" />
+                                {t("filters.blocked")}
+                              </span>
+                            ) : null}
+                          </span>
+                        </Td>
+                        <Td className="rt-acts">
+                          <RowMenu
+                            label={tt("moreFor", { name: p.title })}
+                            items={menu(p, isOpen)}
+                          />
+                        </Td>
+                      </tr>,
+                      isOpen && detail ? (
+                        <tr key={`${p.id}-open`} className="cat-detail-row">
+                          <td colSpan={7}>
+                            <Detail
+                              p={detail.data}
+                              locale={locale}
+                              publish={publish}
+                              write={write}
+                            />
+                          </td>
+                        </tr>
+                      ) : null,
+                    ];
+                  })}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
+        <Pager total={page.total} page={page.page} per={paging.per} base={BASE} keep={keep} />
       </section>
 
       <section className="block" aria-labelledby="limits-h">

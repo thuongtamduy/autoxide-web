@@ -1219,6 +1219,19 @@ export const INBOUND_OPEN: readonly InboundStatus[] = [
   "failed",
 ];
 
+/**
+ * Bộ lọc của bảng đơn từ kênh: `open` (mặc định, "Cần xử lý") chỉ giữ đơn ở trạng thái chờ người xử
+ * lý (`INBOUND_OPEN`); `all` giữ mọi đơn; còn lại đúng một trạng thái.
+ */
+export function inboundMatches(
+  row: Pick<InboundOrder, "status">,
+  chip: InboundChip | "open" | "all",
+): boolean {
+  if (chip === "all") return true;
+  if (chip === "open") return INBOUND_OPEN.includes(row.status);
+  return row.status === chip;
+}
+
 // Thay bằng GET /api/v1/channels/inbound-orders?status= (bước 48). Mặc định: việc cần xử lý trước.
 export async function listInbound(
   chip: InboundChip | null = null,

@@ -9,7 +9,9 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { send } from "@/lib/action";
+import type { ChangeState } from "@/lib/engage";
 import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
+import { type BulkInput, type BulkResult, cleanIds, eachId } from "@/lib/table";
 
 const USERS = "/org/access/users";
 const ROLES = "/org/access/roles";
@@ -99,6 +101,63 @@ export async function setUserDisabled(state: FormState, formData: FormData): Pro
   if (!result.ok) return problemState(result.problem, []);
   refresh();
   return { done: nextDone(state) };
+}
+
+/** Khoá một tài khoản từ menu "⋯" của bảng (hộp hỏi lại chỉ gửi `id`). */
+export async function disableUser(state: FormState, formData: FormData): Promise<FormState> {
+  const result = await send((client) =>
+    client.PATCH("/api/v1/auth/users/{id}", {
+      params: { path: { id: idOf(formData) } },
+      body: { disabled: true },
+    }),
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  refresh();
+  return { done: nextDone(state) };
+}
+
+/**
+ * Mở / khoá đảo được cho menu "⋯" (`status` = `active` hay `disabled`): trả trạng thái cũ để nút
+ * Hoàn tác gửi lại. Không gửi `If-Match` (chỉ đổi trạng thái khoá, không ghi đè tên).
+ */
+export async function changeUser(_state: ChangeState, formData: FormData): Promise<ChangeState> {
+  const disabled = formData.get("status") === "disabled";
+  const result = await send((client) =>
+    client.PATCH("/api/v1/auth/users/{id}", {
+      params: { path: { id: idOf(formData) } },
+      body: { disabled },
+    }),
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  refresh();
+  return {
+    done: 1,
+    previous: disabled ? "active" : "disabled",
+    updated: result.data.data.updated_at,
+  };
+}
+
+/**
+ * Khoá / mở nhiều tài khoản (thanh hàng loạt). Core chỉ có `PATCH /auth/users/{id}`: lặp từng id, gom
+ * lỗi (vd tự khoá chính mình, quản trị viên cuối cùng — câu của core).
+ */
+async function bulkUsers(input: BulkInput, disabled: boolean): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const written = await send((client) =>
+      client.PATCH("/api/v1/auth/users/{id}", { params: { path: { id } }, body: { disabled } }),
+    );
+    return written.ok ? null : written.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkDisableUsers(input: BulkInput): Promise<BulkResult> {
+  return bulkUsers(input, true);
+}
+
+export async function bulkEnableUsers(input: BulkInput): Promise<BulkResult> {
+  return bulkUsers(input, false);
 }
 
 /** Thay toàn bộ role của người dùng bằng các ô đang chọn (`role_id`, có thể không ô nào). */
@@ -337,6 +396,21 @@ export async function updateRole(state: FormState, formData: FormData): Promise<
   if (!result.ok) return { ...roleProblem(result.problem), values };
   refresh();
   return { done: nextDone(state) };
+}
+
+/**
+ * Xoá nhiều role (thanh hàng loạt): lặp `DELETE /auth/roles/{id}`; role dựng sẵn hay còn cần thì core
+ * từ chối, câu lỗi của core hiện theo từng dòng.
+ */
+export async function bulkDeleteRoles(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const deleted = await send((client) =>
+      client.DELETE("/api/v1/auth/roles/{id}", { params: { path: { id } } }),
+    );
+    return deleted.ok ? null : deleted.problem.detail;
+  });
+  refresh();
+  return result;
 }
 
 /** Xoá role; người đang giữ role mất nó ở request kế tiếp. */

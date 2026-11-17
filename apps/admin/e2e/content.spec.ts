@@ -307,7 +307,9 @@ test("Ctrl K: Tạo mới theo permission, Kết quả tìm bài viết và ngư
 test("Duyệt và đăng ngay ở danh sách bài chờ duyệt", async ({ page }) => {
   await signIn(page, "/content?status=review");
   const row = rows(page).filter({ hasText: "Bảo quản dao bếp" });
-  await row.getByRole("button", { name: "Approve and publish" }).click();
+  // "Duyệt và đăng" nằm trong "⋯" của dòng (bộ công cụ bảng, W-058), không còn bị cắt ở mép bảng.
+  await row.getByRole("button", { name: "More actions for Bảo quản dao bếp" }).click();
+  await page.getByRole("menuitem", { name: "Approve and publish" }).click();
   await expect(dialog(page)).toContainText("Approve and publish “Bảo quản dao bếp”?");
   await dialog(page).getByRole("button", { name: "Approve and publish" }).click();
   await expect(toast(page)).toHaveText("Published");

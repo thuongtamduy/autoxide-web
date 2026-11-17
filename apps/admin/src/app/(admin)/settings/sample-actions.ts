@@ -4,8 +4,10 @@
 // đối tác (bước 33/36/39), job (bước 52), yêu cầu duyệt của agent (bước 51). Gọi hàm mẫu
 // của `src/sample/` thay cho API chưa có; cùng cách trả lỗi như phần gọi core thật, để khi có API
 // chỉ thay lời gọi.
+import { refresh } from "next/cache";
 import type { FormState } from "@/lib/form";
-import { finishSample, sampleGuard } from "@/lib/sample-action";
+import { finishSample, sampleGuard, translateSample } from "@/lib/sample-action";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { getMe } from "@/lib/viewer";
 import { approveRequest, rejectRequest } from "@/sample/agent";
 import {
@@ -67,6 +69,22 @@ export async function retryJobAction(state: FormState, formData: FormData): Prom
   const off = await sampleGuard();
   if (off) return off;
   return finishSample(state, await retryJob(idOf(formData)), []);
+}
+
+/**
+ * Chạy lại nhiều job trong dead-letter queue (thanh hàng loạt): hàm mẫu chỉ có lệnh từng cái, lặp từng
+ * id; job không ở dead-letter queue thì báo lỗi của dòng đó.
+ */
+export async function bulkRetryJobsAction(input: BulkInput): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const off = await sampleGuard();
+  if (off) return bulkBlocked(ids, off.error ?? "");
+  const result = await eachId(ids, async (id) => {
+    const outcome = await retryJob(id);
+    return outcome.ok ? null : (await translateSample(outcome.problem)).detail;
+  });
+  refresh();
+  return result;
 }
 
 // ---------------------------------------------------------------- Yêu cầu duyệt của agent

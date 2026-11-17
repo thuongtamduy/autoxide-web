@@ -34,6 +34,7 @@ import {
 import { type FormState, nextDone, problemState } from "@/lib/form";
 import { formatMoney } from "@/lib/format";
 import { type QrPath, qrPath } from "@/lib/qr";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { can, getMe } from "@/lib/viewer";
 import {
   type BookKey,
@@ -93,6 +94,28 @@ const finish = <T>(
   fields: readonly string[],
   values?: Record<string, string>,
 ) => finishCommerce("finance", state, outcome, fields, values);
+
+/**
+ * Chạy một hàm mẫu cho từng id đã chọn (thanh hàng loạt; hàm mẫu chỉ có lệnh từng cái), gom lỗi theo
+ * dòng bằng câu đã dịch (lỗi theo ô thì lấy câu của ô đầu tiên).
+ */
+async function bulkSample<T>(
+  input: BulkInput,
+  permission: string,
+  run: (id: string) => Promise<SampleOutcome<T>>,
+): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const off = await guard(permission);
+  if (off) return bulkBlocked(ids, off.error ?? "");
+  const result = await eachId(ids, async (id) => {
+    const outcome = await run(id);
+    if (outcome.ok) return null;
+    const problem = await translateCommerce(outcome.problem, "finance");
+    return problem.errors?.[0]?.detail ?? problem.detail;
+  });
+  refresh();
+  return result;
+}
 
 // ---------------------------------------------------------------- Sổ cái
 
@@ -257,6 +280,15 @@ export async function resolveExceptionAction(
   return finish(state, outcome, fields, values);
 }
 
+/** Bỏ qua nhiều mục sai lệch (thanh hàng loạt) với cùng một lý do (`value`); mục đã xử lý thì báo lỗi. */
+export async function bulkIgnoreExceptionsAction(input: BulkInput): Promise<BulkResult> {
+  const who = await actor();
+  const note = input.value ?? "";
+  return bulkSample(input, LEDGER_RECONCILE, (id) =>
+    resolveException(id, { action: "ignore", payment_code: "", note }, who),
+  );
+}
+
 /** "Đối soát ngay": xếp việc kéo sao kê của một ngày rồi khớp. */
 export async function reconcileAction(state: FormState, formData: FormData): Promise<FormState> {
   const off = await guard(LEDGER_RECONCILE);
@@ -391,6 +423,16 @@ export async function issueDocumentAction(
   const off = await guard(INVOICES_ISSUE);
   if (off) return off;
   return finish(state, await issueDocument(text(formData, "id")), []);
+}
+
+/** Phát hành nhiều hoá đơn nháp (thanh hàng loạt): mỗi hoá đơn nhận số kế tiếp của ký hiệu. */
+export async function bulkIssueDocumentsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkSample(input, INVOICES_ISSUE, issueDocument);
+}
+
+/** Hỏi lại nhà cung cấp cho nhiều hoá đơn đang gửi (thanh hàng loạt). */
+export async function bulkRefreshDocumentsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkSample(input, INVOICES_ISSUE, refreshDocument);
 }
 
 export async function deleteDraftAction(state: FormState, formData: FormData): Promise<FormState> {

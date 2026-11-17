@@ -2216,3 +2216,22 @@ Cần ở core: endpoint hàng loạt (ít nhất duyệt / chặn bình luận,
 danh sách; lịch sử backlog job theo giờ; lịch sử chỉ số người bán; lệnh vô hiệu mã giảm giá.
 
 Lý do: chủ dự án yêu cầu (17/11).
+
+## W-059 · Áp bộ công cụ bảng cho mọi danh sách còn lại — 2026-11-17 — chủ dự án yêu cầu
+
+Tiếp W-058. Chọn nhiều + thanh hàng loạt, "⋯" trên dòng, sắp theo cột, phân trang đã áp cho Tồn kho (mức tồn, chuyển
+kho, kiểm kê, lô / serial, đơn mua, nhật ký có lọc khoảng ngày), Khuyến mại (chương trình, xuất CSV), Bán hàng (đổi trả,
+giỏ bỏ dở, vận đơn, COD, hãng, phí giao, cửa hàng, ca, đánh giá, kênh bán), Nội dung (bài viết, chuyển hướng, danh mục,
+media ở dạng Bảng), Tiếp thị (biểu mẫu, bài nộp, chiến dịch, không gửi, lệnh cấm, tiếp thị liên kết), Khách hàng
+(tài khoản người mua trên core thật, nhóm, chặn COD), Tổ chức (người dùng, role, lời mời, uỷ quyền), Cài đặt (webhook,
+API key, audit, job), Tài chính (sổ cái, ngoại lệ, hoá đơn điện tử), Tuân thủ (KYC, yêu cầu chủ thể), Nền tảng.
+
+Giữ đúng giới hạn: chỗ không có lệnh thì "⋯" chỉ dẫn sang chi tiết; không gửi chiến dịch hàng loạt (không đảo được);
+sổ cái và nhật ký kho không có hàng loạt (chỉ ghi thêm); trên core thật chỉ sắp theo `order` thời gian và không có tổng.
+Sửa kèm: `RowMenu` giữ giá trị ngữ cảnh hộp thoại qua các lần vẽ lại (form mở từ "⋯" từng mất chữ khi có thông báo);
+yêu cầu trả tại quầy không duyệt được (đi thẳng tới nhận hàng), kể cả từ thanh hàng loạt.
+
+Cần ở core (cộng vào yêu cầu đã gửi ở autoxide#84): `q` cho `GET /content/redirects`; xuất CSV bài nộp theo id; nhân bản
+biểu mẫu; gửi lại thư xác minh email cho người khác; endpoint nhãn vận đơn (bước 44).
+
+Lý do: chủ dự án yêu cầu (17/11).

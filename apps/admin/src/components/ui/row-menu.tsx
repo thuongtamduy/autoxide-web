@@ -8,6 +8,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -139,6 +140,18 @@ export function RowMenu({ label, items }: { label: string; items: readonly RowMe
     e.preventDefault();
   };
 
+  // Giá trị context của hộp thoại phải giữ nguyên qua các lần vẽ lại của menu (vd khi một thông báo
+  // hiện / tắt làm `useToast` đổi): `Dialog` dựng lại nội dung mỗi khi context đổi, nên một object mới
+  // mỗi lần vẽ sẽ xoá chữ đang gõ và kết quả kiểm tra của form đang mở.
+  const host = useMemo(
+    () => ({
+      onClose: () => {
+        setDialog(null);
+        trigger.current?.focus();
+      },
+    }),
+    [],
+  );
   const chosen = dialog === null ? null : items[dialog];
   return (
     <span className="rmenu-wrap">
@@ -181,16 +194,7 @@ export function RowMenu({ label, items }: { label: string; items: readonly RowMe
         </div>
       ) : null}
       {chosen && "dialog" in chosen ? (
-        <DialogHostContext
-          value={{
-            onClose: () => {
-              setDialog(null);
-              trigger.current?.focus();
-            },
-          }}
-        >
-          {chosen.dialog}
-        </DialogHostContext>
+        <DialogHostContext value={host}>{chosen.dialog}</DialogHostContext>
       ) : null}
     </span>
   );

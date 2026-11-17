@@ -238,6 +238,16 @@ export async function deleteGroupAction(state: FormState, formData: FormData): P
   return finishCommerce("customers", state, await deleteGroup(idOf(formData)), []);
 }
 
+/** Xoá nhiều nhóm (thanh hàng loạt): lặp từng nhóm; nhóm đang được bảng giá / khuyến mại dùng thì báo lỗi. */
+export async function bulkDeleteGroupsAction(input: BulkInput): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(CUSTOMERS_SEGMENTS_MANAGE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const result = await eachId(ids, async (id) => failure(await deleteGroup(id)));
+  refresh();
+  return result;
+}
+
 // ---- Điểm, nhắc giỏ, giới thiệu
 
 const LOYALTY_FIELDS = ["earn", "value", "months", "min", "max_pct", "from"] as const;
@@ -331,6 +341,16 @@ export async function blockAction(state: FormState, formData: FormData): Promise
 }
 
 /** Gỡ chặn / chặn lại (đảo được: `status` = `lifted` hoặc `blocked`). */
+/** Gỡ nhiều lần chặn COD (thanh hàng loạt): lặp từng lần chặn; lần đã gỡ hay hết hạn thì báo lỗi. */
+export async function bulkLiftAction(input: BulkInput): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(ORDERS_RISK_MANAGE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const result = await eachId(ids, async (id) => failure(await setBlockLifted(id, true)));
+  refresh();
+  return result;
+}
+
 export async function liftAction(_state: ChangeState, formData: FormData): Promise<ChangeState> {
   const blocked = await guard(ORDERS_RISK_MANAGE);
   if (blocked) return blocked;

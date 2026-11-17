@@ -4,12 +4,17 @@ import {
   adjustStock,
   changeCount,
   changeTransfer,
+  cleanDay,
   createReceipt,
   createSupplier,
   createTransfer,
   getLevel,
+  inDays,
   listCounts,
   listLevels,
+  listLots,
+  listMovements,
+  listPurchaseOrders,
   listTransfers,
   parseLines,
   putCountLines,
@@ -19,6 +24,7 @@ import {
   verifyLevels,
   weightedAverage,
 } from "./inventory";
+import { vietnamDay } from "./tax";
 
 beforeEach(() => {
   resetSampleCatalog();
@@ -185,5 +191,62 @@ describe("tồn kho mẫu (chờ module inventory, bước 42)", () => {
     expect((await listTransfers({ status: "in_transit" })).data.map((t) => t.number)).toEqual([
       "CK-0219",
     ]);
+  });
+});
+
+describe("bộ công cụ bảng của Tồn kho (W-058)", () => {
+  const collate = (a: string, b: string) =>
+    a.localeCompare(b, "vi", { sensitivity: "base", numeric: true });
+
+  it("ngày lọc: chỉ nhận YYYY-MM-DD có thật", () => {
+    expect(cleanDay("2026-11-17")).toBe("2026-11-17");
+    expect(cleanDay("2026-02-30")).toBe("");
+    expect(cleanDay("17/11/2026")).toBe("");
+    expect(cleanDay("")).toBe("");
+  });
+
+  it("khoảng ngày tính theo giờ Việt Nam, cả hai đầu", () => {
+    // 17:30 UTC ngày 16 là 00:30 ngày 17 ở Việt Nam.
+    expect(inDays("2026-11-16T17:30:00Z", "2026-11-17", "2026-11-17")).toBe(true);
+    expect(inDays("2026-11-16T16:30:00Z", "2026-11-17", "")).toBe(false);
+    expect(inDays("2026-11-16T16:30:00Z", "", "2026-11-16")).toBe(true);
+    expect(inDays("2026-01-01T00:00:00Z", "", "")).toBe(true);
+  });
+
+  it("sổ biến động: lọc khoảng ngày, sắp theo thời gian hai chiều", async () => {
+    const all = (await listMovements({ limit: 10_000 })).data;
+    const times = all.map((m) => m.created_at);
+    expect(times).toEqual([...times].sort().reverse());
+    const asc = (await listMovements({ limit: 10_000, dir: "asc" })).data.map((m) => m.created_at);
+    expect(asc).toEqual([...times].reverse());
+    const day = vietnamDay(Date.parse(all[0]?.created_at ?? ""));
+    const one = (await listMovements({ limit: 10_000, from: day, to: day })).data;
+    expect(one.length).toBeGreaterThan(0);
+    expect(one.length).toBeLessThanOrEqual(all.length);
+    expect(one.every((m) => vietnamDay(Date.parse(m.created_at)) === day)).toBe(true);
+    expect((await listMovements({ from: "2000-01-01", to: "2000-01-02" })).data).toEqual([]);
+  });
+
+  it("sắp theo cột: tồn, chuyển kho, kiểm kê, lô, đơn đặt mua", async () => {
+    const levels = (
+      await listLevels({ limit: 10_000, sort: { field: "available", dir: "desc" } })
+    ).data.map((l) => l.available);
+    expect(levels).toEqual([...levels].sort((a, b) => b - a));
+    const names = (
+      await listLevels({ limit: 10_000, sort: { field: "warehouse", dir: "asc" } })
+    ).data.map((l) => l.org_name);
+    expect(names).toEqual([...names].sort(collate));
+    const transfers = (await listTransfers({ sort: { field: "number", dir: "asc" } })).data.map(
+      (t) => t.number,
+    );
+    expect(transfers).toEqual([...transfers].sort(collate));
+    const counts = (await listCounts({ field: "number", dir: "desc" })).data.map((c) => c.number);
+    expect(counts).toEqual([...counts].sort(collate).reverse());
+    const lots = (await listLots("vi", { field: "left", dir: "asc" })).data.map((l) => l.on_hand);
+    expect(lots).toEqual([...lots].sort((a, b) => a - b));
+    const orders = (await listPurchaseOrders({ field: "total", dir: "desc" })).data.map((p) =>
+      Number(p.total.amount),
+    );
+    expect(orders).toEqual([...orders].sort((a, b) => b - a));
   });
 });

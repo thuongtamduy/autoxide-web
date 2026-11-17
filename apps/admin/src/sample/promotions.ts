@@ -1074,7 +1074,12 @@ export interface PromotionQuery {
   kind?: PromotionKind;
   q?: string;
   locale?: string;
+  /** Dự kiến (`?sort=title|starts|used&order=`): trống thì đang chạy trước, rồi theo ngày bắt đầu. */
+  sort?: { field: PromotionSort; dir: SortDir } | null;
 }
+
+export const PROMOTION_SORTS = ["title", "starts", "used"] as const;
+export type PromotionSort = (typeof PROMOTION_SORTS)[number];
 
 async function targetLabels(p: Promotion, locale: string): Promise<string[]> {
   const ids = p.targets.filter((t) => t.target_type === "variant").map((t) => t.target_id);
@@ -1151,7 +1156,50 @@ export async function listPromotions(query: PromotionQuery = {}): Promise<{
         a.starts_at.localeCompare(b.starts_at) ||
         a.id.localeCompare(b.id),
     );
-  return { data: await Promise.all(rows.map((p) => summarize(p, locale))) };
+  const data = await Promise.all(rows.map((p) => summarize(p, locale)));
+  const sort = query.sort;
+  if (!sort) return { data };
+  return {
+    data: sortRows(
+      data,
+      (p) =>
+        sort.field === "title" ? p.title : sort.field === "starts" ? p.starts_at : p.usage_count,
+      sort.dir,
+    ),
+  };
+}
+
+// Dự kiến (bước 43 chưa có endpoint xuất danh sách chương trình): CSV của các chương trình đã chọn
+// (`ids`; trống = mọi chương trình). Ô bắt đầu bằng = + - @ được chặn như CSV mã giảm giá.
+export async function exportPromotions(
+  ids: readonly string[] | null = null,
+  locale = "vi",
+): Promise<{ data: { file_name: string; csv: string } }> {
+  const s = store();
+  const header = [
+    "title",
+    "kind",
+    "trigger",
+    "status",
+    "starts_at",
+    "ends_at",
+    "usage_limit",
+    "usage_count",
+  ];
+  const rows = s.promotions
+    .filter((p) => !ids || ids.includes(p.id))
+    .map((p) => [
+      titleOf(p, locale),
+      p.kind,
+      p.trigger,
+      p.status,
+      p.starts_at,
+      p.ends_at,
+      p.usage_limit === null ? "" : String(p.usage_limit),
+      String(p.usage_count),
+    ]);
+  const csv = [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n");
+  return { data: { file_name: `khuyen-mai-${vietnamDay()}.csv`, csv: `${csv}\r\n` } };
 }
 
 /** Số liệu đầu tab (dự kiến; core chưa có endpoint đếm). */

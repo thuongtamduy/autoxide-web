@@ -10,11 +10,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { send } from "@/lib/action";
+import { type Outcome, send } from "@/lib/action";
 import { expiresAt } from "@/lib/api-keys";
+import type { ChangeState } from "@/lib/engage";
 import { secureCookies } from "@/lib/env";
 import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
 import { PASSKEY_COOKIE, passkeyCookie } from "@/lib/session";
+import { type BulkInput, type BulkResult, cleanIds, eachId } from "@/lib/table";
 
 const WEBHOOKS = "/settings/webhooks";
 
@@ -147,6 +149,69 @@ export async function disableWebhook(state: FormState, formData: FormData): Prom
 /** Bật lại endpoint: event từ giờ được gửi tiếp. */
 export async function enableWebhook(state: FormState, formData: FormData): Promise<FormState> {
   return setDisabled(state, idOf(formData), false);
+}
+
+/**
+ * Tắt / bật đảo được cho menu "⋯" của bảng (`status` = `disabled` hay `active`): trả trạng thái cũ để
+ * nút Hoàn tác gửi lại.
+ */
+export async function changeWebhook(_state: ChangeState, formData: FormData): Promise<ChangeState> {
+  const disabled = formData.get("status") === "disabled";
+  const result = await send((client) =>
+    client.PATCH("/api/v1/webhooks/{id}", {
+      params: { path: { id: idOf(formData) } },
+      body: { disabled },
+    }),
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  refresh();
+  return {
+    done: 1,
+    previous: disabled ? "active" : "disabled",
+    updated: result.data.data.updated_at,
+  };
+}
+
+/**
+ * Lặp một lệnh của core cho từng id đã chọn (core chưa có endpoint hàng loạt), gom lỗi theo dòng bằng
+ * câu của core.
+ */
+async function eachCall(
+  input: BulkInput,
+  call: (id: string) => Promise<Outcome<unknown>>,
+): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const answer = await call(id);
+    return answer.ok ? null : answer.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkDisableWebhooks(input: BulkInput): Promise<BulkResult> {
+  return eachCall(input, (id) =>
+    send((client) =>
+      client.PATCH("/api/v1/webhooks/{id}", { params: { path: { id } }, body: { disabled: true } }),
+    ),
+  );
+}
+
+export async function bulkEnableWebhooks(input: BulkInput): Promise<BulkResult> {
+  return eachCall(input, (id) =>
+    send((client) =>
+      client.PATCH("/api/v1/webhooks/{id}", {
+        params: { path: { id } },
+        body: { disabled: false },
+      }),
+    ),
+  );
+}
+
+/** Xoá nhiều endpoint (cả lịch sử giao); không đảo được. */
+export async function bulkDeleteWebhooks(input: BulkInput): Promise<BulkResult> {
+  return eachCall(input, (id) =>
+    send((client) => client.DELETE("/api/v1/webhooks/{id}", { params: { path: { id } } })),
+  );
 }
 
 /** Thay secret ký: secret cũ ngừng chạy ngay; secret mới hiện một lần. */
@@ -317,6 +382,20 @@ export async function revokeApiKey(state: FormState, formData: FormData): Promis
   if (!result.ok) return problemState(result.problem, []);
   refresh();
   return { done: nextDone(state) };
+}
+
+/** Thu hồi nhiều key của chính mình (thanh hàng loạt); lặp `DELETE /auth/api-keys/{id}`. */
+export async function bulkRevokeApiKeys(input: BulkInput): Promise<BulkResult> {
+  return eachCall(input, (id) =>
+    send((client) => client.DELETE("/api/v1/auth/api-keys/{id}", { params: { path: { id } } })),
+  );
+}
+
+/** Quản trị viên thu hồi nhiều key của mọi người; lặp `DELETE /auth/all-api-keys/{id}`. */
+export async function bulkRevokeAnyApiKeys(input: BulkInput): Promise<BulkResult> {
+  return eachCall(input, (id) =>
+    send((client) => client.DELETE("/api/v1/auth/all-api-keys/{id}", { params: { path: { id } } })),
+  );
 }
 
 // ---------------------------------------------------------------- Cài đặt theo khách

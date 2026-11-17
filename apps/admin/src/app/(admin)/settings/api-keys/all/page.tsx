@@ -2,15 +2,19 @@ import type { components } from "@autoxide/sdk";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { revokeAnyApiKey } from "@/app/(admin)/settings/actions";
+import { bulkRevokeAnyApiKeys, revokeAnyApiKey } from "@/app/(admin)/settings/actions";
+import { type BulkActionSpec, BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { ConfirmAction } from "@/components/ui/confirm";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pager } from "@/components/ui/pager";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { load } from "@/lib/core";
 import { API_KEYS_MANAGE } from "@/lib/permissions";
+import { withQuery } from "@/lib/table";
 import { can } from "@/lib/viewer";
 
+const BASE = "/settings/api-keys/all";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Tab "Key của mọi người" (cần `auth.api_keys.manage`): quản trị viên xem key của mọi tài khoản và
@@ -31,9 +35,22 @@ export default async function AllApiKeysPage(props: PageProps<"/settings/api-key
     }),
   );
   const k = (key: string, values?: Record<string, string>) => t(`settings.apiKeys.${key}`, values);
-  const base = user ? `/settings/api-keys/all?user=${user}` : "/settings/api-keys/all";
   const now = Date.now();
   const next = page.pagination.next_cursor;
+  // Bộ bảng (W-058): chọn nhiều để thu hồi (lặp lệnh từng cái của core); dòng giữ một nút Thu hồi.
+  const bulk: BulkActionSpec[] = [
+    {
+      key: "revoke",
+      label: k("revoke"),
+      tone: "danger",
+      run: bulkRevokeAnyApiKeys,
+      confirm: {
+        title: k("bulkRevokeTitle"),
+        points: [k("revoke401"), k("revokeAgents"), k("revokeNoUndo")],
+        submit: k("revokeSubmit"),
+      },
+    },
+  ];
   return (
     <div className="blocks">
       <section className="block" aria-labelledby="allkeys-h">
@@ -54,97 +71,88 @@ export default async function AllApiKeysPage(props: PageProps<"/settings/api-key
               {e("apiKeysAll.body")}
             </EmptyState>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{k("owner")}</Th>
-                  <Th>{k("name")}</Th>
-                  <Th>{k("permissions")}</Th>
-                  <Th>{k("lastUsed")}</Th>
-                  <Th>{k("expires")}</Th>
-                  <Th>
-                    <span className="vh">{k("actions")}</span>
-                  </Th>
-                </tr>
-              </thead>
-              <tbody>
-                {page.data.map((key) => {
-                  const expired =
-                    key.expires_at !== null &&
-                    key.expires_at !== undefined &&
-                    Date.parse(key.expires_at) <= now;
-                  const owner = key.user_name ?? k("ownerGone");
-                  return (
-                    <tr key={key.id}>
-                      <Td label={k("owner")}>
-                        <span className="cell2">
-                          <Link href={`/org/access/users/${key.user_id}`}>{owner}</Link>
-                          {key.user_email ? <span className="sub">{key.user_email}</span> : null}
-                        </span>
-                      </Td>
-                      <Td className="rt-title">
-                        <span className="cell2">
-                          <b className="mono">{key.name}</b>
-                          <span className="sub mono">{key.prefix}…</span>
-                        </span>
-                      </Td>
-                      <Td label={k("permissions")}>
-                        <span className="tags">
-                          {key.permissions.map((p) => (
-                            <span key={p} className="tag mono">
-                              {p}
-                            </span>
-                          ))}
-                        </span>
-                      </Td>
-                      <Td className="whitespace-nowrap" label={k("lastUsed")}>
-                        {key.last_used_at ? <Time value={key.last_used_at} /> : k("neverUsed")}
-                      </Td>
-                      <Td className="whitespace-nowrap" label={k("expires")}>
-                        {key.expires_at ? (
-                          <span className={expired ? "badge b-arch" : undefined}>
-                            {expired ? `${k("expired")} · ` : ""}
-                            <Time value={key.expires_at} date />
+            <BulkTable ids={page.data.map((key) => key.id)} actions={bulk}>
+              <Table cards>
+                <thead>
+                  <tr>
+                    <SelectAllTh />
+                    <Th>{k("owner")}</Th>
+                    <Th>{k("name")}</Th>
+                    <Th>{k("permissions")}</Th>
+                    <Th>{k("lastUsed")}</Th>
+                    <Th>{k("expires")}</Th>
+                    <Th>
+                      <span className="vh">{k("actions")}</span>
+                    </Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {page.data.map((key) => {
+                    const expired =
+                      key.expires_at !== null &&
+                      key.expires_at !== undefined &&
+                      Date.parse(key.expires_at) <= now;
+                    const owner = key.user_name ?? k("ownerGone");
+                    return (
+                      <tr key={key.id}>
+                        <SelectTd id={key.id} name={key.name} />
+                        <Td label={k("owner")}>
+                          <span className="cell2">
+                            <Link href={`/org/access/users/${key.user_id}`}>{owner}</Link>
+                            {key.user_email ? <span className="sub">{key.user_email}</span> : null}
                           </span>
-                        ) : (
-                          k("noExpiry")
-                        )}
-                      </Td>
-                      <Td className="rt-acts">
-                        <ConfirmAction
-                          action={revokeAnyApiKey}
-                          id={key.id}
-                          label={k("revoke")}
-                          title={k("revokeOtherTitle", { name: key.name, owner })}
-                          points={[k("revoke401"), k("revokeAgents"), k("revokeAudit")]}
-                          submit={k("revokeSubmit")}
-                          done={k("revoked", { name: key.name })}
-                        />
-                      </Td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
+                        </Td>
+                        <Td className="rt-title">
+                          <span className="cell2">
+                            <b className="mono">{key.name}</b>
+                            <span className="sub mono">{key.prefix}…</span>
+                          </span>
+                        </Td>
+                        <Td label={k("permissions")}>
+                          <span className="tags">
+                            {key.permissions.map((p) => (
+                              <span key={p} className="tag mono">
+                                {p}
+                              </span>
+                            ))}
+                          </span>
+                        </Td>
+                        <Td className="whitespace-nowrap" label={k("lastUsed")}>
+                          {key.last_used_at ? <Time value={key.last_used_at} /> : k("neverUsed")}
+                        </Td>
+                        <Td className="whitespace-nowrap" label={k("expires")}>
+                          {key.expires_at ? (
+                            <span className={expired ? "badge b-arch" : undefined}>
+                              {expired ? `${k("expired")} · ` : ""}
+                              <Time value={key.expires_at} date />
+                            </span>
+                          ) : (
+                            k("noExpiry")
+                          )}
+                        </Td>
+                        <Td className="rt-acts">
+                          <ConfirmAction
+                            action={revokeAnyApiKey}
+                            id={key.id}
+                            label={k("revoke")}
+                            title={k("revokeOtherTitle", { name: key.name, owner })}
+                            points={[k("revoke401"), k("revokeAgents"), k("revokeAudit")]}
+                            submit={k("revokeSubmit")}
+                            done={k("revoked", { name: key.name })}
+                          />
+                        </Td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
-        {cursor || next ? (
-          <nav className="pager" aria-label={t("access.pages")}>
-            {cursor ? (
-              <Link className="btn sm" href={base}>
-                {t("access.first")}
-              </Link>
-            ) : null}
-            {next ? (
-              <Link
-                className="btn sm"
-                href={`${base}${user ? "&" : "?"}cursor=${encodeURIComponent(next)}`}
-              >
-                {t("access.next")}
-              </Link>
-            ) : null}
-          </nav>
-        ) : null}
+        <Pager
+          first={cursor ? withQuery(BASE, { user }) : null}
+          next={next ? withQuery(BASE, { user, cursor: next }) : null}
+        />
       </section>
     </div>
   );

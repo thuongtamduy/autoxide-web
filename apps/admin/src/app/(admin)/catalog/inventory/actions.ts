@@ -3,6 +3,7 @@
 // Server Action của màn "Tồn kho" (module `inventory` của core chưa có, bước 42): gọi hàm mẫu của
 // `src/sample/inventory.ts` thay cho API (W-006), cùng cách trả lỗi như phần gọi core thật — lỗi
 // theo ô, gom mọi lỗi một lần, mã lỗi `inventory.*`. Khi có API chỉ thay lời gọi hàm mẫu.
+import type { Problem } from "@autoxide/sdk";
 import { refresh } from "next/cache";
 import {
   commerceGuard,
@@ -26,7 +27,13 @@ import {
   createSupplierReturn,
   createTransfer,
   decideSerial,
+  listCounts,
+  listLevels,
+  listLots,
+  listPurchaseOrders,
+  listSerials,
   listSuppliers,
+  listTransfers,
   putCountLines,
   receivePurchaseOrder,
   receiveTransfer,
@@ -377,4 +384,93 @@ export async function createReturnAction(state: FormState, formData: FormData): 
     reason: values.reason ?? "",
   });
   return finishCommerce("inventory", state, outcome, RETURN_FIELDS, values);
+}
+
+// ---------------------------------------------------------------- Hàng loạt
+//
+// Hàm mẫu (và API dự kiến của bước 42) chỉ có lệnh từng phiếu: lặp từng id, gom lỗi (đã dịch) để
+// thanh hàng loạt báo "Xong 8/10, 2 lỗi" và giữ dòng hỏng được chọn. Không bịa endpoint hàng loạt.
+
+type Outcome = { ok: true } | { ok: false; problem: Problem };
+
+async function bulkInventory(
+  input: BulkInput,
+  run: (id: string) => Promise<Outcome>,
+  names: () => Promise<Map<string, string>>,
+): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const off = await commerceGuard();
+  if (off) return bulkBlocked(ids, off.error ?? "");
+  const known = await names();
+  const result = await eachId(
+    ids,
+    async (id) => {
+      const outcome = await run(id);
+      return outcome.ok ? null : (await translateCommerce(outcome.problem, "inventory")).detail;
+    },
+    (id) => known.get(id) ?? id,
+  );
+  refresh();
+  return result;
+}
+
+const transferNames = async () =>
+  new Map((await listTransfers()).data.map((t) => [t.id, t.number]));
+const countNames = async () => new Map((await listCounts()).data.map((c) => [c.id, c.number]));
+const purchaseNames = async () =>
+  new Map((await listPurchaseOrders()).data.map((p) => [p.id, p.number]));
+const lotNames = async () => new Map((await listLots()).data.map((l) => [l.id, l.lot_code]));
+const serialNames = async () => new Map((await listSerials()).data.map((x) => [x.id, x.serial]));
+const levelNames = async () =>
+  new Map(
+    (await listLevels({ limit: 10_000 })).data.map((l) => [l.id, `${l.sku} · ${l.org_name}`]),
+  );
+
+/** Đặt cùng một mức tối thiểu cho nhiều dòng tồn (`value`: số người dùng gõ; hàm mẫu kiểm số nguyên). */
+export async function bulkReorderAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => setReorderPoint(id, input.value ?? ""), levelNames);
+}
+
+export async function bulkShipTransfersAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => changeTransfer(id, "ship"), transferNames);
+}
+
+export async function bulkReceiveTransfersAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => receiveTransfer(id, null), transferNames);
+}
+
+export async function bulkCancelTransfersAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => changeTransfer(id, "cancel"), transferNames);
+}
+
+export async function bulkApplyCountsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => changeCount(id, "apply"), countNames);
+}
+
+export async function bulkCancelCountsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => changeCount(id, "cancel"), countNames);
+}
+
+export async function bulkWriteOffLotsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => writeOffLot(id, ""), lotNames);
+}
+
+export async function bulkRestockSerialsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => decideSerial(id, "restock"), serialNames);
+}
+
+export async function bulkWriteOffSerialsAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => decideSerial(id, "write_off"), serialNames);
+}
+
+export async function bulkPlacePurchasesAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => changePurchaseOrder(id, "order"), purchaseNames);
+}
+
+export async function bulkClosePurchasesAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => changePurchaseOrder(id, "close"), purchaseNames);
+}
+
+export async function bulkCancelPurchasesAction(input: BulkInput): Promise<BulkResult> {
+  return bulkInventory(input, (id) => changePurchaseOrder(id, "cancel"), purchaseNames);
 }

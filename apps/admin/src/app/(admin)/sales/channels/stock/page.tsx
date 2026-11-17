@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { AllocationDialog } from "@/components/channels/forms";
 import { BlockHead, Cell2, param } from "@/components/growth/blocks";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { RowMenu } from "@/components/ui/row-menu";
 import { Table, Td, Th } from "@/components/ui/table";
 import { CHANNELS_MANAGE } from "@/lib/channels";
 import { formatCount } from "@/lib/format";
@@ -15,11 +16,14 @@ const PREVIEW_SKUS = ["NI20", "CG26", "DB3", "HT1L", "CG24"] as const;
 
 // Tab "Phân bổ tồn": tồn bán được trên một kênh tính từ tồn khả dụng ở các kho gắn với tài khoản (đọc từ
 // Tồn kho). "Theo tỉ lệ" không giữ hàng; "Giữ riêng" giữ thật trong kho để website và kênh khác không bán
-// vào. Tồn đổi thì gộp các thay đổi trong 5 giây rồi đẩy một lần; mỗi 6 giờ đối chiếu toàn bộ.
+// vào. Tồn đổi thì gộp các thay đổi trong 5 giây rồi đẩy một lần; mỗi 6 giờ đối chiếu toàn bộ. Dòng
+// hiện một nút (sửa phân bổ); "⋯" chỉ dẫn sang tài khoản kênh. Không có thao tác hàng loạt: mỗi phân bổ
+// có số riêng, và hàm mẫu (như core bước 48) chỉ lưu từng phân bổ.
 export default async function StockPage(props: PageProps<"/sales/channels/stock">) {
   if (!(await can(CHANNEL_TABS.stock))) notFound();
-  const [t, locale, params, allocations, manage] = await Promise.all([
+  const [t, tt, locale, params, allocations, manage] = await Promise.all([
     getTranslations("channels"),
+    getTranslations("table"),
     getLocale(),
     props.searchParams,
     listAllocations(),
@@ -70,20 +74,33 @@ export default async function StockPage(props: PageProps<"/sales/channels/stock"
                     {formatCount(a.buffer_qty, locale)}
                   </Td>
                   <Td className="rt-acts">
-                    {manage ? (
-                      <AllocationDialog
-                        allocation={{
-                          id: a.id,
-                          account: a.account_name,
-                          target: a.variant_name ?? t("stock.allProducts"),
-                          mode: a.mode,
-                          share: a.share_bp / 100,
-                          reserved: a.reserved_qty,
-                          buffer: a.buffer_qty,
-                          variant: a.variant_id !== null,
-                        }}
+                    <span className="row-acts">
+                      {manage ? (
+                        <AllocationDialog
+                          allocation={{
+                            id: a.id,
+                            account: a.account_name,
+                            target: a.variant_name ?? t("stock.allProducts"),
+                            mode: a.mode,
+                            share: a.share_bp / 100,
+                            reserved: a.reserved_qty,
+                            buffer: a.buffer_qty,
+                            variant: a.variant_id !== null,
+                          }}
+                        />
+                      ) : null}
+                      <RowMenu
+                        label={tt("moreFor", {
+                          name: `${a.account_name} · ${a.variant_name ?? t("stock.allProducts")}`,
+                        })}
+                        items={[
+                          {
+                            label: t("stock.openAccount"),
+                            href: `/sales/channels?open=${a.account_id}#ch-accounts-h`,
+                          },
+                        ]}
                       />
-                    ) : null}
+                    </span>
                   </Td>
                 </tr>
               ))}

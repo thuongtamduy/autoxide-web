@@ -805,7 +805,13 @@
       "all": "All",
       "noStatus": "No user has this status.",
       "lastSignIn": "Last sign-in",
-      "neverSignedIn": "Not yet"
+      "neverSignedIn": "Not yet",
+      "open": "Open",
+      "changeRoles": "Change roles",
+      "actions": "Actions",
+      "undo": "Undo",
+      "undone": "Undone.",
+      "bulkDisableTitle": "Disable the selected accounts?"
     },
     "create": {
       "open": "New user",
@@ -963,7 +969,10 @@
       "count": "{count, plural, =0 {No permission} one {# permission} other {# permissions}}",
       "builtin": "Built in",
       "custom": "Created here",
-      "members": "People"
+      "members": "People",
+      "open": "Open",
+      "bulkDeleteTitle": "Delete the selected roles?",
+      "bulkBuiltin": "Built-in roles cannot be selected; the core refuses a role it still needs."
     },
     "role": {
       "deleted": "Role deleted.",
@@ -1038,7 +1047,8 @@
       "revokeLink": "The link in the mail stops working at once.",
       "revokeAgain": "To invite them later, send a new invitation.",
       "revokeSubmit": "Revoke invitation",
-      "revoked": "Invitation revoked."
+      "revoked": "Invitation revoked.",
+      "bulkRevokeTitle": "Revoke the selected invitations?"
     },
     "delegations": {
       "create": "New delegation",
@@ -1077,7 +1087,8 @@
       "empty": "No delegation.",
       "childId": "ID of the child customer",
       "childIdHint": "The child customer's ID, as the platform operator gives it. It must be a customer below yours.",
-      "childPick": "Customer below this one"
+      "childPick": "Customer below this one",
+      "bulkRevokeTitle": "Revoke the selected delegations?"
     },
     "public": {
       "units": "Units",
@@ -1756,7 +1767,9 @@
       "retryFrom": "The job runs again from the start, with its attempts counted again.",
       "retryAudit": "The retry is written to the audit log with your name.",
       "retrySubmit": "Retry job",
-      "retried": "Job queued again."
+      "retried": "Job queued again.",
+      "bulkRetryTitle": "Retry the selected jobs?",
+      "bulkRetryDead": "Only jobs in the dead-letter queue run again; the others are reported as not done."
     },
     "webhooks": {
       "events": "Events",
@@ -1835,7 +1848,12 @@
       "status": {
         "active": "Turned on",
         "disabled": "Turned off"
-      }
+      },
+      "open": "Open",
+      "actions": "Actions",
+      "undo": "Undo",
+      "undone": "Undone.",
+      "bulkDeleteTitle": "Delete the selected endpoints?"
     },
     "audit": {
       "title": "Log",
@@ -1938,7 +1956,8 @@
       "owner": "Owner",
       "ownerGone": "Deleted account",
       "revokeOtherTitle": "Revoke {name} of {owner}?",
-      "revokeAudit": "The audit log records that you revoked it."
+      "revokeAudit": "The audit log records that you revoked it.",
+      "bulkRevokeTitle": "Revoke the selected keys?"
     },
     "approvals": {
       "title": "Commands waiting for approval",
@@ -2119,7 +2138,33 @@
       },
       "aiReviewed": "AI content reviewed",
       "entryGone": "(post not found)",
-      "colActions": "Actions"
+      "colActions": "Actions",
+      "open": "Open",
+      "bulk": {
+        "publish": "Publish",
+        "publishTitle": "Publish the selected posts?",
+        "publishNow": "Readers see each draft as it is now.",
+        "publishAi": "For posts labelled AI, publishing here confirms you have read what AI wrote.",
+        "unpublish": "Unpublish",
+        "unpublishTitle": "Unpublish the selected posts?",
+        "unpublishPoint": "Readers stop seeing them at once; each becomes a draft and can be published again. Pending scheduled publishes are cancelled.",
+        "archive": "Archive",
+        "archiveTitle": "Archive the selected posts?",
+        "archivePoint": "Their addresses answer 410 (gone) so search engines drop them; pending schedules are cancelled. They can be published again later.",
+        "delete": "Delete",
+        "deleteTitle": "Delete the selected posts?",
+        "deleteRevisions": "Revisions and schedules go too; a published address answers 410.",
+        "deletePages": "A page that still has subpages is not deleted.",
+        "deleteNoUndo": "This cannot be undone."
+      },
+      "row": {
+        "unpublishTitle": "Unpublish “{title}”?",
+        "unpublished": "Unpublished: readers no longer see it",
+        "archiveTitle": "Archive “{title}”?",
+        "archived": "Archived",
+        "deleteTitle": "Delete “{title}”?",
+        "deleted": "Deleted"
+      }
     },
     "status": {
       "draft": "Draft",
@@ -2652,7 +2697,18 @@
       "remove": "Remove",
       "unavailable": "The media library is not available to you."
     },
-    "librarySummary": "{count, plural, one {# file} other {# files}} · {size} · {noAlt, plural, =0 {every image has alt text} one {# image without alt text} other {# images without alt text}}{trashed, plural, =0 {} other { · # in the trash}}"
+    "librarySummary": "{count, plural, one {# file} other {# files}} · {size} · {noAlt, plural, =0 {every image has alt text} one {# image without alt text} other {# images without alt text}}{trashed, plural, =0 {} other { · # in the trash}}",
+    "bulk": {
+      "open": "Open details",
+      "actions": "Actions",
+      "move": "Move to folder",
+      "trashTitle": "Move the selected files to the trash?",
+      "purgeTitle": "Delete the selected files for good?",
+      "purged": "Deleted for good",
+      "restoreTitle": "Restore “{name}”?",
+      "restorePoint": "The file goes back to its folder and its address works again.",
+      "gridHint": "To select several files at once, switch the view to Table."
+    }
   },
   "structure": {
     "crumb": "Content",
@@ -2742,7 +2798,10 @@
       "searchHint": "Name in any language",
       "find": "Find",
       "clear": "Show all",
-      "more": "Showing the first 200. Search by name to find the others."
+      "more": "Showing the first 200. Search by name to find the others.",
+      "bulkDeleteCategories": "Delete the selected categories?",
+      "bulkDeleteTags": "Delete the selected tags?",
+      "viewPosts": "View posts"
     },
     "authors": {
       "title": "Author profiles",
@@ -2846,7 +2905,8 @@
       "pages": "Pages",
       "first": "First page",
       "next": "Next page",
-      "toCol": "To"
+      "toCol": "To",
+      "bulkDeleteTitle": "Delete the selected redirects?"
     },
     "history": {
       "title": "Revision history",
@@ -3187,7 +3247,8 @@
         "status": "Status",
         "sender": "Sender",
         "content": "Message",
-        "sent": "Sent"
+        "sent": "Sent",
+        "actions": "Actions"
       },
       "fieldsVersion": "{count, plural, one {# field} other {# fields}} · v{version}",
       "retentionDefault": "Server default",
@@ -3393,7 +3454,14 @@
         "download": "Download the CSV file",
         "deletedAt": "the file is deleted",
         "failed": "The export failed; start a new one."
-      }
+      },
+      "open": "Open",
+      "copyKey": "Copy form key",
+      "copiedKey": "Form key copied",
+      "copyApi": "Copy public API address",
+      "copiedApi": "Public API address copied: the website reads the form here",
+      "bulkDeleteTitle": "Delete the selected forms for good?",
+      "bulkDeleteSubmissionsTitle": "Delete the selected submissions for good?"
     },
     "newsletter": {
       "crumb": "Marketing · module newsletter",
@@ -3768,7 +3836,13 @@
       "blockedFilter": "Blocked",
       "openSubscriber": "Open",
       "bulkBlockTitle": "Block the selected subscribers?",
-      "bulkDeleteTitle": "Delete the selected subscribers for good?"
+      "bulkDeleteTitle": "Delete the selected subscribers for good?",
+      "open": "Open",
+      "bulkCancelTitle": "Cancel the selected campaigns for good?",
+      "bulkCancelSkipped": "Mails not sent yet are skipped.",
+      "bulkDeleteSent": "A campaign that has already sent mail is not deleted.",
+      "bulkUnsuppressTitle": "Take the selected addresses off the do-not-mail list?",
+      "bulkDeleteCampaignsTitle": "Delete the selected campaigns?"
     },
     "comments": {
       "crumb": "Marketing · module comments",
@@ -4037,7 +4111,8 @@
       "targetUrl": "Address",
       "targetNotPublic": "Not public now (title and address hidden)",
       "bulkPurgeTitle": "Delete the selected comments for good?",
-      "bulkPurgeThreads": "A comment that starts a thread is removed with all its replies."
+      "bulkPurgeThreads": "A comment that starts a thread is removed with all its replies.",
+      "bulkLiftTitle": "Lift the selected bans?"
     },
     "data": {
       "title": "Data by email",
@@ -4415,7 +4490,9 @@
         "choose": "Choose a reason",
         "note": "Note for the seller",
         "noteHint": "Needed when the reason is \"Other reason\"."
-      }
+      },
+      "bulkApproveTitle": "Approve the selected profiles?",
+      "bulkApproveEach": "Check each person's documents before approving them together."
     },
     "privacy": {
       "incident": {
@@ -4988,7 +5065,10 @@
           "comments": "Comments: data by email",
           "self": "My own data"
         },
-        "deadlines": "Answer deadlines per kind of request (proposed rule)."
+        "deadlines": "Answer deadlines per kind of request (proposed rule).",
+        "bulkVerifiedTitle": "Mark the selected requesters as verified?",
+        "bulkDoneTitle": "Mark the selected requests as answered?",
+        "bulkWrongState": "A request not at this step is reported as not done."
       }
     }
   },
@@ -5188,7 +5268,8 @@
       "clear": "Clear filters",
       "filterSub": "Subscription",
       "anySub": "Any subscription",
-      "onlyNear": "Only near a limit (80 % or more)"
+      "onlyNear": "Only near a limit (80 % or more)",
+      "open": "Open"
     },
     "tenant": {
       "back": "Customers",
@@ -6703,13 +6784,19 @@
       "none": "Not tracked",
       "ledgerNote": "“On hand” equals the sum of this row’s ledger. To change it, record a movement (adjustment, transfer, receipt) — never edit the number.",
       "viewLedger": "Ledger of this row",
-      "foot": "Showing {shown} rows · {low} below minimum.",
-      "next": "Next page",
       "valueTitle": "Stock value by warehouse",
       "valueAbout": "On hand × weighted average cost of each warehouse; the cost is recalculated at every receipt.",
       "oversellTitle": "Never oversold",
       "oversellStrong": "Never sells more than there is.",
-      "oversell": "An order reserves stock with one conditional decrease of “available”, so many buyers at once cannot exceed what is left. A reservation that is not paid in time is released by a job."
+      "oversell": "An order reserves stock with one conditional decrease of “available”, so many buyers at once cannot exceed what is left. A reservation that is not paid in time is released by a job.",
+      "setMinimum": "Set minimum",
+      "minimumField": "New minimum",
+      "copySku": "Copy SKU",
+      "actions": "Actions",
+      "view": "View details",
+      "hide": "Hide details",
+      "transferHere": "Transfer here",
+      "footLow": "{low} rows below minimum across all warehouses."
     },
     "moves": {
       "about": "Append-only: every receipt, sale, transfer, adjustment, count and lot expiry is one row. Nothing is edited or deleted; a mistake is corrected with a reverse row and a reason. These are stock records kept for at least 10 years.",
@@ -6736,7 +6823,16 @@
       "quickAbout": "For damaged, lost or found goods, or a wrong receipt. The reason is required so accounting and auditors understand why stock changed.",
       "whoTitle": "Who can do what",
       "whoStrong": "Permissions by warehouse.",
-      "who": "Reading the ledger needs inventory.read; adjusting needs inventory.adjust at that warehouse. Staff of one store cannot see or change another store’s stock."
+      "who": "Reading the ledger needs inventory.read; adjusting needs inventory.adjust at that warehouse. Staff of one store cannot see or change another store’s stock.",
+      "byDate": "Filter by date",
+      "from": "From (Vietnam time)",
+      "to": "To",
+      "clearDates": "Clear dates",
+      "actions": "Actions",
+      "view": "View details",
+      "hide": "Hide details",
+      "copySource": "Copy document reference",
+      "copied": "Document reference copied"
     },
     "adjust": {
       "button": "Adjust stock",
@@ -6828,7 +6924,13 @@
         "received": "Everything arrived. Close the transfer to finish.",
         "closed": "Closed.",
         "cancelled": "Cancelled; stock never moved."
-      }
+      },
+      "view": "View lines",
+      "hide": "Hide lines",
+      "bulkShipTitle": "Ship the selected transfers?",
+      "bulkShipPoint": "Stock leaves each source warehouse now; the goods show as incoming at the destination.",
+      "bulkDraftOnly": "Only drafts can be changed; any other transfer is reported and stays selected.",
+      "bulkCancelTitle": "Cancel the selected transfers?"
     },
     "count": {
       "button": "Open stock count",
@@ -6872,7 +6974,14 @@
       "notCounted": "not counted yet",
       "expected": "on hand when counted: {count}",
       "diff": "difference {diff}",
-      "reason": "Reason"
+      "reason": "Reason",
+      "created": "Created",
+      "actions": "Actions",
+      "view": "Open count",
+      "hide": "Close count",
+      "bulkApplyTitle": "Apply the selected counts?",
+      "bulkApplyReasons": "A count with differences still missing a reason is not applied; it is reported and stays selected.",
+      "bulkCancelTitle": "Cancel the selected counts?"
     },
     "lots": {
       "title": "Lots and expiry dates",
@@ -6890,7 +6999,9 @@
       "writeOffSubmit": "Write off",
       "writtenOff": "Lot written off",
       "legalStrong": "Legal basis not settled.",
-      "legal": "No general rule requires “first expired, first out”; not selling expired goods falls under product quality and food safety law. A specialist should confirm for each kind of goods."
+      "legal": "No general rule requires “first expired, first out”; not selling expired goods falls under product quality and food safety law. A specialist should confirm for each kind of goods.",
+      "bulkWriteOffTitle": "Write off the selected lots?",
+      "bulkWriteOffPoint": "Everything left in each lot is removed from stock with the reason “expired”."
     },
     "serials": {
       "title": "Serial numbers",
@@ -6910,7 +7021,9 @@
       "writeOffTitle": "Write off {serial}?",
       "writeOffPoint": "The unit can no longer be sold. This cannot be undone.",
       "writeOffSubmit": "Write off",
-      "writtenOff": "Serial written off"
+      "writtenOff": "Serial written off",
+      "bulkWriteOffTitle": "Write off the selected serials?",
+      "copy": "Copy serials"
     },
     "purchasing": {
       "kpis": "Receiving at a glance",
@@ -6957,7 +7070,14 @@
       "returnNo": "Return",
       "supplierReason": "Supplier · reason",
       "fromReceipt": "from {number}",
-      "ledgerNote": "Ledger jobs run again safely: the ledger refuses a second entry with the same reference (inventory.receipt + receipt id)."
+      "ledgerNote": "Ledger jobs run again safely: the ledger refuses a second entry with the same reference (inventory.receipt + receipt id).",
+      "created": "Created",
+      "view": "View lines",
+      "hide": "Hide lines",
+      "bulkPlaceTitle": "Place the selected orders?",
+      "bulkPlacePoint": "Each order goes to its supplier; its quantities show as incoming at the warehouse.",
+      "bulkDraftOnly": "Only drafts can be placed; any other order is reported and stays selected.",
+      "bulkCancelTitle": "Cancel the selected orders?"
     },
     "po": {
       "button": "Create purchase order",
@@ -7261,7 +7381,10 @@
         "balanced": "Both columns are equal.",
         "unbalanced": "The columns differ: a sign of a system error; tell an administrator.",
         "foot": "Balances are derived from entry lines; a periodic check recomputes them and reports any account that drifts. Chart-of-accounts numbers are used only for exports (see the Accounting export tab)."
-      }
+      },
+      "actions": "Actions",
+      "details": "Show details",
+      "close": "Hide details"
     },
     "exceptions": {
       "title": "Items to handle",
@@ -7366,7 +7489,14 @@
           "done": "Done"
         },
         "opened": "{count, plural, =0 {No new exceptions} one {# new exception} other {# new exceptions}}"
-      }
+      },
+      "details": "Show details",
+      "close": "Hide details",
+      "bulkIgnore": "Ignore",
+      "bulkIgnoreTitle": "Ignore the selected items?",
+      "bulkIgnoreNoEntry": "No entry is posted; each item is closed with the same note.",
+      "bulkIgnoreAudit": "Your name and the note are kept with each item. Items already handled are reported as not done.",
+      "rowActions": "Actions"
     },
     "bank": {
       "title": "Accounts receiving transfers",
@@ -7606,7 +7736,12 @@
         "done": "Draft deleted"
       },
       "basisIssue": "Invoices are made on delivery.",
-      "basisCorrection": "Correcting invoices."
+      "basisCorrection": "Correcting invoices.",
+      "actions": "Actions",
+      "details": "Show details",
+      "close": "Hide details",
+      "bulkIssueTitle": "Issue the selected drafts?",
+      "bulkIssueDrafts": "Only drafts are issued; other invoices stay as they are."
     },
     "series": {
       "title": "Invoice and document series",
@@ -8079,7 +8214,13 @@
       "usedOf": "{used} / {limit} uses",
       "everything": "Everything at {org}",
       "minOrder": "Orders from {amount}",
-      "groups": "Customer group {groups}"
+      "groups": "Customer group {groups}",
+      "actions": "Actions",
+      "view": "View details",
+      "hide": "Hide details",
+      "bulkActivateTitle": "Switch on the selected programs?",
+      "bulkActivateEach": "Each program is checked on its own; one that fails is reported and stays selected.",
+      "exportSelected": "Export CSV"
     },
     "limits": {
       "title": "Legal caps in force",
@@ -8622,8 +8763,9 @@
       "state": "Status",
       "noTracking": "no tracking number yet",
       "noCarrier": "no carrier",
-      "more": "More shipments",
-      "etaRange": "{from} – {to}"
+      "etaRange": "{from} – {to}",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details"
     },
     "detail": {
       "title": "Shipment · {order}",
@@ -8686,7 +8828,9 @@
       "cancelLocal": "Not sent to a carrier yet; it is only cancelled here.",
       "cancelOrder": "The order goes back to “Preparing” to create another shipment.",
       "cancelSubmit": "Cancel shipment",
-      "cancelled": "Shipment cancelled"
+      "cancelled": "Shipment cancelled",
+      "bulkBookTitle": "Book the selected shipments with their carriers?",
+      "bulkBookOnly": "Only shipments waiting to be booked are sent; the others are listed as not done."
     },
     "manual": {
       "button": "New manual shipment",
@@ -8930,7 +9074,8 @@
       "hold": "Held",
       "hours": "{count} h",
       "holdDays": "{count} days",
-      "pickupFoot": "The Thủ Đức warehouse is not a pickup point."
+      "pickupFoot": "The Thủ Đức warehouse is not a pickup point.",
+      "viewTable": "Show rate table"
     },
     "cod": {
       "kpis": "COD summary",
@@ -8974,7 +9119,12 @@
       "trackLedger": "If the carrier confirms delivery, the shipment becomes “Delivered”, the ledger records the receivable and the line matches by itself.",
       "trackFinal": "Ledger entries cannot be deleted; mistakes are fixed with an adjusting entry.",
       "trackSubmit": "Ask and match",
-      "tracked": "Asked the carrier and updated"
+      "tracked": "Asked the carrier and updated",
+      "bulkTrackSkip": "Only lines the carrier reports as not delivered can be asked again.",
+      "bulkTrackTitle": "Ask the carriers about the selected lines?",
+      "bulkTrackOnly": "Only lines the carrier reports as not delivered are asked; the others are listed as not done.",
+      "bulkResolveTitle": "Close the selected mismatches with one reason?",
+      "bulkResolveFinal": "The reason and your name are stored on every line. Closed lines cannot be reopened."
     },
     "statementStatus": {
       "imported": "Imported, not matched",
@@ -9028,7 +9178,12 @@
       "turnedOff": "Turned off; shipments on the way still receive updates",
       "turnOn": "Turn carrier on",
       "turnedOn": "Carrier turned on",
-      "foot": "Carrier names are examples. A real carrier connector is a separate module, built once there is a carrier test account."
+      "foot": "Carrier names are examples. A real carrier connector is a separate module, built once there is a carrier test account.",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "testTitle": "Check the connection to {name}?",
+      "testAsk": "Sends a test request to the carrier with the stored key.",
+      "testNoOrder": "No shipment is created and nothing is charged."
     },
     "capabilities": {
       "multi_parcel": "multiple parcels",
@@ -10411,7 +10566,13 @@
       "refundBody": "Refunds exactly the lines received. A reversing entry and an adjustment invoice are recorded.",
       "refunded": "Refund sent; adjustment invoice issued",
       "close": "Close",
-      "closed": "Return closed"
+      "closed": "Return closed",
+      "actions": "Actions",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "openOrder": "Open order",
+      "bulkApproveTitle": "Approve the selected return requests?",
+      "bulkApproveOnly": "Only requests waiting for an answer are approved; the others are listed as not done."
     },
     "pos": {
       "button": "Counter sale",
@@ -10660,7 +10821,13 @@
       "codeHint": "Never written down or shown to staff.",
       "proxyName": "Name of the person collecting",
       "proxyHint": "Only when someone collects on the buyer's behalf.",
-      "noProxy": "No one else is named on this order."
+      "noProxy": "No one else is named on this order.",
+      "actions": "Actions",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "resendTitle": "Resend the pickup code for {number}?",
+      "resendOld": "The buyer gets a new code; the old one stops working.",
+      "bulkResendTitle": "Resend the pickup code for the selected orders?"
     },
     "shifts": {
       "kpis": "Shifts at a glance",
@@ -10673,11 +10840,12 @@
       "title": "Shifts",
       "about": "Each register has one open shift. Opening records the starting cash; closing counts the drawer. Expected cash comes from the counter orders in the shift; any difference needs a reason.",
       "filter": "Filter shifts",
-      "recent": "Recent",
       "chips": {
         "open": "Open",
         "closed": "Closed",
-        "diff": "With a difference"
+        "diff": "With a difference",
+        "attention": "Needs a look",
+        "all": "All"
       },
       "shift": "Shift",
       "by": "Opened by",
@@ -10709,7 +10877,11 @@
       "closed": "Shift closed; the report goes to the store manager",
       "counted": "Cash counted (đồng)",
       "reason": "Reason for the difference",
-      "reasonHint": "Required when the count differs from the expected amount."
+      "reasonHint": "Required when the count differs from the expected amount.",
+      "empty": "No shifts match.",
+      "actions": "Actions",
+      "openDetail": "Show cash details",
+      "hideDetail": "Hide cash details"
     },
     "returns": {
       "about": "Returns brought to a store. Receive the goods (or record a walk-in return), note their condition, then refund — cash comes out of the open shift — or exchange.",
@@ -10804,7 +10976,12 @@
       },
       "statsTitle": "Star ratings",
       "statsHead": "{product} · {mean} ★ from {total} reviews",
-      "starLabel": "{n} stars"
+      "starLabel": "{n} stars",
+      "actions": "Actions",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "publishTitle": "Show the review of {product} again?",
+      "publishPoint": "The review appears publicly again and the writer is told."
     }
   },
   "work": {
@@ -11412,7 +11589,8 @@
       "deleteSubmit": "Delete",
       "deleted": "Group deleted.",
       "legalTitle": "Segmentation is personal data processing.",
-      "legalText": "Purpose and basis are recorded in the Compliance register. Using groups for marketing needs the customer’s consent (Law 91/2025, Decree 356/2025 — check the original text)."
+      "legalText": "Purpose and basis are recorded in the Compliance register. Using groups for marketing needs the customer’s consent (Law 91/2025, Decree 356/2025 — check the original text).",
+      "bulkDeleteTitle": "Delete the selected groups?"
     },
     "group": {
       "button": "New group",
@@ -11620,7 +11798,8 @@
       "by": "Blocked by",
       "codOrders": "{n} COD orders",
       "lift": "Lift block",
-      "lifted": "Block lifted; the buyer can use COD again."
+      "lifted": "Block lifted; the buyer can use COD again.",
+      "none": "No block matches."
     },
     "codRule": {
       "button": "Add rule",
@@ -11795,7 +11974,9 @@
       "disconnect2": "No more stock, prices or orders sync with this account.",
       "disconnect3": "Order and reconciliation history is kept. This cannot be undone: reconnecting needs a new key.",
       "disconnectSubmit": "Disconnect",
-      "disconnected": "Disconnected; the key was deleted."
+      "disconnected": "Disconnected; the key was deleted.",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details"
     },
     "connectors": {
       "title": "Installed connectors",
@@ -11957,7 +12138,8 @@
       "previewFoot": "{name}: {available} available in the linked warehouses (order holds already deducted), {reserved} reserved for channels; the website can sell {website}. Pushed quantities are never negative.",
       "warnTitle": "Autoxide does not oversell, but channels lag.",
       "warnText": "Every web, counter and channel order holds stock, so stock never goes negative. If two channels sell the last unit within the few seconds before sync, the later imported order becomes “Oversold”. Use a buffer or reserve fast sellers to reduce this.",
-      "debounce": "Changes within 5 seconds are pushed once; full check every 6 hours"
+      "debounce": "Changes within 5 seconds are pushed once; full check every 6 hours",
+      "openAccount": "Open channel account"
     },
     "inboundState": {
       "received": "Received",
@@ -12031,7 +12213,12 @@
       "cancelWarn": "This cannot be undone: the order is cancelled in Autoxide and on the channel, and the channel may penalise the shop.",
       "cancelSubmit": "Cancel on channel",
       "cancelled": "Cancel queued on the channel; the order was cancelled.",
-      "foot": "Buyer phone numbers are partly hidden by channels: used only for delivery, never for COD-fraud checks, not counted in COD statistics."
+      "foot": "Buyer phone numbers are partly hidden by channels: used only for delivery, never for COD-fraud checks, not counted in COD statistics.",
+      "all": "All",
+      "empty": "No orders from channels match.",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "openOrder": "Open order"
     },
     "map": {
       "button": "Link {sku}",
@@ -12127,7 +12314,15 @@
       "credit": "Credit",
       "owedTitle": "Owed per account",
       "owedAbout": "Money collected by channels for imported orders, minus statement lines already posted.",
-      "owedTotal": "Total receivable"
+      "owedTotal": "Total receivable",
+      "bulkPostTitle": "Post the selected statements to the ledger?",
+      "bulkPostOnly": "Only statements with every line matched are posted; the others are listed as not done.",
+      "openDetail": "Show statement",
+      "hideDetail": "Hide statement",
+      "openOrder": "Open order",
+      "noMismatch": "No open mismatches.",
+      "bulkResolveTitle": "Close the selected mismatches with one note?",
+      "bulkResolveFinal": "The note and your name are saved on every line. This cannot be undone."
     },
     "line": {
       "button": "Mark resolved",
@@ -12372,7 +12567,10 @@
       "undoReason": "Reopening undone",
       "legal": "Affiliates and livestream hosts must verify their identity (E-commerce Law 122/2025/QH15, from 1 July 2026; the guiding decree’s exact articles — check the original text). Accounts must be verified before livestreaming (Decree 147/2024/ND-CP).",
       "oneLevelTitle": "One level only.",
-      "oneLevelText": "No multi-level commissions: they easily become multi-level marketing, which has its own law."
+      "oneLevelText": "No multi-level commissions: they easily become multi-level marketing, which has its own law.",
+      "view": "View details",
+      "bulkSuspendTitle": "Suspend the selected partners?",
+      "bulkTerminateTitle": "Terminate the selected partners?"
     },
     "suspend": {
       "button": "Suspend with reason",
@@ -12500,7 +12698,10 @@
       "adjustAbout": "A refund after approval or payment adds a negative line deducted from the next payout. If it exceeds the period’s commission, it carries over; the affiliate is never asked to pay back.",
       "noAdjust": "No negative adjustments: no attributed order was refunded after approval.",
       "reason": "Reason",
-      "ledgerNote": "Approving posts Debit commission expense / Credit payable to the affiliate; a refund after approval posts the reverse."
+      "ledgerNote": "Approving posts Debit commission expense / Credit payable to the affiliate; a refund after approval posts the reverse.",
+      "openOrder": "Open order",
+      "openPartner": "View partner",
+      "openPayout": "View payout"
     },
     "payouts": {
       "kpis": "Payout figures",
@@ -12553,7 +12754,13 @@
       "rateFrom": "{pct}% when a payment is {threshold} or more",
       "rateAll": "{pct}% on every payment",
       "verify": "check the original text",
-      "pitLegal": "PIT on commissions of individuals without a labour contract: 10% per payment from 2,000,000 ₫ (Circular 111/2013/TT-BTC, Article 25); sources say Decree 253/2026 raises the threshold to 5,000,000 ₫ — check the original text. Electronic withholding certificates: Decree 123/2020 amended by Decree 70/2025 — check the form. {n} rows of tax data."
+      "pitLegal": "PIT on commissions of individuals without a labour contract: 10% per payment from 2,000,000 ₫ (Circular 111/2013/TT-BTC, Article 25); sources say Decree 253/2026 raises the threshold to 5,000,000 ₫ — check the original text. Electronic withholding certificates: Decree 123/2020 amended by Decree 70/2025 — check the form. {n} rows of tax data.",
+      "bulkPaid": "Mark paid",
+      "bulkPaidTitle": "Record the selected payouts as paid?",
+      "bulkReference": "Bank transaction code of the batch transfer",
+      "bulkPaidSame": "Every selected payout gets this code and today's date.",
+      "bulkPaidOnly": "Only manual payouts still being built are recorded; the others are listed as not done.",
+      "bulkRetryTitle": "Send the selected failed payouts again?"
     },
     "paid": {
       "button": "Mark paid manually",

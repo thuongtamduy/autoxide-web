@@ -805,7 +805,13 @@
       "all": "Tất cả",
       "noStatus": "Không có người dùng nào ở trạng thái này.",
       "lastSignIn": "Đăng nhập gần nhất",
-      "neverSignedIn": "Chưa có"
+      "neverSignedIn": "Chưa có",
+      "open": "Mở",
+      "changeRoles": "Đổi role",
+      "actions": "Thao tác",
+      "undo": "Hoàn tác",
+      "undone": "Đã hoàn tác.",
+      "bulkDisableTitle": "Khoá các tài khoản đã chọn?"
     },
     "create": {
       "open": "Tạo người dùng",
@@ -963,7 +969,10 @@
       "count": "{count, plural, =0 {Chưa có permission} other {# permission}}",
       "builtin": "Dựng sẵn",
       "custom": "Tạo ở đây",
-      "members": "Số người"
+      "members": "Số người",
+      "open": "Mở",
+      "bulkDeleteTitle": "Xoá các role đã chọn?",
+      "bulkBuiltin": "Role dựng sẵn không chọn được; core từ chối role còn cần dùng."
     },
     "role": {
       "deleted": "Đã xoá role.",
@@ -1038,7 +1047,8 @@
       "revokeLink": "Link trong thư ngừng dùng được ngay.",
       "revokeAgain": "Muốn mời lại sau thì gửi lời mời mới.",
       "revokeSubmit": "Thu hồi lời mời",
-      "revoked": "Đã thu hồi lời mời."
+      "revoked": "Đã thu hồi lời mời.",
+      "bulkRevokeTitle": "Thu hồi các lời mời đã chọn?"
     },
     "delegations": {
       "create": "Uỷ quyền mới",
@@ -1077,7 +1087,8 @@
       "empty": "Chưa có uỷ quyền nào.",
       "childId": "ID của khách con",
       "childIdHint": "ID của khách con, do nhà vận hành nền tảng cung cấp. Phải là khách nằm dưới khách của bạn.",
-      "childPick": "Khách cấp dưới"
+      "childPick": "Khách cấp dưới",
+      "bulkRevokeTitle": "Thu hồi các uỷ quyền đã chọn?"
     },
     "public": {
       "units": "Nút",
@@ -1756,7 +1767,9 @@
       "retryFrom": "Job chạy lại từ đầu, số lần thử đếm lại.",
       "retryAudit": "Lần chạy lại được ghi vào nhật ký audit kèm tên bạn.",
       "retrySubmit": "Chạy lại job",
-      "retried": "Đã xếp job chạy lại."
+      "retried": "Đã xếp job chạy lại.",
+      "bulkRetryTitle": "Chạy lại các job đã chọn?",
+      "bulkRetryDead": "Chỉ job trong dead-letter queue được chạy lại; job khác báo là chưa làm được."
     },
     "webhooks": {
       "events": "Event",
@@ -1835,7 +1848,12 @@
       "status": {
         "active": "Đang bật",
         "disabled": "Đã tắt"
-      }
+      },
+      "open": "Mở",
+      "actions": "Thao tác",
+      "undo": "Hoàn tác",
+      "undone": "Đã hoàn tác.",
+      "bulkDeleteTitle": "Xoá các endpoint đã chọn?"
     },
     "audit": {
       "title": "Nhật ký",
@@ -1938,7 +1956,8 @@
       "owner": "Chủ key",
       "ownerGone": "Tài khoản đã xoá",
       "revokeOtherTitle": "Thu hồi {name} của {owner}?",
-      "revokeAudit": "Nhật ký audit ghi lại bạn đã thu hồi key này."
+      "revokeAudit": "Nhật ký audit ghi lại bạn đã thu hồi key này.",
+      "bulkRevokeTitle": "Thu hồi các key đã chọn?"
     },
     "approvals": {
       "title": "Lệnh chờ duyệt",
@@ -2119,7 +2138,33 @@
       },
       "aiReviewed": "Đã duyệt nội dung AI",
       "entryGone": "(không tìm thấy bài)",
-      "colActions": "Thao tác"
+      "colActions": "Thao tác",
+      "open": "Mở",
+      "bulk": {
+        "publish": "Đăng",
+        "publishTitle": "Đăng các bài đã chọn?",
+        "publishNow": "Người đọc thấy bản nháp của từng bài như hiện tại.",
+        "publishAi": "Bài có nhãn AI: đăng ở đây là bạn xác nhận đã đọc lại phần AI viết.",
+        "unpublish": "Gỡ đăng",
+        "unpublishTitle": "Gỡ đăng các bài đã chọn?",
+        "unpublishPoint": "Người đọc thôi thấy bài ngay; bài trở lại thành bản nháp và đăng lại được sau. Lịch đăng đang chờ bị huỷ.",
+        "archive": "Lưu trữ",
+        "archiveTitle": "Lưu trữ các bài đã chọn?",
+        "archivePoint": "Địa chỉ của bài trả 410 (đã gỡ hẳn) để máy tìm kiếm bỏ đi; lịch đang chờ bị huỷ. Sau này vẫn đăng lại được.",
+        "delete": "Xoá",
+        "deleteTitle": "Xoá các bài đã chọn?",
+        "deleteRevisions": "Các phiên bản và lịch của bài cũng bị xoá; địa chỉ đã đăng trả 410.",
+        "deletePages": "Trang còn trang con thì không xoá được.",
+        "deleteNoUndo": "Không hoàn tác được."
+      },
+      "row": {
+        "unpublishTitle": "Gỡ đăng “{title}”?",
+        "unpublished": "Đã gỡ đăng: người đọc không còn thấy bài",
+        "archiveTitle": "Lưu trữ “{title}”?",
+        "archived": "Đã lưu trữ",
+        "deleteTitle": "Xoá “{title}”?",
+        "deleted": "Đã xoá"
+      }
     },
     "status": {
       "draft": "Bản nháp",
@@ -2652,7 +2697,18 @@
       "remove": "Bỏ ảnh",
       "unavailable": "Bạn chưa dùng được thư viện media."
     },
-    "librarySummary": "{count, plural, other {# tệp}} · {size} · {noAlt, plural, =0 {mọi ảnh đã có alt} other {# ảnh thiếu alt}}{trashed, plural, =0 {} other { · # trong thùng rác}}"
+    "librarySummary": "{count, plural, other {# tệp}} · {size} · {noAlt, plural, =0 {mọi ảnh đã có alt} other {# ảnh thiếu alt}}{trashed, plural, =0 {} other { · # trong thùng rác}}",
+    "bulk": {
+      "open": "Mở chi tiết",
+      "actions": "Thao tác",
+      "move": "Chuyển thư mục",
+      "trashTitle": "Cho các tệp đã chọn vào thùng rác?",
+      "purgeTitle": "Xoá hẳn các tệp đã chọn?",
+      "purged": "Đã xoá hẳn",
+      "restoreTitle": "Khôi phục “{name}”?",
+      "restorePoint": "Tệp về lại thư mục cũ và địa chỉ của nó chạy lại.",
+      "gridHint": "Muốn chọn nhiều tệp cùng lúc thì chuyển cách xem sang Bảng."
+    }
   },
   "structure": {
     "crumb": "Nội dung",
@@ -2742,7 +2798,10 @@
       "searchHint": "Tên ở ngôn ngữ bất kỳ",
       "find": "Tìm",
       "clear": "Hiện tất cả",
-      "more": "Đang hiện 200 mục đầu. Tìm theo tên để thấy các mục khác."
+      "more": "Đang hiện 200 mục đầu. Tìm theo tên để thấy các mục khác.",
+      "bulkDeleteCategories": "Xoá các danh mục đã chọn?",
+      "bulkDeleteTags": "Xoá các thẻ đã chọn?",
+      "viewPosts": "Xem các bài"
     },
     "authors": {
       "title": "Hồ sơ tác giả",
@@ -2846,7 +2905,8 @@
       "pages": "Trang",
       "first": "Trang đầu",
       "next": "Trang sau",
-      "toCol": "Tới"
+      "toCol": "Tới",
+      "bulkDeleteTitle": "Xoá các chuyển hướng đã chọn?"
     },
     "history": {
       "title": "Lịch sử phiên bản",
@@ -3187,7 +3247,8 @@
         "status": "Trạng thái",
         "sender": "Người gửi",
         "content": "Nội dung",
-        "sent": "Gửi lúc"
+        "sent": "Gửi lúc",
+        "actions": "Thao tác"
       },
       "fieldsVersion": "{count} trường · bản {version}",
       "retentionDefault": "Mặc định của máy chủ",
@@ -3393,7 +3454,14 @@
         "download": "Tải tệp CSV",
         "deletedAt": "tệp bị xoá lúc",
         "failed": "Xuất không thành; hãy xuất lại."
-      }
+      },
+      "open": "Mở",
+      "copyKey": "Chép mã biểu mẫu",
+      "copiedKey": "Đã chép mã biểu mẫu",
+      "copyApi": "Chép địa chỉ API công khai",
+      "copiedApi": "Đã chép địa chỉ API công khai: website đọc form ở đây",
+      "bulkDeleteTitle": "Xoá vĩnh viễn các biểu mẫu đã chọn?",
+      "bulkDeleteSubmissionsTitle": "Xoá vĩnh viễn các bài nộp đã chọn?"
     },
     "newsletter": {
       "crumb": "Tiếp thị · module newsletter",
@@ -3768,7 +3836,13 @@
       "blockedFilter": "Bị chặn",
       "openSubscriber": "Mở",
       "bulkBlockTitle": "Chặn những người đăng ký đã chọn?",
-      "bulkDeleteTitle": "Xoá hẳn những người đăng ký đã chọn?"
+      "bulkDeleteTitle": "Xoá hẳn những người đăng ký đã chọn?",
+      "open": "Mở",
+      "bulkCancelTitle": "Huỷ hẳn các chiến dịch đã chọn?",
+      "bulkCancelSkipped": "Thư chưa gửi tính là bỏ qua.",
+      "bulkDeleteSent": "Chiến dịch đã gửi thư thì không xoá được.",
+      "bulkUnsuppressTitle": "Gỡ các địa chỉ đã chọn khỏi danh sách không gửi?",
+      "bulkDeleteCampaignsTitle": "Xoá các chiến dịch đã chọn?"
     },
     "comments": {
       "crumb": "Tiếp thị · module comments",
@@ -4037,7 +4111,8 @@
       "targetUrl": "Địa chỉ",
       "targetNotPublic": "Đang không công khai (ẩn tiêu đề và địa chỉ)",
       "bulkPurgeTitle": "Xoá hẳn các bình luận đã chọn?",
-      "bulkPurgeThreads": "Bình luận mở đầu một luồng bị xoá cùng mọi trả lời của nó."
+      "bulkPurgeThreads": "Bình luận mở đầu một luồng bị xoá cùng mọi trả lời của nó.",
+      "bulkLiftTitle": "Gỡ các lệnh cấm đã chọn?"
     },
     "data": {
       "title": "Dữ liệu theo email",
@@ -4415,7 +4490,9 @@
         "choose": "Chọn lý do",
         "note": "Ghi chú cho người bán",
         "noteHint": "Bắt buộc khi lý do là \"Lý do khác\"."
-      }
+      },
+      "bulkApproveTitle": "Duyệt các hồ sơ đã chọn?",
+      "bulkApproveEach": "Kiểm giấy tờ của từng người trước khi duyệt cùng lúc."
     },
     "privacy": {
       "incident": {
@@ -4988,7 +5065,10 @@
           "comments": "Bình luận: dữ liệu theo email",
           "self": "Dữ liệu của tôi"
         },
-        "deadlines": "Hạn trả lời theo loại yêu cầu (quy tắc đề xuất)."
+        "deadlines": "Hạn trả lời theo loại yêu cầu (quy tắc đề xuất).",
+        "bulkVerifiedTitle": "Ghi đã xác minh người yêu cầu cho các yêu cầu đã chọn?",
+        "bulkDoneTitle": "Ghi đã trả lời các yêu cầu đã chọn?",
+        "bulkWrongState": "Yêu cầu không ở bước này báo là chưa làm được."
       }
     }
   },
@@ -5188,7 +5268,8 @@
       "clear": "Bỏ lọc",
       "filterSub": "Thuê bao",
       "anySub": "Mọi thuê bao",
-      "onlyNear": "Chỉ khách gần chạm hạn mức (từ 80 %)"
+      "onlyNear": "Chỉ khách gần chạm hạn mức (từ 80 %)",
+      "open": "Mở"
     },
     "tenant": {
       "back": "Khách hàng",
@@ -6703,13 +6784,19 @@
       "none": "Không theo dõi",
       "ledgerNote": "Số “có” bằng tổng sổ biến động của dòng này. Muốn đổi thì ghi biến động (điều chỉnh, chuyển, nhập), không sửa số trực tiếp.",
       "viewLedger": "Xem sổ của dòng này",
-      "foot": "Hiện {shown} dòng · {low} dòng dưới mức tối thiểu.",
-      "next": "Trang sau",
       "valueTitle": "Giá trị tồn theo kho",
       "valueAbout": "Tồn nhân giá vốn bình quân gia quyền của từng kho. Giá vốn tính lại mỗi lần nhập hàng.",
       "oversellTitle": "Không bao giờ bán quá tồn",
       "oversellStrong": "Không bao giờ bán quá tồn.",
-      "oversell": "Đặt hàng giữ chỗ bằng một lệnh trừ “sẵn bán” có điều kiện, nên nhiều người mua cùng lúc cũng không vượt số còn. Chỗ giữ hết hạn thanh toán thì job trả lại tự động."
+      "oversell": "Đặt hàng giữ chỗ bằng một lệnh trừ “sẵn bán” có điều kiện, nên nhiều người mua cùng lúc cũng không vượt số còn. Chỗ giữ hết hạn thanh toán thì job trả lại tự động.",
+      "setMinimum": "Đặt mức tối thiểu",
+      "minimumField": "Mức tối thiểu mới",
+      "copySku": "Chép SKU",
+      "actions": "Thao tác",
+      "view": "Xem chi tiết",
+      "hide": "Ẩn chi tiết",
+      "transferHere": "Chuyển hàng về đây",
+      "footLow": "{low} dòng dưới mức tối thiểu ở mọi kho."
     },
     "moves": {
       "about": "Sổ chỉ thêm: mọi lần nhập, xuất, chuyển, điều chỉnh, kiểm kê, hết hạn lô là một dòng. Không sửa, không xoá; ghi sai thì ghi một dòng ngược lại kèm lý do. Đây là chứng từ kho, lưu ít nhất 10 năm.",
@@ -6736,7 +6823,16 @@
       "quickAbout": "Dùng khi hàng hỏng, mất, tìm thấy hoặc sửa lần nhập sai. Lý do là bắt buộc để kế toán và người kiểm tra hiểu vì sao tồn đổi.",
       "whoTitle": "Ai được làm gì",
       "whoStrong": "Quyền theo kho.",
-      "who": "Xem sổ cần inventory.read; điều chỉnh cần inventory.adjust ở đúng kho đó. Nhân viên một cửa hàng không xem hay sửa được tồn của cửa hàng khác."
+      "who": "Xem sổ cần inventory.read; điều chỉnh cần inventory.adjust ở đúng kho đó. Nhân viên một cửa hàng không xem hay sửa được tồn của cửa hàng khác.",
+      "byDate": "Lọc theo ngày",
+      "from": "Từ ngày (giờ Việt Nam)",
+      "to": "Đến ngày",
+      "clearDates": "Bỏ lọc ngày",
+      "actions": "Thao tác",
+      "view": "Xem chi tiết",
+      "hide": "Ẩn chi tiết",
+      "copySource": "Chép mã chứng từ",
+      "copied": "Đã chép mã chứng từ"
     },
     "adjust": {
       "button": "Điều chỉnh tồn",
@@ -6828,7 +6924,13 @@
         "received": "Đã nhận đủ. Đóng phiếu để kết thúc.",
         "closed": "Đã đóng.",
         "cancelled": "Đã huỷ; tồn chưa từng đổi."
-      }
+      },
+      "view": "Xem các dòng",
+      "hide": "Ẩn các dòng",
+      "bulkShipTitle": "Gửi đi các phiếu chuyển đã chọn?",
+      "bulkShipPoint": "Hàng rời kho nguồn của từng phiếu ngay; ở kho đích hiện thành “đang về”.",
+      "bulkDraftOnly": "Chỉ phiếu nháp đổi được; phiếu khác được báo lỗi và vẫn được chọn.",
+      "bulkCancelTitle": "Huỷ các phiếu chuyển đã chọn?"
     },
     "count": {
       "button": "Mở phiếu kiểm kê",
@@ -6872,7 +6974,14 @@
       "notCounted": "chưa đếm",
       "expected": "lúc đếm có {count}",
       "diff": "lệch {diff}",
-      "reason": "Lý do"
+      "reason": "Lý do",
+      "created": "Ngày tạo",
+      "actions": "Thao tác",
+      "view": "Mở phiếu",
+      "hide": "Đóng phiếu",
+      "bulkApplyTitle": "Áp dụng các phiếu kiểm kê đã chọn?",
+      "bulkApplyReasons": "Phiếu còn dòng lệch chưa có lý do thì không áp dụng; phiếu đó được báo lỗi và vẫn được chọn.",
+      "bulkCancelTitle": "Huỷ các phiếu kiểm kê đã chọn?"
     },
     "lots": {
       "title": "Lô và hạn dùng",
@@ -6890,7 +6999,9 @@
       "writeOffSubmit": "Loại bỏ",
       "writtenOff": "Đã loại bỏ lô",
       "legalStrong": "Căn cứ chưa chắc.",
-      "legal": "Không có quy định chung buộc “hết hạn trước xuất trước”; việc không bán hàng quá hạn thuộc luật chất lượng hàng hoá và an toàn thực phẩm. Cần người có chuyên môn xác nhận cho từng ngành hàng."
+      "legal": "Không có quy định chung buộc “hết hạn trước xuất trước”; việc không bán hàng quá hạn thuộc luật chất lượng hàng hoá và an toàn thực phẩm. Cần người có chuyên môn xác nhận cho từng ngành hàng.",
+      "bulkWriteOffTitle": "Loại bỏ các lô đã chọn?",
+      "bulkWriteOffPoint": "Toàn bộ phần còn của từng lô bị trừ khỏi tồn với lý do “hết hạn”."
     },
     "serials": {
       "title": "Số serial",
@@ -6910,7 +7021,9 @@
       "writeOffTitle": "Loại bỏ {serial}?",
       "writeOffPoint": "Chiếc này không bán được nữa. Không hoàn tác được.",
       "writeOffSubmit": "Loại bỏ",
-      "writtenOff": "Đã loại bỏ serial"
+      "writtenOff": "Đã loại bỏ serial",
+      "bulkWriteOffTitle": "Loại bỏ các serial đã chọn?",
+      "copy": "Chép serial"
     },
     "purchasing": {
       "kpis": "Tóm tắt nhập hàng",
@@ -6957,7 +7070,14 @@
       "returnNo": "Phiếu",
       "supplierReason": "Nhà cung cấp · lý do",
       "fromReceipt": "từ {number}",
-      "ledgerNote": "Job ghi sổ cái chạy lại an toàn: sổ cái chống trùng theo mã inventory.receipt + mã phiếu."
+      "ledgerNote": "Job ghi sổ cái chạy lại an toàn: sổ cái chống trùng theo mã inventory.receipt + mã phiếu.",
+      "created": "Ngày tạo",
+      "view": "Xem các dòng",
+      "hide": "Ẩn các dòng",
+      "bulkPlaceTitle": "Đặt hàng các đơn đã chọn?",
+      "bulkPlacePoint": "Từng đơn gửi cho nhà cung cấp; số lượng hiện thành “đang về” ở kho nhận.",
+      "bulkDraftOnly": "Chỉ đơn nháp đặt được; đơn khác được báo lỗi và vẫn được chọn.",
+      "bulkCancelTitle": "Huỷ các đơn đặt mua đã chọn?"
     },
     "po": {
       "button": "Tạo đơn đặt mua",
@@ -7261,7 +7381,10 @@
         "balanced": "Hai cột bằng nhau.",
         "unbalanced": "Hai cột lệch nhau: dấu hiệu lỗi hệ thống, báo quản trị viên.",
         "foot": "Số dư suy từ dòng bút toán; bước kiểm định kỳ tính lại và báo tài khoản lệch. Số hiệu tài khoản theo chế độ kế toán chỉ dùng khi xuất (xem tab Xuất kế toán)."
-      }
+      },
+      "actions": "Thao tác",
+      "details": "Xem chi tiết",
+      "close": "Đóng chi tiết"
     },
     "exceptions": {
       "title": "Mục chờ xử lý",
@@ -7366,7 +7489,14 @@
           "done": "Xong"
         },
         "opened": "{count, plural, =0 {Không có mục lệch mới} other {# mục lệch mới}}"
-      }
+      },
+      "details": "Xem chi tiết",
+      "close": "Đóng chi tiết",
+      "bulkIgnore": "Bỏ qua",
+      "bulkIgnoreTitle": "Bỏ qua các mục đã chọn?",
+      "bulkIgnoreNoEntry": "Không ghi bút toán nào; mỗi mục được đóng với cùng một ghi chú.",
+      "bulkIgnoreAudit": "Tên bạn và ghi chú được lưu cùng từng mục. Mục đã xử lý báo là chưa làm được.",
+      "rowActions": "Thao tác"
     },
     "bank": {
       "title": "Tài khoản nhận chuyển khoản",
@@ -7606,7 +7736,12 @@
         "done": "Đã xoá nháp"
       },
       "basisIssue": "Hoá đơn lập khi giao hàng.",
-      "basisCorrection": "Xử lý hoá đơn sai sót."
+      "basisCorrection": "Xử lý hoá đơn sai sót.",
+      "actions": "Thao tác",
+      "details": "Xem chi tiết",
+      "close": "Đóng chi tiết",
+      "bulkIssueTitle": "Phát hành các hoá đơn nháp đã chọn?",
+      "bulkIssueDrafts": "Chỉ hoá đơn nháp được phát hành; hoá đơn khác giữ nguyên."
     },
     "series": {
       "title": "Ký hiệu hoá đơn, chứng từ",
@@ -8079,7 +8214,13 @@
       "usedOf": "{used} / {limit} lượt",
       "everything": "Mọi hàng tại {org}",
       "minOrder": "Đơn từ {amount}",
-      "groups": "Nhóm khách {groups}"
+      "groups": "Nhóm khách {groups}",
+      "actions": "Thao tác",
+      "view": "Xem chi tiết",
+      "hide": "Ẩn chi tiết",
+      "bulkActivateTitle": "Bật các chương trình đã chọn?",
+      "bulkActivateEach": "Mỗi chương trình được kiểm riêng; cái không đạt được báo lỗi và vẫn được chọn.",
+      "exportSelected": "Xuất CSV"
     },
     "limits": {
       "title": "Trần pháp luật đang hiệu lực",
@@ -8622,8 +8763,9 @@
       "state": "Trạng thái",
       "noTracking": "chưa có mã",
       "noCarrier": "không qua hãng",
-      "more": "Xem thêm vận đơn",
-      "etaRange": "{from} – {to}"
+      "etaRange": "{from} – {to}",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết"
     },
     "detail": {
       "title": "Vận đơn · {order}",
@@ -8686,7 +8828,9 @@
       "cancelLocal": "Vận đơn chưa gửi hãng; chỉ huỷ ở đây.",
       "cancelOrder": "Đơn quay lại “Đang chuẩn bị” để tạo vận đơn khác.",
       "cancelSubmit": "Huỷ vận đơn",
-      "cancelled": "Đã huỷ vận đơn"
+      "cancelled": "Đã huỷ vận đơn",
+      "bulkBookTitle": "Đặt hãng cho các vận đơn đã chọn?",
+      "bulkBookOnly": "Chỉ gửi vận đơn đang chờ đặt hãng; vận đơn khác được liệt kê là chưa làm."
     },
     "manual": {
       "button": "Tạo vận đơn tay",
@@ -8930,7 +9074,8 @@
       "hold": "Giữ",
       "hours": "{count} giờ",
       "holdDays": "{count} ngày",
-      "pickupFoot": "Kho Thủ Đức không phải điểm nhận."
+      "pickupFoot": "Kho Thủ Đức không phải điểm nhận.",
+      "viewTable": "Xem bảng phí"
     },
     "cod": {
       "kpis": "Tóm tắt COD",
@@ -8974,7 +9119,12 @@
       "trackLedger": "Hãng xác nhận đã giao thì vận đơn sang “Đã giao”, sổ cái ghi phải thu và dòng lệch tự khớp.",
       "trackFinal": "Bút toán đã ghi không xoá được; sai thì ghi bút toán điều chỉnh.",
       "trackSubmit": "Hỏi và khớp",
-      "tracked": "Đã hỏi hãng và cập nhật"
+      "tracked": "Đã hỏi hãng và cập nhật",
+      "bulkTrackSkip": "Chỉ hỏi lại được dòng hãng báo chưa giao.",
+      "bulkTrackTitle": "Hỏi lại hãng cho các dòng đã chọn?",
+      "bulkTrackOnly": "Chỉ hỏi dòng hãng báo chưa giao; dòng khác được liệt kê là chưa làm.",
+      "bulkResolveTitle": "Đóng các dòng lệch đã chọn với cùng một lý do?",
+      "bulkResolveFinal": "Lý do và tên bạn được lưu ở từng dòng. Dòng đã đóng không mở lại được."
     },
     "statementStatus": {
       "imported": "Đã nhập, chưa khớp",
@@ -9028,7 +9178,12 @@
       "turnedOff": "Đã tắt; vận đơn đang đi vẫn nhận cập nhật",
       "turnOn": "Bật hãng",
       "turnedOn": "Đã bật hãng",
-      "foot": "Tên hãng là ví dụ. Bộ nối hãng thật là module riêng, làm khi có tài khoản thử của hãng."
+      "foot": "Tên hãng là ví dụ. Bộ nối hãng thật là module riêng, làm khi có tài khoản thử của hãng.",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "testTitle": "Kiểm tra kết nối tới {name}?",
+      "testAsk": "Gửi một yêu cầu thử tới hãng bằng khoá đã lưu.",
+      "testNoOrder": "Không tạo vận đơn, không phát sinh phí."
     },
     "capabilities": {
       "multi_parcel": "nhiều kiện",
@@ -10411,7 +10566,13 @@
       "refundBody": "Hoàn đúng các dòng đã nhận về. Hệ thống ghi bút toán đảo và lập hoá đơn điều chỉnh.",
       "refunded": "Đã gửi lệnh hoàn; đã lập hoá đơn điều chỉnh",
       "close": "Đóng",
-      "closed": "Đã đóng yêu cầu"
+      "closed": "Đã đóng yêu cầu",
+      "actions": "Thao tác",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "openOrder": "Mở đơn",
+      "bulkApproveTitle": "Duyệt các yêu cầu đổi trả đã chọn?",
+      "bulkApproveOnly": "Chỉ duyệt yêu cầu đang chờ trả lời; yêu cầu khác được liệt kê là chưa làm."
     },
     "pos": {
       "button": "Đơn tại quầy",
@@ -10660,7 +10821,13 @@
       "codeHint": "Không ghi lại, không hiện cho nhân viên.",
       "proxyName": "Tên người nhận hộ",
       "proxyHint": "Chỉ khi nhận hộ.",
-      "noProxy": "Đơn này không khai người nhận hộ."
+      "noProxy": "Đơn này không khai người nhận hộ.",
+      "actions": "Thao tác",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "resendTitle": "Gửi lại mã nhận của {number}?",
+      "resendOld": "Người mua nhận mã mới; mã cũ không dùng được nữa.",
+      "bulkResendTitle": "Gửi lại mã nhận cho các đơn đã chọn?"
     },
     "shifts": {
       "kpis": "Tóm tắt ca",
@@ -10673,11 +10840,12 @@
       "title": "Ca",
       "about": "Mỗi quầy chỉ có một ca mở. Mở ca ghi tiền đầu ca; đóng ca đếm tiền trong két. Hệ thống tính tiền mặt dự kiến từ các đơn tại quầy trong ca; lệch thì phải ghi lý do.",
       "filter": "Lọc ca",
-      "recent": "Gần đây",
       "chips": {
         "open": "Đang mở",
         "closed": "Đã đóng",
-        "diff": "Có lệch"
+        "diff": "Có lệch",
+        "attention": "Cần xem",
+        "all": "Tất cả"
       },
       "shift": "Ca",
       "by": "Người mở",
@@ -10709,7 +10877,11 @@
       "closed": "Đã đóng ca; báo cáo ca gửi quản lý cửa hàng",
       "counted": "Tiền đếm được (đồng)",
       "reason": "Lý do chênh lệch",
-      "reasonHint": "Bắt buộc khi số đếm khác số dự kiến."
+      "reasonHint": "Bắt buộc khi số đếm khác số dự kiến.",
+      "empty": "Không có ca nào khớp.",
+      "actions": "Thao tác",
+      "openDetail": "Xem tiền trong ca",
+      "hideDetail": "Ẩn tiền trong ca"
     },
     "returns": {
       "about": "Hàng trả mang tới cửa hàng. Nhận hàng (hoặc ghi nhận khách mang tới thẳng), ghi tình trạng, rồi hoàn tiền — tiền mặt trừ vào ca đang mở — hoặc đổi hàng.",
@@ -10804,7 +10976,12 @@
       },
       "statsTitle": "Phân bố sao",
       "statsHead": "{product} · {mean} ★ từ {total} đánh giá",
-      "starLabel": "{n} sao"
+      "starLabel": "{n} sao",
+      "actions": "Thao tác",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "publishTitle": "Hiện lại đánh giá về {product}?",
+      "publishPoint": "Đánh giá hiện công khai trở lại và người viết được báo."
     }
   },
   "work": {
@@ -11412,7 +11589,8 @@
       "deleteSubmit": "Xoá",
       "deleted": "Đã xoá nhóm.",
       "legalTitle": "Phân khúc là xử lý dữ liệu cá nhân.",
-      "legalText": "Mục đích và căn cứ ghi trong sổ của Tuân thủ. Dùng nhóm để tiếp thị cần khách đã đồng ý (Luật BVDLCN 91/2025, NĐ 356/2025 — cần đối chiếu văn bản gốc)."
+      "legalText": "Mục đích và căn cứ ghi trong sổ của Tuân thủ. Dùng nhóm để tiếp thị cần khách đã đồng ý (Luật BVDLCN 91/2025, NĐ 356/2025 — cần đối chiếu văn bản gốc).",
+      "bulkDeleteTitle": "Xoá các nhóm đã chọn?"
     },
     "group": {
       "button": "Tạo nhóm khách",
@@ -11620,7 +11798,8 @@
       "by": "Người chặn",
       "codOrders": "{n} đơn COD",
       "lift": "Gỡ chặn",
-      "lifted": "Đã gỡ chặn; người mua đặt COD lại được."
+      "lifted": "Đã gỡ chặn; người mua đặt COD lại được.",
+      "none": "Không có lần chặn nào khớp."
     },
     "codRule": {
       "button": "Thêm quy tắc",
@@ -11795,7 +11974,9 @@
       "disconnect2": "Không còn đồng bộ tồn, giá, đơn với tài khoản này.",
       "disconnect3": "Lịch sử đơn và đối soát vẫn giữ. Không hoàn tác được: muốn dùng lại phải kết nối với khoá mới.",
       "disconnectSubmit": "Ngắt kết nối",
-      "disconnected": "Đã ngắt; khoá kết nối đã xoá."
+      "disconnected": "Đã ngắt; khoá kết nối đã xoá.",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết"
     },
     "connectors": {
       "title": "Bộ nối đã cài",
@@ -11957,7 +12138,8 @@
       "previewFoot": "{name}: khả dụng {available} ở các kho gắn với tài khoản (đã trừ giữ chỗ đơn), {reserved} giữ riêng cho kênh; website bán được {website}. Số đẩy không bao giờ âm.",
       "warnTitle": "Autoxide không bán quá, nhưng kênh có độ trễ.",
       "warnText": "Mọi đơn web, quầy và kênh đều giữ chỗ trong kho nên tồn không âm. Hai kênh cùng bán cái cuối trong vài giây chưa đồng bộ thì đơn nhập sau thành “Bán quá tồn”. Dùng phần đệm hoặc giữ riêng cho hàng bán chạy để giảm.",
-      "debounce": "Gộp thay đổi trong 5 giây rồi đẩy một lần; đối chiếu toàn bộ mỗi 6 giờ"
+      "debounce": "Gộp thay đổi trong 5 giây rồi đẩy một lần; đối chiếu toàn bộ mỗi 6 giờ",
+      "openAccount": "Mở tài khoản kênh"
     },
     "inboundState": {
       "received": "Đã nhận",
@@ -12031,7 +12213,12 @@
       "cancelWarn": "Không hoàn tác được: đơn bị huỷ ở Autoxide và trên kênh, kênh có thể phạt cửa hàng.",
       "cancelSubmit": "Huỷ trên kênh",
       "cancelled": "Đã xếp job huỷ trên kênh; đơn chuyển huỷ.",
-      "foot": "SĐT người mua do kênh che một phần: chỉ dùng để giao hàng, không dùng chống bom hàng, không tính vào thống kê COD."
+      "foot": "SĐT người mua do kênh che một phần: chỉ dùng để giao hàng, không dùng chống bom hàng, không tính vào thống kê COD.",
+      "all": "Tất cả",
+      "empty": "Không có đơn từ kênh nào khớp.",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "openOrder": "Mở đơn"
     },
     "map": {
       "button": "Gắn {sku}",
@@ -12127,7 +12314,15 @@
       "credit": "Có",
       "owedTitle": "Kênh còn nợ theo tài khoản",
       "owedAbout": "Tiền kênh đã thu của đơn đã nhập, trừ các dòng bảng kê đã ghi sổ.",
-      "owedTotal": "Tổng phải thu kênh"
+      "owedTotal": "Tổng phải thu kênh",
+      "bulkPostTitle": "Ghi sổ các bảng kê đã chọn?",
+      "bulkPostOnly": "Chỉ ghi sổ bảng kê đã khớp hết dòng; bảng kê khác được liệt kê là chưa làm.",
+      "openDetail": "Xem bảng kê",
+      "hideDetail": "Ẩn bảng kê",
+      "openOrder": "Mở đơn",
+      "noMismatch": "Không còn dòng lệch nào.",
+      "bulkResolveTitle": "Đóng các dòng lệch đã chọn với cùng một ghi chú?",
+      "bulkResolveFinal": "Ghi chú và tên bạn được lưu ở từng dòng. Không hoàn tác được."
     },
     "line": {
       "button": "Đánh dấu đã xử lý",
@@ -12372,7 +12567,10 @@
       "undoReason": "Hoàn tác mở lại",
       "legal": "Người tiếp thị liên kết, người livestream bán hàng phải xác thực danh tính (Luật Thương mại điện tử 122/2025/QH15, từ 01/7/2026; điều khoản cụ thể trong nghị định hướng dẫn — cần đối chiếu văn bản gốc). Tài khoản phải xác thực mới được livestream (NĐ 147/2024/NĐ-CP).",
       "oneLevelTitle": "Chỉ một cấp.",
-      "oneLevelText": "Không có hoa hồng nhiều tầng: dễ thành kinh doanh đa cấp, có luật riêng."
+      "oneLevelText": "Không có hoa hồng nhiều tầng: dễ thành kinh doanh đa cấp, có luật riêng.",
+      "view": "Xem chi tiết",
+      "bulkSuspendTitle": "Tạm khoá những người đã chọn?",
+      "bulkTerminateTitle": "Chấm dứt những người đã chọn?"
     },
     "suspend": {
       "button": "Tạm khoá kèm lý do",
@@ -12500,7 +12698,10 @@
       "adjustAbout": "Hoàn tiền sau khi hoa hồng đã duyệt hoặc đã chi thì thêm một dòng âm, trừ vào lần chi sau. Âm lớn hơn hoa hồng của kỳ thì để sang kỳ sau, không đòi tiền người tiếp thị.",
       "noAdjust": "Chưa có điều chỉnh âm: chưa có đơn được ghi nhận nào hoàn tiền sau khi duyệt.",
       "reason": "Lý do",
-      "ledgerNote": "Duyệt ghi Nợ chi phí hoa hồng / Có phải trả người tiếp thị; hoàn tiền sau khi duyệt ghi bút toán đảo."
+      "ledgerNote": "Duyệt ghi Nợ chi phí hoa hồng / Có phải trả người tiếp thị; hoàn tiền sau khi duyệt ghi bút toán đảo.",
+      "openOrder": "Mở đơn",
+      "openPartner": "Xem người tiếp thị",
+      "openPayout": "Xem lệnh chi"
     },
     "payouts": {
       "kpis": "Số liệu chi trả",
@@ -12553,7 +12754,13 @@
       "rateFrom": "{pct}% khi mỗi lần chi từ {threshold}",
       "rateAll": "{pct}% mọi lần chi",
       "verify": "cần đối chiếu văn bản gốc",
-      "pitLegal": "Thuế TNCN với hoa hồng của cá nhân không ký HĐLĐ: 10% khi mỗi lần chi từ 2.000.000 ₫ (Thông tư 111/2013/TT-BTC, Điều 25); các nguồn nêu NĐ 253/2026 nâng ngưỡng lên 5.000.000 ₫ — cần đối chiếu văn bản gốc. Chứng từ khấu trừ điện tử: NĐ 123/2020 sửa bởi NĐ 70/2025 — cần đối chiếu mẫu. {n} dòng dữ liệu thuế."
+      "pitLegal": "Thuế TNCN với hoa hồng của cá nhân không ký HĐLĐ: 10% khi mỗi lần chi từ 2.000.000 ₫ (Thông tư 111/2013/TT-BTC, Điều 25); các nguồn nêu NĐ 253/2026 nâng ngưỡng lên 5.000.000 ₫ — cần đối chiếu văn bản gốc. Chứng từ khấu trừ điện tử: NĐ 123/2020 sửa bởi NĐ 70/2025 — cần đối chiếu mẫu. {n} dòng dữ liệu thuế.",
+      "bulkPaid": "Ghi đã chi",
+      "bulkPaidTitle": "Ghi đã chi cho các lệnh đã chọn?",
+      "bulkReference": "Mã giao dịch của lô chuyển khoản",
+      "bulkPaidSame": "Mọi lệnh đã chọn nhận cùng mã này và ngày hôm nay.",
+      "bulkPaidOnly": "Chỉ lệnh chi tay đang lập được ghi; lệnh khác hiện trong danh sách chưa xong.",
+      "bulkRetryTitle": "Gửi lại các lệnh chi lỗi đã chọn?"
     },
     "paid": {
       "button": "Đánh dấu đã chi tay",

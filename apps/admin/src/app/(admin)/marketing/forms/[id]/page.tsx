@@ -1,12 +1,25 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { deleteForm, setFormStatus } from "@/app/(admin)/marketing/forms/actions";
-import { ChangeButtons, ConfirmButton } from "@/components/engage/actions";
+import {
+  bulkArchiveSubmissions,
+  bulkDeleteSubmissions,
+  bulkReadSubmissions,
+  bulkSpamSubmissions,
+  deleteForm,
+  deleteSubmission,
+  setFormStatus,
+  setSubmissionStatus,
+} from "@/app/(admin)/marketing/forms/actions";
+import { ChangeButtons, ConfirmButton, type Move } from "@/components/engage/actions";
 import { BackgroundExport } from "@/components/engage/background-export";
-import { Back, Chips, Facts, Forbidden, PageHead, Pager } from "@/components/engage/common";
+import { Back, Chips, Facts, Forbidden, PageHead } from "@/components/engage/common";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { Flash } from "@/components/ui/flash";
+import { Pager } from "@/components/ui/pager";
+import { RowMenu } from "@/components/ui/row-menu";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { isForbidden, isNotFound, load } from "@/lib/core";
@@ -14,6 +27,7 @@ import {
   FORMS_EXPORT,
   FORMS_MANAGE,
   FORMS_READ,
+  FORMS_REVIEW,
   hrefWith,
   one,
   oneOf,
@@ -27,19 +41,28 @@ import {
   SUBMISSION_BADGE,
   SUBMISSION_STATUSES,
   type Submission,
+  type SubmissionStatus,
+  submissionMoves,
   submissionSummary,
 } from "@/lib/forms";
+import { readSort } from "@/lib/table";
 import { can } from "@/lib/viewer";
 
 // Một form: đóng / mở lại (có Hoàn tác), sửa, xuất CSV, xoá; hộp thư bài nộp lọc theo trạng thái
-// và chữ (`q` của core, không dấu vẫn tìm ra); cấu hình đang dùng.
+// và chữ (`q` của core, không dấu vẫn tìm ra); cấu hình đang dùng. Bài nộp: chọn nhiều để đánh dấu đã
+// đọc / lưu trữ / spam / xoá (lặp lệnh từng cái của core); dòng có một nút và "⋯"; sắp theo giờ gửi
+// (`order` của core). Xuất CSV theo trạng thái là của core; core chưa xuất theo danh sách bài đã chọn.
 export default async function FormPage(props: PageProps<"/marketing/forms/[id]">) {
   const { id } = await props.params;
   const params = await props.searchParams;
   const status = oneOf(params, "status", SUBMISSION_STATUSES);
   const q = one(params, "q");
   const cursor = one(params, "cursor", 500);
+  // Core chỉ sắp bài nộp theo giờ gửi (`order=asc|desc`): chỉ cột "Gửi lúc" sắp được.
+  const sort = readSort(params, ["created"], { field: "created", dir: "desc" });
+  const order = one(params, "sort") ? sort.dir : undefined;
   const t = await getTranslations("engage.forms");
+  const tt = await getTranslations("table");
   const locale = await getLocale();
   let form: Form;
   let page: { data: Submission[]; pagination: { next_cursor?: string | null } };
@@ -54,6 +77,7 @@ export default async function FormPage(props: PageProps<"/marketing/forms/[id]">
               limit: PAGE_SIZE,
               ...(status ? { status } : {}),
               ...(q ? { q } : {}),
+              ...(order ? { order } : {}),
               ...(cursor ? { cursor } : {}),
             },
           },
@@ -65,7 +89,17 @@ export default async function FormPage(props: PageProps<"/marketing/forms/[id]">
     if (isNotFound(error)) notFound();
     throw error;
   }
-  const [manage, exporter] = await Promise.all([can(FORMS_MANAGE), can(FORMS_EXPORT)]);
+  const [manage, exporter, review] = await Promise.all([
+    can(FORMS_MANAGE),
+    can(FORMS_EXPORT),
+    can(FORMS_REVIEW),
+  ]);
+  const keep = { status, q, ...(order ? { sort: "created", dir: order } : {}) };
+  const move = (to: SubmissionStatus): Move => {
+    const m: Move = { value: to, label: t(`move.${to}`), done: t(`moved.${to}`) };
+    if (to === "read") m.tone = "pri";
+    return m;
+  };
   const base = `/marketing/forms/${id}`;
   const next = page.pagination.next_cursor;
   const open = form.status === "open";
@@ -182,50 +216,143 @@ export default async function FormPage(props: PageProps<"/marketing/forms/[id]">
           {page.data.length === 0 ? (
             <p className="empty">{q || status ? t("noMatch") : t("noSubmissions")}</p>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("col.sender")}</Th>
-                  <Th>{t("col.content")}</Th>
-                  <Th>{t("col.sent")}</Th>
-                  <Th>{t("col.status")}</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {page.data.map((submission) => {
-                  const summary = submissionSummary(submission);
-                  return (
-                    <tr key={submission.id}>
-                      <Td className="rt-title">
-                        <span className="cell2">
-                          <Link className="open ell" href={`${base}/submissions/${submission.id}`}>
-                            {summary.who}
-                          </Link>
-                          {summary.sub ? <span className="sub mono ell">{summary.sub}</span> : null}
-                        </span>
-                      </Td>
-                      <Td label={t("col.content")}>
-                        <span className="eg-clamp">{summary.text || "—"}</span>
-                      </Td>
-                      <Td className="whitespace-nowrap" label={t("col.sent")}>
-                        <Time value={submission.created_at} />
-                      </Td>
-                      <Td label={t("col.status")}>
-                        <span className={SUBMISSION_BADGE[submission.status]}>
-                          <span className="dot" />
-                          {t(`sub.${submission.status}`)}
-                        </span>
-                      </Td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
+            <BulkTable
+              ids={page.data.map((submission) => submission.id)}
+              actions={
+                review
+                  ? [
+                      { key: "read", label: t("move.read"), run: bulkReadSubmissions },
+                      { key: "archived", label: t("move.archived"), run: bulkArchiveSubmissions },
+                      { key: "spam", label: t("move.spam"), run: bulkSpamSubmissions },
+                      {
+                        key: "delete",
+                        label: t("deleteSubmission"),
+                        tone: "danger",
+                        run: bulkDeleteSubmissions,
+                        confirm: {
+                          title: t("bulkDeleteSubmissionsTitle"),
+                          points: [t("deleteSubmissionGone"), t("deleteSubmissionExport")],
+                          submit: t("deleteSubmit"),
+                        },
+                      },
+                    ]
+                  : []
+              }
+            >
+              <Table cards>
+                <thead>
+                  <tr>
+                    {review ? <SelectAllTh /> : null}
+                    <Th>{t("col.sender")}</Th>
+                    <Th>{t("col.content")}</Th>
+                    <SortTh field="created" sort={sort} base={base} keep={keep} first="desc">
+                      {t("col.sent")}
+                    </SortTh>
+                    <Th>{t("col.status")}</Th>
+                    <Th>
+                      <span className="vh">{t("col.actions")}</span>
+                    </Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {page.data.map((submission) => {
+                    const summary = submissionSummary(submission);
+                    const moves = review ? submissionMoves(submission.status).map(move) : [];
+                    return (
+                      <tr key={submission.id}>
+                        {review ? <SelectTd id={submission.id} name={summary.who} /> : null}
+                        <Td className="rt-title">
+                          <span className="cell2">
+                            <Link
+                              className="open ell"
+                              href={`${base}/submissions/${submission.id}`}
+                            >
+                              {summary.who}
+                            </Link>
+                            {summary.sub ? (
+                              <span className="sub mono ell">{summary.sub}</span>
+                            ) : null}
+                          </span>
+                        </Td>
+                        <Td label={t("col.content")}>
+                          <span className="eg-clamp">{summary.text || "—"}</span>
+                        </Td>
+                        <Td className="whitespace-nowrap" label={t("col.sent")}>
+                          <Time value={submission.created_at} />
+                        </Td>
+                        <Td label={t("col.status")}>
+                          <span className={SUBMISSION_BADGE[submission.status]}>
+                            <span className="dot" />
+                            {t(`sub.${submission.status}`)}
+                          </span>
+                        </Td>
+                        <Td label={t("col.actions")}>
+                          {/* Một nút trên dòng (nước đi đầu, vd "Đã đọc"), còn lại trong "⋯". */}
+                          <span className="row-acts">
+                            {moves.length > 0 ? (
+                              <ChangeButtons
+                                action={setSubmissionStatus}
+                                id={submission.id}
+                                expect={submission.updated_at}
+                                undo={undo}
+                                moves={moves.slice(0, 1)}
+                              />
+                            ) : null}
+                            <RowMenu
+                              label={tt("moreFor", { name: summary.who })}
+                              items={[
+                                {
+                                  label: t("open"),
+                                  href: `${base}/submissions/${submission.id}`,
+                                },
+                                ...moves.slice(1).map((m) => ({
+                                  label: m.label,
+                                  change: {
+                                    action: setSubmissionStatus,
+                                    id: submission.id,
+                                    expect: submission.updated_at,
+                                    value: m.value,
+                                    done: m.done,
+                                    undo,
+                                  },
+                                })),
+                                ...(review
+                                  ? [
+                                      {
+                                        label: t("deleteSubmission"),
+                                        danger: true,
+                                        dialog: (
+                                          <ConfirmButton
+                                            action={deleteSubmission}
+                                            fields={{ id: submission.id, form: id }}
+                                            label={t("deleteSubmission")}
+                                            title={t("deleteSubmissionTitle")}
+                                            points={[
+                                              t("deleteSubmissionGone"),
+                                              t("deleteSubmissionExport"),
+                                            ]}
+                                            submit={t("deleteSubmit")}
+                                          />
+                                        ),
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                            />
+                          </span>
+                        </Td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
+        {/* Core phân trang theo con trỏ, không trả tổng. */}
         <Pager
-          first={cursor ? hrefWith(base, { status, q }) : null}
-          next={next ? hrefWith(base, { status, q, cursor: next }) : null}
+          first={cursor ? hrefWith(base, keep) : null}
+          next={next ? hrefWith(base, { ...keep, cursor: next }) : null}
         />
         {exporter ? <p className="note">{t("exportNote")}</p> : null}
       </section>
