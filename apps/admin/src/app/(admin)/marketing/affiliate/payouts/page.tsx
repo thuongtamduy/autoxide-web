@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { retryPayoutAction } from "@/app/(admin)/marketing/affiliate/actions";
+import {
+  bulkMarkPaidAction,
+  bulkRetryPayoutsAction,
+  retryPayoutAction,
+} from "@/app/(admin)/marketing/affiliate/actions";
 import { MarkPaidDialog } from "@/components/affiliate/forms";
 import {
   BlockHead,
@@ -15,6 +19,7 @@ import {
   Status,
 } from "@/components/growth/blocks";
 import { MoneyConfirm } from "@/components/orders/forms";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { AFFILIATE_FINANCE } from "@/lib/affiliate";
@@ -35,6 +40,8 @@ const TONE: Record<PayoutStatus, string> = {
 // Tab "Chi trả": mỗi người một lệnh chi mỗi kỳ (không tách nhỏ để né ngưỡng khấu trừ). Khấu trừ thuế TNCN
 // tính trên cả lệnh chi theo dữ liệu thuế có ngày hiệu lực (ảnh chụp lưu trên lệnh). Tiền hoa hồng là tiền
 // của cửa hàng: chi qua đối tác chi có giấy phép, hoặc kế toán tự chuyển khoản rồi ghi mã giao dịch (D-187).
+// Duyệt cả kỳ: chọn nhiều (hay cả trang) để ghi đã chi với một mã giao dịch của lô chuyển khoản, hoặc gửi
+// lại các lệnh lỗi; hàm mẫu chỉ có lệnh từng lệnh chi nên lặp và báo lỗi đúng dòng. Dòng giữ một nút.
 export default async function PayoutsPage(props: PageProps<"/marketing/affiliate/payouts">) {
   if (!(await can(AFFILIATE_TABS.payouts))) notFound();
   const [t, locale, params, payouts, pit, finance] = await Promise.all([
@@ -95,150 +102,188 @@ export default async function PayoutsPage(props: PageProps<"/marketing/affiliate
           about={t("payouts.about")}
         />
         <div className="card tcard">
-          <Table cards>
-            <thead>
-              <tr>
-                <Th>{t("payouts.payee")}</Th>
-                <Th className="text-right">{t("payouts.gross")}</Th>
-                <Th className="text-right">{t("payouts.withheld")}</Th>
-                <Th className="text-right">{t("payouts.net")}</Th>
-                <Th>{t("payouts.mode")}</Th>
-                <Th>{t("payouts.state")}</Th>
-                <Th>
-                  <span className="vh">{t("actions")}</span>
-                </Th>
-              </tr>
-            </thead>
-            <tbody>
-              {payouts.data.map((p) => {
-                const isOpen = open === p.id;
-                return [
-                  <tr key={p.id} data-current={isOpen ? "" : undefined}>
-                    <Td className="rt-title">
-                      <span className="cell2">
-                        <OpenLink
-                          open={isOpen}
-                          href={hrefWith(
-                            "/marketing/affiliate/payouts",
-                            {},
-                            { open: p.id },
-                            "#payouts-h",
-                          )}
-                          closeHref="/marketing/affiliate/payouts"
-                        >
-                          {p.partner_name}
-                        </OpenLink>
-                        <span className="sub">{t(`taxSubject.${p.tax_subject}`)}</span>
-                      </span>
-                    </Td>
-                    <Td label={t("payouts.gross")} className="text-right num">
-                      {money(p.gross.amount)}
-                    </Td>
-                    <Td label={t("payouts.withheld")} className="text-right num">
-                      {Number(p.withheld.amount) > 0 ? `−${money(p.withheld.amount)}` : money(0)}
-                    </Td>
-                    <Td label={t("payouts.net")} className="text-right num">
-                      {money(p.net.amount)}
-                    </Td>
-                    <Td label={t("payouts.mode")}>{t(`program.modes.${p.mode}`)}</Td>
-                    <Td label={t("payouts.state")}>
-                      <Status tone={TONE[p.status]}>{t(`payoutState.${p.status}`)}</Status>
-                    </Td>
-                    <Td className="rt-acts">
-                      {finance && p.status === "building" && p.mode === "manual" ? (
-                        <MarkPaidDialog
-                          id={p.id}
-                          name={p.partner_name}
-                          gross={p.gross.amount}
-                          withheld={p.withheld.amount}
-                          net={p.net.amount}
-                        />
-                      ) : null}
-                      {finance && p.status === "failed" ? (
-                        <MoneyConfirm
-                          action={retryPayoutAction}
-                          fields={{ id: p.id }}
-                          label={t("payouts.retry")}
-                          title={t("payouts.retryTitle", { name: p.partner_name })}
-                          rows={[
+          <BulkTable
+            ids={payouts.data.map((p) => p.id)}
+            actions={
+              finance
+                ? [
+                    {
+                      key: "paid",
+                      label: t("payouts.bulkPaid"),
+                      tone: "pri",
+                      run: bulkMarkPaidAction,
+                      field: { label: t("payouts.bulkReference") },
+                      confirm: {
+                        title: t("payouts.bulkPaidTitle"),
+                        points: [
+                          t("payouts.bulkPaidSame"),
+                          t("payouts.bulkPaidOnly"),
+                          t("paid.warn"),
+                        ],
+                        submit: t("paid.submit"),
+                      },
+                    },
+                    {
+                      key: "retry",
+                      label: t("payouts.retry"),
+                      run: bulkRetryPayoutsAction,
+                      confirm: {
+                        title: t("payouts.bulkRetryTitle"),
+                        points: [t("payouts.viaGateway"), t("payouts.retryWarn")],
+                        submit: t("payouts.retrySubmit"),
+                      },
+                    },
+                  ]
+                : []
+            }
+          >
+            <Table cards>
+              <thead>
+                <tr>
+                  {finance ? <SelectAllTh /> : null}
+                  <Th>{t("payouts.payee")}</Th>
+                  <Th className="text-right">{t("payouts.gross")}</Th>
+                  <Th className="text-right">{t("payouts.withheld")}</Th>
+                  <Th className="text-right">{t("payouts.net")}</Th>
+                  <Th>{t("payouts.mode")}</Th>
+                  <Th>{t("payouts.state")}</Th>
+                  <Th>
+                    <span className="vh">{t("actions")}</span>
+                  </Th>
+                </tr>
+              </thead>
+              <tbody>
+                {payouts.data.map((p) => {
+                  const isOpen = open === p.id;
+                  return [
+                    <tr key={p.id} data-current={isOpen ? "" : undefined}>
+                      {finance ? <SelectTd id={p.id} name={p.partner_name} /> : null}
+                      <Td className="rt-title">
+                        <span className="cell2">
+                          <OpenLink
+                            open={isOpen}
+                            href={hrefWith(
+                              "/marketing/affiliate/payouts",
+                              {},
+                              { open: p.id },
+                              "#payouts-h",
+                            )}
+                            closeHref="/marketing/affiliate/payouts"
+                          >
+                            {p.partner_name}
+                          </OpenLink>
+                          <span className="sub">{t(`taxSubject.${p.tax_subject}`)}</span>
+                        </span>
+                      </Td>
+                      <Td label={t("payouts.gross")} className="text-right num">
+                        {money(p.gross.amount)}
+                      </Td>
+                      <Td label={t("payouts.withheld")} className="text-right num">
+                        {Number(p.withheld.amount) > 0 ? `−${money(p.withheld.amount)}` : money(0)}
+                      </Td>
+                      <Td label={t("payouts.net")} className="text-right num">
+                        {money(p.net.amount)}
+                      </Td>
+                      <Td label={t("payouts.mode")}>{t(`program.modes.${p.mode}`)}</Td>
+                      <Td label={t("payouts.state")}>
+                        <Status tone={TONE[p.status]}>{t(`payoutState.${p.status}`)}</Status>
+                      </Td>
+                      <Td className="rt-acts">
+                        {finance && p.status === "building" && p.mode === "manual" ? (
+                          <MarkPaidDialog
+                            id={p.id}
+                            name={p.partner_name}
+                            gross={p.gross.amount}
+                            withheld={p.withheld.amount}
+                            net={p.net.amount}
+                          />
+                        ) : null}
+                        {finance && p.status === "failed" ? (
+                          <MoneyConfirm
+                            action={retryPayoutAction}
+                            fields={{ id: p.id }}
+                            label={t("payouts.retry")}
+                            title={t("payouts.retryTitle", { name: p.partner_name })}
+                            rows={[
+                              [t("payouts.net"), money(p.net.amount)],
+                              [t("payouts.reference"), p.reference],
+                              [t("payouts.via"), t("payouts.viaGateway")],
+                            ]}
+                            warn={t("payouts.retryWarn")}
+                            submit={t("payouts.retrySubmit")}
+                            done={t("payouts.retried")}
+                          />
+                        ) : null}
+                      </Td>
+                    </tr>,
+                    isOpen ? (
+                      <DetailRow key={`${p.id}-open`} cols={finance ? 8 : 7}>
+                        <h3 className="h2">{t("payouts.snapshot")}</h3>
+                        <Lines
+                          total
+                          items={[
+                            [t("payouts.carried"), money(p.carried.amount)],
+                            [
+                              t("payouts.lines", { n: p.commission_count }),
+                              money(p.commissions_total.amount),
+                            ],
+                            [t("payouts.adjustments"), money(p.adjustments_total.amount)],
+                            [
+                              p.withholding.rate_bp > 0
+                                ? t("payouts.pit", {
+                                    pct: p.withholding.rate_bp / 100,
+                                    threshold: p.withholding.threshold
+                                      ? money(p.withholding.threshold.amount)
+                                      : "—",
+                                  })
+                                : t("payouts.noPit"),
+                              Number(p.withheld.amount) > 0
+                                ? `−${money(p.withheld.amount)}`
+                                : money(0),
+                            ],
                             [t("payouts.net"), money(p.net.amount)],
-                            [t("payouts.reference"), p.reference],
-                            [t("payouts.via"), t("payouts.viaGateway")],
                           ]}
-                          warn={t("payouts.retryWarn")}
-                          submit={t("payouts.retrySubmit")}
-                          done={t("payouts.retried")}
                         />
-                      ) : null}
-                    </Td>
-                  </tr>,
-                  isOpen ? (
-                    <DetailRow key={`${p.id}-open`} cols={7}>
-                      <h3 className="h2">{t("payouts.snapshot")}</h3>
-                      <Lines
-                        total
-                        items={[
-                          [t("payouts.carried"), money(p.carried.amount)],
-                          [
-                            t("payouts.lines", { n: p.commission_count }),
-                            money(p.commissions_total.amount),
-                          ],
-                          [t("payouts.adjustments"), money(p.adjustments_total.amount)],
-                          [
-                            p.withholding.rate_bp > 0
-                              ? t("payouts.pit", {
-                                  pct: p.withholding.rate_bp / 100,
-                                  threshold: p.withholding.threshold
-                                    ? money(p.withholding.threshold.amount)
-                                    : "—",
-                                })
-                              : t("payouts.noPit"),
-                            Number(p.withheld.amount) > 0
-                              ? `−${money(p.withheld.amount)}`
-                              : money(0),
-                          ],
-                          [t("payouts.net"), money(p.net.amount)],
-                        ]}
-                      />
-                      <KV
-                        items={[
-                          [t("payouts.basis"), p.withholding.basis],
-                          [
-                            t("payouts.reference"),
-                            <span key="r" className="mono">
-                              {p.reference}
-                            </span>,
-                          ],
-                          p.bank_reference_set
-                            ? [t("payouts.bankRef"), t("payouts.recorded")]
-                            : null,
-                          p.invoice_number_set
-                            ? [t("payouts.invoice"), t("payouts.recorded")]
-                            : null,
-                          p.error
-                            ? [t("payouts.error"), t(`codes.${p.error.replaceAll(".", "_")}`)]
-                            : null,
-                          p.sent_at
-                            ? [t("payouts.sentAt"), <Time key="s" value={p.sent_at} />]
-                            : null,
-                          p.paid_at
-                            ? [t("payouts.paidAt"), <Time key="p" value={p.paid_at} />]
-                            : null,
-                          p.certificate_issued_at
-                            ? [
-                                t("payouts.certificate"),
-                                <Time key="c" value={p.certificate_issued_at} />,
-                              ]
-                            : null,
-                        ]}
-                      />
-                      <p className="fhint">{t("payouts.snapshotNote")}</p>
-                    </DetailRow>
-                  ) : null,
-                ];
-              })}
-            </tbody>
-          </Table>
+                        <KV
+                          items={[
+                            [t("payouts.basis"), p.withholding.basis],
+                            [
+                              t("payouts.reference"),
+                              <span key="r" className="mono">
+                                {p.reference}
+                              </span>,
+                            ],
+                            p.bank_reference_set
+                              ? [t("payouts.bankRef"), t("payouts.recorded")]
+                              : null,
+                            p.invoice_number_set
+                              ? [t("payouts.invoice"), t("payouts.recorded")]
+                              : null,
+                            p.error
+                              ? [t("payouts.error"), t(`codes.${p.error.replaceAll(".", "_")}`)]
+                              : null,
+                            p.sent_at
+                              ? [t("payouts.sentAt"), <Time key="s" value={p.sent_at} />]
+                              : null,
+                            p.paid_at
+                              ? [t("payouts.paidAt"), <Time key="p" value={p.paid_at} />]
+                              : null,
+                            p.certificate_issued_at
+                              ? [
+                                  t("payouts.certificate"),
+                                  <Time key="c" value={p.certificate_issued_at} />,
+                                ]
+                              : null,
+                          ]}
+                        />
+                        <p className="fhint">{t("payouts.snapshotNote")}</p>
+                      </DetailRow>
+                    ) : null,
+                  ];
+                })}
+              </tbody>
+            </Table>
+          </BulkTable>
         </div>
         <p className="fhint">
           {t("payouts.foot", {

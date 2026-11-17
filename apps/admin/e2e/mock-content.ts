@@ -476,11 +476,13 @@ export async function contentRoutes(
       })
       .filter((e) => !q.get("term_id") || e.term_ids.includes(q.get("term_id") ?? ""))
       .filter((e) => !q.get("author_id") || e.author_ids.includes(q.get("author_id") ?? ""))
-      .sort((a, b) =>
-        q.get("sort") === "created_at" && q.get("order") === "asc"
-          ? a.created_at.localeCompare(b.created_at)
-          : b.updated_at.localeCompare(a.updated_at),
-      );
+      // `sort` = `created_at` / `updated_at`, chiều theo `order` (như core; mặc định mới trước).
+      .sort((a, b) => {
+        const key = q.get("sort") === "created_at" ? "created_at" : "updated_at";
+        return q.get("order") === "asc"
+          ? a[key].localeCompare(b[key])
+          : b[key].localeCompare(a[key]);
+      });
     const limit = Number(q.get("limit") ?? 50);
     const start = Number(q.get("cursor") ?? 0);
     const page = matches.slice(start, start + limit);
@@ -533,6 +535,18 @@ export async function contentRoutes(
   switch (tail) {
     case "GET ":
       return sendEntry(response, 200, entry);
+    case "DELETE ": {
+      // Như core: cần `If-Match`; trang còn trang con thì 409; xong trả 204, kèm lịch của bài.
+      if (!versionOk(request, response, entry)) return;
+      if (contentEntries.some((e) => e.parent_id === entry.id)) {
+        return problem(response, 409, "content.page_has_children", "The page has subpages.");
+      }
+      contentEntries.splice(contentEntries.indexOf(entry), 1);
+      for (const s of contentSchedules) if (s.entry_id === entry.id) s.status = "canceled";
+      response.writeHead(204);
+      response.end();
+      return;
+    }
     case "PATCH ": {
       if (!versionOk(request, response, entry)) return;
       if (!applyFields(response, entry, body, false)) return;

@@ -2119,7 +2119,33 @@
       },
       "aiReviewed": "Đã duyệt nội dung AI",
       "entryGone": "(không tìm thấy bài)",
-      "colActions": "Thao tác"
+      "colActions": "Thao tác",
+      "open": "Mở",
+      "bulk": {
+        "publish": "Đăng",
+        "publishTitle": "Đăng các bài đã chọn?",
+        "publishNow": "Người đọc thấy bản nháp của từng bài như hiện tại.",
+        "publishAi": "Bài có nhãn AI: đăng ở đây là bạn xác nhận đã đọc lại phần AI viết.",
+        "unpublish": "Gỡ đăng",
+        "unpublishTitle": "Gỡ đăng các bài đã chọn?",
+        "unpublishPoint": "Người đọc thôi thấy bài ngay; bài trở lại thành bản nháp và đăng lại được sau. Lịch đăng đang chờ bị huỷ.",
+        "archive": "Lưu trữ",
+        "archiveTitle": "Lưu trữ các bài đã chọn?",
+        "archivePoint": "Địa chỉ của bài trả 410 (đã gỡ hẳn) để máy tìm kiếm bỏ đi; lịch đang chờ bị huỷ. Sau này vẫn đăng lại được.",
+        "delete": "Xoá",
+        "deleteTitle": "Xoá các bài đã chọn?",
+        "deleteRevisions": "Các phiên bản và lịch của bài cũng bị xoá; địa chỉ đã đăng trả 410.",
+        "deletePages": "Trang còn trang con thì không xoá được.",
+        "deleteNoUndo": "Không hoàn tác được."
+      },
+      "row": {
+        "unpublishTitle": "Gỡ đăng “{title}”?",
+        "unpublished": "Đã gỡ đăng: người đọc không còn thấy bài",
+        "archiveTitle": "Lưu trữ “{title}”?",
+        "archived": "Đã lưu trữ",
+        "deleteTitle": "Xoá “{title}”?",
+        "deleted": "Đã xoá"
+      }
     },
     "status": {
       "draft": "Bản nháp",
@@ -2652,7 +2678,18 @@
       "remove": "Bỏ ảnh",
       "unavailable": "Bạn chưa dùng được thư viện media."
     },
-    "librarySummary": "{count, plural, other {# tệp}} · {size} · {noAlt, plural, =0 {mọi ảnh đã có alt} other {# ảnh thiếu alt}}{trashed, plural, =0 {} other { · # trong thùng rác}}"
+    "librarySummary": "{count, plural, other {# tệp}} · {size} · {noAlt, plural, =0 {mọi ảnh đã có alt} other {# ảnh thiếu alt}}{trashed, plural, =0 {} other { · # trong thùng rác}}",
+    "bulk": {
+      "open": "Mở chi tiết",
+      "actions": "Thao tác",
+      "move": "Chuyển thư mục",
+      "trashTitle": "Cho các tệp đã chọn vào thùng rác?",
+      "purgeTitle": "Xoá hẳn các tệp đã chọn?",
+      "purged": "Đã xoá hẳn",
+      "restoreTitle": "Khôi phục “{name}”?",
+      "restorePoint": "Tệp về lại thư mục cũ và địa chỉ của nó chạy lại.",
+      "gridHint": "Muốn chọn nhiều tệp cùng lúc thì chuyển cách xem sang Bảng."
+    }
   },
   "structure": {
     "crumb": "Nội dung",
@@ -2742,7 +2779,10 @@
       "searchHint": "Tên ở ngôn ngữ bất kỳ",
       "find": "Tìm",
       "clear": "Hiện tất cả",
-      "more": "Đang hiện 200 mục đầu. Tìm theo tên để thấy các mục khác."
+      "more": "Đang hiện 200 mục đầu. Tìm theo tên để thấy các mục khác.",
+      "bulkDeleteCategories": "Xoá các danh mục đã chọn?",
+      "bulkDeleteTags": "Xoá các thẻ đã chọn?",
+      "viewPosts": "Xem các bài"
     },
     "authors": {
       "title": "Hồ sơ tác giả",
@@ -2846,7 +2886,8 @@
       "pages": "Trang",
       "first": "Trang đầu",
       "next": "Trang sau",
-      "toCol": "Tới"
+      "toCol": "Tới",
+      "bulkDeleteTitle": "Xoá các chuyển hướng đã chọn?"
     },
     "history": {
       "title": "Lịch sử phiên bản",
@@ -3187,7 +3228,8 @@
         "status": "Trạng thái",
         "sender": "Người gửi",
         "content": "Nội dung",
-        "sent": "Gửi lúc"
+        "sent": "Gửi lúc",
+        "actions": "Thao tác"
       },
       "fieldsVersion": "{count} trường · bản {version}",
       "retentionDefault": "Mặc định của máy chủ",
@@ -3393,7 +3435,14 @@
         "download": "Tải tệp CSV",
         "deletedAt": "tệp bị xoá lúc",
         "failed": "Xuất không thành; hãy xuất lại."
-      }
+      },
+      "open": "Mở",
+      "copyKey": "Chép mã biểu mẫu",
+      "copiedKey": "Đã chép mã biểu mẫu",
+      "copyApi": "Chép địa chỉ API công khai",
+      "copiedApi": "Đã chép địa chỉ API công khai: website đọc form ở đây",
+      "bulkDeleteTitle": "Xoá vĩnh viễn các biểu mẫu đã chọn?",
+      "bulkDeleteSubmissionsTitle": "Xoá vĩnh viễn các bài nộp đã chọn?"
     },
     "newsletter": {
       "crumb": "Tiếp thị · module newsletter",
@@ -3768,7 +3817,13 @@
       "blockedFilter": "Bị chặn",
       "openSubscriber": "Mở",
       "bulkBlockTitle": "Chặn những người đăng ký đã chọn?",
-      "bulkDeleteTitle": "Xoá hẳn những người đăng ký đã chọn?"
+      "bulkDeleteTitle": "Xoá hẳn những người đăng ký đã chọn?",
+      "open": "Mở",
+      "bulkCancelTitle": "Huỷ hẳn các chiến dịch đã chọn?",
+      "bulkCancelSkipped": "Thư chưa gửi tính là bỏ qua.",
+      "bulkDeleteSent": "Chiến dịch đã gửi thư thì không xoá được.",
+      "bulkUnsuppressTitle": "Gỡ các địa chỉ đã chọn khỏi danh sách không gửi?",
+      "bulkDeleteCampaignsTitle": "Xoá các chiến dịch đã chọn?"
     },
     "comments": {
       "crumb": "Tiếp thị · module comments",
@@ -4037,7 +4092,8 @@
       "targetUrl": "Địa chỉ",
       "targetNotPublic": "Đang không công khai (ẩn tiêu đề và địa chỉ)",
       "bulkPurgeTitle": "Xoá hẳn các bình luận đã chọn?",
-      "bulkPurgeThreads": "Bình luận mở đầu một luồng bị xoá cùng mọi trả lời của nó."
+      "bulkPurgeThreads": "Bình luận mở đầu một luồng bị xoá cùng mọi trả lời của nó.",
+      "bulkLiftTitle": "Gỡ các lệnh cấm đã chọn?"
     },
     "data": {
       "title": "Dữ liệu theo email",
@@ -12372,7 +12428,10 @@
       "undoReason": "Hoàn tác mở lại",
       "legal": "Người tiếp thị liên kết, người livestream bán hàng phải xác thực danh tính (Luật Thương mại điện tử 122/2025/QH15, từ 01/7/2026; điều khoản cụ thể trong nghị định hướng dẫn — cần đối chiếu văn bản gốc). Tài khoản phải xác thực mới được livestream (NĐ 147/2024/NĐ-CP).",
       "oneLevelTitle": "Chỉ một cấp.",
-      "oneLevelText": "Không có hoa hồng nhiều tầng: dễ thành kinh doanh đa cấp, có luật riêng."
+      "oneLevelText": "Không có hoa hồng nhiều tầng: dễ thành kinh doanh đa cấp, có luật riêng.",
+      "view": "Xem chi tiết",
+      "bulkSuspendTitle": "Tạm khoá những người đã chọn?",
+      "bulkTerminateTitle": "Chấm dứt những người đã chọn?"
     },
     "suspend": {
       "button": "Tạm khoá kèm lý do",
@@ -12500,7 +12559,10 @@
       "adjustAbout": "Hoàn tiền sau khi hoa hồng đã duyệt hoặc đã chi thì thêm một dòng âm, trừ vào lần chi sau. Âm lớn hơn hoa hồng của kỳ thì để sang kỳ sau, không đòi tiền người tiếp thị.",
       "noAdjust": "Chưa có điều chỉnh âm: chưa có đơn được ghi nhận nào hoàn tiền sau khi duyệt.",
       "reason": "Lý do",
-      "ledgerNote": "Duyệt ghi Nợ chi phí hoa hồng / Có phải trả người tiếp thị; hoàn tiền sau khi duyệt ghi bút toán đảo."
+      "ledgerNote": "Duyệt ghi Nợ chi phí hoa hồng / Có phải trả người tiếp thị; hoàn tiền sau khi duyệt ghi bút toán đảo.",
+      "openOrder": "Mở đơn",
+      "openPartner": "Xem người tiếp thị",
+      "openPayout": "Xem lệnh chi"
     },
     "payouts": {
       "kpis": "Số liệu chi trả",
@@ -12553,7 +12615,13 @@
       "rateFrom": "{pct}% khi mỗi lần chi từ {threshold}",
       "rateAll": "{pct}% mọi lần chi",
       "verify": "cần đối chiếu văn bản gốc",
-      "pitLegal": "Thuế TNCN với hoa hồng của cá nhân không ký HĐLĐ: 10% khi mỗi lần chi từ 2.000.000 ₫ (Thông tư 111/2013/TT-BTC, Điều 25); các nguồn nêu NĐ 253/2026 nâng ngưỡng lên 5.000.000 ₫ — cần đối chiếu văn bản gốc. Chứng từ khấu trừ điện tử: NĐ 123/2020 sửa bởi NĐ 70/2025 — cần đối chiếu mẫu. {n} dòng dữ liệu thuế."
+      "pitLegal": "Thuế TNCN với hoa hồng của cá nhân không ký HĐLĐ: 10% khi mỗi lần chi từ 2.000.000 ₫ (Thông tư 111/2013/TT-BTC, Điều 25); các nguồn nêu NĐ 253/2026 nâng ngưỡng lên 5.000.000 ₫ — cần đối chiếu văn bản gốc. Chứng từ khấu trừ điện tử: NĐ 123/2020 sửa bởi NĐ 70/2025 — cần đối chiếu mẫu. {n} dòng dữ liệu thuế.",
+      "bulkPaid": "Ghi đã chi",
+      "bulkPaidTitle": "Ghi đã chi cho các lệnh đã chọn?",
+      "bulkReference": "Mã giao dịch của lô chuyển khoản",
+      "bulkPaidSame": "Mọi lệnh đã chọn nhận cùng mã này và ngày hôm nay.",
+      "bulkPaidOnly": "Chỉ lệnh chi tay đang lập được ghi; lệnh khác hiện trong danh sách chưa xong.",
+      "bulkRetryTitle": "Gửi lại các lệnh chi lỗi đã chọn?"
     },
     "paid": {
       "button": "Đánh dấu đã chi tay",

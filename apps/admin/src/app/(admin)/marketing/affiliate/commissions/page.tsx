@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Chips, Pager } from "@/components/engage/common";
+import { Chips } from "@/components/engage/common";
 import { BlockHead, Cell2, hrefWith, Kpis, param, Status } from "@/components/growth/blocks";
+import { Pager } from "@/components/ui/pager";
+import { RowMenu } from "@/components/ui/row-menu";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatMoney } from "@/lib/format";
+import { PER_PAGE, readPage, readSort, slicePage, sortRows } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   type CommissionChip,
@@ -22,17 +26,20 @@ const TONE: Record<CommissionStatus, string> = {
   paid: "b-ok",
   void: "b-arch",
 };
-const PAGE = 25;
+const BASE = "/marketing/affiliate/commissions";
 
 // Tab "Hoa hồng": một dòng hoa hồng cho mỗi dòng đơn được ghi nhận (đơn thật của bộ mẫu). Đơn đặt → chờ
 // hoàn tất; đơn huỷ → huỷ; đơn hoàn tất (qua hạn đổi trả) → đã duyệt, ghi sổ cái; vào lệnh chi → đã chi.
 // Cơ sở tính: tiền sau giảm, chưa thuế (chụp trong dòng đơn). Tự mua qua link của mình không được ghi nhận.
+// Trạng thái đi theo đơn và lệnh chi, không đổi tay: không có thao tác hàng loạt; "⋯" dẫn sang đơn, người
+// tiếp thị, lệnh chi. Sắp theo tiền và phân trang có tổng (dữ liệu mẫu có đủ danh sách).
 export default async function CommissionsPage(
   props: PageProps<"/marketing/affiliate/commissions">,
 ) {
   if (!(await can(AFFILIATE_TABS.commissions))) notFound();
-  const [t, locale, params, stats, all, adjustments] = await Promise.all([
+  const [t, tt, locale, params, stats, all, adjustments] = await Promise.all([
     getTranslations("affiliate"),
+    getTranslations("table"),
     getLocale(),
     props.searchParams,
     commissionStats(),
@@ -40,9 +47,26 @@ export default async function CommissionsPage(
     listAdjustments(),
   ]);
   const chip = CHIPS.find((c) => c === param(params, "chip")) ?? null;
-  const from = Math.max(0, Number(param(params, "from")) || 0);
   const filtered = all.data.filter((c) => !chip || c.status === chip);
-  const rows = filtered.slice(from, from + PAGE);
+  // Dữ liệu mẫu có đủ danh sách: sắp theo cột (tiền) và phân trang có tổng ngay ở đây.
+  const sort = readSort(params, ["base", "amount"], { field: "placed", dir: "desc" });
+  const sorted =
+    sort.field === "placed"
+      ? filtered
+      : sortRows(
+          filtered,
+          (c) => Number(sort.field === "base" ? c.base.amount : c.amount.amount),
+          sort.dir,
+        );
+  const paging = readPage(params);
+  const shown = slicePage(sorted, paging.page, paging.per);
+  const rows = shown.data;
+  const keep = {
+    chip: chip ?? undefined,
+    ...(sort.field === "placed" ? {} : { sort: sort.field, dir: sort.dir }),
+    per: paging.per === PER_PAGE[0] ? undefined : paging.per,
+  };
+  const sortKeep = { chip: chip ?? undefined };
   const money = (amount: string | number) => formatMoney(amount, "VND", locale);
   return (
     <div className="blocks">
@@ -101,9 +125,30 @@ export default async function CommissionsPage(
                 <Th>{t("commissions.order")}</Th>
                 <Th>{t("commissions.partner")}</Th>
                 <Th>{t("commissions.source")}</Th>
-                <Th className="text-right">{t("commissions.base")}</Th>
-                <Th className="text-right">{t("commissions.amount")}</Th>
+                <SortTh
+                  field="base"
+                  sort={sort}
+                  base={BASE}
+                  keep={sortKeep}
+                  first="desc"
+                  className="text-right"
+                >
+                  {t("commissions.base")}
+                </SortTh>
+                <SortTh
+                  field="amount"
+                  sort={sort}
+                  base={BASE}
+                  keep={sortKeep}
+                  first="desc"
+                  className="text-right"
+                >
+                  {t("commissions.amount")}
+                </SortTh>
                 <Th>{t("commissions.state")}</Th>
+                <Th>
+                  <span className="vh">{t("actions")}</span>
+                </Th>
               </tr>
             </thead>
             <tbody>
@@ -133,32 +178,44 @@ export default async function CommissionsPage(
                   <Td label={t("commissions.state")}>
                     <Status tone={TONE[c.status]}>{t(`commissionState.${c.status}`)}</Status>
                   </Td>
+                  <Td label={t("actions")}>
+                    {/* Trạng thái của hoa hồng đi theo đơn (hoàn tất, huỷ) và lệnh chi: không có lệnh
+                        đổi tay, nên "⋯" chỉ dẫn sang đơn, người tiếp thị và lệnh chi. */}
+                    <RowMenu
+                      label={tt("moreFor", { name: `${c.order_number} · ${c.product_name}` })}
+                      items={[
+                        { label: t("commissions.openOrder"), href: `/sales/orders/${c.order_id}` },
+                        {
+                          label: t("commissions.openPartner"),
+                          href: hrefWith(
+                            "/marketing/affiliate",
+                            {},
+                            { open: c.partner_id },
+                            "#partners-h",
+                          ),
+                        },
+                        ...(c.payout_id
+                          ? [
+                              {
+                                label: t("commissions.openPayout"),
+                                href: hrefWith(
+                                  "/marketing/affiliate/payouts",
+                                  {},
+                                  { open: c.payout_id },
+                                  "#payouts-h",
+                                ),
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
+                  </Td>
                 </tr>
               ))}
             </tbody>
           </Table>
         </div>
-        <p className="fhint">
-          {t("commissions.shown", {
-            from: filtered.length ? from + 1 : 0,
-            to: from + rows.length,
-            total: filtered.length,
-          })}
-        </p>
-        <Pager
-          first={
-            from > 0 ? hrefWith("/marketing/affiliate/commissions", { chip: chip ?? "" }, {}) : null
-          }
-          next={
-            from + PAGE < filtered.length
-              ? hrefWith(
-                  "/marketing/affiliate/commissions",
-                  { chip: chip ?? "" },
-                  { from: String(from + PAGE) },
-                )
-              : null
-          }
-        />
+        <Pager total={shown.total} page={shown.page} per={paging.per} base={BASE} keep={keep} />
       </section>
       <section className="block" aria-labelledby="adjust-h">
         <BlockHead

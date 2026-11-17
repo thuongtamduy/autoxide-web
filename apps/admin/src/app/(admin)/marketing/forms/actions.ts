@@ -21,6 +21,7 @@ import {
 import { type FormState, nextDone, problemState } from "@/lib/form";
 import { type FieldDraft, fieldToCore, SUBMISSION_STATUSES } from "@/lib/forms";
 import { currentUnit } from "@/lib/org-server";
+import { type BulkInput, type BulkResult, cleanIds, eachId } from "@/lib/table";
 
 type Schemas = components["schemas"];
 
@@ -264,6 +265,98 @@ export async function deleteSubmission(_state: FormState, formData: FormData): P
   );
   if (!result.ok) return problemState(result.problem, []);
   redirect(`${FORMS}/${encodeURIComponent(form)}?removed=1`);
+}
+
+// ---------------------------------------------------------------- Hàng loạt
+
+// Core chỉ có lệnh từng bản ghi: thanh hàng loạt lặp từng id (không bịa endpoint hàng loạt), mỗi lần
+// đọc `ETag` rồi ghi kèm `If-Match`; lỗi từng dòng là `detail` của core.
+
+async function bulkFormStatus(input: BulkInput, status: "open" | "closed"): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const written = await versioned(
+      (client) => client.GET("/api/v1/forms/{id}", { params: { path: { id } } }),
+      undefined,
+      (client, etag) =>
+        client.PATCH("/api/v1/forms/{id}", {
+          params: { path: { id }, header: { "If-Match": etag } },
+          body: { status },
+        }),
+    );
+    return written.ok ? null : written.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkCloseForms(input: BulkInput): Promise<BulkResult> {
+  return bulkFormStatus(input, "closed");
+}
+
+export async function bulkOpenForms(input: BulkInput): Promise<BulkResult> {
+  return bulkFormStatus(input, "open");
+}
+
+/** Xoá nhiều form cùng bài nộp của chúng. Không hoàn tác được. */
+export async function bulkDeleteForms(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const deleted = await versioned(
+      (client) => client.GET("/api/v1/forms/{id}", { params: { path: { id } } }),
+      undefined,
+      (client, etag) =>
+        client.DELETE("/api/v1/forms/{id}", {
+          params: { path: { id }, header: { "If-Match": etag } },
+        }),
+    );
+    return deleted.ok ? null : deleted.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+/** Đổi trạng thái nhiều bài nộp. */
+async function bulkSubmissions(
+  input: BulkInput,
+  status: (typeof SUBMISSION_STATUSES)[number],
+): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const written = await versioned(
+      (client) => client.GET("/api/v1/forms/submissions/{id}", { params: { path: { id } } }),
+      undefined,
+      (client, etag) =>
+        client.PATCH("/api/v1/forms/submissions/{id}", {
+          params: { path: { id }, header: { "If-Match": etag } },
+          body: { status },
+        }),
+    );
+    return written.ok ? null : written.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkReadSubmissions(input: BulkInput): Promise<BulkResult> {
+  return bulkSubmissions(input, "read");
+}
+
+export async function bulkArchiveSubmissions(input: BulkInput): Promise<BulkResult> {
+  return bulkSubmissions(input, "archived");
+}
+
+export async function bulkSpamSubmissions(input: BulkInput): Promise<BulkResult> {
+  return bulkSubmissions(input, "spam");
+}
+
+/** Xoá hẳn nhiều bài nộp; lặp `DELETE /forms/submissions/{id}`. */
+export async function bulkDeleteSubmissions(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const deleted = await send((client) =>
+      client.DELETE("/api/v1/forms/submissions/{id}", { params: { path: { id } } }),
+    );
+    return deleted.ok ? null : deleted.problem.detail;
+  });
+  refresh();
+  return result;
 }
 
 // ---------------------------------------------------------------- Dữ liệu theo email

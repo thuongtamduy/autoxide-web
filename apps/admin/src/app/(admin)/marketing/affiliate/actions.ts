@@ -14,6 +14,7 @@ import {
 import { commerceGuard, finishCommerce, translateCommerce, typed } from "@/lib/commerce-action";
 import type { ChangeState } from "@/lib/engage";
 import { type FormState, problemState } from "@/lib/form";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   addRule,
@@ -23,6 +24,7 @@ import {
   createLink,
   disableLink,
   markPayoutPaid,
+  type PartnerMove,
   pinProduct,
   previewCommission,
   retryPayout,
@@ -30,6 +32,7 @@ import {
   scheduleSession,
   transitionPartner,
 } from "@/sample/affiliate";
+import { vietnamDay } from "@/sample/tax";
 
 async function guard(permission: string | readonly string[]): Promise<FormState | null> {
   const off = await commerceGuard();
@@ -80,6 +83,39 @@ export async function reopenAction(_state: ChangeState, formData: FormData): Pro
   if (!outcome.ok) return problemState(await translateCommerce(outcome.problem, "affiliate"), []);
   refresh();
   return { done: 1, previous: outcome.data.previous, updated: outcome.data.partner.updated_at };
+}
+
+/**
+ * Đổi trạng thái nhiều người tiếp thị (thanh hàng loạt). Hàm mẫu (và core bước 49) chỉ có lệnh từng
+ * người: lặp, gom lỗi đã dịch theo dòng (vd thiếu xác thực thì không duyệt được). `reason`: lý do bắt
+ * buộc của tạm khoá / chấm dứt, người dùng gõ một lần trong hộp hỏi lại.
+ */
+async function bulkPartners(input: BulkInput, move: PartnerMove): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(AFFILIATE_MANAGE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const result = await eachId(ids, async (id) => {
+    const outcome = await transitionPartner(id, move, input.value ?? "");
+    return outcome.ok ? null : (await translateCommerce(outcome.problem, "affiliate")).detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkApprovePartners(input: BulkInput): Promise<BulkResult> {
+  return bulkPartners(input, "approve");
+}
+
+export async function bulkSuspendPartners(input: BulkInput): Promise<BulkResult> {
+  return bulkPartners(input, "suspend");
+}
+
+export async function bulkReopenPartners(input: BulkInput): Promise<BulkResult> {
+  return bulkPartners(input, "reopen");
+}
+
+export async function bulkTerminatePartners(input: BulkInput): Promise<BulkResult> {
+  return bulkPartners(input, "terminate");
 }
 
 // ---- Quy tắc, chương trình
@@ -193,6 +229,40 @@ export async function retryPayoutAction(state: FormState, formData: FormData): P
   const blocked = await guard(AFFILIATE_FINANCE);
   if (blocked) return blocked;
   return finishCommerce("affiliate", state, await retryPayout(idOf(formData)), []);
+}
+
+/**
+ * Ghi đã chi cả kỳ: các lệnh chi tay đã chọn, cùng một mã giao dịch (`value`, kế toán chuyển khoản theo
+ * lô) và ngày hôm nay. Hàm mẫu chỉ có lệnh từng lệnh chi: lặp, gom lỗi theo dòng (lệnh không phải chi tay,
+ * thiếu tài khoản nhận, kỳ chưa kết thúc). Việc về tiền: không hoàn tác được.
+ */
+export async function bulkMarkPaidAction(input: BulkInput): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(AFFILIATE_FINANCE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const date = vietnamDay();
+  const result = await eachId(ids, async (id) => {
+    const outcome = await markPayoutPaid(id, { bank_reference: input.value ?? "", date });
+    if (outcome.ok) return null;
+    const problem = await translateCommerce(outcome.problem, "affiliate");
+    // Lỗi của ô (mã giao dịch, ngày) nằm trong `errors`; câu chung không nói ô nào.
+    return problem.errors?.map((e) => e.detail).join(", ") || problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+/** Gửi lại nhiều lệnh chi lỗi (cùng `reference`, đối tác chi không chi trùng). */
+export async function bulkRetryPayoutsAction(input: BulkInput): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(AFFILIATE_FINANCE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const result = await eachId(ids, async (id) => {
+    const outcome = await retryPayout(id);
+    return outcome.ok ? null : (await translateCommerce(outcome.problem, "affiliate")).detail;
+  });
+  refresh();
+  return result;
 }
 
 // ---- Livestream

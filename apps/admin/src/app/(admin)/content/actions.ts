@@ -21,6 +21,8 @@ import {
   type TranslationRequest,
   toCoreBody,
 } from "@/lib/content";
+import { type FormState, nextDone, problemState } from "@/lib/form";
+import { type BulkInput, type BulkResult, cleanIds, eachId } from "@/lib/table";
 
 export type EntryOutcome =
   | { ok: true; entry: Entry; version: string }
@@ -234,6 +236,92 @@ export async function changeState(
   });
   if (result.ok) refresh();
   return result;
+}
+
+// ---------------------------------------------------------------- Danh sách: "⋯" và hàng loạt
+
+type ListChange = "publish" | "unpublish" | "archive" | "delete";
+
+/**
+ * Một lệnh trên một bài từ danh sách: đọc phiên bản hiện tại (`ETag`) rồi gửi lệnh với đúng phiên
+ * bản đó (core bắt buộc `If-Match`). Đăng bài có nhãn AI gửi `ai_reviewed` — hộp hỏi lại của danh sách
+ * đã nói rõ bấm Đăng là xác nhận đã đọc lại phần AI viết. Trả `null` khi xong, hoặc lỗi của core.
+ */
+async function listChange(entryId: string, change: ListChange): Promise<Problem | null> {
+  if (!id.safeParse(entryId).success) return invalid().problem;
+  const current = await withVersion((client) =>
+    client.GET("/api/v1/content/entries/{id}", { params: { path: { id: entryId } } }),
+  );
+  if (!current.ok) return current.problem;
+  const params = { path: { id: entryId }, header: { "If-Match": current.version } };
+  const result = await send((client) => {
+    switch (change) {
+      case "publish":
+        return client.POST("/api/v1/content/entries/{id}/publish", {
+          params,
+          body: current.entry.ai_generated ? { ai_reviewed: true } : {},
+        });
+      case "unpublish":
+        return client.POST("/api/v1/content/entries/{id}/unpublish", { params });
+      case "archive":
+        return client.POST("/api/v1/content/entries/{id}/archive", { params });
+      case "delete":
+        return client.DELETE("/api/v1/content/entries/{id}", { params });
+    }
+  });
+  return result.ok ? null : result.problem;
+}
+
+/** Hộp hỏi lại của "⋯" trên dòng (`ConfirmAction` gửi `id`). */
+async function rowChange(state: FormState, formData: FormData, change: ListChange) {
+  const problem = await listChange(String(formData.get("id") ?? ""), change);
+  if (problem) return problemState(problem, []);
+  refresh();
+  return { done: nextDone(state) };
+}
+
+/** Gỡ đăng từ danh sách: bài thành bản nháp, đăng lại được. */
+export async function unpublishFromList(state: FormState, formData: FormData): Promise<FormState> {
+  return rowChange(state, formData, "unpublish");
+}
+
+/** Lưu trữ từ danh sách: địa chỉ trả 410, vẫn đăng lại được (cần `content.publish`). */
+export async function archiveFromList(state: FormState, formData: FormData): Promise<FormState> {
+  return rowChange(state, formData, "archive");
+}
+
+/** Xoá bài từ danh sách (cần `content.delete`); không hoàn tác được. */
+export async function deleteFromList(state: FormState, formData: FormData): Promise<FormState> {
+  return rowChange(state, formData, "delete");
+}
+
+/**
+ * Thanh hàng loạt: core chỉ có lệnh từng bài, nên lặp từng id (không bịa endpoint hàng loạt); lỗi của
+ * từng bài là `detail` của core (vd bài chưa đăng không gỡ được, trang còn trang con không xoá được).
+ */
+async function bulkChange(input: BulkInput, change: ListChange): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (entryId) => {
+    const problem = await listChange(entryId, change);
+    return problem ? problem.detail : null;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkPublishEntries(input: BulkInput): Promise<BulkResult> {
+  return bulkChange(input, "publish");
+}
+
+export async function bulkUnpublishEntries(input: BulkInput): Promise<BulkResult> {
+  return bulkChange(input, "unpublish");
+}
+
+export async function bulkArchiveEntries(input: BulkInput): Promise<BulkResult> {
+  return bulkChange(input, "archive");
+}
+
+export async function bulkDeleteEntries(input: BulkInput): Promise<BulkResult> {
+  return bulkChange(input, "delete");
 }
 
 const ScheduleInput = z.object({

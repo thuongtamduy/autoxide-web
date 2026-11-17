@@ -4,10 +4,12 @@ import { EntryFilters, EntryTable, UpcomingTable } from "@/components/content/en
 import { RequiredPages, SiteChips } from "@/components/content/sample-sites";
 import { MessagePanel } from "@/components/message-panel";
 import { Icon } from "@/components/shell/icon";
+import { Pager } from "@/components/ui/pager";
 import { contentLocales } from "@/lib/client-config";
 import {
   abilities,
   filtersHref,
+  filtersKeep,
   hasFilters,
   type ListFilters,
   listQuery,
@@ -112,31 +114,25 @@ export default async function ContentPage(props: PageProps<"/content">) {
                 entries={page.data}
                 authors={names}
                 filtered={hasFilters(filters) || filters.status !== "all"}
-                canPublish={can.publish}
+                can={can}
+                status={filters.status}
+                sort={{ field: "updated", dir: filters.oldest ? "asc" : "desc" }}
+                keep={filtersKeep(filters)}
               />
             ) : (
               <UpcomingTable schedules={page.data} entries={page.entries} />
             )}
           </div>
 
-          {filters.cursor || page.pagination.next_cursor ? (
-            <nav className="pager" aria-label={t("list.pages")}>
-              {filters.cursor ? (
-                <Link className="btn" href={filtersHref(filters)}>
-                  {t("list.first")}
-                </Link>
-              ) : null}
-              {page.pagination.next_cursor ? (
-                <Link
-                  className="btn"
-                  href={filtersHref(filters, { cursor: page.pagination.next_cursor })}
-                  rel="next"
-                >
-                  {t("list.next")}
-                </Link>
-              ) : null}
-            </nav>
-          ) : null}
+          {/* Core phân trang theo con trỏ, không trả tổng: chỉ "Trang đầu" / "Trang sau". */}
+          <Pager
+            first={filters.cursor ? filtersHref(filters) : null}
+            next={
+              page.pagination.next_cursor
+                ? filtersHref(filters, { cursor: page.pagination.next_cursor })
+                : null
+            }
+          />
         </div>
         {sample ? (
           <aside className="ce-listside">

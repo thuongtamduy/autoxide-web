@@ -511,8 +511,9 @@ export async function engageRoutes(
       const found = submissions
         .filter((s) => s.form_id === form.id)
         .filter((s) => (status ? s.status === status : s.status !== "spam"))
-        .filter((s) => !q || s.answers.some((a) => String(a.value).toLowerCase().includes(q)))
-        .reverse();
+        .filter((s) => !q || s.answers.some((a) => String(a.value).toLowerCase().includes(q)));
+      // Mới trước, trừ khi `order=asc` (như core).
+      if (url.searchParams.get("order") !== "asc") found.reverse();
       send(response, 200, page(found, url) satisfies Schemas["Page_SubmissionResponse"]);
       return true;
     }
@@ -818,7 +819,11 @@ export async function engageRoutes(
     return true;
   }
   if (route === "GET /api/v1/newsletter/suppressions") {
-    send(response, 200, page(suppressions, url) satisfies Schemas["Page_SuppressionResponse"]);
+    // Mới trước (thêm vào đầu), trừ khi `order=asc` (như core); `email` lọc theo chữ.
+    const email = (url.searchParams.get("email") ?? "").toLowerCase();
+    const found = suppressions.filter((s) => !email || s.email.includes(email));
+    if (url.searchParams.get("order") === "asc") found.reverse();
+    send(response, 200, page(found, url) satisfies Schemas["Page_SuppressionResponse"]);
     return true;
   }
   if (route === "POST /api/v1/newsletter/suppressions") {

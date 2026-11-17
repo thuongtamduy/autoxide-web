@@ -207,6 +207,54 @@ export async function deleteCampaign(_state: FormState, formData: FormData): Pro
   redirect(`${NEWSLETTER}?deleted=1`);
 }
 
+/**
+ * Lệnh trên nhiều chiến dịch (thanh hàng loạt). Core chỉ có lệnh từng chiến dịch: lặp từng id, đọc
+ * `ETag` rồi gửi kèm `If-Match`; chiến dịch không ở trạng thái cho phép thì core từ chối, lỗi báo đúng
+ * dòng (vd xoá chiến dịch đã gửi thư).
+ */
+async function bulkCampaigns(input: BulkInput, which: Step | "delete"): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const written = await versioned(
+      (client) => client.GET("/api/v1/newsletter/campaigns/{id}", { params: { path: { id } } }),
+      undefined,
+      (client, etag) => {
+        const params = { params: { path: { id }, header: { "If-Match": etag } } };
+        switch (which) {
+          case "send":
+            return client.POST("/api/v1/newsletter/campaigns/{id}/send", params);
+          case "pause":
+            return client.POST("/api/v1/newsletter/campaigns/{id}/pause", params);
+          case "resume":
+            return client.POST("/api/v1/newsletter/campaigns/{id}/resume", params);
+          case "cancel":
+            return client.POST("/api/v1/newsletter/campaigns/{id}/cancel", params);
+          case "delete":
+            return client.DELETE("/api/v1/newsletter/campaigns/{id}", params);
+        }
+      },
+    );
+    return written.ok ? null : written.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkPauseCampaigns(input: BulkInput): Promise<BulkResult> {
+  return bulkCampaigns(input, "pause");
+}
+
+export async function bulkResumeCampaigns(input: BulkInput): Promise<BulkResult> {
+  return bulkCampaigns(input, "resume");
+}
+
+export async function bulkCancelCampaigns(input: BulkInput): Promise<BulkResult> {
+  return bulkCampaigns(input, "cancel");
+}
+
+export async function bulkDeleteCampaigns(input: BulkInput): Promise<BulkResult> {
+  return bulkCampaigns(input, "delete");
+}
+
 // ---------------------------------------------------------------- Danh sách nhận tin
 
 const LIST_FIELDS = ["key", "name", "description", "double_opt_in", "public", "new_posts"];
@@ -514,6 +562,18 @@ export async function removeSuppression(state: FormState, formData: FormData): P
   if (!result.ok) return problemState(result.problem, []);
   refresh();
   return { done: nextDone(state) };
+}
+
+/** Gỡ nhiều địa chỉ khỏi danh sách không gửi; lặp `DELETE /suppressions/{id}`. */
+export async function bulkRemoveSuppressions(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const removed = await send((client) =>
+      client.DELETE("/api/v1/newsletter/suppressions/{id}", { params: { path: { id } } }),
+    );
+    return removed.ok ? null : removed.problem.detail;
+  });
+  refresh();
+  return result;
 }
 
 // ---------------------------------------------------------------- Dữ liệu theo email

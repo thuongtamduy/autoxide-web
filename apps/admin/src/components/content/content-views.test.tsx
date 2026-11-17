@@ -1,13 +1,53 @@
 // @vitest-environment jsdom
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type Entry, localToIso } from "@/lib/content";
 import { renderIntl } from "@/test/render";
+import { ToastProvider } from "../ui/toast";
 import { BodyView } from "./body-view";
 import { EntryTable, UpcomingTable } from "./entry-list";
 
 // Server Action không chạy được trong jsdom; bảng chỉ cần tham chiếu tới nó.
-vi.mock("@/app/(admin)/content/actions", () => ({ approveEntry: vi.fn() }));
+vi.mock("@/app/(admin)/content/actions", () => ({
+  approveEntry: vi.fn(),
+  archiveFromList: vi.fn(),
+  bulkArchiveEntries: vi.fn(),
+  bulkDeleteEntries: vi.fn(),
+  bulkPublishEntries: vi.fn(),
+  bulkUnpublishEntries: vi.fn(),
+  deleteFromList: vi.fn(),
+  unpublishFromList: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/content",
+}));
+
+const ALL = { write: true, publish: true, publishAll: true, delete: true };
+const NONE = { write: false, publish: false, publishAll: false, delete: false };
+const SORT = { field: "updated", dir: "desc" } as const;
+
+function Entries(props: {
+  entries: Entry[];
+  authors?: Record<string, string>;
+  filtered?: boolean;
+  can?: typeof ALL;
+  status?: "all" | "review";
+}) {
+  return (
+    <ToastProvider>
+      <EntryTable
+        entries={props.entries}
+        authors={props.authors ?? {}}
+        filtered={props.filtered ?? false}
+        can={props.can ?? NONE}
+        status={props.status ?? "all"}
+        sort={SORT}
+        keep={{}}
+      />
+    </ToastProvider>
+  );
+}
 
 afterEach(cleanup);
 
@@ -51,23 +91,62 @@ function entry(change: Partial<Entry> = {}): Entry {
 }
 
 describe("EntryTable", () => {
-  it("người đăng được bài: bài chờ duyệt có nút Duyệt và đăng, bài khác không", () => {
+  it("⋯ của dòng theo trạng thái và quyền: Duyệt và đăng chỉ ở bài chờ duyệt, không nút nào nằm trên dòng", () => {
     const list = [
       entry({ review_requested_at: "2026-11-15T03:00:00Z" }),
-      entry({ id: "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e13", title: "Bài khác" }),
+      entry({
+        id: "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e13",
+        title: "Bài khác",
+        status: "published",
+      }),
     ];
-    renderIntl(<EntryTable entries={list} authors={{}} filtered={false} canPublish />);
-    expect(screen.getAllByRole("button", { name: /^Approve and publish/ })).toHaveLength(1);
-    cleanup();
-    // Không đăng được: không có cột thao tác.
-    renderIntl(<EntryTable entries={list} authors={{}} filtered={false} />);
+    renderIntl(<Entries entries={list} can={ALL} />);
+    // Không còn nút "Duyệt và đăng" trên dòng (từng bị cắt ở mép bảng).
     expect(screen.queryByRole("button", { name: /^Approve and publish/ })).toBeNull();
-    expect(screen.queryByRole("columnheader", { name: "Actions" })).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "More actions for Chọn chảo gang cho bếp từ" }),
+    );
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "Open",
+      "Approve and publish",
+      "Archive",
+      "Delete",
+    ]);
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    fireEvent.click(screen.getByRole("button", { name: "More actions for Bài khác" }));
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "Open",
+      "Unpublish",
+      "Archive",
+      "Delete",
+    ]);
+    cleanup();
+    // Chỉ đọc: không ô chọn, "⋯" chỉ còn "Mở".
+    renderIntl(<Entries entries={list} />);
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "More actions for Bài khác" }));
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Open"]);
+  });
+
+  it("chọn nhiều: thanh hàng loạt theo quyền, tab chờ duyệt gọi là Duyệt và đăng", () => {
+    renderIntl(<Entries entries={[entry()]} can={ALL} status="review" />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Chọn chảo gang cho bếp từ" }));
+    const bar = within(screen.getByRole("region", { name: "1 selected" }));
+    expect(
+      bar
+        .getAllByRole("button")
+        .map((b) => b.textContent)
+        .slice(0, 4),
+    ).toEqual(["Approve and publish", "Unpublish", "Archive", "Delete"]);
+    // Cột "Sửa lần cuối" sắp được (order của core), có aria-sort.
+    expect(
+      screen.getByRole("columnheader", { name: /Last edited/ }).getAttribute("aria-sort"),
+    ).toBe("descending");
   });
 
   it("mỗi bài một dòng: link tới trình soạn, trạng thái, nhãn cột cho thẻ điện thoại", () => {
     renderIntl(
-      <EntryTable
+      <Entries
         entries={[
           entry({ review_requested_at: "2026-11-15T03:00:00Z", author_ids: ["a1", "a2"] }),
           entry({
@@ -80,7 +159,6 @@ describe("EntryTable", () => {
           }),
         ]}
         authors={{ a1: "Minh Anh", a2: "Thu Hà" }}
-        filtered={false}
       />,
     );
     const rows = screen.getAllByRole("row").slice(1);
@@ -99,14 +177,14 @@ describe("EntryTable", () => {
     const labels = [...(rows[0] as HTMLElement).querySelectorAll("td")].map((td) =>
       td.getAttribute("data-label"),
     );
-    expect(labels).toEqual([null, "Status", "Language", "Authors", "Last edited"]);
+    expect(labels).toEqual([null, "Status", "Language", "Authors", "Last edited", "Actions"]);
   });
 
   it("rỗng: câu khác nhau khi đang lọc và khi chưa có bài", () => {
-    renderIntl(<EntryTable entries={[]} authors={{}} filtered={false} />);
+    renderIntl(<Entries entries={[]} />);
     expect(screen.getByText(/No posts or pages yet/)).toBeTruthy();
     cleanup();
-    renderIntl(<EntryTable entries={[]} authors={{}} filtered />);
+    renderIntl(<Entries entries={[]} filtered />);
     expect(screen.getByText("No post or page matches these filters.")).toBeTruthy();
   });
 });

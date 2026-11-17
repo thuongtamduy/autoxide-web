@@ -1,9 +1,11 @@
 import { getTranslations } from "next-intl/server";
-import { liftBan } from "@/app/(admin)/marketing/comments/actions";
+import { bulkLiftBans, liftBan } from "@/app/(admin)/marketing/comments/actions";
 import { ConfirmButton } from "@/components/engage/actions";
 import { BanDialog } from "@/components/engage/comment-forms";
-import { Chips, Forbidden, Pager } from "@/components/engage/common";
+import { Chips, Forbidden } from "@/components/engage/common";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pager } from "@/components/ui/pager";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { BAN_KINDS, type CommentBan } from "@/lib/comments";
@@ -14,7 +16,9 @@ import { can } from "@/lib/viewer";
 const BASE = "/marketing/comments/bans";
 
 // Tab "Danh sách cấm": cấm theo tài khoản, email hay dấu vết mạng đã băm; mặc định chỉ lệnh còn
-// hiệu lực. Bình luận mới (và sửa) của người bị cấm bị core từ chối tới khi hết hạn.
+// hiệu lực. Bình luận mới (và sửa) của người bị cấm bị core từ chối tới khi hết hạn. Dòng có một nút
+// (Gỡ cấm); chọn nhiều để gỡ (lặp lệnh từng cái của core). Không sắp theo cột: core chỉ có `order` theo
+// giờ tạo, giờ tạo nằm ở dòng phụ; phân trang theo con trỏ, không tổng.
 export default async function BansPage(props: PageProps<"/marketing/comments/bans">) {
   if (!(await can(COMMENTS_MANAGE))) return <Forbidden permission={COMMENTS_MANAGE} />;
   const t = await getTranslations("engage.comments");
@@ -77,56 +81,75 @@ export default async function BansPage(props: PageProps<"/marketing/comments/ban
               {e("bans.body")}
             </EmptyState>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("col.banned")}</Th>
-                  <Th>{t("col.why")}</Th>
-                  <Th>{t("col.until")}</Th>
-                  <Th>{t("col.status")}</Th>
-                  <Th>{t("col.actions")}</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {page.data.map((ban) => (
-                  <tr key={ban.id}>
-                    <Td className="rt-title">
-                      <span className="cell2">
-                        <span className="mono ell">{ban.value}</span>
-                        <span className="sub">
-                          {t.has(`ban.kinds.${ban.kind}`) ? t(`ban.kinds.${ban.kind}`) : ban.kind} ·{" "}
-                          <Time value={ban.created_at} />
-                        </span>
-                      </span>
-                    </Td>
-                    <Td label={t("col.why")}>{ban.reason}</Td>
-                    <Td className="whitespace-nowrap" label={t("col.until")}>
-                      {ban.until ? <Time value={ban.until} /> : t("forever")}
-                    </Td>
-                    <Td label={t("col.status")}>
-                      <span className={ban.active ? "badge b-bad" : "badge b-draft"}>
-                        <span className="dot" />
-                        {ban.active ? t("banActive") : t("banExpired")}
-                      </span>
-                    </Td>
-                    <Td label={t("col.actions")}>
-                      <ConfirmButton
-                        action={liftBan}
-                        fields={{ id: ban.id }}
-                        label={t("lift")}
-                        title={t("liftTitle", { value: ban.value })}
-                        points={[t("liftAgain"), t("liftAudit")]}
-                        submit={t("liftSubmit")}
-                        done={t("lifted")}
-                        danger={false}
-                      />
-                    </Td>
+            <BulkTable
+              ids={page.data.map((ban) => ban.id)}
+              actions={[
+                {
+                  key: "lift",
+                  label: t("lift"),
+                  run: bulkLiftBans,
+                  confirm: {
+                    title: t("bulkLiftTitle"),
+                    points: [t("liftAgain"), t("liftAudit")],
+                    submit: t("liftSubmit"),
+                  },
+                },
+              ]}
+            >
+              <Table cards>
+                <thead>
+                  <tr>
+                    <SelectAllTh />
+                    <Th>{t("col.banned")}</Th>
+                    <Th>{t("col.why")}</Th>
+                    <Th>{t("col.until")}</Th>
+                    <Th>{t("col.status")}</Th>
+                    <Th>{t("col.actions")}</Th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {page.data.map((ban) => (
+                    <tr key={ban.id}>
+                      <SelectTd id={ban.id} name={ban.value} />
+                      <Td className="rt-title">
+                        <span className="cell2">
+                          <span className="mono ell">{ban.value}</span>
+                          <span className="sub">
+                            {t.has(`ban.kinds.${ban.kind}`) ? t(`ban.kinds.${ban.kind}`) : ban.kind}{" "}
+                            · <Time value={ban.created_at} />
+                          </span>
+                        </span>
+                      </Td>
+                      <Td label={t("col.why")}>{ban.reason}</Td>
+                      <Td className="whitespace-nowrap" label={t("col.until")}>
+                        {ban.until ? <Time value={ban.until} /> : t("forever")}
+                      </Td>
+                      <Td label={t("col.status")}>
+                        <span className={ban.active ? "badge b-bad" : "badge b-draft"}>
+                          <span className="dot" />
+                          {ban.active ? t("banActive") : t("banExpired")}
+                        </span>
+                      </Td>
+                      <Td label={t("col.actions")}>
+                        <ConfirmButton
+                          action={liftBan}
+                          fields={{ id: ban.id }}
+                          label={t("lift")}
+                          title={t("liftTitle", { value: ban.value })}
+                          points={[t("liftAgain"), t("liftAudit")]}
+                          submit={t("liftSubmit")}
+                          done={t("lifted")}
+                          danger={false}
+                        />
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
+        {/* Core phân trang theo con trỏ, không trả tổng. */}
         <Pager
           first={cursor ? hrefWith(BASE, { ...keep, kind }) : null}
           next={next ? hrefWith(BASE, { ...keep, kind, cursor: next }) : null}
