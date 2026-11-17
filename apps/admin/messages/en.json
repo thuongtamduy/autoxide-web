@@ -179,7 +179,77 @@
     "status": "Status",
     "applied": "Applied",
     "pending": "Not applied",
-    "pendingHint": "Run `autoxide migrate up` on the server to apply pending migrations."
+    "pendingHint": "Run `autoxide migrate up` on the server to apply pending migrations.",
+    "serverVersion": "Server version {version}; every module ships with it.",
+    "technical": "Technical details",
+    "noBlurb": "Module of this server.",
+    "state": {
+      "always": "Always on",
+      "on": "On",
+      "off": "Not in your plan"
+    },
+    "names": {
+      "kernel": "Core",
+      "antispam": "Spam protection",
+      "auth": "Sign-in and accounts",
+      "audit": "Audit log",
+      "address": "Vietnamese addresses",
+      "ai": "AI assistant",
+      "files": "Files",
+      "media": "Media library",
+      "content": "Posts and pages",
+      "menus": "Menus",
+      "forms": "Forms",
+      "newsletter": "Newsletter",
+      "comments": "Comments",
+      "notes": "Notes",
+      "organizations": "Organization tree",
+      "plans": "Plans and subscriptions",
+      "webhooks": "Webhooks",
+      "notifications": "Notifications",
+      "catalog": "Products",
+      "inventory": "Inventory",
+      "promotions": "Promotions",
+      "shipping": "Shipping",
+      "orders": "Orders",
+      "customers": "Customers and loyalty",
+      "marketplace": "Marketplace",
+      "channels": "Multichannel selling",
+      "affiliate": "Affiliate marketing",
+      "finance": "Accounting",
+      "compliance": "Compliance"
+    },
+    "blurbs": {
+      "kernel": "Tenants, settings, domains, background jobs and the module register.",
+      "antispam": "Rate limits and spam checks for public forms and comments.",
+      "auth": "Staff and buyer accounts, roles, permissions, API keys and two-step sign-in.",
+      "audit": "Who did what and when, for every change.",
+      "address": "Provinces, wards and address lookup for Vietnam.",
+      "ai": "Drafts and suggestions written by AI, with a human approving.",
+      "files": "Uploaded files and private downloads.",
+      "media": "Images, videos and documents with folders, tags and alt text.",
+      "content": "Posts and pages: drafts, review, scheduling, translations, revision history.",
+      "menus": "Website menus per language.",
+      "forms": "Website forms and their submissions.",
+      "newsletter": "Campaigns, lists and subscribers with proof of consent.",
+      "comments": "Comments on posts, with moderation and bans.",
+      "notes": "Example module: short notes.",
+      "organizations": "Head office, regions, stores, warehouses and who works where.",
+      "plans": "Plans, prices, subscriptions and limits per customer.",
+      "webhooks": "Send events to other systems, with retries.",
+      "notifications": "In-app and email notifications.",
+      "catalog": "Products, variants, categories and price lists.",
+      "inventory": "Stock by warehouse, transfers and counts.",
+      "promotions": "Programs, discount codes and flash sales.",
+      "shipping": "Shipments, delivery fees and carriers.",
+      "orders": "Orders, returns, refunds and counter sales.",
+      "customers": "Customer profiles, groups, points and tiers.",
+      "marketplace": "Sellers, product review, fees and payouts.",
+      "channels": "Sell on marketplaces and social shops from one stock.",
+      "affiliate": "Affiliates, commission and payouts.",
+      "finance": "Double-entry ledger, invoices and tax.",
+      "compliance": "E-commerce registration, personal data and legal records."
+    }
   },
   "duration": {
     "seconds": "{count, plural, one {# second} other {# seconds}}",
@@ -1739,13 +1809,18 @@
       "code": "Error code",
       "agent": "agent",
       "events": "Events by record",
-      "eventsAbout": "Pick a kind of record and its id to see every event about it, in order. Try {example}.",
       "kind": "Kind of record",
       "recordId": "Code or id",
       "show": "Show events",
       "noEvents": "No events for this record.",
       "delivered": "delivered to every receiver",
-      "undelivered": "not delivered yet"
+      "undelivered": "not delivered yet",
+      "tryExample": "Try sample order {id}",
+      "eventsEmptyTitle": "See everything that happened to one record",
+      "eventsEmptyText": "Pick a kind of record and enter its code or id: every event about it is listed newest first, with whether every receiver (modules, webhooks) got it. Useful when a customer asks why an order did not move, or a connected system missed an update.",
+      "noEventsText": "Nothing was recorded for {kind} {id}. Check the code, or the kind of record.",
+      "clearRecord": "Clear",
+      "eventsFor": "{count, plural, one {# event} other {# events}} for {kind} {id}, newest first."
     }
   },
   "content": {
@@ -2569,7 +2644,13 @@
       "restoreTitle": "Restore {label} as the draft?",
       "restoreIntro": "The draft is replaced by this version. The published version does not change until you publish again; the history keeps every version.",
       "restored": "Version restored as the draft",
-      "conflict": "The post changed since this page was loaded. Reload and try again."
+      "conflict": "The post changed since this page was loaded. Reload and try again.",
+      "recentTitle": "Recently edited",
+      "edited": "edited",
+      "recentHint": "Pick a post or page to see its versions, compare two of them and restore one. In the editor, the History tab shows the same versions.",
+      "emptyTitle": "No posts or pages yet",
+      "emptyText": "Versions are kept for every post and page as you edit. Once you write one, its history shows here and in the History tab of the editor.",
+      "goPosts": "Go to posts"
     },
     "diff": {
       "open": "Show changes",
@@ -5140,7 +5221,15 @@
       "makeDefault": "Make default",
       "madeDefault": "{plan} is now the default plan.",
       "currency": "Currency",
-      "metered": "Usage of {key}"
+      "metered": "Usage of {key}",
+      "editShort": "Edit",
+      "details": "Details",
+      "tenantsUsing": "{count, plural, one {customer on this plan} other {customers on this plan}}",
+      "trialDays": "{count, plural, one {# day trial} other {# days trial}}",
+      "noLimitsShort": "No limit set.",
+      "moreLimits": "{count, plural, one {and # more limit} other {and # more limits}}",
+      "noneYet": "No plans yet",
+      "noneYetText": "Without a plan every customer may use every module, with no limit (single-customer mode). Create a plan to sell modules and limits by period."
     },
     "overrides": {
       "title": "Overrides per customer",
@@ -5239,7 +5328,10 @@
       "suspendSubmit": "Suspend",
       "suspendDone": "{tenant} is suspended.",
       "defaultPlan": "Default plan (no subscription)",
-      "noSubscription": "No subscription"
+      "noSubscription": "No subscription",
+      "emptyTitle": "No subscriptions yet",
+      "emptyText": "A subscription ties a customer to a plan and a billing period. There is no customer besides the platform yet; add one in the customer register, then assign a plan here.",
+      "openRegister": "Open the customer register"
     },
     "prov": {
       "crumb": "Autoxide platform · new customers",
@@ -5427,7 +5519,9 @@
         "reason": "Write the reason.",
         "legal": "Enter the number of the authority’s document."
       },
-      "noCustomers": "There is no customer yet besides the platform."
+      "noCustomersTitle": "No customers to support yet",
+      "noCustomersText": "Grants give a staff member time-limited access to one customer’s data, with a reason. There is no customer besides the platform yet; once there is one, grants and visits show here.",
+      "openRegister": "Open the customer register"
     },
     "platformOnly": "Only staff of the platform tenant (the operator's own) can use the control plane. You are signed in to a customer's account.",
     "newTenant": {
@@ -10853,9 +10947,19 @@
       "selfSignupHint": "When off, the sign-up page returns auth.customer_registration_closed; guests can still check out.",
       "save": "Save",
       "saved": "Registration setting saved.",
-      "unverifiedTitle": "Unverified phone numbers",
       "unverifiedCount": "{n} accounts have not verified their phone number.",
-      "unverifiedText": "They can still buy, but cannot comment or review until their phone number is verified (Decree 147/2024 — check the original text)."
+      "unverifiedText": "They can still buy, but cannot comment or review until their phone number is verified (Decree 147/2024 — check the original text).",
+      "search": "Search accounts",
+      "searchHint": "Name, email or phone number",
+      "find": "Search",
+      "verification": "Verified",
+      "emailVerified": "Email verified",
+      "emailNotVerified": "Email not verified",
+      "phoneVerified": "Phone verified",
+      "phoneNotVerified": "Phone not verified",
+      "empty": "No accounts match.",
+      "emptySearch": "No account matches “{q}”.",
+      "clearSearch": "Clear search"
     },
     "segments": {
       "title": "Groups",

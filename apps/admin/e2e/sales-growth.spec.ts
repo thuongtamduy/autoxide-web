@@ -81,6 +81,14 @@ test("khách hàng: hồ sơ từ đơn thật, dữ liệu cá nhân che bớt,
   await expect(toast(page)).toContainText("Locked; every session of this person was revoked.");
   await toast(page).getByRole("button", { name: "Undo" }).click();
   await expect(toast(page)).toContainText("Undone.");
+  // Tìm theo tên (không dấu) lọc ngay khi gõ; xác thực hiện bằng biểu tượng có chữ đầy đủ.
+  await page.getByLabel("Search accounts").fill("nguyen thi hoa");
+  await expect(page).toHaveURL(/q=nguyen/);
+  await expect(page.locator(".cu-accounts tbody tr")).toHaveCount(1);
+  await expect(page.locator(".cu-accounts tbody tr").first()).toContainText("Nguyễn Thị Hoa");
+  await expect(page.getByRole("img", { name: "Email verified" })).toBeVisible();
+  await page.getByLabel("Search accounts").fill("khong co ai");
+  await expect(page.getByText("No account matches “khong co ai”.")).toBeVisible();
 
   // Nhóm: xem trước số khớp không lưu gì.
   await page.goto("/customers/segments");

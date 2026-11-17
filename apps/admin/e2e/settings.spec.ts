@@ -145,9 +145,16 @@ test("Nhà phát triển: lần giao của mọi endpoint, lọc lỗi, tải Op
   await expect(rows(page)).toHaveCount(1);
   await expect(rows(page).first()).toContainText("502");
   await page.goto("/settings/developers/events");
-  await page.getByLabel("Code or id").fill("BM-2611-0412");
+  // Chưa chọn bản ghi: trạng thái rỗng có ví dụ bấm được.
+  await expect(
+    page.getByRole("heading", { name: "See everything that happened to one record" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Try sample order BM-2611-0412" }).click();
+  await expect(page.locator(".se-event")).toHaveCount(4);
+  await expect(page.getByText("4 events for orders.order BM-2611-0412")).toBeVisible();
+  await page.getByLabel("Code or id").fill("BM-0000");
   await page.getByRole("button", { name: "Show events" }).click();
-  await expect(page.locator(".timeline li")).toHaveCount(4);
+  await expect(page.getByRole("heading", { name: "No events for this record." })).toBeVisible();
 });
 
 test("API key: lỗi gom một lần, sai mật khẩu, khoá hiện một lần, thu hồi", async ({ page }) => {

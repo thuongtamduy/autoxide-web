@@ -9,6 +9,7 @@ import {
 } from "@/lib/customers";
 import { ORG, resetSampleCatalog } from "./catalog";
 import {
+  accountMatches,
   addLoyaltyRule,
   adjustPoints,
   blockPhone,
@@ -16,6 +17,7 @@ import {
   customerStats,
   deleteGroup,
   getProfile,
+  listBuyerAccounts,
   listCodBlocks,
   listGroups,
   listLoyaltyRules,
@@ -228,5 +230,31 @@ describe("che dữ liệu cá nhân", () => {
     expect(parseDelays("60, 1440")).toEqual([60, 1440]);
     expect(parseDelays("60, 30")).toBeNull();
     expect(parseDelays("5")).toBeNull();
+  });
+});
+
+describe("tìm tài khoản người mua", () => {
+  const hoa = { name: "Nguyễn Thị Hoa", email: "hoa@example.com", phone: "0909123456" };
+
+  it("khớp tên không dấu, email, SĐT đủ (mọi cách viết) hoặc một đoạn số; rỗng khớp hết", () => {
+    expect(accountMatches(hoa, "")).toBe(true);
+    expect(accountMatches(hoa, "  ")).toBe(true);
+    expect(accountMatches(hoa, "thi hoa")).toBe(true);
+    expect(accountMatches(hoa, "HOA@EXAMPLE")).toBe(true);
+    expect(accountMatches(hoa, "+84 909 123 456")).toBe(true);
+    expect(accountMatches(hoa, "3456")).toBe(true);
+    expect(accountMatches(hoa, "Lan")).toBe(false);
+    expect(accountMatches({ ...hoa, phone: null }, "3456")).toBe(false);
+  });
+
+  it("danh sách lọc theo chữ tìm cùng với chip", async () => {
+    const all = await listBuyerAccounts();
+    const first = all.data[0];
+    expect(first).toBeDefined();
+    if (!first) return;
+    const found = await listBuyerAccounts(null, first.email);
+    expect(found.data.map((a) => a.id)).toContain(first.id);
+    expect(found.data.length).toBeLessThan(all.data.length);
+    expect((await listBuyerAccounts("locked", "khong-co-ai-ten-nay")).data).toEqual([]);
   });
 });
