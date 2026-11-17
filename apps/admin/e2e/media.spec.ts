@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 // Thư viện media và bộ chọn ảnh của trình soạn, với core giả (`mock-media.ts`): tải lên qua route
 // của giao diện (token không xuống trình duyệt), lỗi theo `code`, alt, thẻ, công khai, thùng rác,
@@ -25,6 +25,28 @@ async function signIn(page: Page, path: string) {
 const dialog = (page: Page) => page.locator("dialog[open]");
 const toast = (page: Page) => page.locator(".toast[role=status]");
 const pane = (page: Page) => page.getByRole("complementary", { name: "File details" });
+
+/**
+ * Bấm nút chạy Server Action rồi chờ thông báo `done`. Chờ action trả lời trước (POST có header
+ * `next-action`), để khi hỏng test nói rõ chỗ hỏng thay vì chỉ "toast trống": action không được gửi
+ * hay quá chậm (hỏng ở bước chờ trả lời), máy chủ lỗi (mã khác 200), hay core trả Problem (khung
+ * `.falert` hiện ra, kèm `data-code`).
+ */
+async function runAction(page: Page, button: Locator, done: string) {
+  const answered = page.waitForResponse(
+    (r) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined,
+  );
+  await button.click();
+  expect((await answered).status(), "Server Action trả lời").toBe(200);
+  await expect(async () => {
+    const problem = page.locator(".falert[role=alert]");
+    if ((await problem.count()) > 0) {
+      const code = await problem.first().getAttribute("data-code");
+      throw new Error(`Core trả Problem ${code}: ${await problem.first().textContent()}`);
+    }
+    await expect(toast(page)).toContainText(done, { timeout: 250 });
+  }).toPass({ timeout: 5_000 });
+}
 
 async function upload(page: Page, name: string, buffer: Buffer, mimeType = "image/png") {
   await page.locator("#md-file").setInputFiles({ name, mimeType, buffer });
@@ -66,8 +88,11 @@ test("tải lên, lỗi theo code, alt, thẻ, công khai, thùng rác, xoá h�
   // Alt theo ngôn ngữ: ngôn ngữ mặc định là `alt` của tệp, ngôn ngữ khác là `alts` (PUT/DELETE).
   await pane(page).getByLabel("English · default").fill("Cast iron skillet seen from above");
   await pane(page).getByLabel("Vietnamese").fill("Chảo gang nhìn từ trên");
-  await pane(page).getByRole("button", { name: "Save alt text" }).click();
-  await expect(toast(page)).toContainText("Alt text saved");
+  await runAction(
+    page,
+    pane(page).getByRole("button", { name: "Save alt text" }),
+    "Alt text saved",
+  );
   await page.reload();
   await expect(pane(page).getByLabel("English · default")).toHaveValue(
     "Cast iron skillet seen from above",
@@ -76,8 +101,11 @@ test("tải lên, lỗi theo code, alt, thẻ, công khai, thùng rác, xoá h�
   await expect(page.locator(".md-tile").first()).not.toContainText("No alt");
   // Xoá bản tiếng Việt: người đọc tiếng Việt lại thấy alt mặc định.
   await pane(page).getByLabel("Vietnamese").fill("");
-  await pane(page).getByRole("button", { name: "Save alt text" }).click();
-  await expect(toast(page)).toContainText("Alt text saved");
+  await runAction(
+    page,
+    pane(page).getByRole("button", { name: "Save alt text" }),
+    "Alt text saved",
+  );
   await page.reload();
   await expect(pane(page).getByLabel("Vietnamese")).toHaveValue("");
   await expect(pane(page).getByLabel("Vietnamese")).toHaveAttribute(
@@ -87,40 +115,50 @@ test("tải lên, lỗi theo code, alt, thẻ, công khai, thùng rác, xoá h�
 
   // Thẻ, rồi lọc theo thẻ.
   await pane(page).getByLabel("Tags").fill("brand, logo");
-  await pane(page).getByRole("button", { name: "Save details" }).click();
-  await expect(toast(page)).toContainText("File saved");
+  await runAction(page, pane(page).getByRole("button", { name: "Save details" }), "File saved");
   await expect(pane(page)).toContainText("#brand #logo");
 
   // Công khai.
-  await pane(page).getByRole("button", { name: "Make public" }).click();
-  await expect(toast(page)).toContainText("The file is public");
+  await runAction(
+    page,
+    pane(page).getByRole("button", { name: "Make public" }),
+    "The file is public",
+  );
   await expect(pane(page).getByRole("button", { name: "Make private" })).toBeVisible();
 
   // Thùng rác: hỏi lại, nêu hệ quả; khôi phục; xoá hẳn.
   await pane(page).getByRole("button", { name: "Move to trash" }).click();
   await expect(dialog(page)).toContainText("public address stops working");
-  await dialog(page).getByRole("button", { name: "Move to trash" }).click();
-  await expect(toast(page)).toContainText("Moved to the trash");
+  await runAction(
+    page,
+    dialog(page).getByRole("button", { name: "Move to trash" }),
+    "Moved to the trash",
+  );
   await expect(page.locator(".md-tile")).toHaveCount(0);
   await page.getByRole("link", { name: "Trash" }).click();
   await expect(page.locator(".md-tile")).toHaveCount(1);
   await page.locator(".md-tile").first().click();
-  await pane(page).getByRole("button", { name: "Restore" }).click();
-  await expect(toast(page)).toContainText("File restored");
+  await runAction(page, pane(page).getByRole("button", { name: "Restore" }), "File restored");
   await expect(page.locator(".md-tile")).toHaveCount(0);
 
   await page.getByRole("link", { name: "Trash" }).click();
   await expect(page.locator(".md-tile")).toHaveCount(1);
   await page.locator(".md-tile").first().click();
   await pane(page).getByRole("button", { name: "Move to trash" }).click();
-  await dialog(page).getByRole("button", { name: "Move to trash" }).click();
-  await expect(toast(page)).toContainText("Moved to the trash");
+  await runAction(
+    page,
+    dialog(page).getByRole("button", { name: "Move to trash" }),
+    "Moved to the trash",
+  );
   await page.getByRole("link", { name: "Trash" }).click();
   await page.locator(".md-tile").first().click();
   await pane(page).getByRole("button", { name: "Delete for good" }).click();
   await expect(dialog(page)).toContainText("cannot be brought back");
-  await dialog(page).getByRole("button", { name: "Delete for good" }).click();
-  await expect(toast(page)).toContainText("File deleted for good");
+  await runAction(
+    page,
+    dialog(page).getByRole("button", { name: "Delete for good" }),
+    "File deleted for good",
+  );
   await expect(page.locator(".md-tile")).toHaveCount(0);
 });
 
