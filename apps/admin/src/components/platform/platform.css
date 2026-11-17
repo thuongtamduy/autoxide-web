@@ -370,3 +370,25 @@
   padding-top: 10px;
   border-top: 1px solid var(--line);
 }
+.ax .pf-pcard-mods .pf-pcard-more {
+  background: none;
+  color: var(--ink-3);
+}
+
+/* Nút trên dòng thuê bao (W-054): một hàng trên máy tính; điện thoại để xuống dòng trong thẻ. */
+@media (min-width: 768px) {
+  .ax td .pf-rowacts {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+}
+
+/* Lý do của lần cấp: tối đa hai dòng, đủ chữ ở title */
+.ax .pf-grant-reason {
+  display: -webkit-box;
+  max-width: 320px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}

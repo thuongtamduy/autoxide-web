@@ -5487,7 +5487,8 @@
       "noLimitsShort": "No limit set.",
       "moreLimits": "{count, plural, one {and # more limit} other {and # more limits}}",
       "noneYet": "No plans yet",
-      "noneYetText": "Without a plan every customer may use every module, with no limit (single-customer mode). Create a plan to sell modules and limits by period."
+      "noneYetText": "Without a plan every customer may use every module, with no limit (single-customer mode). Create a plan to sell modules and limits by period.",
+      "moreModules": "and {count} more"
     },
     "overrides": {
       "title": "Overrides per customer",
@@ -5589,7 +5590,9 @@
       "noSubscription": "No subscription",
       "emptyTitle": "No subscriptions yet",
       "emptyText": "A subscription ties a customer to a plan and a billing period. There is no customer besides the platform yet; add one in the customer register, then assign a plan here.",
-      "openRegister": "Open the customer register"
+      "openRegister": "Open the customer register",
+      "openPlans": "Set up plans",
+      "withoutHint": "No customer has a subscription yet. These customers use the default plan; assign a plan to start a subscription and its billing periods."
     },
     "prov": {
       "crumb": "Autoxide platform · new customers",
@@ -5782,7 +5785,13 @@
       },
       "noCustomersTitle": "No customers to support yet",
       "noCustomersText": "Grants give a staff member time-limited access to one customer’s data, with a reason. There is no customer besides the platform yet; once there is one, grants and visits show here.",
-      "openRegister": "Open the customer register"
+      "openRegister": "Open the customer register",
+      "validity": "Status and end",
+      "hoursLeft": "{count, plural, one {# hour left} other {# hours left}}",
+      "revokedAt": "Revoked",
+      "endedAt": "Ended",
+      "noneYet": "No access granted yet",
+      "noneYetText": "When a staff member needs to look into a customer’s data, grant time-limited access with a reason. Every grant shows here with who received it, the customer and when it ends; the customer sees it in their audit log."
     },
     "platformOnly": "Only staff of the platform tenant (the operator's own) can use the control plane. You are signed in to a customer's account.",
     "newTenant": {

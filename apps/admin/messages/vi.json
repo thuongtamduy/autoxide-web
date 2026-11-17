@@ -5487,7 +5487,8 @@
       "noLimitsShort": "Chưa đặt hạn mức.",
       "moreLimits": "{count, plural, other {và # hạn mức khác}}",
       "noneYet": "Chưa có gói nào",
-      "noneYetText": "Chưa có gói thì mọi khách dùng được mọi module, không giới hạn (chế độ một khách). Tạo gói để bán module và hạn mức theo kỳ."
+      "noneYetText": "Chưa có gói thì mọi khách dùng được mọi module, không giới hạn (chế độ một khách). Tạo gói để bán module và hạn mức theo kỳ.",
+      "moreModules": "và {count} module khác"
     },
     "overrides": {
       "title": "Ghi đè cho từng khách",
@@ -5589,7 +5590,9 @@
       "noSubscription": "Chưa có thuê bao",
       "emptyTitle": "Chưa có thuê bao nào",
       "emptyText": "Thuê bao gắn một khách với một gói và kỳ thanh toán. Hiện chưa có khách nào ngoài khách nền tảng; thêm khách ở sổ khách hàng rồi gán gói ở đây.",
-      "openRegister": "Mở sổ khách hàng"
+      "openRegister": "Mở sổ khách hàng",
+      "openPlans": "Thiết lập gói",
+      "withoutHint": "Chưa khách nào có thuê bao. Các khách dưới đây đang dùng gói mặc định; gán gói để bắt đầu thuê bao và các kỳ thanh toán."
     },
     "prov": {
       "crumb": "Nền tảng Autoxide · khách mới",
@@ -5782,7 +5785,13 @@
       },
       "noCustomersTitle": "Chưa có khách nào để hỗ trợ",
       "noCustomersText": "Lần cấp cho một nhân sự vào dữ liệu của một khách trong thời hạn, có lý do. Hiện chưa có khách nào ngoài khách nền tảng; khi có, các lần cấp và lần vào hiện ở đây.",
-      "openRegister": "Mở sổ khách hàng"
+      "openRegister": "Mở sổ khách hàng",
+      "validity": "Trạng thái, thời hạn",
+      "hoursLeft": "{count, plural, other {còn # giờ}}",
+      "revokedAt": "Thu hồi lúc",
+      "endedAt": "Hết hạn lúc",
+      "noneYet": "Chưa cấp quyền vào lần nào",
+      "noneYetText": "Khi nhân sự cần xem dữ liệu của một khách, hãy cấp quyền vào có lý do và thời hạn. Mỗi lần cấp hiện ở đây cùng người được cấp, khách và hạn; khách thấy nó trong nhật ký của mình."
     },
     "platformOnly": "Chỉ nhân sự của khách nền tảng (của chính nhà vận hành) dùng được mặt điều khiển. Bạn đang đăng nhập vào tài khoản của một khách hàng.",
     "newTenant": {

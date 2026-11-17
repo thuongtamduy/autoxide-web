@@ -15,3 +15,8 @@ export function grantState(
   if (grant.revoked_at) return "revoked";
   return Date.parse(grant.expires_at) <= now ? "expired" : "active";
 }
+
+/** Số giờ còn lại tới hạn của một lần cấp, làm tròn lên (còn 10 phút là "còn 1 giờ"); đã hết thì 0. */
+export function hoursLeft(expiresAt: string, now = Date.now()): number {
+  return Math.max(0, Math.ceil((Date.parse(expiresAt) - now) / 3_600_000));
+}

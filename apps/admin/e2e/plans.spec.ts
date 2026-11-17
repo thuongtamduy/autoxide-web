@@ -77,7 +77,16 @@ test("nền tảng: tạo gói (lỗi hạn mức theo dòng), thêm giá, bán,
 }) => {
   await signIn(page, "/platform/plans");
   await expect(page.getByText(/Sample data/)).toHaveCount(0);
-  await expect(page.locator("tbody tr", { hasText: "Cơ bản" })).toContainText("0");
+  // Mỗi gói một thẻ: giá theo kỳ, số khách đang dùng, module bằng tên dễ đọc; "Sửa" mở đúng hộp thoại
+  // sửa gói của trang chi tiết.
+  const basic = page.locator(".pf-pcard", { hasText: "Cơ bản" });
+  await expect(basic.getByTestId("plan-tenants")).toContainText("0 customers on this plan");
+  await expect(basic).toContainText("290,000");
+  await expect(basic).toContainText("Posts and pages");
+  await basic.getByRole("button", { name: "Edit" }).click();
+  await expect(dialog(page).getByLabel("Name")).toHaveValue("Cơ bản");
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toHaveCount(0);
   await page.getByRole("button", { name: "Create plan" }).click();
   await dialog(page).getByLabel("Plan code").fill("doanh-nghiep");
   await dialog(page).getByLabel("Name").fill("Doanh nghiệp");
@@ -101,6 +110,15 @@ test("nền tảng: tạo gói (lỗi hạn mức theo dòng), thêm giá, bán,
   await page.getByRole("button", { name: "Retire" }).click();
   await dialog(page).getByRole("button", { name: "Retire plan" }).click();
   await expect(page.getByRole("button", { name: "Retire" })).toHaveCount(0);
+
+  // Ở danh sách: gói đã ngừng bán nằm dưới chip "Retired", không còn nút Sửa.
+  await page.goto("/platform/plans?status=retired");
+  const retired = page.locator(".pf-pcard", { hasText: "Doanh nghiệp" });
+  await expect(retired).toContainText("Retired");
+  await expect(retired).toContainText("2,900,000");
+  await expect(retired.getByRole("button", { name: "Edit" })).toHaveCount(0);
+  await retired.getByRole("link", { name: "Details" }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Doanh nghiệp" })).toBeVisible();
 });
 
 test("nền tảng: ghi đè hạn mức cho một khách, bỏ rồi hoàn tác", async ({ page }) => {
@@ -144,6 +162,27 @@ test("nền tảng: thuê bao — khách chưa có thuê bao, gán gói cần g�
   await expect(toast(page)).toHaveText("Trà Sen has the new plan.");
   await expect(row).toContainText("Pro");
   await expect(row).toContainText("Trial");
+
+  // Thẻ gói đếm khách đang dùng (`subscriber_count`).
+  await page.goto("/platform/plans");
+  await expect(
+    page.locator(".pf-pcard", { hasText: "Pro" }).getByTestId("plan-tenants"),
+  ).toContainText("1 customer on this plan");
+});
+
+test("vào dữ liệu khách khi rỗng: một trạng thái rỗng, không chồng câu báo lên bảng rỗng", async ({
+  page,
+}) => {
+  await signIn(page, "/platform/support");
+  // Một khách (chế độ một khách): chưa có khách nào để cấp.
+  await expect(page.locator(".empty-state")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "No customers to support yet" })).toBeVisible();
+  await expect(page.locator("table")).toHaveCount(0);
+  await addCustomer(page);
+  await page.goto("/platform/support");
+  await expect(page.locator(".empty-state")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "No access granted yet" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Grant access" })).toBeVisible();
 });
 
 // ---------------------------------------------------------------- Đợt 3b
