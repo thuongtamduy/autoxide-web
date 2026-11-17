@@ -186,14 +186,14 @@ test("uỷ quyền và quyền vào hỗ trợ", async ({ page }) => {
   await signIn(page, "/org/access/delegations");
   await expect(rows(page).first()).toContainText("Đối soát doanh thu tháng");
   await page.getByRole("button", { name: "New delegation" }).click();
-  await dialog(page).getByLabel("ID of the child customer").fill("not-a-child");
+  // Khách cấp dưới chọn từ danh sách của core (D-333), hiện bằng tên trong bảng.
+  await expect(rows(page).first()).toContainText("Chi nhánh Đà Nẵng");
+  await dialog(page)
+    .getByLabel("Customer below this one")
+    .selectOption({ label: "Chi nhánh Đà Nẵng · da-nang" });
   await dialog(page).getByLabel("Reason").fill("short");
   await dialog(page).getByRole("button", { name: "Delegate" }).click();
-  await expect(dialog(page).getByText("is not a tenant below this one")).toBeVisible();
   await expect(dialog(page).getByText("must be 10 to 500 characters")).toBeVisible();
-  await dialog(page)
-    .getByLabel("ID of the child customer")
-    .fill("00000000-0000-7000-8000-0000000000d1");
   await dialog(page).getByLabel("Reason").fill("Kiểm kho cuối quý");
   await dialog(page).getByRole("button", { name: "Delegate" }).click();
   await expect(toast(page)).toHaveText("Delegated; the event is recorded at both customers.");
@@ -257,4 +257,18 @@ test("role ở nút khác gốc: thêm, sửa, rời", async ({ page }) => {
     .uncheck();
   await dialog(page).getByRole("button", { name: "Save roles" }).click();
   await expect(units).toContainText("Not assigned at any other unit.");
+});
+
+test("trang đăng nhập chỉ hiện cách đăng nhập máy chủ bật (client-config, D-333)", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await expect(page.getByRole("link", { name: "Sign in with a link by email" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in with a passkey" })).toBeVisible();
+  await page.request.post(`${CORE}/__auth-config`, {
+    data: { login_link: false, passkeys: false },
+  });
+  await page.reload();
+  await expect(page.getByRole("link", { name: "Sign in with a link by email" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Sign in with a passkey" })).toHaveCount(0);
 });

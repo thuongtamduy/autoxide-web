@@ -78,6 +78,13 @@ test("cây, thành viên theo nút, cài đặt kế thừa; thêm nút con có 
   await dialog(page).getByRole("button", { name: "Save setting" }).click();
   await expect(languages).toContainText("vi, en");
 
+  // Bật / tắt (schema `boolean`): ô chọn Bật / Tắt thay cho ô chữ.
+  const support = settings.locator("tbody tr", { hasText: "auth.support_access" });
+  await support.getByRole("button", { name: "Set here" }).click();
+  await dialog(page).locator("select[name=value]").selectOption("false");
+  await dialog(page).getByRole("button", { name: "Save setting" }).click();
+  await expect(support).toContainText("Off");
+
   // Thêm nút con: lỗi theo ô (trống, mã trùng), rồi thêm được, Hoàn tác thì nút được lưu trữ.
   await page.getByRole("button", { name: "Add child unit" }).click();
   await dialog(page).getByRole("button", { name: "Add unit" }).click();

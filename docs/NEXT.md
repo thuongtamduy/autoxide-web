@@ -3,12 +3,12 @@
 File nội bộ cho agent phiên sau: trạng thái lúc dừng và việc kế tiếp. Cập nhật khi xong một đợt việc; quyết định
 lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`backend-debt.md`](backend-debt.md).
 
-## Trạng thái (17/11/2026, đợt 11)
+## Trạng thái (17/11/2026, đợt 12)
 
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
-- SDK ghim core ở commit `434aa4b` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
-  một khách — D-303 tới D-333). Quyết định mới nhất của repo này: W-049.
+- SDK ghim core ở commit `1c2e4f4` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
+  một khách — D-303 tới D-334). Quyết định mới nhất của repo này: W-050.
 - Đợt 8 (17/11): nối đợt 1 của bước 34 (W-045): màn Cây tổ chức thật, bộ chọn nút góc trên trái (lọc bài, media, form,
   menu theo nút), tab Hồ sơ công khai thật (địa chỉ theo danh mục hành chính của core), tên cửa hàng của website lấy
   từ hồ sơ công khai của nút gốc. Đã chạy thử với core thật.
@@ -19,6 +19,9 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
   của mọi khách ở mặt điều khiển. Đã chạy thử với core thật.
 - Đợt 11 (17/11): nối đợt 3b của bước 35 (W-049): sổ khách theo thuê bao và hạn mức, chi tiết khách (thuê bao, xuất dữ
   liệu, quyền vào), màn "Vào dữ liệu khách" thật, thẻ gói ở Tổng quan, khoá nút theo tính năng của gói.
+- Đợt 12 (17/11): dùng các API mới của core D-331 – D-334 (W-050): số người mỗi nút, ô cài đặt theo `schema`, tên
+  website theo tên miền, tên nút trong "Nơi bạn làm việc", chọn khách cấp dưới khi uỷ quyền, ẩn cách đăng nhập máy
+  chủ tắt, migrate placement bằng API, số người giữ role, lý do khi tạm khoá khách.
 - Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
   hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị
   khi khách chỉ đọc: dải báo hiện, lưu cài đặt và lưu bài bị từ chối với thông báo `tenant_read_only` của core.
@@ -60,11 +63,6 @@ Core phát triển trên `main` của nó, không chờ bản phát hành (W-025
   `GET /auth/me/tenants`, gửi `Autoxide-Tenant` với mọi lời gọi khi vào khách qua uỷ quyền / hỗ trợ); xác nhận lại danh
   tính (`/auth/me/reauth`) cho lệnh nhạy cảm của tài khoản chỉ có passkey; người mua tách khỏi nhân sự
   (`/auth/customers`); đổi `requires_mfa` của role `admin`.
-- **API mới của core chưa dùng** (D-331 – D-334): số người mỗi nút một lời gọi (`GET /auth/memberships/counts`), dạng
-  giá trị của cài đặt theo nút (`schema` → ô đúng kiểu), hồ sơ của website đang được gọi
-  (`GET /organizations/public/site`), `auth` trong `GET /kernel/client-config` (ẩn "đăng nhập bằng link" khi tắt).
-  D-334: migrate placement bằng API có chạy thử (`POST /kernel/placements/migrations`, thay phần mẫu ở Đội database),
-  số người giữ mỗi role (`GET /auth/roles/counts`), `reason` khi tạm khoá khách (`PATCH /kernel/tenants/{id}`).
 - Khách tự xuất dữ liệu của mình (`POST /kernel/tenants/{id}/exports` với `kernel.data.export`) ở Cài đặt.
 - Website: ô địa chỉ khi đặt hàng dùng danh mục hành chính công khai của core (`GET /address/provinces`,
   `…/communes`) thay `src/sample/address.ts`; danh sách cửa hàng (`/organizations/public/stores`) thay phần mẫu khi

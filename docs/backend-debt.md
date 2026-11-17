@@ -37,15 +37,16 @@ Cập nhật file này mỗi khi gửi đợt yêu cầu mới, khi core làm xo
 Đã xong (bước 34, core `5b35b99`): đơn vị hành chính công khai của `address` (website chưa nối ô địa chỉ khi đặt
 hàng: việc của web, `NEXT.md`); `reason` khi tạm khoá khách (bước 35 phần F).
 
+Đã xong (17/11, core D-331 – D-334) và giao diện đã dùng (W-050): số người mỗi nút, dạng giá trị của cài đặt theo
+nút, hồ sơ của website đang được gọi, tên nút trong membership, khách cấp dưới, `auth` trong client-config, migrate
+placement bằng API, số người giữ role, `reason` khi sửa khách.
+
 1. **Danh sách loại đối tượng** cho menu (sổ đối tượng).
-2. **Hồ sơ công khai cho website** (gặp khi nối W-045, 17/11): (a) thêm logo, thông tin pháp lý (tên doanh nghiệp, mã
-   số, địa chỉ đăng ký, logo đã thông báo Bộ Công Thương) vào hồ sơ công khai; (b) một endpoint công khai trả hồ sơ
-   của **website đang được gọi** (nút mà tên miền hay `?site=` chọn) — `GET /organizations/public/stores` chỉ liệt kê
-   cửa hàng, nên tên miền gắn với một cửa hàng con vẫn hiện tên của nút gốc.
-3. **Gặp khi nối đợt 2 (17/11, W-046):** (a) `GET /auth/me/memberships` chỉ có `org_id`: người không có
-   `organizations.units.read` không biết tên nút mình làm việc — nên kèm tên nút; (b) khách cha chưa có danh sách khách
-   con để chọn khi uỷ quyền (`GET /kernel/tenants?parent_id=` chỉ cho khách nền tảng); (c) `GET /kernel/client-config`
-   nên nói đăng nhập bằng link có bật không (`auth.login_link`), để giao diện chỉ hiện link khi dùng được.
+2. **Hồ sơ công khai cho website** (gặp khi nối W-045, 17/11): logo và thông tin pháp lý — core quyết để ở
+   `compliance` (bước 37) và "Thông tin cửa hàng công khai" (bước 68), D-331. Hồ sơ của website đang được gọi **đã có**
+   (`GET /organizations/public/site`, D-331) và **đã dùng** (W-050).
+3. **Gặp khi nối đợt 2 (17/11, W-046):** **đã có cả ba** (D-333) và **đã dùng** (W-050): tên nút trong membership,
+   danh sách khách cấp dưới, `auth` trong client-config.
 4. **Gặp khi nối bước 35 (17/11, W-047):** (a) nhân sự nền tảng chưa đọc được kỳ thanh toán của một khách
    (`GET /plans/billing-periods` chỉ của khách gọi) — cần để "đánh dấu đã thu"; (b) chưa có danh sách ghi đè của mọi
    khách (giao diện đọc từng khách); (c) số khách mỗi gói giao diện tự đếm từ `GET /plans/subscriptions`.
@@ -56,9 +57,7 @@ hàng: việc của web, `NEXT.md`); `reason` khi tạm khoá khách (bước 35
    — nên đưa vào `GET /kernel/client-config`; (d) nhân sự nền tảng không biết trước khách có tắt quyền vào hỗ trợ
    không (chỉ biết khi bị từ chối `auth.support_access_disabled`); (e) thuê bao không kèm tên gói và
    `GET /plans/catalog` chỉ có gói đang bán: khách dùng gói đã ngừng bán không thấy tên gói của mình.
-6. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` không có mô tả trong
-   `openapi.json` (mã nguồn có: "với `org_id` và `inherited=true` thì tính cả membership ở nút trên"); thiếu nó thì
-   người được gán ở nút cha không hiện ở nút con.
+6. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
 
 ### Nhắc khi core tới bước
 

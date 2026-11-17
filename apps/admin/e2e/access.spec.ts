@@ -201,6 +201,8 @@ test("role: dựng sẵn chỉ xem; tạo bằng bộ chọn permission, sửa, 
   await expect(rows(page)).toHaveCount(2);
   await expect(rows(page).first()).toContainText("Every permission");
   await expect(rows(page).first()).toContainText("Built in");
+  // Số người giữ role từ `GET /auth/roles/counts` (D-334).
+  await expect(page.getByRole("columnheader", { name: "People" })).toBeVisible();
   await page.getByRole("link", { name: "admin", exact: true }).click();
   await expect(page.getByText(/Built-in role: it grants every permission/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Delete role" })).toHaveCount(0);

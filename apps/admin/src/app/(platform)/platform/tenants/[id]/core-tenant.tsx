@@ -321,6 +321,12 @@ export async function CoreTenantView({
                       { kind: "hidden", name: "tenant_id", value: tenant.id },
                       { kind: "hidden", name: "etag", value: etag ?? "" },
                       {
+                        kind: "textarea",
+                        name: "reason",
+                        label: t("tenant.suspendReason"),
+                        hint: t("tenant.suspendReasonHint"),
+                      },
+                      {
                         kind: "check",
                         name: "acknowledged",
                         label: t("tenant.suspendAck", { tenant: tenant.name }),

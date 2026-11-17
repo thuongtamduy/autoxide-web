@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  asSettingSchema,
   chainOf,
   groupMemberships,
   type MembershipRow,
-  memberCounts,
   ordered,
+  settingInput,
   settingText,
   settingValue,
   typeLabel,
   type Unit,
   unitIdOf,
+  valueForInput,
   widestScope,
 } from "./org";
 
@@ -102,10 +104,25 @@ describe("thành viên theo nút", () => {
     ]);
   });
 
-  it("đếm người khác nhau ở mỗi nút", () => {
-    const counts = memberCounts([row("u1", A, "r1"), row("u1", A, "r2"), row("u2", A, "r1")]);
-    expect(counts.get(A)).toBe(2);
-    expect(counts.get(B)).toBeUndefined();
+  it("ô nhập theo dạng giá trị của core (schema) và giá trị gửi đi", () => {
+    expect(settingInput(asSettingSchema({ type: "boolean" }))).toEqual({ kind: "boolean" });
+    expect(settingInput({ type: "string", enum: ["en", "vi"] })).toEqual({
+      kind: "choice",
+      options: ["en", "vi"],
+    });
+    expect(settingInput({ type: "string", examples: ["VND"] })).toEqual({
+      kind: "text",
+      example: "VND",
+    });
+    expect(settingInput({ type: "array", items: { type: "string" } })).toEqual({ kind: "list" });
+    expect(settingInput({ type: "integer" })).toEqual({ kind: "number", integer: true });
+    expect(settingInput(asSettingSchema(null))).toBeNull();
+    expect(valueForInput({ kind: "boolean" }, "false", true)).toBe(false);
+    expect(valueForInput({ kind: "number", integer: true }, "12", 1)).toBe(12);
+    expect(valueForInput({ kind: "list" }, "vi, en", ["en"])).toEqual(["vi", "en"]);
+    expect(valueForInput({ kind: "text", example: null }, " VND ", null)).toBe("VND");
+    // Không có schema: đoán như trước.
+    expect(valueForInput(null, "vi, en", null)).toEqual(["vi", "en"]);
   });
 
   it("độ sâu rộng nhất của role", () => {

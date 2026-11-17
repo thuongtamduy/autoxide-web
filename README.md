@@ -65,7 +65,7 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
 - **Platform console › Customers and Database fleet**: the customers and placements of the core
   (with each placement's own file storage, never its keys); add, rename, suspend and resume a
   customer; move a customer to another placement (dry run with tables, rows, files and blockers,
-  then a background move followed until done); per customer, its subscription and limits, a full data
+  then a background move followed until done); migrate one placement or all of them, and follow each run; per customer, its subscription and limits, a full data
   export to download, and support access. The customer list filters by subscription state and by
   customers near a limit. **Customer data access**: grant platform staff time-limited access to a
   customer's data, with a reason, and revoke it.

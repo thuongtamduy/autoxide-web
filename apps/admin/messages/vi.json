@@ -854,7 +854,8 @@
       "every": "Mọi permission",
       "count": "{count, plural, =0 {Chưa có permission} other {# permission}}",
       "builtin": "Dựng sẵn",
-      "custom": "Tạo ở đây"
+      "custom": "Tạo ở đây",
+      "members": "Số người"
     },
     "role": {
       "deleted": "Đã xoá role.",
@@ -967,7 +968,8 @@
       "parent": "Khách cha",
       "empty": "Chưa có uỷ quyền nào.",
       "childId": "ID của khách con",
-      "childIdHint": "ID của khách con, do nhà vận hành nền tảng cung cấp. Phải là khách nằm dưới khách của bạn."
+      "childIdHint": "ID của khách con, do nhà vận hành nền tảng cung cấp. Phải là khách nằm dưới khách của bạn.",
+      "childPick": "Khách cấp dưới"
     },
     "public": {
       "units": "Nút",
@@ -3772,7 +3774,9 @@
       "empty": "Chưa có module nào cho đặt cài đặt theo nút.",
       "unset": "Chưa đặt",
       "on": "Bật",
-      "off": "Tắt"
+      "off": "Tắt",
+      "listHint": "Cách các giá trị bằng dấu phẩy.",
+      "optionsHint": "Một hay nhiều trong: {list}, cách bằng dấu phẩy."
     },
     "depth": {
       "title": "Độ sâu của quyền",
@@ -3785,7 +3789,8 @@
     },
     "approve": "Duyệt nút",
     "approved": "Đã duyệt nút; giờ có thể ghi dữ liệu vào nút này.",
-    "suspendedNote": "Nút đang tạm khoá; không ghi được dữ liệu vào nút này và các nút bên dưới."
+    "suspendedNote": "Nút đang tạm khoá; không ghi được dữ liệu vào nút này và các nút bên dưới.",
+    "membersCountBoth": "{direct} người gán ở nút này; {total} người kể cả từ nút trên"
   },
   "compliance": {
     "crumb": "Tuân thủ · bộ quy định {ruleset}",
@@ -4964,7 +4969,10 @@
       "scheduled": "Hết kỳ chuyển sang",
       "exportAuto": "tự xuất khi huỷ thuê bao",
       "exportDownload": "Tải về",
-      "exportBusy": "Đang xuất; tải lại trang sau ít phút."
+      "exportBusy": "Đang xuất; tải lại trang sau ít phút.",
+      "suspendReason": "Lý do",
+      "suspendReasonHint": "Ghi vào nhật ký audit của khách, 1 đến 500 ký tự.",
+      "suspendReasonRequired": "Ghi lý do."
     },
     "provision": {
       "button": "Cấp phát khách mới",
@@ -5260,7 +5268,22 @@
       "migrateDone": "Đã xếp job migrate {name}; khách trên placement này nhận 503 tới khi xong.",
       "none": "Không có placement nào ở trạng thái này.",
       "createCli": "Placement và nơi lưu file của nó chỉ đặt bằng CLI (autoxide placement add, autoxide placement storage), vì URL kết nối và khoá truy cập là secret.",
-      "colStorage": "Nơi lưu file"
+      "colStorage": "Nơi lưu file",
+      "apiNote": "Migration các database của khách chạy nền, mỗi lần một lượt: từng placement theo tên, khách trên placement đó nhận 503 tới khi xong. Database điều khiển (main) do máy chủ tự migrate trước khi chạy.",
+      "migrateOne": "{name}: {list}",
+      "runOrderApi": "Các placement chạy lần lượt theo tên.",
+      "migrateQueued": "Đã bắt đầu migrate {name}; theo dõi ở mục Các lượt chạy.",
+      "runsTitle": "Các lượt chạy migration",
+      "runsRunning": "Đang có lượt chạy; trang tự làm mới tới khi xong.",
+      "runEvery": "mọi placement",
+      "runNothing": "không có gì để chạy",
+      "runStatus": {
+        "pending": "Đang chờ",
+        "running": "Đang chạy",
+        "done": "Xong",
+        "failed": "Lỗi"
+      },
+      "runAllStarted": "Đã bắt đầu migrate mọi placement."
     },
     "health": {
       "crumb": "Nền tảng Autoxide · vận hành",

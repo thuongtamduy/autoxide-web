@@ -18,8 +18,9 @@ const BADGE: Record<DelegationStatus, string> = {
 };
 
 // Tab "Uỷ quyền" (`/auth/delegations`, bước 34 của core, D-310): role của khách này dùng được ở
-// khách con. Chỉ khách cha hay nhà vận hành thu hồi được. Core chưa có danh sách khách con cho khách
-// cha, nên khách con hiện bằng ID và ô tạo nhận ID (đã báo core, `backend-debt.md`).
+// khách con. Chỉ khách cha hay nhà vận hành thu hồi được. Khách cấp dưới (tên, để chọn khi uỷ quyền)
+// từ `GET /auth/delegations/tenants` (D-333 của core); khách không có trong đó (khách cha của uỷ quyền
+// nhận) hiện bằng ID.
 export default async function DelegationsPage() {
   if (!(await can(DELEGATIONS_READ))) {
     const errors = await getTranslations("errors");
@@ -31,7 +32,7 @@ export default async function DelegationsPage() {
     );
   }
   const t = await getTranslations("access.delegations");
-  const [outgoing, incoming, manage, roles] = await Promise.all([
+  const [outgoing, incoming, manage, roles, children] = await Promise.all([
     load((c) =>
       c.GET("/api/v1/auth/delegations", { params: { query: { direction: "outgoing" } } }),
     ),
@@ -40,7 +41,11 @@ export default async function DelegationsPage() {
     ),
     can(DELEGATIONS_MANAGE),
     (await can(ROLES_READ)) ? allRoles() : Promise.resolve(null),
+    (await can(DELEGATIONS_MANAGE))
+      ? load((c) => c.GET("/api/v1/auth/delegations/tenants")).then((r) => r.data)
+      : Promise.resolve([]),
   ]);
+  const childName = new Map(children.map((c) => [c.id, c.name]));
   const roleName = new Map((roles ?? []).map((r) => [r.id, r.name]));
   const now = Date.now();
   const sections = [
@@ -59,6 +64,7 @@ export default async function DelegationsPage() {
               roles={(roles ?? [])
                 .filter((role) => !role.all_permissions)
                 .map((role) => ({ value: role.id, label: role.name }))}
+              children={children.map((c) => ({ value: c.id, label: `${c.name} · ${c.slug}` }))}
             />
           ) : null}
         </div>
@@ -91,7 +97,7 @@ export default async function DelegationsPage() {
                   {section.rows.map((delegation) => {
                     const status = delegationStatus(delegation, now);
                     const tenant = section.own
-                      ? delegation.child_tenant_id
+                      ? (childName.get(delegation.child_tenant_id) ?? delegation.child_tenant_id)
                       : delegation.parent_tenant_id;
                     const role = roleName.get(delegation.role_id) ?? delegation.role_id.slice(0, 8);
                     return (

@@ -854,7 +854,8 @@
       "every": "Every permission",
       "count": "{count, plural, =0 {No permission} one {# permission} other {# permissions}}",
       "builtin": "Built in",
-      "custom": "Created here"
+      "custom": "Created here",
+      "members": "People"
     },
     "role": {
       "deleted": "Role deleted.",
@@ -967,7 +968,8 @@
       "parent": "Parent customer",
       "empty": "No delegation.",
       "childId": "ID of the child customer",
-      "childIdHint": "The child customer's ID, as the platform operator gives it. It must be a customer below yours."
+      "childIdHint": "The child customer's ID, as the platform operator gives it. It must be a customer below yours.",
+      "childPick": "Customer below this one"
     },
     "public": {
       "units": "Units",
@@ -3772,7 +3774,9 @@
       "empty": "No module offers settings per unit yet.",
       "unset": "Not set",
       "on": "On",
-      "off": "Off"
+      "off": "Off",
+      "listHint": "Separate values with commas.",
+      "optionsHint": "One or more of: {list}, separated by commas."
     },
     "depth": {
       "title": "Depth of permissions",
@@ -3785,7 +3789,8 @@
     },
     "approve": "Approve unit",
     "approved": "Unit approved; it can be written to now.",
-    "suspendedNote": "This unit is suspended; nothing can be written to it or to the units below it."
+    "suspendedNote": "This unit is suspended; nothing can be written to it or to the units below it.",
+    "membersCountBoth": "{direct} assigned here; {total} including units above"
   },
   "compliance": {
     "crumb": "Compliance · rule set {ruleset}",
@@ -4964,7 +4969,10 @@
       "scheduled": "Moves at period end to",
       "exportAuto": "made when the subscription was canceled",
       "exportDownload": "Download",
-      "exportBusy": "An export is running; refresh the page in a moment."
+      "exportBusy": "An export is running; refresh the page in a moment.",
+      "suspendReason": "Reason",
+      "suspendReasonHint": "Written to the customer’s audit log, 1 to 500 characters.",
+      "suspendReasonRequired": "Write the reason."
     },
     "provision": {
       "button": "Provision a customer",
@@ -5260,7 +5268,22 @@
       "migrateDone": "Migration of {name} queued; its customers get 503 until it is done.",
       "none": "No placement in this state.",
       "createCli": "Placements and their file storage are set with the CLI only (autoxide placement add, autoxide placement storage), because connection URLs and access keys are secrets.",
-      "colStorage": "File storage"
+      "colStorage": "File storage",
+      "apiNote": "Migrations of the customer databases run in the background, one run at a time: each placement is migrated by name and its customers get 503 until it is done. The control database (main) is migrated by the server before it starts.",
+      "migrateOne": "{name}: {list}",
+      "runOrderApi": "Placements run one by one, by name.",
+      "migrateQueued": "Migration of {name} started; follow it under Runs.",
+      "runsTitle": "Migration runs",
+      "runsRunning": "A run is in progress; this page refreshes until it ends.",
+      "runEvery": "every placement",
+      "runNothing": "nothing to apply",
+      "runStatus": {
+        "pending": "Waiting",
+        "running": "Running",
+        "done": "Done",
+        "failed": "Failed"
+      },
+      "runAllStarted": "Migration run started for every placement."
     },
     "health": {
       "crumb": "Autoxide platform · operations",

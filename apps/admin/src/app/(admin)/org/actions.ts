@@ -9,7 +9,7 @@ import { getTranslations } from "next-intl/server";
 import type { DialogState } from "@/components/ui/form-dialog";
 import { send } from "@/lib/action";
 import { type FormState, nextDone, problemState } from "@/lib/form";
-import { settingValue, UNIT_COOKIE, unitIdOf } from "@/lib/org";
+import { asSettingSchema, settingInput, UNIT_COOKIE, unitIdOf, valueForInput } from "@/lib/org";
 
 function text(formData: FormData, name: string): string {
   return String(formData.get(name) ?? "");
@@ -95,7 +95,14 @@ export async function putSetting(state: DialogState, formData: FormData): Promis
   const result = await send((client) =>
     client.PUT("/api/v1/organizations/units/{id}/settings/{key}", {
       params: { path: { id: text(formData, "unit_id"), key: text(formData, "key") } },
-      body: { value: settingValue(values.value, parsed("current"), parsed("fallback")) },
+      body: {
+        value: valueForInput(
+          settingInput(asSettingSchema(parsed("schema"))),
+          values.value,
+          parsed("current"),
+          parsed("fallback"),
+        ),
+      },
     }),
   );
   if (!result.ok) {

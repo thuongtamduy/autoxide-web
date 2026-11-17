@@ -539,6 +539,16 @@ export async function accessRoutes(
   }
 
   // ------------------------------------------------------------ Role
+  if (path === "/api/v1/auth/roles/counts" && method === "GET") {
+    // Như core (D-334): số người (chưa xoá) giữ mỗi role.
+    send(response, 200, {
+      data: roles.map((role) => ({
+        role_id: role.id,
+        members: live().filter((a) => rolesOf(a).some((r) => r.id === role.id)).length,
+      })),
+    } satisfies Schemas["Data_Vec_RoleCountResponse"]);
+    return true;
+  }
   if (path === "/api/v1/auth/roles") {
     if (method === "GET") {
       const ordered = url.searchParams.get("order") === "asc" ? [...roles] : [...roles].reverse();

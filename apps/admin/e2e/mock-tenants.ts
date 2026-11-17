@@ -185,6 +185,9 @@ let tenants: Tenant[] = [];
 /** Giá trị cấu hình theo khách: id khách → tên → giá trị. */
 let values = new Map<string, Map<string, { value: string; updated_at: string }>>();
 let moves: Schemas["TenantMove"][] = [];
+/** Migration chờ theo placement (`POST /__placements/behind`), và các lượt chạy (D-334). */
+let behind = new Map<string, string[]>();
+let runs: Schemas["MigrationRun"][] = [];
 /** Lượt xuất dữ liệu theo khách; lượt `pending` thành `ready` ở lần đọc kế tiếp. */
 let exports = new Map<string, Schemas["TenantExport"][]>();
 /** Khách của người đăng nhập (mặc định khách nền tảng). */
@@ -195,6 +198,9 @@ export function resetTenants() {
   values = new Map();
   moves = [];
   exports = new Map();
+  behind = new Map();
+  runs = [];
+  for (const p of PLACEMENTS) p.schema_state = "ready";
   own = PLATFORM_TENANT;
   tenants = [
     {
@@ -474,6 +480,13 @@ export async function tenantRoutes(
     return true;
   }
 
+  if (path === "/api/v1/kernel/placements/migrations") {
+    if (!admin) {
+      denied("kernel.tenants.operate");
+      return true;
+    }
+    return migrationRoute(request, response, method, account);
+  }
   if (path === "/api/v1/kernel/placements" && method === "GET") {
     if (!admin) {
       denied("kernel.placements.read");
@@ -725,6 +738,14 @@ export async function tenantRoutes(
           detail: "the platform tenant cannot be suspended",
         });
       }
+      // `reason` (D-334): 1–500 ký tự, chỉ ghi vào event audit.
+      if (typeof body.reason === "string" && (!body.reason.trim() || body.reason.length > 500)) {
+        errors.push({
+          field: "reason",
+          code: "length",
+          detail: "must be 1 to 500 characters long",
+        });
+      }
       const readOnly = typeof body.read_only === "boolean" ? body.read_only : null;
       if (tenant.id === PLATFORM_TENANT && readOnly === true) {
         errors.push({
@@ -904,5 +925,85 @@ function exportRoute(
   ];
   response.writeHead(200, { "Content-Type": "application/x-ndjson" });
   response.end(`${lines.map((line) => JSON.stringify(line)).join("\n")}\n`);
+  return true;
+}
+
+/** `POST /__placements/behind {name, migrations}`: placement `name` còn các migration chờ. */
+export async function setPlacementBehind(request: IncomingMessage, response: ServerResponse) {
+  const body = (await json(request)) as { name?: string; migrations?: string[] };
+  const found = PLACEMENTS.find((p) => p.name === body.name);
+  if (found) {
+    found.schema_state = "behind";
+    behind.set(found.name, body.migrations ?? ["notes/m0009_example"]);
+  }
+  empty(response, 204);
+}
+
+/**
+ * `/kernel/placements/migrations` (D-334): chạy thử trả migration chờ; chạy thật tạo lượt `pending`,
+ * lượt đó xong (`done`, placement `ready`) ở lần đọc danh sách kế tiếp. Một lượt một lúc.
+ */
+async function migrationRoute(
+  request: IncomingMessage,
+  response: ServerResponse,
+  method: string,
+  account: Account,
+): Promise<true> {
+  const finish = () => {
+    for (const run of runs) {
+      if (run.status !== "pending") continue;
+      run.status = "done";
+      run.applied = [...behind]
+        .filter(([name]) => !run.placement || name === run.placement)
+        .map(([placement, migrations]) => ({ placement, migrations }));
+      for (const done of run.applied) {
+        behind.delete(done.placement);
+        const found = PLACEMENTS.find((p) => p.name === done.placement);
+        if (found) found.schema_state = "ready";
+      }
+      run.updated_at = new Date().toISOString();
+    }
+  };
+  if (method === "GET") {
+    finish();
+    send(response, 200, { data: [...runs].reverse() } satisfies Schemas["Data_Vec_MigrationRun"]);
+    return true;
+  }
+  const body = (await json(request)) as Schemas["MigrationRunRequest"];
+  const placement = body.placement ?? null;
+  if (placement && !PLACEMENTS.some((p) => p.name === placement)) {
+    problem(response, 404, "tenant_placement_not_found", `No placement \`${placement}\`.`);
+    return true;
+  }
+  const pending = PLACEMENTS.filter(
+    (p) => p.name !== "main" && (!placement || p.name === placement),
+  );
+  if (body.dry_run) {
+    send(response, 200, {
+      data: {
+        dry_run: true,
+        pending: pending.map((p) => ({ placement: p.name, migrations: behind.get(p.name) ?? [] })),
+      },
+    } satisfies Schemas["Data_MigrationDryRun"]);
+    return true;
+  }
+  if (runs.some((r) => r.status === "pending" || r.status === "running")) {
+    problem(response, 409, "kernel.migration_run_busy", "A migration run is already in progress.");
+    return true;
+  }
+  const now = new Date().toISOString();
+  const run: Schemas["MigrationRun"] = {
+    id: randomUUID(),
+    placement,
+    status: "pending",
+    applied: [],
+    error: null,
+    requested_by: account.id,
+    created_at: now,
+    updated_at: now,
+  };
+  runs.push(run);
+  for (const p of pending) if (behind.has(p.name)) p.schema_state = "migrating";
+  send(response, 201, { data: run } satisfies Schemas["Data_MigrationRun"]);
   return true;
 }

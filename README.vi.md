@@ -59,7 +59,7 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 - **Mặt điều khiển nền tảng › Khách hàng và Đội database**: khách và placement của core (kèm nơi lưu
   file riêng của placement, không bao giờ có khoá); thêm, đổi tên, tạm khoá và mở lại một khách; dời
   khách sang placement khác (chạy thử nêu bảng, số dòng, file và lý do chặn, rồi dời bằng job nền và
-  theo dõi tới xong); với từng khách: thuê bao và hạn mức, xuất toàn bộ dữ liệu để tải về, quyền vào hỗ
+  theo dõi tới xong); migrate một hay mọi placement và theo dõi từng lượt chạy; với từng khách: thuê bao và hạn mức, xuất toàn bộ dữ liệu để tải về, quyền vào hỗ
   trợ. Sổ khách lọc theo trạng thái thuê bao và khách gần chạm hạn mức. **Vào dữ liệu khách**: cấp cho
   nhân sự nền tảng quyền vào dữ liệu một khách có thời hạn và lý do, thu hồi.
 - **Trang mở từ mail** (không cần đăng nhập): xác nhận email, quên và đặt lại mật khẩu, và "không phải

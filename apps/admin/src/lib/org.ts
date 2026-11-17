@@ -86,17 +86,6 @@ export function widestScope(role: {
   return best >= 0 ? (SCOPES[best] ?? null) : null;
 }
 
-/** Số người (khác nhau) được gán trực tiếp ở mỗi nút. */
-export function memberCounts(rows: readonly MembershipRow[]): Map<string, number> {
-  const people = new Map<string, Set<string>>();
-  for (const row of rows) {
-    const set = people.get(row.org_id) ?? new Set<string>();
-    set.add(row.user_id);
-    people.set(row.org_id, set);
-  }
-  return new Map([...people].map(([id, set]) => [id, set.size]));
-}
-
 /** Một người ở một nút, với mọi role của họ ở đó. */
 export interface MemberAt {
   user_id: string;
@@ -159,6 +148,88 @@ export function settingValue(text: string, current: unknown, fallback: unknown =
   }
   if (typeof current === "number" || typeof current === "boolean") return json(trimmed);
   return trimmed;
+}
+
+/**
+ * Dạng giá trị của một cài đặt theo nút (`schema` của `GET /organizations/settings`, D-332 của core):
+ * phần JSON Schema giao diện dùng để chọn ô nhập. `null`: module không khai.
+ */
+export interface SettingSchema {
+  type?: string;
+  enum?: unknown[];
+  items?: { type?: string; enum?: unknown[] };
+  examples?: unknown[];
+}
+
+/** Đọc `schema` của core thành `SettingSchema`; không phải object thì `null`. */
+export function asSettingSchema(value: unknown): SettingSchema | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as SettingSchema)
+    : null;
+}
+
+/** Ô nhập hợp với dạng giá trị: bật / tắt, chọn một, chọn nhiều, số, danh sách, chữ. */
+export type SettingInput =
+  | { kind: "boolean" }
+  | { kind: "choice"; options: string[] }
+  | { kind: "choices"; options: string[] }
+  | { kind: "number"; integer: boolean }
+  | { kind: "list" }
+  | { kind: "text"; example: string | null };
+
+export function settingInput(schema: SettingSchema | null): SettingInput | null {
+  if (!schema?.type) return null;
+  const strings = (list: unknown[] | undefined) =>
+    (list ?? []).filter((x): x is string => typeof x === "string");
+  switch (schema.type) {
+    case "boolean":
+      return { kind: "boolean" };
+    case "integer":
+    case "number":
+      return { kind: "number", integer: schema.type === "integer" };
+    case "array": {
+      const options = strings(schema.items?.enum);
+      return options.length > 0 ? { kind: "choices", options } : { kind: "list" };
+    }
+    case "string": {
+      const options = strings(schema.enum);
+      if (options.length > 0) return { kind: "choice", options };
+      return { kind: "text", example: strings(schema.examples)[0] ?? null };
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Giá trị gửi core từ ô nhập theo dạng (`settingInput`); `raw` là chữ của ô, hay các lựa chọn của ô
+ * chọn nhiều. Dạng không biết (`null`) thì đoán như `settingValue`. Core vẫn kiểm giá trị.
+ */
+export function valueForInput(
+  input: SettingInput | null,
+  raw: string | readonly string[],
+  current: unknown,
+  fallback: unknown = null,
+): unknown {
+  const text = (Array.isArray(raw) ? raw.join(",") : (raw as string)).trim();
+  if (!input) return settingValue(text, current, fallback);
+  switch (input.kind) {
+    case "boolean":
+      return text === "true";
+    case "number": {
+      const n = Number(text);
+      return text === "" || Number.isNaN(n) ? text : n;
+    }
+    case "choices":
+      return Array.isArray(raw) ? [...raw] : text ? text.split(",") : [];
+    case "list":
+      return text
+        .split(/[,\n]/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+    default:
+      return text;
+  }
 }
 
 /**

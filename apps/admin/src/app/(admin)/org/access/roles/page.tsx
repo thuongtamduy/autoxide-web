@@ -33,7 +33,7 @@ export default async function RolesPage(props: PageProps<"/org/access/roles">) {
     }
     throw error;
   }
-  const manage = await can(ROLES_MANAGE);
+  const [manage, counts] = await Promise.all([can(ROLES_MANAGE), roleCounts()]);
   const next = page.pagination.next_cursor;
   return (
     <div className="blocks">
@@ -57,6 +57,7 @@ export default async function RolesPage(props: PageProps<"/org/access/roles">) {
                 <Th>{t("access.roles.role")}</Th>
                 <Th>{t("access.roles.permissions")}</Th>
                 <Th>{t("access.roles.kind")}</Th>
+                {counts ? <Th className="r">{t("access.roles.members")}</Th> : null}
                 <Th>{t("access.users.created")}</Th>
               </tr>
             </thead>
@@ -82,6 +83,11 @@ export default async function RolesPage(props: PageProps<"/org/access/roles">) {
                       {role.all_permissions ? t("access.roles.builtin") : t("access.roles.custom")}
                     </span>
                   </Td>
+                  {counts ? (
+                    <Td className="r" label={t("access.roles.members")}>
+                      {counts.get(role.id) ?? 0}
+                    </Td>
+                  ) : null}
                   <Td className="whitespace-nowrap" label={t("access.users.created")}>
                     <Time value={role.created_at} />
                   </Td>
@@ -110,4 +116,18 @@ export default async function RolesPage(props: PageProps<"/org/access/roles">) {
       </section>
     </div>
   );
+}
+
+/**
+ * Số người giữ mỗi role (`GET /auth/roles/counts`, D-334 của core; cần `auth.users.read`); `null` khi
+ * core từ chối thì bỏ cột.
+ */
+async function roleCounts(): Promise<Map<string, number> | null> {
+  try {
+    const answer = await load((client) => client.GET("/api/v1/auth/roles/counts"));
+    return new Map(answer.data.map((c) => [c.role_id, c.members]));
+  } catch (error) {
+    if (isForbidden(error)) return null;
+    throw error;
+  }
 }

@@ -6168,6 +6168,103 @@
         ],
         "type": "object"
       },
+      "Data_MigrationDryRun": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "description": "The pending migrations a dry run found.",
+            "properties": {
+              "dry_run": {
+                "description": "Always `true`.",
+                "type": "boolean"
+              },
+              "pending": {
+                "description": "Per placement, the migrations that would run (empty: up to date).",
+                "items": {
+                  "$ref": "#/components/schemas/PlacementMigrationList"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "dry_run",
+              "pending"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_MigrationRun": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "description": "A run of the migrations of the tenant databases (placements).",
+            "properties": {
+              "applied": {
+                "description": "Migrations applied, per placement done (also when a later placement failed).",
+                "items": {
+                  "$ref": "#/components/schemas/PlacementMigrationList"
+                },
+                "type": "array"
+              },
+              "created_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "error": {
+                "description": "Why it failed: the placement and its error. Fix it and start a new run; what is already\napplied is skipped.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "placement": {
+                "description": "The placement it runs on; `null`: every placement, by name.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "requested_by": {
+                "format": "uuid",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "description": "`pending`, `running`, `done` or `failed`.",
+                "example": "done",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "applied",
+              "created_at",
+              "updated_at"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "Data_ModuleInfo": {
         "description": "Envelope of a single result.",
         "properties": {
@@ -9062,7 +9159,7 @@
                 "type": "array"
               },
               "files": {
-                "description": "Files of the tenant that would be copied to the file storage of `to`; `0` when both\nplacements keep files in the same storage (nothing to copy).",
+                "description": "Files of the tenant that would be copied to the file storage of `to`. `0` in two cases:\nboth placements keep files in the same storage (nothing to copy), or the tenant has no\nfiles.",
                 "format": "int64",
                 "minimum": 0,
                 "type": "integer"
@@ -10278,6 +10375,76 @@
         ],
         "type": "object"
       },
+      "Data_Vec_MigrationRun": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "items": {
+              "description": "A run of the migrations of the tenant databases (placements).",
+              "properties": {
+                "applied": {
+                  "description": "Migrations applied, per placement done (also when a later placement failed).",
+                  "items": {
+                    "$ref": "#/components/schemas/PlacementMigrationList"
+                  },
+                  "type": "array"
+                },
+                "created_at": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "error": {
+                  "description": "Why it failed: the placement and its error. Fix it and start a new run; what is already\napplied is skipped.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "placement": {
+                  "description": "The placement it runs on; `null`: every placement, by name.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "requested_by": {
+                  "format": "uuid",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "description": "`pending`, `running`, `done` or `failed`.",
+                  "example": "done",
+                  "type": "string"
+                },
+                "updated_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "status",
+                "applied",
+                "created_at",
+                "updated_at"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "Data_Vec_ModuleInfo": {
         "description": "Envelope of a single result.",
         "properties": {
@@ -11123,6 +11290,38 @@
                 "opening_hours",
                 "special_days",
                 "pickup"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_Vec_RoleCountResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "items": {
+              "description": "How many people hold one role.",
+              "properties": {
+                "members": {
+                  "description": "People holding the role, at any unit; each person once. List them with\n`GET /api/v1/auth/memberships?role_id=…`.",
+                  "format": "int64",
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "role_id": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role_id",
+                "members"
               ],
               "type": "object"
             },
@@ -14527,6 +14726,104 @@
           "totp_enabled",
           "recovery_codes_remaining"
         ],
+        "type": "object"
+      },
+      "MigrationDryRun": {
+        "description": "The pending migrations a dry run found.",
+        "properties": {
+          "dry_run": {
+            "description": "Always `true`.",
+            "type": "boolean"
+          },
+          "pending": {
+            "description": "Per placement, the migrations that would run (empty: up to date).",
+            "items": {
+              "$ref": "#/components/schemas/PlacementMigrationList"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "dry_run",
+          "pending"
+        ],
+        "type": "object"
+      },
+      "MigrationRun": {
+        "description": "A run of the migrations of the tenant databases (placements).",
+        "properties": {
+          "applied": {
+            "description": "Migrations applied, per placement done (also when a later placement failed).",
+            "items": {
+              "$ref": "#/components/schemas/PlacementMigrationList"
+            },
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "description": "Why it failed: the placement and its error. Fix it and start a new run; what is already\napplied is skipped.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "placement": {
+            "description": "The placement it runs on; `null`: every placement, by name.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requested_by": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "`pending`, `running`, `done` or `failed`.",
+            "example": "done",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "applied",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "MigrationRunRequest": {
+        "additionalProperties": false,
+        "description": "What to migrate.",
+        "properties": {
+          "dry_run": {
+            "description": "`true`: only list the migrations that would run, change nothing. Default `false`.",
+            "type": "boolean"
+          },
+          "placement": {
+            "description": "Name of one placement; omitted: every placement (not `main`, which the server migrates\nbefore it starts).",
+            "example": "eu-1",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       },
       "ModuleDeprecation": {
@@ -19822,6 +20119,30 @@
         ],
         "type": "object"
       },
+      "PlacementMigrationList": {
+        "description": "Migrations of one placement.",
+        "properties": {
+          "migrations": {
+            "description": "`<module>/<migration>`: pending ones for a dry run, applied ones for a run.",
+            "example": [
+              "notes/m0002_add_tags"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "placement": {
+            "example": "eu-1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "placement",
+          "migrations"
+        ],
+        "type": "object"
+      },
       "PlacementStorage": {
         "description": "Where a placement keeps its tenants' files. Access keys are never shown.",
         "properties": {
@@ -22505,6 +22826,26 @@
         ],
         "type": "object"
       },
+      "RoleCountResponse": {
+        "description": "How many people hold one role.",
+        "properties": {
+          "members": {
+            "description": "People holding the role, at any unit; each person once. List them with\n`GET /api/v1/auth/memberships?role_id=…`.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "role_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role_id",
+          "members"
+        ],
+        "type": "object"
+      },
       "RoleGrant": {
         "additionalProperties": false,
         "description": "A permission a role grants, with how far it reaches in the organization tree.",
@@ -24236,6 +24577,14 @@
               "null"
             ]
           },
+          "reason": {
+            "description": "Why (1 to 500 characters), kept with the change in the audit log (event\n`kernel.tenant_updated`) — e.g. why a tenant was suspended.",
+            "example": "Unpaid invoices after the grace period",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "status": {
             "description": "`active` or `suspended`. A suspended tenant refuses every request, reads included.",
             "example": "suspended",
@@ -24600,7 +24949,7 @@
             "type": "array"
           },
           "files": {
-            "description": "Files of the tenant that would be copied to the file storage of `to`; `0` when both\nplacements keep files in the same storage (nothing to copy).",
+            "description": "Files of the tenant that would be copied to the file storage of `to`. `0` in two cases:\nboth placements keep files in the same storage (nothing to copy), or the tenant has no\nfiles.",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -32983,6 +33332,80 @@
         ],
         "x-permissions": [
           "auth.roles.manage"
+        ]
+      }
+    },
+    "/api/v1/auth/roles/counts": {
+      "get": {
+        "description": "Requires `auth.roles.read`. One entry per role of the tenant, including roles nobody holds.",
+        "operationId": "auth_count_role_members",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_RoleCountResponse"
+                }
+              }
+            },
+            "description": "The counts, one entry per role."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing permission `auth.roles.read`; code `permission_denied`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Count the people holding each role.",
+        "tags": [
+          "auth"
+        ],
+        "x-permissions": [
+          "auth.roles.read"
         ]
       }
     },
@@ -49999,6 +50422,307 @@
         ],
         "x-permissions": [
           "kernel.placements.read"
+        ]
+      }
+    },
+    "/api/v1/kernel/placements/migrations": {
+      "get": {
+        "description": "Platform staff with `kernel.tenants.operate`. Newest first, at most 50.",
+        "operationId": "kernel_list_placement_migrations",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_MigrationRun"
+                }
+              }
+            },
+            "description": "The runs, newest first."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; code `unauthorized` or the code of the authentication module."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not platform staff (`tenant_platform_only`) or missing `kernel.tenants.operate` (`permission_denied`)."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the recent migration runs.",
+        "tags": [
+          "kernel"
+        ],
+        "x-permissions": [
+          "kernel.tenants.operate"
+        ]
+      },
+      "post": {
+        "description": "Platform staff with `kernel.tenants.operate`. With `dry_run: true` the answer (200) lists the\npending migrations of each placement and nothing changes. Otherwise a run starts in the\nbackground (201, `Location` is its status): placements by name, each `migrating` then `ready`;\nthe first failure marks that placement `behind` and stops the run — fix it and start again,\nwhat is already applied is skipped. One run at a time.",
+        "operationId": "kernel_start_placement_migrations",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrationRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_MigrationDryRun"
+                }
+              }
+            },
+            "description": "Dry run: the pending migrations of each placement."
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_MigrationRun"
+                }
+              }
+            },
+            "description": "The run, `pending`; `Location` is its status.",
+            "headers": {
+              "Location": {
+                "description": "Where the new record is, e.g. `/api/v1/auth/users/<id>`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; code `unauthorized` or the code of the authentication module."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not platform staff (`tenant_platform_only`) or missing `kernel.tenants.operate` (`permission_denied`)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No such placement; code `tenant_placement_not_found`."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A run is already in progress; code `kernel.migration_run_busy`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Migrate the tenant databases (placements), or see what would run.",
+        "tags": [
+          "kernel"
+        ],
+        "x-permissions": [
+          "kernel.tenants.operate"
+        ]
+      }
+    },
+    "/api/v1/kernel/placements/migrations/{id}": {
+      "get": {
+        "description": "Platform staff with `kernel.tenants.operate`. Poll it until `done` or `failed`.",
+        "operationId": "kernel_get_placement_migration",
+        "parameters": [
+          {
+            "description": "Id of the run.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_MigrationRun"
+                }
+              }
+            },
+            "description": "The run."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; code `unauthorized` or the code of the authentication module."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not platform staff (`tenant_platform_only`) or missing `kernel.tenants.operate` (`permission_denied`)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No such run; code `kernel.migration_run_not_found`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a migration run.",
+        "tags": [
+          "kernel"
+        ],
+        "x-permissions": [
+          "kernel.tenants.operate"
         ]
       }
     },
