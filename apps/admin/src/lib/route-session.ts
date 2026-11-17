@@ -1,8 +1,9 @@
 import "server-only";
 
 import { type AutoxideClient, createAutoxideClient } from "@autoxide/sdk";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { getLocale } from "next-intl/server";
+import { callerInfo } from "./core";
 import { coreUrl, secureCookies } from "./env";
 import { refreshTokens } from "./refresh";
 import { ACCESS_COOKIE, REFRESH_COOKIE, tokenCookies } from "./session";
@@ -19,7 +20,10 @@ export async function routeToken(): Promise<string | undefined> {
   if (access) return access;
   const refreshToken = store.get(REFRESH_COOKIE)?.value;
   if (!refreshToken) return undefined;
-  const result = await refreshTokens(refreshToken, { baseUrl: coreUrl() });
+  const result = await refreshTokens(refreshToken, {
+    baseUrl: coreUrl(),
+    forwardedFor: (await callerInfo()).forwardedFor,
+  });
   if (!result.ok) {
     // Core không trả lời: giữ refresh token cho lần sau. Bị từ chối: phiên đã hết.
     if (result.status < 500) store.delete(REFRESH_COOKIE);
@@ -38,7 +42,7 @@ export async function routeClient(): Promise<{ client: AutoxideClient; signedIn:
     baseUrl: coreUrl(),
     accessToken: token,
     language: await getLocale(),
-    userAgent: (await headers()).get("user-agent") ?? undefined,
+    ...(await callerInfo()),
   });
   return { client, signedIn: token !== undefined };
 }

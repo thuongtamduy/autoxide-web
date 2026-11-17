@@ -149,6 +149,24 @@ Hãy phục vụ ứng dụng qua HTTPS: khi chạy production, cookie phiên đ
 Nếu chạy nhiều bản ứng dụng sau load balancer, hãy bật sticky session. Mỗi refresh token chỉ
 dùng được một lần, và các bản ứng dụng không chia sẻ lượt làm mới đang chạy.
 
+Ứng dụng này gọi core thay cho mọi người đang dùng nó. Nếu không cấu hình thêm, core chỉ thấy một
+địa chỉ cho tất cả mọi người, là địa chỉ của máy chủ chạy ứng dụng. Khi đó mọi người dùng chung
+một hạn mức request (`AUTOXIDE_HTTP_RATE_LIMIT_PER_MINUTE`, mặc định 600 mỗi phút, mà mỗi trang
+gọi khoảng mười lần). Phần chống dò mật khẩu và danh sách phiên của core cũng không phân biệt
+được ai với ai. Ứng dụng chuyển tiếp header `X-Forwarded-For` mà nó nhận được. Muốn core dùng
+header đó, đặt các biến này **ở core**:
+
+```bash
+AUTOXIDE_HTTP_CLIENT_IP_HEADER=X-Forwarded-For
+# Số proxy ghi thêm địa chỉ vào header trước khi tới core: 1 khi có một reverse proxy đứng trước
+# ứng dụng này, 2 khi trước proxy đó còn một CDN.
+AUTOXIDE_HTTP_TRUSTED_PROXY_COUNT=1
+```
+
+Đặt một reverse proxy (nginx, Caddy) trước ứng dụng để ghi địa chỉ người dùng vào
+`X-Forwarded-For`. Nếu người dùng vào thẳng ứng dụng, họ có thể tự điền địa chỉ bất kỳ vào header
+này, và mỗi địa chỉ lại có một hạn mức mới. Không có proxy thì để tắt biến này ở core.
+
 ## Website bán hàng
 
 `apps/storefront` là website công khai của một cửa hàng (quyết định D-200 của core): trang chủ,

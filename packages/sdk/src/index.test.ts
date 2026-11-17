@@ -60,6 +60,16 @@ describe("createAutoxideClient", () => {
     expect(seen[0]?.headers.get("user-agent")?.startsWith("Firefox/")).toBe(true);
   });
 
+  it("chuyển tiếp X-Forwarded-For khi được đưa, không thì không gửi", async () => {
+    await createAutoxideClient({ baseUrl: BASE, forwardedFor: "203.0.113.7, 10.0.0.2" }).GET(
+      "/api/v1/kernel/modules",
+    );
+    await createAutoxideClient({ baseUrl: BASE }).GET("/api/v1/kernel/modules");
+
+    expect(seen[0]?.headers.get("x-forwarded-for")).toBe("203.0.113.7, 10.0.0.2");
+    expect(seen[1]?.headers.has("x-forwarded-for")).toBe(false);
+  });
+
   it("lệnh ghi mang Idempotency-Key mới mỗi lần", async () => {
     const client = createAutoxideClient({ baseUrl: BASE });
 

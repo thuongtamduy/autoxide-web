@@ -9,11 +9,22 @@ import { ACCESS_COOKIE } from "./session";
 import { TENANT_COOKIE, tenantHeaders } from "./tenant";
 
 /**
- * `User-Agent` của trình duyệt đang gọi trang này. Gửi kèm mọi lời gọi core: core lưu nó cho
- * phiên tạo ra (đăng nhập, đổi mật khẩu), không có thì danh sách phiên chỉ thấy máy chủ Next.js.
+ * Thông tin về trình duyệt đang gọi trang này, gửi kèm mọi lời gọi core:
+ * - `User-Agent`: core lưu nó cho phiên tạo ra (đăng nhập, đổi mật khẩu), không có thì danh sách
+ *   phiên chỉ thấy máy chủ Next.js.
+ * - `X-Forwarded-For`: địa chỉ của người dùng (reverse proxy phía trước ghi vào; không có proxy thì
+ *   Next.js tự điền địa chỉ kết nối). Không có nó thì core thấy mọi người dùng là một địa chỉ — máy
+ *   chủ này — và mọi người chung một hạn mức request (`AUTOXIDE_HTTP_RATE_LIMIT_PER_MINUTE`).
  */
-async function browserAgent(): Promise<string | undefined> {
-  return (await headers()).get("user-agent") ?? undefined;
+export async function callerInfo(): Promise<{
+  userAgent: string | undefined;
+  forwardedFor: string | undefined;
+}> {
+  const request = await headers();
+  return {
+    userAgent: request.get("user-agent") ?? undefined,
+    forwardedFor: request.get("x-forwarded-for") ?? undefined,
+  };
 }
 
 /** Client gọi core thay mặt người đang đăng nhập (token lấy từ cookie). */
@@ -23,7 +34,7 @@ export async function coreClient(): Promise<AutoxideClient> {
     baseUrl: coreUrl(),
     accessToken: store.get(ACCESS_COOKIE)?.value,
     language: await getLocale(),
-    userAgent: await browserAgent(),
+    ...(await callerInfo()),
   });
 }
 
@@ -36,7 +47,7 @@ export async function anonymousClient(): Promise<AutoxideClient> {
   const client = createAutoxideClient({
     baseUrl: coreUrl(),
     language: await getLocale(),
-    userAgent: await browserAgent(),
+    ...(await callerInfo()),
   });
   const request = await headers();
   const chosen = (await cookies()).get(TENANT_COOKIE)?.value;

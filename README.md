@@ -158,6 +158,23 @@ Serve the app over HTTPS: its session cookies are marked `Secure` in production.
 If you run more than one copy of this app behind a load balancer, turn on sticky sessions. Each
 refresh token works once, and copies of the app do not share the refresh in progress.
 
+This app calls the core on behalf of every person using it, so without more setup the core sees
+one address for everyone: the server running this app. Then everyone shares one rate limit
+(`AUTOXIDE_HTTP_RATE_LIMIT_PER_MINUTE`, 600 a minute by default, and each page makes about ten
+calls), and the core's sign-in protection and session list cannot tell people apart. The app
+forwards the `X-Forwarded-For` header it receives. To use it, set these **on the core**:
+
+```bash
+AUTOXIDE_HTTP_CLIENT_IP_HEADER=X-Forwarded-For
+# Proxies that add an address to the header before the core: 1 for one reverse proxy in front of
+# this app, 2 if a CDN also sits in front of that proxy.
+AUTOXIDE_HTTP_TRUSTED_PROXY_COUNT=1
+```
+
+Put a reverse proxy (nginx, Caddy) in front of this app that adds the visitor's address to
+`X-Forwarded-For`. If people reach the app directly, they can type any address into that header
+and get a fresh rate limit with each one. Without a proxy, leave the setting off on the core.
+
 ## Storefront website
 
 `apps/storefront` is the public website of one shop (decision D-200 of the core): home page,
