@@ -35,7 +35,7 @@ test("đơn hàng: số đếm khớp, view, hỏi bằng lời, xác nhận hà
 
   // View "Chờ xử lý": số trên chip bằng số đơn khớp.
   await page.getByRole("link", { name: /^Pending\s+37$/ }).click();
-  await expect(page.getByText("Showing 25 of 37 matching orders")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Pages" })).toContainText("1–25 of 37");
 
   // Hỏi bằng lời: tắt khi core chưa bật AI; bật thì câu thành chip sửa được, Áp dụng mới lọc.
   await expect(page.getByLabel("Describe the orders you want")).toBeDisabled();
@@ -59,10 +59,10 @@ test("đơn hàng: số đếm khớp, view, hỏi bằng lời, xác nhận hà
 
   // Xác nhận hàng loạt, rồi Hoàn tác.
   await page.goto("/sales/orders?status=awaiting_acceptance");
-  const boxes = page.getByRole("checkbox", { name: /^Select order BM-/ });
+  const boxes = page.getByRole("checkbox", { name: /^Select BM-/ });
   await boxes.nth(0).check();
   await boxes.nth(1).check();
-  await expect(page.getByText("2 orders selected on this page")).toBeVisible();
+  await expect(page.getByText("2 selected", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Accept", exact: true }).click();
   await expect(toast(page)).toContainText("Accepted 2 orders; 0 in another status skipped");
   await toast(page).getByRole("button", { name: "Undo" }).click();

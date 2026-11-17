@@ -16,6 +16,7 @@
 import type { Problem } from "@autoxide/sdk";
 import { normalizePhone, parseDelays, parseTags } from "@/lib/customers";
 import { fold } from "@/lib/fold";
+import { type SortDir, sortRows } from "@/lib/table";
 import { type Money, ORG, type Ref } from "./catalog";
 import { type SamplePage, samplePage } from "./index";
 import { listCarts, num, type Order, ordersState, vnd } from "./orders";
@@ -1124,7 +1125,12 @@ export interface ProfileQuery {
   group?: string | null;
   limit?: number;
   cursor?: string | null;
+  /** Dự kiến (`?sort=name|orders|spent&order=`): mặc định chi nhiều trước. */
+  sort?: { field: ProfileSort; dir: SortDir };
 }
+
+export const PROFILE_SORTS = ["name", "orders", "spent"] as const;
+export type ProfileSort = (typeof PROFILE_SORTS)[number];
 
 // Thay bằng GET /api/v1/customers?q=&group_id=&tier=&tag= (bước 47) khi core có. Tìm theo tên (không
 // dấu), SĐT (core chuẩn hoá rồi băm) hay email. Chi nhiều trước.
@@ -1154,7 +1160,21 @@ export async function listProfiles(query: ProfileQuery = {}): Promise<SamplePage
       (a, b) => num(b.total_spent) - num(a.total_spent) || a.full_name.localeCompare(b.full_name),
     )
     .map(strip);
-  return samplePage(rows, { limit: query.limit ?? 25, cursor: query.cursor ?? null });
+  const sort = query.sort;
+  const sorted =
+    !sort || (sort.field === "spent" && sort.dir === "desc")
+      ? rows
+      : sortRows(
+          rows,
+          (p) =>
+            sort.field === "name"
+              ? p.full_name
+              : sort.field === "orders"
+                ? p.orders_count
+                : num(p.total_spent),
+          sort.dir,
+        );
+  return samplePage(sorted, { limit: query.limit ?? 25, cursor: query.cursor ?? null });
 }
 
 // Dự kiến (bước 51, số liệu tóm tắt): số ở đầu tab Hồ sơ khách.
@@ -1369,17 +1389,29 @@ export function accountMatches(
   return fold(a.name).includes(needle) || fold(a.email).includes(needle);
 }
 
-// Thay bằng GET /api/v1/auth/customers?status=&q= (bước 34) khi core có.
+export const ACCOUNT_SORTS = ["name", "login", "registered"] as const;
+export type AccountSort = (typeof ACCOUNT_SORTS)[number];
+
+// Thay bằng GET /api/v1/auth/customers?status=&q=&order= (bước 34) khi core có. Mặc định vừa đăng nhập
+// trước; sắp theo tên là dự kiến (core chỉ có `order` theo ngày tạo).
 export async function listBuyerAccounts(
   chip: AccountChip | null = null,
   q = "",
+  sort: { field: AccountSort; dir: SortDir } | null = null,
 ): Promise<{ data: BuyerAccount[] }> {
   const s = await store();
+  const rows = s.accounts
+    .filter((a) => (!chip ? true : chip === "unverified" ? !a.phone_verified : a.status === chip))
+    .filter((a) => accountMatches(a, q))
+    .sort((a, b) => (b.last_login_at ?? "").localeCompare(a.last_login_at ?? ""));
+  if (!sort || (sort.field === "login" && sort.dir === "desc")) return { data: rows };
   return {
-    data: s.accounts
-      .filter((a) => (!chip ? true : chip === "unverified" ? !a.phone_verified : a.status === chip))
-      .filter((a) => accountMatches(a, q))
-      .sort((a, b) => (b.last_login_at ?? "").localeCompare(a.last_login_at ?? "")),
+    data: sortRows(
+      rows,
+      (a) =>
+        sort.field === "name" ? a.name : sort.field === "login" ? a.last_login_at : a.registered_at,
+      sort.dir,
+    ),
   };
 }
 

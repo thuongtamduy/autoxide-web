@@ -22,6 +22,7 @@ import {
   type OrderStatus,
   readFilters,
 } from "@/lib/orders";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import { getProfile, listProfiles, type TierCode } from "@/sample/customers";
 import {
@@ -180,32 +181,40 @@ export async function proposalAction(
 
 // ---- Hàng loạt
 
-export interface BulkState extends FormState {
-  changed?: string[];
-  skipped?: number;
-}
-
-/** Xác nhận nhiều đơn chờ xác nhận; "cả N đơn khớp bộ lọc" lấy theo bộ lọc của trang. */
-export async function bulkAcceptAction(_state: BulkState, formData: FormData): Promise<BulkState> {
+/**
+ * Xác nhận nhiều đơn chờ xác nhận (thanh hàng loạt của bảng đơn); "cả N đơn khớp bộ lọc" lấy theo bộ
+ * lọc của trang. Đơn ở trạng thái khác bỏ qua (không phải lỗi). Trả id đã đổi cho nút Hoàn tác.
+ */
+export async function acceptOrdersAction(input: BulkInput): Promise<BulkResult> {
   const blocked = await guard(ORDERS_MANAGE);
-  if (blocked) return blocked;
-  const ids =
-    formData.get("all") === "1"
-      ? await matchingIds(
-          readFilters(Object.fromEntries(new URLSearchParams(String(formData.get("query") ?? "")))),
-        )
-      : formData.getAll("ids").map(String);
+  const ids = input.all
+    ? await matchingIds(readFilters(Object.fromEntries(new URLSearchParams(input.query ?? ""))))
+    : cleanIds(input.ids);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
   const out = await acceptOrders(ids);
   refresh();
-  return { done: Date.now(), changed: out.changed, skipped: out.skipped };
+  const t = await getTranslations("orders.bulk");
+  return {
+    total: ids.length,
+    done: out.changed.length,
+    errors: [],
+    message:
+      out.changed.length === 0
+        ? t("noneAwaiting")
+        : t("accepted", { count: out.changed.length, skipped: out.skipped }),
+    undo: out.changed,
+  };
 }
 
-export async function undoBulkAction(ids: string[]): Promise<number> {
+/** Hoàn tác "Xác nhận" hàng loạt: đưa các đơn vừa xác nhận về chờ xác nhận. */
+export async function undoAcceptOrdersAction(ids: string[]): Promise<BulkResult> {
+  const list = cleanIds(ids);
   const blocked = await guard(ORDERS_MANAGE);
-  if (blocked) return 0;
-  const n = await undoAccept(ids);
+  if (blocked) return bulkBlocked(list, blocked.error ?? "");
+  const n = await undoAccept(list);
   refresh();
-  return n;
+  const t = await getTranslations("orders.bulk");
+  return { total: list.length, done: n, errors: [], message: t("undone", { count: n }) };
 }
 
 // ---- View và lọc bằng lời

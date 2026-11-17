@@ -2,6 +2,7 @@
 
 // Server Action của màn "Khách hàng": gọi hàm mẫu của `src/sample/customers.ts` (module `customers` của
 // core chưa có, bước 47; W-006, W-019). Lỗi dịch theo `customers.codes.*` / `customers.fields.*`.
+import type { Problem } from "@autoxide/sdk";
 import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { commerceGuard, finishCommerce, translateCommerce, typed } from "@/lib/commerce-action";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/customers";
 import type { ChangeState } from "@/lib/engage";
 import { type FormState, problemState } from "@/lib/form";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   addCodRule,
@@ -29,12 +31,16 @@ import {
   type CodLookup,
   createProfile,
   deleteGroup,
+  getProfile,
+  listBuyerAccounts,
   lookupBuyer,
   previewRule,
+  profileNames,
   readRule,
   saveGroup,
   setAccountLocked,
   setBlockLifted,
+  setGroupMember,
   setRegistrationOpen,
   setTags,
 } from "@/sample/customers";
@@ -118,6 +124,75 @@ export async function lockAction(_state: ChangeState, formData: FormData): Promi
   if (!outcome.ok) return problemState(await translateCommerce(outcome.problem, "customers"), []);
   refresh();
   return { done: 1, previous: locked ? "active" : "locked", updated: outcome.data.updated_at };
+}
+
+// ---- Hàng loạt (bảng Hồ sơ khách, Tài khoản người mua). Hàm mẫu (và core, bước 34 / 47) chỉ có lệnh
+// từng cái: lặp từng id, gom lỗi.
+
+/** Câu lỗi đã dịch của một kết quả hàm mẫu (hoặc `null` khi xong). */
+async function failure(outcome: { ok: true } | { ok: false; problem: Problem }) {
+  return outcome.ok ? null : (await translateCommerce(outcome.problem, "customers")).detail;
+}
+
+/** Thêm các hồ sơ đã chọn vào một nhóm thủ công (`value` = id nhóm). */
+export async function bulkAddToGroupAction(input: BulkInput): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(CUSTOMERS_MANAGE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const names = await profileNames();
+  const group = input.value ?? "";
+  const result = await eachId(
+    ids,
+    async (id) => failure(await setGroupMember(group, id, true)),
+    (id) => names.get(id) ?? id,
+  );
+  refresh();
+  return result;
+}
+
+/** Gắn thêm một nhãn cho các hồ sơ đã chọn (giữ nhãn cũ). */
+export async function bulkAddTagAction(input: BulkInput): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(CUSTOMERS_MANAGE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const names = await profileNames();
+  const tag = (input.value ?? "").trim();
+  const result = await eachId(
+    ids,
+    async (id) => {
+      const found = await getProfile(id);
+      const tags = found ? [...found.data.tags, tag].join(", ") : tag;
+      return failure(await setTags(id, tags));
+    },
+    (id) => names.get(id) ?? id,
+  );
+  refresh();
+  return result;
+}
+
+async function bulkLock(input: BulkInput, locked: boolean): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(AUTH_CUSTOMERS_MANAGE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const { data } = await listBuyerAccounts();
+  const names = new Map(data.map((a) => [a.id, a.name]));
+  const result = await eachId(
+    ids,
+    async (id) => failure(await setAccountLocked(id, locked)),
+    (id) => names.get(id) ?? id,
+  );
+  refresh();
+  return result;
+}
+
+/** Khoá nhiều tài khoản người mua (thu hồi mọi phiên của từng người). */
+export async function bulkLockAction(input: BulkInput): Promise<BulkResult> {
+  return bulkLock(input, true);
+}
+
+/** Mở khoá nhiều tài khoản người mua. */
+export async function bulkUnlockAction(input: BulkInput): Promise<BulkResult> {
+  return bulkLock(input, false);
 }
 
 export async function registrationAction(state: FormState, formData: FormData): Promise<FormState> {

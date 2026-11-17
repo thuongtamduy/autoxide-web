@@ -8,6 +8,7 @@
 // để `verifyLevels()` luôn sạch (test). Lệnh ghi đổi kho trong bộ nhớ của tiến trình máy chủ.
 import type { Problem } from "@autoxide/sdk";
 import { fold } from "@/lib/fold";
+import { type SortDir, sortRows } from "@/lib/table";
 import {
   allVariants,
   type Money,
@@ -2121,30 +2122,43 @@ function postedReceipts(): Receipt[] {
 
 // Thay bằng GET /api/v1/inventory/suppliers (bước 42) + số dư phải trả từ sổ cái (bước 36) khi core
 // có. Đang giao dịch trước.
-export async function listSuppliers(): Promise<{ data: SupplierRow[] }> {
+export const SUPPLIER_SORTS = ["name", "code", "payable"] as const;
+export type SupplierSort = (typeof SUPPLIER_SORTS)[number];
+
+/** Nhà cung cấp kèm số đang nợ. Mặc định đang giao dịch trước rồi theo tên; sắp theo cột là dự kiến. */
+export async function listSuppliers(
+  sort: { field: SupplierSort; dir: SortDir } | null = null,
+): Promise<{ data: SupplierRow[] }> {
   const s = store();
   const receipts = postedReceipts();
+  const rows: SupplierRow[] = s.suppliers
+    .map((supplier) => {
+      const received = receipts
+        .filter((r) => r.supplier_id === supplier.id)
+        .reduce((n, r) => n + Number(r.total.amount), 0);
+      const returned = s.returns
+        .filter((r) => r.supplier_id === supplier.id)
+        .reduce((n, r) => n + Number(r.total.amount), 0);
+      const paid = s.payments
+        .filter((p) => p.supplier_id === supplier.id)
+        .reduce((n, p) => n + Number(p.amount.amount), 0);
+      return {
+        ...supplier,
+        received: vnd(received),
+        returned: vnd(returned),
+        paid: vnd(paid),
+        payable: vnd(received - returned - paid),
+      };
+    })
+    .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
+  if (!sort) return { data: rows };
   return {
-    data: s.suppliers
-      .map((supplier) => {
-        const received = receipts
-          .filter((r) => r.supplier_id === supplier.id)
-          .reduce((n, r) => n + Number(r.total.amount), 0);
-        const returned = s.returns
-          .filter((r) => r.supplier_id === supplier.id)
-          .reduce((n, r) => n + Number(r.total.amount), 0);
-        const paid = s.payments
-          .filter((p) => p.supplier_id === supplier.id)
-          .reduce((n, p) => n + Number(p.amount.amount), 0);
-        return {
-          ...supplier,
-          received: vnd(received),
-          returned: vnd(returned),
-          paid: vnd(paid),
-          payable: vnd(received - returned - paid),
-        };
-      })
-      .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name)),
+    data: sortRows(
+      rows,
+      (r) =>
+        sort.field === "name" ? r.name : sort.field === "code" ? r.code : Number(r.payable.amount),
+      sort.dir,
+    ),
   };
 }
 

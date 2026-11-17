@@ -741,6 +741,15 @@ export async function engageRoutes(
       .filter((s) => !email || s.email.includes(email))
       .filter((s) => !status || s.subscriptions.some((x) => x.status === status))
       .filter((s) => blocked === null || (s.status === "blocked") === (blocked === "true"));
+    // `order` như core: theo thời gian tạo (chỉ khi được hỏi; mặc định giữ thứ tự của mẫu).
+    const order = url.searchParams.get("order");
+    if (order) {
+      found.sort((a, b) =>
+        order === "asc"
+          ? a.created_at.localeCompare(b.created_at)
+          : b.created_at.localeCompare(a.created_at),
+      );
+    }
     send(response, 200, page(found, url) satisfies Schemas["Page_SubscriberResponse"]);
     return true;
   }
@@ -881,8 +890,9 @@ export async function engageRoutes(
       .filter((c) => c.status === status)
       .filter((c) => !q || c.body.toLowerCase().includes(q))
       .filter((c) => !type || c.target_type === type)
-      .filter((c) => !id || c.target_id === id)
-      .reverse();
+      .filter((c) => !id || c.target_id === id);
+    // Mới trước, trừ khi `order=asc` (như core).
+    if (url.searchParams.get("order") !== "asc") found.reverse();
     const listed = page(found, url);
     send(response, 200, {
       ...listed,

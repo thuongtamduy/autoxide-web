@@ -11,6 +11,7 @@
 // Lệnh ghi đổi một kho trong bộ nhớ của tiến trình máy chủ; khởi động lại thì về ban đầu.
 import type { Problem } from "@autoxide/sdk";
 import { fold } from "@/lib/fold";
+import { type SortDir, sortRows } from "@/lib/table";
 import { type SamplePage, samplePage } from "./index";
 import { listUnits, type OrgUnit } from "./org";
 import { isTaxCategory, listTaxRates, rateOn, vietnamDay } from "./tax";
@@ -1883,7 +1884,12 @@ export interface ProductQuery {
   locale?: string;
   limit?: number;
   cursor?: string | null;
+  /** Dự kiến (`?sort=name|price|updated&order=`): mặc định mới sửa trước. */
+  sort?: { field: ProductSort; dir: SortDir };
 }
+
+export const PRODUCT_SORTS = ["name", "price", "updated"] as const;
+export type ProductSort = (typeof PRODUCT_SORTS)[number];
 
 // Thay bằng GET /api/v1/catalog/products?status=&kind=&category_id=&q= (bước 41) khi core có. Tìm
 // không dấu trên tên (mọi ngôn ngữ) và SKU, như `search_key` của đặc tả. Mới sửa trước.
@@ -1910,7 +1916,23 @@ export async function listProducts(query: ProductQuery = {}): Promise<SamplePage
     .map((p) => summarize(p, locale, retail, at))
     .filter((p) => !query.blocked || p.issues.length > 0)
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at) || a.id.localeCompare(b.id));
-  return samplePage(all, { limit: query.limit ?? 25, cursor: query.cursor ?? null });
+  const sort = query.sort;
+  const sorted =
+    !sort || (sort.field === "updated" && sort.dir === "desc")
+      ? all
+      : sortRows(
+          all,
+          (p) =>
+            sort.field === "name"
+              ? p.name
+              : sort.field === "price"
+                ? p.price_min
+                  ? Number(p.price_min.amount)
+                  : null
+                : p.updated_at,
+          sort.dir,
+        );
+  return samplePage(sorted, { limit: query.limit ?? 25, cursor: query.cursor ?? null });
 }
 
 /** Số sản phẩm theo trạng thái và các con số tóm tắt của đầu màn (dự kiến: `GET /products/stats`). */
@@ -3406,12 +3428,15 @@ export function csvCell(value: string): string {
 
 // Thay bằng POST /api/v1/catalog/exports + GET /exports/{id}/content (bước 41) khi core có. Trả
 // nội dung CSV (BOM, CRLF) và ghi một việc xuất.
-export async function exportProducts(): Promise<{ data: { transfer: Transfer; csv: string } }> {
+export async function exportProducts(
+  ids: readonly string[] | null = null,
+): Promise<{ data: { transfer: Transfer; csv: string } }> {
   const s = store();
   const retail = s.prices.filter((p) => p.price_list_id === PRICE_LIST_ID.retail);
   const at = Date.now();
   const lines = [IMPORT_COLUMNS.join(",")];
-  for (const product of s.products) {
+  // Chỉ những sản phẩm đã chọn (thao tác hàng loạt "Xuất CSV"), hoặc cả danh mục.
+  for (const product of s.products.filter((p) => !ids || ids.includes(p.id))) {
     for (const variant of product.variants) {
       const price = effectivePrice(
         retail.filter((p) => p.variant_id === variant.id),

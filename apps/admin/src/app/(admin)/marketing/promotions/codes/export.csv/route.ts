@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { PROMOTIONS_CODES_MANAGE } from "@/lib/promotions";
+import { cleanIds } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 import { exportCodes } from "@/sample/promotions";
@@ -12,8 +13,11 @@ export async function GET(request: Request) {
   if (!(await can(PROMOTIONS_CODES_MANAGE))) {
     return new Response("Forbidden", { status: 403 });
   }
-  const promotion = new URL(request.url).searchParams.get("promotion") ?? undefined;
-  const { data } = await exportCodes(promotion);
+  const search = new URL(request.url).searchParams;
+  const promotion = search.get("promotion") ?? undefined;
+  // `?ids=a,b`: chỉ các mã đã chọn (thao tác hàng loạt trên bảng).
+  const ids = cleanIds(search.get("ids")?.split(",") ?? []);
+  const { data } = await exportCodes(promotion, ids.length > 0 ? ids : null);
   return new Response(data.csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
