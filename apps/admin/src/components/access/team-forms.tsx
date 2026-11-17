@@ -111,10 +111,16 @@ function InviteForm({
 
 /** "Uỷ quyền mới": khách con, role, hạn (không bắt buộc), lý do. */
 /**
- * Uỷ quyền một role cho khách cấp dưới. `children`: khách cấp dưới chọn được
+ * Uỷ quyền một role cho khách cấp dưới. `childTenants`: khách cấp dưới chọn được
  * (`GET /auth/delegations/tenants`, D-333 của core); rỗng thì gõ ID của khách con.
  */
-export function DelegateDialog({ roles, children }: { roles: Option[]; children: Option[] }) {
+export function DelegateDialog({
+  roles,
+  childTenants,
+}: {
+  roles: Option[];
+  childTenants: Option[];
+}) {
   const t = useTranslations("access.delegations");
   return (
     <Dialog
@@ -123,7 +129,7 @@ export function DelegateDialog({ roles, children }: { roles: Option[]; children:
       intro={t("createIntro")}
       triggerClass="btn sm"
     >
-      {(close) => <DelegateForm roles={roles} childTenants={children} close={close} />}
+      {(close) => <DelegateForm roles={roles} childTenants={childTenants} close={close} />}
     </Dialog>
   );
 }

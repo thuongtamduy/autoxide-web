@@ -65,7 +65,6 @@ import {
   ORG_MODULE,
   orgPerson,
   orgRoutes,
-  publicStores,
   resetOrg,
   setRootName,
 } from "./mock-org.ts";
@@ -601,8 +600,12 @@ const server = createServer(async (request, response) => {
   }
   // Phần công khai của website: không cần đăng nhập, như core. Cài đặt bình luận công khai dùng
   // chung với màn Bình luận của trang quản trị (`mock-engage.ts`).
-  if (route === "GET /api/v1/organizations/public/stores") {
-    return send(response, 200, { data: publicStores() });
+  if (
+    route === "GET /api/v1/organizations/public/stores" ||
+    route === "GET /api/v1/organizations/public/site"
+  ) {
+    await orgRoutes(request, response, url, route);
+    return;
   }
   if (route === "GET /api/v1/comments/public/settings") {
     await engageRoutes(request, response, url, route);

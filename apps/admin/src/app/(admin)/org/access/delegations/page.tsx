@@ -64,7 +64,7 @@ export default async function DelegationsPage() {
               roles={(roles ?? [])
                 .filter((role) => !role.all_permissions)
                 .map((role) => ({ value: role.id, label: role.name }))}
-              children={children.map((c) => ({ value: c.id, label: `${c.name} · ${c.slug}` }))}
+              childTenants={children.map((c) => ({ value: c.id, label: `${c.name} · ${c.slug}` }))}
             />
           ) : null}
         </div>
