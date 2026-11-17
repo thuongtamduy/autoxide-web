@@ -5,7 +5,7 @@ import "server-only";
 // D-207). Đăng nhập ở máy khác thì đọc cờ đó và đặt lại cookie, nên lựa chọn đi theo người dùng.
 // Lỗi ở đây không bao giờ chặn việc đổi giao diện hay đăng nhập.
 import { createAutoxideClient } from "@autoxide/sdk";
-import { coreClient } from "./core";
+import { callerInfo, coreClient } from "./core";
 import { coreUrl } from "./env";
 import { isTheme, THEME_COOKIE, type Theme } from "./theme";
 
@@ -42,7 +42,11 @@ export async function saveThemeFlag(theme: Theme): Promise<void> {
 /** Lựa chọn đã lưu ở core của người vừa đăng nhập (dùng access token mới); `null` khi chưa có. */
 export async function savedTheme(accessToken: string): Promise<Theme | null> {
   try {
-    const client = createAutoxideClient({ baseUrl: coreUrl(), accessToken });
+    const client = createAutoxideClient({
+      baseUrl: coreUrl(),
+      accessToken,
+      forwardedFor: (await callerInfo()).forwardedFor,
+    });
     const { data } = await client.GET("/api/v1/me/flags", { params: { query: { prefix: "ui." } } });
     const value = data?.data.find((flag) => flag.key === THEME_FLAG)?.value;
     return isTheme(value) ? value : null;

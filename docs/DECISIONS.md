@@ -1944,3 +1944,24 @@ core từ chối như mô tả; trang gói phía khách khi chưa có thuê bao.
 
 Đã cân nhắc: sửa hạn mức bằng bảng nhiều ô — phải biết trước mọi khoá của mọi module; ô chữ cùng gợi ý khoá từ
 `GET /kernel/modules` đủ cho nhân sự vận hành.
+
+## W-048 · Chuyển tiếp địa chỉ người dùng (`X-Forwarded-For`) tới core — 2026-11-17 — chủ dự án chọn
+
+Quyết định:
+
+- Mọi lời gọi core thay mặt người dùng (`coreClient`, `anonymousClient`, `routeClient`, làm mới token, đọc giao diện đã
+  lưu lúc đăng nhập) gửi kèm `X-Forwarded-For` của request mà trang quản trị nhận được. SDK có thêm tuỳ chọn
+  `forwardedFor`. Gom vào `callerInfo()` (`src/lib/core.ts`), cùng chỗ với `User-Agent`.
+- Chuyển tiếp nguyên header, không tự thêm địa chỉ: Next.js tự điền địa chỉ kết nối khi chưa có header, và giữ nguyên khi
+  reverse proxy đã ghi. Proxy của Next.js chạy trước bước đó, nên lúc làm mới token ở proxy chỉ có header khi phía trước
+  có reverse proxy; không có thì core thấy địa chỉ máy chủ, như trước.
+- Core chỉ đọc header khi bật `AUTOXIDE_HTTP_CLIENT_IP_HEADER`. README ghi cách bật và yêu cầu có reverse proxy, vì
+  người vào thẳng ứng dụng có thể tự điền địa chỉ.
+
+Lý do: trước đây core thấy mọi người dùng là một địa chỉ (máy chủ Next.js), nên tất cả chung hạn mức 600 request mỗi phút
+của một địa chỉ. Mỗi trang gọi core khoảng mười lần, nên vài người dùng cùng lúc đã đủ để core trả 429 và trang báo
+lỗi. Chống dò mật khẩu và danh sách phiên của core cũng không phân biệt được người dùng. Đã chạy thử với core thật: người
+dùng A bị chặn vì bấm quá nhanh thì người dùng B vẫn vào được; với code cũ thì B bị chặn theo.
+
+Đã cân nhắc: nâng hạn mức của core cho riêng máy chủ trang quản trị. Cách này chỉ đẩy giới hạn chung lên cao hơn, mọi
+người vẫn chung một hạn mức, và core vẫn không biết địa chỉ thật của người đăng nhập.

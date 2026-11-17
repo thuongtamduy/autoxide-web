@@ -17,7 +17,12 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   if (!refreshToken) {
     return toLogin(request);
   }
-  const result = await refreshTokens(refreshToken, { baseUrl: coreUrl() });
+  // Proxy chạy trước khi Next.js tự điền `X-Forwarded-For`: header chỉ có khi reverse proxy phía
+  // trước ghi vào. Không có thì core thấy địa chỉ máy chủ này, như trước.
+  const result = await refreshTokens(refreshToken, {
+    baseUrl: coreUrl(),
+    forwardedFor: request.headers.get("x-forwarded-for") ?? undefined,
+  });
   if (!result.ok) {
     // Core không trả lời: để trang tự báo lỗi, giữ refresh token cho lần sau.
     if (result.status >= 500) {
