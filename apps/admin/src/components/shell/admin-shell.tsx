@@ -2,9 +2,11 @@ import { ApiError } from "@autoxide/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
+import { leaveTenant } from "@/app/(admin)/workspace-actions";
 import { setTheme, signOut } from "@/app/actions";
 import { Help } from "@/components/help/help-panel";
 import { LanguageSwitch } from "@/components/language-switch";
+import { MessagePanel } from "@/components/message-panel";
 import { CommandPalette, type CreateShortcut } from "@/components/shell/command-palette";
 import { Icon } from "@/components/shell/icon";
 import {
@@ -20,13 +22,14 @@ import {
 } from "@/components/shell/nav-client";
 import { newsSeen } from "@/help/flags";
 import { myFlags } from "@/help/server";
+import { currentEntry } from "@/lib/core";
 import { initialsOf } from "@/lib/initials";
 import { MARKETPLACE_SELL } from "@/lib/market";
 import { ordered, typeLabel } from "@/lib/org";
 import { currentUnit, loadUnits, loadUnitTypes } from "@/lib/org-server";
 import { enabledModuleNames } from "@/lib/plans-server";
 import { tenantBlock } from "@/lib/tenant-state";
-import { getCurrentTenant, getMe, getModules } from "@/lib/viewer";
+import { getCurrentTenant, getMe, getModules, getMyTenants } from "@/lib/viewer";
 import {
   ACCOUNT_PAGE,
   holds,
@@ -68,9 +71,19 @@ export async function AdminShell({
 }) {
   const t = await getTranslations();
   let loaded: Awaited<ReturnType<typeof loadViewer>>;
+  const entered = await currentEntry();
+  // Khách đang vào không còn trong danh sách vào được (uỷ quyền / quyền vào hỗ trợ đã thu hồi hay hết
+  // hạn): báo trước khi trang gọi core và nhận 403 `tenant_mismatch`.
+  if (entered && !(await getMyTenants()).some((x) => x.id === entered && x.access !== "direct")) {
+    return <EntryEnded detail="" />;
+  }
   try {
     loaded = await loadViewer();
   } catch (error) {
+    // Đang vào khách khác mà uỷ quyền / quyền vào hỗ trợ đã hết: core trả `tenant_mismatch`.
+    if (entered && error instanceof ApiError && error.problem.code === "tenant_mismatch") {
+      return <EntryEnded detail={error.problem.detail} />;
+    }
     // Khách bị tạm khoá hay đang bảo trì: mọi lời gọi đều bị từ chối, thay cả khung bằng trang báo.
     const block = tenantBlock(error);
     if (block && error instanceof ApiError) {
@@ -80,9 +93,14 @@ export async function AdminShell({
   }
   const [me, installed, current] = loaded;
   const modules = await enabledModuleNames(installed);
-  const picker = workspace === "tenant" ? await orgPicker(t, current) : null;
+  const mine = workspace === "tenant" ? await getMyTenants() : [];
+  // Khách khác người dùng vào được; đang ở khách khác thì có cả khách của mình để quay về.
+  const switchTo = mine.filter((x) => x.id !== current?.id);
+  const entry = entered ? mine.find((x) => x.id === entered) : undefined;
+  const picker = workspace === "tenant" ? await orgPicker(t, current, switchTo.length > 0) : null;
   const viewer: Viewer = {
-    allPermissions: me.all_permissions,
+    // Ở khách khác core chưa cho biết quyền của người dùng (xem `getViewer`): không ẩn gì.
+    allPermissions: entered ? true : me.all_permissions,
     permissions: me.permissions,
     modules,
     sample: sampleDataEnabled(),
@@ -230,6 +248,12 @@ export async function AdminShell({
               tenant={picker.tenant}
               nodes={picker.nodes}
               current={picker.current}
+              others={switchTo.map((x) => ({
+                id: x.id,
+                name: x.name,
+                slug: x.slug,
+                access: x.access,
+              }))}
             />
           ) : (
             <Link href="/" className="ctx" aria-label={t("shell.home")}>
@@ -290,6 +314,19 @@ export async function AdminShell({
           ) : null}
           {/* Role bắt buộc xác thực hai bước mà tài khoản chưa bật: core bỏ permission của role đó
               (D-308), người dùng vẫn đăng nhập được để bật. */}
+          {entered && workspace === "tenant" ? (
+            <div className="note warn" role="status" data-testid="entered-banner">
+              {t("shell.entered.text", {
+                name: entry?.name ?? current?.name ?? "",
+                access: t(`shell.org.access.${entry?.access ?? "delegation"}`),
+              })}{" "}
+              <form action={leaveTenant} style={{ display: "inline" }}>
+                <button type="submit" className="btn sm">
+                  {t("shell.entered.leave")}
+                </button>
+              </form>
+            </div>
+          ) : null}
           {me.mfa_required ? (
             <p className="note warn" role="status" data-testid="mfa-banner">
               <b>{t("shell.mfaTitle")}</b> {t("shell.mfaBody")}{" "}
@@ -485,6 +522,8 @@ function ThemeForm({
 async function orgPicker(
   t: Awaited<ReturnType<typeof getTranslations>>,
   current: Awaited<ReturnType<typeof getCurrentTenant>>,
+  /** Có khách khác để chuyển sang: hiện bộ chọn cả khi cây chỉ có một nút. */
+  switchable: boolean,
 ): Promise<{
   title: string;
   tenant: boolean;
@@ -492,8 +531,10 @@ async function orgPicker(
   current: string | null;
 } | null> {
   const units = await loadUnits();
-  const tree = units ? ordered(units).filter(({ unit }) => unit.status !== "archived") : [];
-  if (tree.length < 2) return null;
+  const all = units ? ordered(units).filter(({ unit }) => unit.status !== "archived") : [];
+  if (all.length < 2 && !switchable) return null;
+  // Cây chỉ một nút: không có gì để chọn trong khách, chỉ còn mục khách khác.
+  const tree = all.length < 2 ? [] : all;
   const types = await loadUnitTypes();
   const typeName = (code: string) =>
     typeLabel(types, code, (c) => (t.has(`orgtree.types.${c}`) ? t(`orgtree.types.${c}`) : null));
@@ -513,4 +554,23 @@ async function orgPicker(
 /** Người đăng nhập, sổ module và khách của request, đọc song song. */
 function loadViewer() {
   return Promise.all([getMe(), getModules(), getCurrentTenant()]);
+}
+
+/** Uỷ quyền / quyền vào hỗ trợ của khách đang vào đã hết: báo và cho quay về khách của mình. */
+async function EntryEnded({ detail }: { detail: string }) {
+  const t = await getTranslations("shell.entered");
+  return (
+    <div className="ax" data-testid="entry-ended">
+      <main className="content">
+        <MessagePanel title={t("endedTitle")} message={t("endedBody")}>
+          {detail ? <p className="fhint">{detail}</p> : null}
+          <form action={leaveTenant}>
+            <button type="submit" className="btn pri">
+              {t("leave")}
+            </button>
+          </form>
+        </MessagePanel>
+      </main>
+    </div>
+  );
 }

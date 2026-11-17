@@ -19,6 +19,7 @@ Cập nhật file này mỗi khi gửi đợt yêu cầu mới, khi core làm xo
 | 17/11/2026 | [thuongtamduy/autoxide#71](https://github.com/thuongtamduy/autoxide/pull/71) | Đã nối bước 35 đợt 3a (W-047); còn thiếu: `billing-profile`, kỳ thanh toán theo khách cho nhân sự nền tảng, `subscriber_count`, danh sách ghi đè của mọi khách                                                       | Đã gửi; không gấp                                                                                                                   |
 | 17/11/2026 | [thuongtamduy/autoxide#73](https://github.com/thuongtamduy/autoxide/pull/73) | Đã nối bước 35 đợt 3b (W-049); còn thiếu: `expand=subscription,usage` luôn `null`, `support-grants` bắt buộc `tenant_id`, trần giờ hỗ trợ, khách tắt hỗ trợ, tên gói trong thuê bao                                  | Đã gửi; không gấp                                                                                                                   |
 | 17/11/2026 | [thuongtamduy/autoxide#75](https://github.com/thuongtamduy/autoxide/pull/75) | Đã dùng các API của D-331 – D-334 (W-050); không có yêu cầu mới                                                                                                                                                      | Đã gửi                                                                                                                              |
+| 17/11/2026 | [thuongtamduy/autoxide#76](https://github.com/thuongtamduy/autoxide/pull/76) | Đã nối chuyển khách (W-051); xin quyền của người dùng ở khách đang vào (`GET /auth/me` trả 401 ở đó) | Đã gửi; cần nhất |
 
 ## Còn nợ (đếm ngày 16/11/2026; bước 34, 35 đã xong ngày 17/11)
 
@@ -58,7 +59,11 @@ placement bằng API, số người giữ role, `reason` khi sửa khách.
    — nên đưa vào `GET /kernel/client-config`; (d) nhân sự nền tảng không biết trước khách có tắt quyền vào hỗ trợ
    không (chỉ biết khi bị từ chối `auth.support_access_disabled`); (e) thuê bao không kèm tên gói và
    `GET /plans/catalog` chỉ có gói đang bán: khách dùng gói đã ngừng bán không thấy tên gói của mình.
-6. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
+6. **Gặp khi nối chuyển khách (17/11, W-051) — cần nhất:** ở khách đang vào (uỷ quyền, hỗ trợ — header
+   `Autoxide-Tenant`), `GET /auth/me` trả 401 `auth.invalid_token` và `GET /auth/me/memberships` trả 404, nên giao diện
+   không biết người dùng được làm gì ở đó (thanh bên, nút theo permission). Xin `GET /auth/me` (hay một endpoint riêng)
+   trả permission của người gọi ở khách của request, kèm cách vào (`delegation` / `support`).
+7. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
 
 ### Nhắc khi core tới bước
 

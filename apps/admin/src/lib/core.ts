@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { adminTenantSetting, coreUrl } from "./env";
 import { ACCESS_COOKIE } from "./session";
-import { TENANT_COOKIE, tenantHeaders } from "./tenant";
+import { enteredTenant, sendsEntered, TENANT_COOKIE, tenantHeaders, WORK_COOKIE } from "./tenant";
 
 /**
  * Thông tin về trình duyệt đang gọi trang này, gửi kèm mọi lời gọi core:
@@ -27,15 +27,42 @@ export async function callerInfo(): Promise<{
   };
 }
 
+/**
+ * Khách đang vào làm việc (cookie `ax_work`, chọn ở bộ chọn góc trên trái); `null` khi làm việc ở
+ * khách của chính mình.
+ */
+export async function currentEntry(): Promise<string | null> {
+  return enteredTenant((await cookies()).get(WORK_COOKIE)?.value);
+}
+
+/**
+ * Gắn `Autoxide-Tenant: <khách đang vào>` vào mọi lời gọi của `client` (trừ phần tài khoản của chính
+ * mình, xem `sendsEntered`). Core cho vào khi người dùng có uỷ quyền hay quyền vào hỗ trợ còn hiệu
+ * lực; hết thì trả 403 `tenant_mismatch`.
+ */
+export function withEntry(client: AutoxideClient, tenant: string | null): AutoxideClient {
+  if (!tenant) return client;
+  client.use({
+    onRequest({ request }) {
+      if (sendsEntered(new URL(request.url).pathname)) {
+        request.headers.set("Autoxide-Tenant", tenant);
+      }
+      return request;
+    },
+  });
+  return client;
+}
+
 /** Client gọi core thay mặt người đang đăng nhập (token lấy từ cookie). */
 export async function coreClient(): Promise<AutoxideClient> {
   const store = await cookies();
-  return createAutoxideClient({
+  const client = createAutoxideClient({
     baseUrl: coreUrl(),
     accessToken: store.get(ACCESS_COOKIE)?.value,
     language: await getLocale(),
     ...(await callerInfo()),
   });
+  return withEntry(client, enteredTenant(store.get(WORK_COOKIE)?.value));
 }
 
 /**

@@ -33,6 +33,8 @@ let delegations: Schemas["DelegationResponse"][] = [];
 let grants: Schemas["SupportGrantResponse"][] = [];
 /** Lần cấp của nhân sự nền tảng vào các khách khác (`/auth/support-grants`). */
 let platformGrants: Schemas["SupportGrantResponse"][] = [];
+/** Khách người đăng nhập vào được qua uỷ quyền / hỗ trợ (`POST /__team/entry`). */
+let entries: Schemas["MyTenantResponse"][] = [];
 let profiles = new Map<string, { locale: string | null; time_zone: string | null }>();
 
 const DAY = 86_400_000;
@@ -44,6 +46,7 @@ export function resetTeam() {
   linkTokens = new Map();
   profiles = new Map();
   platformGrants = [];
+  entries = [];
   const now = Date.now();
   delegations = [
     {
@@ -443,6 +446,7 @@ export async function teamRoutes(
     send(response, 200, {
       data: [
         { id: ROOT_UNIT, slug: "default", name: "Default", access: "direct", access_id: null },
+        ...entries,
       ],
     });
     return true;
@@ -603,4 +607,33 @@ async function platformGrantRoutes(
     return true;
   }
   return false;
+}
+
+/**
+ * `POST /__team/entry {id, name, slug, access}`: người đăng nhập vào được khách này (thêm vào
+ * `GET /auth/me/tenants`); `{id, revoke: true}`: bỏ (uỷ quyền bị thu hồi).
+ */
+export async function setEntry(request: IncomingMessage, response: ServerResponse) {
+  const body = (await json(request)) as Partial<Schemas["MyTenantResponse"]> & { revoke?: boolean };
+  entries = entries.filter((e) => e.id !== body.id);
+  if (!body.revoke && body.id) {
+    entries.push({
+      id: body.id,
+      name: body.name ?? "Khách khác",
+      slug: body.slug ?? "khach-khac",
+      access: body.access ?? "delegation",
+      access_id: randomUUID(),
+    });
+  }
+  empty(response, 204);
+}
+
+/**
+ * Khách mà header `Autoxide-Tenant` của một request đã đăng nhập trỏ tới: `undefined` khi không có
+ * header hay header là khách của mình; `null` khi người đăng nhập không vào được (core: 403
+ * `tenant_mismatch`).
+ */
+export function enteredVia(header: unknown): Schemas["MyTenantResponse"] | null | undefined {
+  if (typeof header !== "string" || header === ROOT_UNIT || header === "default") return undefined;
+  return entries.find((e) => e.id === header || e.slug === header) ?? null;
 }

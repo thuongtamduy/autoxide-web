@@ -260,11 +260,25 @@
       "all": "Toàn bộ {name}",
       "none": "Không có nút nào khớp.",
       "close": "Đóng",
-      "hint": "Chọn một nút thì chỉ hiện bài, media, form và menu của nút đó; màn đang xem giữ nguyên. Role của bạn quyết định bạn sửa được gì ở đó."
+      "hint": "Chọn một nút thì chỉ hiện bài, media, form và menu của nút đó; màn đang xem giữ nguyên. Role của bạn quyết định bạn sửa được gì ở đó.",
+      "whole": "Cả khách",
+      "others": "Khách khác bạn làm việc được",
+      "othersHint": "Qua uỷ quyền của khách cha, hay quyền vào hỗ trợ có thời hạn của nền tảng. Khách thấy mọi thay đổi trong nhật ký audit của họ.",
+      "access": {
+        "direct": "Của bạn",
+        "delegation": "Uỷ quyền",
+        "support": "Hỗ trợ"
+      }
     },
     "mfaTitle": "Hãy bật xác thực hai bước.",
     "mfaBody": "Một role của bạn bắt buộc điều này: permission của role đó tạm tắt tới khi bạn thêm app xác thực hoặc passkey.",
-    "mfaLink": "Bật ngay"
+    "mfaLink": "Bật ngay",
+    "entered": {
+      "text": "Bạn đang làm việc ở {name} qua {access}. Mọi màn đều hiện: máy chủ của khách từ chối việc role của bạn không được làm.",
+      "leave": "Về khách của tôi",
+      "endedTitle": "Quyền vào khách này đã hết",
+      "endedBody": "Uỷ quyền hay quyền vào hỗ trợ đã bị thu hồi hoặc hết hạn."
+    }
   },
   "dashboard": {
     "hello": "Chào {name}",

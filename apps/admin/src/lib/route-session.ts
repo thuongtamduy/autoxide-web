@@ -3,7 +3,7 @@ import "server-only";
 import { type AutoxideClient, createAutoxideClient } from "@autoxide/sdk";
 import { cookies } from "next/headers";
 import { getLocale } from "next-intl/server";
-import { callerInfo } from "./core";
+import { callerInfo, currentEntry, withEntry } from "./core";
 import { coreUrl, secureCookies } from "./env";
 import { refreshTokens } from "./refresh";
 import { ACCESS_COOKIE, REFRESH_COOKIE, tokenCookies } from "./session";
@@ -44,5 +44,9 @@ export async function routeClient(): Promise<{ client: AutoxideClient; signedIn:
     language: await getLocale(),
     ...(await callerInfo()),
   });
-  return { client, signedIn: token !== undefined };
+  // Đã đăng nhập và đang vào khách khác: lời gọi làm việc ở khách đó, như trang.
+  return {
+    client: token ? withEntry(client, await currentEntry()) : client,
+    signedIn: token !== undefined,
+  };
 }
