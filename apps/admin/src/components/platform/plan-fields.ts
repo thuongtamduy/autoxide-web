@@ -7,6 +7,8 @@ export async function planFields(
     name?: string;
     description?: string;
     modules?: string;
+    features?: string;
+    limits?: string;
     trial_days?: string;
     placement?: string;
   },
@@ -52,6 +54,22 @@ export async function planFields(
       defaultValue: defaults.modules ?? "",
       placeholder: "content, media, catalog",
       hint: t("modulesHint"),
+    },
+    {
+      kind: "text",
+      name: "features",
+      label: t("features"),
+      mono: true,
+      defaultValue: defaults.features ?? "",
+      placeholder: "auth.api_keys, content.ai_suggestions",
+      hint: t("featuresHint"),
+    },
+    {
+      kind: "textarea",
+      name: "limits",
+      label: t("limits"),
+      defaultValue: defaults.limits ?? "",
+      hint: t("limitsHint"),
     },
     {
       kind: "number",

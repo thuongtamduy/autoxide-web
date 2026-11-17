@@ -1917,3 +1917,30 @@ trang của giao diện).
 
 Đã cân nhắc: nhận lời mời của người đã có tài khoản ngay ở trang công khai bằng cách hỏi mật khẩu — trùng việc của trang
 đăng nhập (MFA, passkey); đưa qua bước đăng nhập là một cách cho mọi kiểu tài khoản.
+
+## W-047 · Nối bước 35 của core, đợt 3a: gói và thuê bao phía khách, gói và giá, ghi đè, thuê bao ở mặt điều khiển — 2026-11-17 — agent quyết
+
+Quyết định:
+
+- **Phía khách** (`/settings/plan`): gói đang dùng (`GET /plans/subscription`; 404 = chưa có thuê bao, dùng gói mặc
+  định hay không giới hạn), mức dùng hạn mức (`/plans/usage`, vượt hạn mức sau khi hạ gói thì báo), kỳ thanh toán
+  (`/plans/billing-periods`), đổi gói (`/subscription/change`; `reference` sinh khi mở hộp thoại để bấm hai lần không
+  đổi hai lần), huỷ / tiếp tục gia hạn. Tên gói lấy từ `GET /plans/catalog` (gói đã ngừng bán hiện mã). Hồ sơ xuất hoá
+  đơn chưa có API: giữ dữ liệu mẫu có nhãn.
+- **Gói và giá** (`/platform/plans`): danh sách, chi tiết, tạo (bản nháp), sửa (gửi lại cả gói vì `PUT` thay toàn bộ),
+  bắt đầu bán, đặt mặc định, ngừng bán, thêm giá định kỳ, tắt giá. Hạn mức sửa bằng ô chữ "khoá = số" mỗi dòng (`∞` =
+  không giới hạn), lỗi báo theo số dòng. Số khách mỗi gói đếm từ `GET /plans/subscriptions`.
+- **Ghi đè** (`/platform/plans/overrides`): đọc ghi đè từng khách của core (chưa có danh sách chung), đặt / bỏ có Hoàn
+  tác. Khách nền tảng không có trong danh sách: core không bao giờ giới hạn nó (`plans.platform_exempt`).
+- **Thuê bao** (`/platform/subscriptions`): thuê bao của mọi khách, khách chưa có thuê bao (gói mặc định) hiện để gán
+  gói; gán gói (gõ lại tên khách), huỷ ngay, khoá hẳn có lý do. Bỏ cột "kỳ đang mở" và nút "đánh dấu đã thu": core
+  chưa cho nhân sự nền tảng đọc kỳ thanh toán của một khách (đã báo core).
+- Còn lại của bước 35 (đợt 3b): cột thuê bao / hạn mức và bộ lọc của sổ khách, xuất dữ liệu một khách, màn "Vào dữ liệu
+  khách", thẻ gói trên Tổng quan, nhãn "Pro" theo quyền dùng.
+
+Lý do: core đã có API (D-323 – D-327); không giữ mẫu cho thứ core đã có. Đã chạy thử với core thật (một khách): tạo gói
+— core từ chối module thiếu phụ thuộc và câu báo hiện đúng —, thêm giá, bán, đặt mặc định; ghi đè cho khách nền tảng bị
+core từ chối như mô tả; trang gói phía khách khi chưa có thuê bao.
+
+Đã cân nhắc: sửa hạn mức bằng bảng nhiều ô — phải biết trước mọi khoá của mọi module; ô chữ cùng gợi ý khoá từ
+`GET /kernel/modules` đủ cho nhân sự vận hành.

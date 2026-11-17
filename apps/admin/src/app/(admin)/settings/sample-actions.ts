@@ -11,9 +11,6 @@ import { approveRequest, rejectRequest } from "@/sample/agent";
 import {
   CONNECTION_SETTINGS,
   type ConnectionId,
-  cancelRenewal,
-  changePlan,
-  resumeRenewal,
   retryJob,
   saveConnection,
   testConnection,
@@ -29,26 +26,6 @@ function typed(formData: FormData, names: readonly string[]): Record<string, str
 }
 
 // ---------------------------------------------------------------- Gói và thuê bao
-
-export async function changePlanAction(state: FormState, formData: FormData): Promise<FormState> {
-  const off = await sampleGuard();
-  if (off) return off;
-  return finishSample(state, await changePlan(String(formData.get("price_id") ?? "")), [
-    "price_id",
-  ]);
-}
-
-export async function cancelRenewalAction(state: FormState): Promise<FormState> {
-  const off = await sampleGuard();
-  if (off) return off;
-  return finishSample(state, await cancelRenewal(), []);
-}
-
-export async function resumeRenewalAction(state: FormState): Promise<FormState> {
-  const off = await sampleGuard();
-  if (off) return off;
-  return finishSample(state, await resumeRenewal(), []);
-}
 
 const PROFILE_FIELDS = [
   "legal_name",

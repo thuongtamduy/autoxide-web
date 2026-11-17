@@ -1258,7 +1258,14 @@
         "communeHint": "Theo danh mục đơn vị hành chính có ngày hiệu lực.",
         "line": "Số nhà, đường",
         "save": "Lưu hồ sơ"
-      }
+      },
+      "unlimited": "không giới hạn",
+      "noPlan": "Chưa có gói",
+      "trialUntil": "Dùng thử miễn phí tới",
+      "graceUntil": "Chưa trả; vẫn dùng đầy đủ tới",
+      "noSubscription": "Khách này chưa có thuê bao: dùng gói mặc định, hoặc không giới hạn gì.",
+      "noLimits": "Không có hạn mức nào.",
+      "overLimit": "Vượt hạn mức (sau khi hạ gói): không mất gì, nhưng không thêm mới được."
     },
     "domains": {
       "title": "Tên miền",
@@ -5047,7 +5054,16 @@
       "priceDeactivateTitle": "Tắt giá này?",
       "priceDeactivateNew": "Khách đăng ký hay đổi gói không chọn được giá này nữa.",
       "priceDeactivateKeep": "Khách đang dùng giá này giữ tới khi đổi gói; không bật lại được.",
-      "priceDeactivated": "Đã tắt giá."
+      "priceDeactivated": "Đã tắt giá.",
+      "limitsInvalid": "Dòng {lines} không đúng dạng \"khoá = số\" (hay ∞ cho không giới hạn).",
+      "trialInvalid": "Nhập số ngày nguyên, từ 0 trở lên.",
+      "amountInvalid": "Nhập số tiền theo đơn vị nhỏ nhất của tiền tệ, chỉ chữ số (VND: đồng).",
+      "featuresHint": "Khoá tính năng của các module, cách bằng dấu phẩy. Tính năng không có trong danh sách là tắt.",
+      "limitsHint": "Mỗi dòng một hạn mức: khoá = số, hay khoá = ∞ cho không giới hạn. Hạn mức không ghi là 0.",
+      "makeDefault": "Đặt làm mặc định",
+      "madeDefault": "{plan} giờ là gói mặc định.",
+      "currency": "Tiền tệ",
+      "metered": "Theo mức dùng {key}"
     },
     "overrides": {
       "title": "Ghi đè cho từng khách",
@@ -5075,7 +5091,8 @@
       "off": "tắt",
       "remove": "Bỏ",
       "removeTitle": "Bỏ ghi đè này của {tenant}?",
-      "none": "Chưa có ghi đè nào."
+      "none": "Chưa có ghi đè nào.",
+      "valueInvalid": "Module hay tính năng: bật / tắt. Hạn mức: một số, hay ∞ cho không giới hạn."
     },
     "subs": {
       "crumb": "Nền tảng Autoxide · thu tiền",
@@ -5137,7 +5154,15 @@
       "cancelDelete": "Khách và mọi dữ liệu bị xoá sau thời hạn lưu của gói (90 ngày).",
       "cancelNoUndo": "Không hoàn tác được; đăng ký lại là bắt đầu một kỳ trả tiền mới.",
       "cancelSubmit": "Huỷ thuê bao",
-      "cancelDone": "Đã huỷ thuê bao của {tenant}; dữ liệu chỉ đọc, xoá sau 90 ngày."
+      "cancelDone": "Đã huỷ thuê bao của {tenant}; dữ liệu chỉ đọc, xoá sau 90 ngày.",
+      "assignConfirmWrong": "Gõ đúng tên khách: {tenant}",
+      "suspend": "Khoá hẳn",
+      "suspendTitle": "Khoá hẳn {tenant}?",
+      "suspendIntro": "Mọi lời gọi của khách bị từ chối (không chỉ lệnh ghi) tới khi mở lại. Lý do được ghi nhật ký.",
+      "suspendSubmit": "Khoá hẳn",
+      "suspendDone": "Đã khoá hẳn {tenant}.",
+      "defaultPlan": "Gói mặc định (chưa có thuê bao)",
+      "noSubscription": "Chưa có thuê bao"
     },
     "prov": {
       "crumb": "Nền tảng Autoxide · khách mới",

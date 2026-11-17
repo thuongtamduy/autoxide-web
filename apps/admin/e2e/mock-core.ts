@@ -69,6 +69,7 @@ import {
   resetOrg,
   setRootName,
 } from "./mock-org.ts";
+import { plansRoutes, resetPlans } from "./mock-plans.ts";
 import {
   finishLoginCeremony,
   fireEvent,
@@ -387,6 +388,7 @@ const server = createServer(async (request, response) => {
     resetDomains();
     resetOrg(adminId());
     resetTeam();
+    resetPlans();
     return send(response, 204);
   }
   if (route === "POST /__tenancy") return setTenancy(request, response);
@@ -656,6 +658,7 @@ const server = createServer(async (request, response) => {
   if (handled) return;
   if (await flagRoutes(request, response, url, account)) return;
   if (await orgRoutes(request, response, url, route)) return;
+  if (await plansRoutes(request, response, url, route)) return;
   if (await tenantRoutes(request, response, url, account)) return;
   if (await domainRoutes(request, response, url, account)) return;
   if (await settingsRoutes(request, response, url, account, () => accounts)) return;
