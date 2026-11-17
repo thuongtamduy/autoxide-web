@@ -46,3 +46,24 @@ export function tenantHeaders(
 export function asksForWorkspace(code: string | undefined): boolean {
   return code === "tenant_required" || code === "tenant_not_found";
 }
+
+/**
+ * Cookie giữ khách đang vào làm việc qua uỷ quyền hay quyền vào hỗ trợ (`GET /auth/me/tenants`): ID
+ * của khách đó. Không có = làm việc ở khách của chính mình. Không phải secret.
+ */
+export const WORK_COOKIE = "ax_work";
+
+/** Giá trị cookie dùng được: đúng dạng UUID; còn lại coi như không vào khách nào. */
+export function enteredTenant(value: string | undefined): string | null {
+  const text = value?.trim().toLowerCase() ?? "";
+  return UUID.test(text) ? text : null;
+}
+
+/**
+ * Lời gọi tới `path` có gửi `Autoxide-Tenant` của khách đang vào không. Phần tài khoản của chính
+ * mình (`/auth/me…`) core chỉ trả lời ở khách của mình (ở khách khác `GET /auth/me` trả 401), nên
+ * không gửi; mọi lời gọi khác làm việc ở khách đang vào.
+ */
+export function sendsEntered(path: string): boolean {
+  return !/^\/api\/v1\/auth\/me(\/|$)/.test(path);
+}

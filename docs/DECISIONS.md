@@ -2024,7 +2024,31 @@ Quyết định:
 
 Lý do: core làm theo yêu cầu của giao diện; không dùng thì những chỗ đó vẫn đoán, tự đếm hay đọc thừa.
 
-## W-051 · Bảng lệnh Ctrl K: gợi ý ít dòng, icon, phân hệ bên phải, chân bảng nhắc phím — 2026-11-17 — chủ dự án yêu cầu
+## W-051 · Chuyển khách đang làm việc (uỷ quyền, quyền vào hỗ trợ) — 2026-11-17 — agent quyết
+
+Quyết định:
+
+- Bộ chọn góc trên trái có mục "Khách khác bạn làm việc được" từ `GET /auth/me/tenants` (khách vào qua uỷ quyền hay
+  quyền vào hỗ trợ). Chọn một khách thì Server Action kiểm lại khách đó có trong danh sách của core, rồi ghi ID vào
+  cookie `ax_work` (`httpOnly`); mọi lời gọi core sau đó (trang, Server Action, route handler) gửi
+  `Autoxide-Tenant: <id>` cùng token của người dùng. Quay về khách của mình thì xoá cookie. Đăng nhập, đăng xuất đều
+  xoá nó. Nút đang chọn (`ax_unit`) cũng xoá khi đổi khách.
+- Không gửi header cho `/auth/me…` (tài khoản của chính mình): ở khách khác core trả 401 cho `GET /auth/me`. Làm mới
+  token không đi qua client có header (refresh token tự mang khách).
+- Đang ở khách khác: dải báo ở mọi màn (tên khách, qua uỷ quyền hay hỗ trợ, nút "Về khách của tôi"). Khách không còn
+  trong danh sách (thu hồi, hết hạn) thì khung thay bằng trang "Quyền vào khách này đã hết" có nút quay về.
+- **Quyền ở khách đang vào chưa biết**: core chưa có cách cho biết permission của người dùng ở khách khác (đã báo
+  core). Tạm thời giao diện không ẩn màn nào khi đang ở khách khác; core vẫn kiểm từng lời gọi và trang hiện câu từ chối
+  của core. Dải báo nói rõ điều này.
+
+Lý do: core đã có cơ chế vào khách (D-310, D-313); thiếu phần giao diện thì người được uỷ quyền và nhân sự hỗ trợ không
+dùng được. Đã chạy thử với core thật: nhân viên giữ role được uỷ quyền vào khách con; nhân sự nền tảng vào khách bằng
+quyền vào hỗ trợ; quay về; khách tắt hỗ trợ thì core từ chối cấp.
+
+Đã cân nhắc: suy quyền ở khách đang vào từ role của uỷ quyền / lần cấp — phải đọc role ở khách của mình (cần
+`auth.roles.read`, nhân viên thường không có) và không tính được phần core tự thêm hay bớt; chờ core trả quyền thật.
+
+## W-052 · Bảng lệnh Ctrl K: gợi ý ít dòng, icon, phân hệ bên phải, chân bảng nhắc phím — 2026-11-17 — chủ dự án yêu cầu
 
 Quyết định (học cách Linear, Vercel, GitHub, Raycast làm bảng lệnh):
 

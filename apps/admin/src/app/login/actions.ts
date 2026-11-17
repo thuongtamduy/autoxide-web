@@ -15,7 +15,7 @@ import {
   safeNext,
   tokenCookies,
 } from "@/lib/session";
-import { asksForWorkspace, normalizeWorkspace, TENANT_COOKIE } from "@/lib/tenant";
+import { asksForWorkspace, normalizeWorkspace, TENANT_COOKIE, WORK_COOKIE } from "@/lib/tenant";
 import { applyThemeCookie, savedTheme } from "@/lib/theme-sync";
 
 /** Trạng thái form đăng nhập, giữ giữa các lần gửi. */
@@ -114,6 +114,8 @@ async function signIn(_state: LoginState, formData: FormData): Promise<LoginStat
     for (const cookie of tokenCookies(data.data, secureCookies())) {
       store.set(cookie.name, cookie.value, cookie.options);
     }
+    // Phiên mới làm việc ở khách của mình, không ở khách đã vào lần trước.
+    store.delete(WORK_COOKIE);
     await restoreTheme(store, data.data.access_token);
     redirect(safeNext(input.data.next));
   }
@@ -167,6 +169,8 @@ async function verifyCode(_state: LoginState, formData: FormData): Promise<Login
     for (const cookie of tokenCookies(data.data, secureCookies())) {
       store.set(cookie.name, cookie.value, cookie.options);
     }
+    // Phiên mới làm việc ở khách của mình, không ở khách đã vào lần trước.
+    store.delete(WORK_COOKIE);
     await restoreTheme(store, data.data.access_token);
     redirect(safeNext(input.data.next));
   }
@@ -293,6 +297,8 @@ export async function finishPasskeyLogin(
     for (const cookie of tokenCookies(data.data, secureCookies())) {
       store.set(cookie.name, cookie.value, cookie.options);
     }
+    // Phiên mới làm việc ở khách của mình, không ở khách đã vào lần trước.
+    store.delete(WORK_COOKIE);
     await restoreTheme(store, data.data.access_token);
     redirect(safeNext(next));
   }

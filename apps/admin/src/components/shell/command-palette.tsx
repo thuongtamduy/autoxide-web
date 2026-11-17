@@ -5,7 +5,7 @@
 // ý ít dòng: "Tạo mới" (lối tắt tạo, theo permission) và "Gần đây" (màn vừa mở trên máy này) — chưa
 // có thì "Phân hệ" (màn đầu của mỗi phân hệ). Gõ chữ thì "Đi tới" (mọi màn) và "Kết quả" (dữ liệu thật:
 // bài viết, media, người dùng — `searchEverything`, gọi sau khi ngừng gõ 250 ms). Mỗi dòng có icon,
-// tên ở trái, phân hệ mờ ở phải; chân bảng nhắc phím (W-051).
+// tên ở trái, phân hệ mờ ở phải; chân bảng nhắc phím (W-052).
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type SearchHit, searchEverything } from "@/app/search-actions";

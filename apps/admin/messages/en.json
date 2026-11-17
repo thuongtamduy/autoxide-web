@@ -265,11 +265,25 @@
       "all": "All of {name}",
       "none": "No unit matches.",
       "close": "Close",
-      "hint": "Choosing a unit shows only its posts, media, forms and menus; the screen you are on stays the same. Your role decides what you can change there."
+      "hint": "Choosing a unit shows only its posts, media, forms and menus; the screen you are on stays the same. Your role decides what you can change there.",
+      "whole": "Whole customer",
+      "others": "Other customers you work in",
+      "othersHint": "Through a delegation from a parent customer, or time-limited platform support access. The customer sees every change in its audit log.",
+      "access": {
+        "direct": "Your own",
+        "delegation": "Delegation",
+        "support": "Support access"
+      }
     },
     "mfaTitle": "Turn on two-step sign-in.",
     "mfaBody": "One of your roles requires it: its permissions stay off until you add an authenticator app or a passkey.",
-    "mfaLink": "Set it up"
+    "mfaLink": "Set it up",
+    "entered": {
+      "text": "You are working in {name} through {access}. Every screen is shown: the customer’s server refuses what your role does not allow.",
+      "leave": "Back to my customer",
+      "endedTitle": "Your access to this customer has ended",
+      "endedBody": "The delegation or support access was revoked or expired."
+    }
   },
   "dashboard": {
     "hello": "Hello, {name}",

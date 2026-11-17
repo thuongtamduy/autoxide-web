@@ -3,6 +3,7 @@
 // Trình duyệt không bao giờ đọc được token (D-097 của core): mọi lời gọi core đi qua máy
 // chủ Next.js, máy chủ lấy token từ cookie rồi gắn vào header `Authorization`.
 import type { MfaChallenge, TokenResponse } from "@autoxide/sdk";
+import { WORK_COOKIE } from "./tenant";
 
 export const ACCESS_COOKIE = "ax_access";
 export const REFRESH_COOKIE = "ax_refresh";
@@ -22,6 +23,7 @@ export const SESSION_COOKIES = [
   MFA_COOKIE,
   SESSION_COOKIE,
   PASSKEY_COOKIE,
+  WORK_COOKIE,
 ] as const;
 
 /** Bớt chừng này giây khỏi hạn access token: cookie hết trước token, không gửi token sắp hết. */

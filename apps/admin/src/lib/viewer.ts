@@ -5,7 +5,7 @@ import { cache } from "react";
 import type { Viewer } from "@/nav/nav";
 import { holds } from "@/nav/nav";
 import { sampleDataEnabled } from "@/sample";
-import { isForbidden, load } from "./core";
+import { currentEntry, isForbidden, load } from "./core";
 
 // Người đang đăng nhập và sổ module, đọc một lần cho mỗi request (layout và trang dùng chung,
 // `cache` của React gộp các lời gọi trong cùng một lần render).
@@ -42,9 +42,12 @@ export const getCurrentTenant = cache(
 
 /** Quyền của người đang đăng nhập, để ẩn nút họ không dùng được (core vẫn kiểm ở mỗi lời gọi). */
 export const getViewer = cache(async (): Promise<Viewer> => {
-  const me = await getMe();
+  const [me, entered] = await Promise.all([getMe(), currentEntry()]);
   return {
-    allPermissions: me.all_permissions,
+    // Đang vào khách khác (uỷ quyền, hỗ trợ): core chưa cho biết quyền của người dùng ở khách đó
+    // (`GET /auth/me` chỉ trả lời ở khách của mình — đã báo core). Giao diện không ẩn gì; core vẫn
+    // kiểm từng lời gọi và trang hiện câu từ chối của core.
+    allPermissions: entered ? true : me.all_permissions,
     permissions: me.permissions,
     modules: null,
     sample: sampleDataEnabled(),
@@ -55,3 +58,18 @@ export const getViewer = cache(async (): Promise<Viewer> => {
 export async function can(permission: string | readonly string[]): Promise<boolean> {
   return holds(await getViewer(), permission);
 }
+
+/**
+ * Các khách người dùng làm việc được (`GET /auth/me/tenants`): khách của mình trước, rồi khách vào được
+ * qua uỷ quyền hay quyền vào hỗ trợ. Rỗng khi core không trả lời.
+ */
+export const getMyTenants = cache(
+  async (): Promise<components["schemas"]["MyTenantResponse"][]> => {
+    try {
+      return (await load((client) => client.GET("/api/v1/auth/me/tenants"))).data;
+    } catch (error) {
+      if (error instanceof ApiError) return [];
+      throw error;
+    }
+  },
+);
