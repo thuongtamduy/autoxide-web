@@ -66,6 +66,29 @@ describe("ca thu ngân và bán tại quầy", () => {
     expect(!tooMany.ok && tooMany.problem.code).toBe("orders.out_of_stock");
   });
 
+  it("quầy: danh mục có mã vạch, nhóm hàng; tạo đơn nhận mã giảm giá và tên khách", async () => {
+    const pan = (await posCatalog(ORG.Q3)).data.find((i) => i.sku === "CG26");
+    expect(pan?.category?.name).toBeTruthy();
+    const sale = await createPosSale({
+      org_id: ORG.Q3,
+      lines: "CG26 x 1",
+      method: "card_terminal",
+      reference: "ref-code",
+      codes: ["BEPMOC10"],
+      buyer: "Nguyễn Thu Hà",
+    });
+    if (!sale.ok) throw new Error("bán hỏng");
+    expect(sale.data.order.buyer.name).toBe("Nguyễn Thu Hà");
+    expect(Number(sale.data.order.total.amount)).toBeLessThan(690_000);
+    const walkIn = await createPosSale({
+      org_id: ORG.Q3,
+      lines: "CG26 x 1",
+      method: "cash",
+      reference: "ref-walk",
+    });
+    expect(walkIn.ok && walkIn.data.order.buyer.name).toBe("Khách tại quầy");
+  });
+
   it("đóng ca lệch phải ghi lý do; bán khi chưa mở ca bị chặn; một quầy một ca mở", async () => {
     const shift = await openShiftAt(ORG.CG);
     if (!shift) throw new Error("thiếu ca");

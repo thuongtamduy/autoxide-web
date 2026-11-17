@@ -5,9 +5,10 @@ import { refresh } from "next/cache";
 // `src/sample/orders.ts` thay cho API (W-006, W-017), cùng cách trả lỗi như phần gọi core thật — lỗi
 // theo ô, gom mọi lỗi một lần, mã lỗi `orders.*`. Khi có API chỉ thay lời gọi hàm mẫu.
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { commerceGuard, finishCommerce, translateCommerce, typed } from "@/lib/commerce-action";
 import { loadAi } from "@/lib/content-server";
+import { maskPhone } from "@/lib/customers";
 import type { ChangeState } from "@/lib/engage";
 import { type FormState, problemState } from "@/lib/form";
 import {
@@ -22,6 +23,7 @@ import {
   readFilters,
 } from "@/lib/orders";
 import { can } from "@/lib/viewer";
+import { getProfile, listProfiles, type TierCode } from "@/sample/customers";
 import {
   acceptOrders,
   addNote,
@@ -39,6 +41,7 @@ import {
   transitionOrder,
   undoAccept,
 } from "@/sample/orders";
+import { evaluateCart, type Reason } from "@/sample/promotions";
 import { createPosSale } from "@/sample/stores";
 
 function idOf(formData: FormData): string {
@@ -325,22 +328,107 @@ export async function remindAction(_state: ChangeState, formData: FormData): Pro
 
 // ---- Bán tại quầy
 
-const POS_FIELDS = ["org_id", "lines", "method"] as const;
+const POS_FIELDS = ["org_id", "lines", "method", "codes", "customer_id"] as const;
 
 /** Tạo đơn tại quầy rồi mở bản xem trước hoá đơn để in. */
 export async function posSaleAction(_state: FormState, formData: FormData): Promise<FormState> {
   const blocked = await guard(ORDERS_POS_SELL);
   if (blocked) return blocked;
   const values = typed(formData, [...POS_FIELDS, "reference"]);
+  const customerId = values.customer_id ?? "";
+  const customer = customerId ? await getProfile(customerId) : null;
+  if (customerId && !customer) {
+    const t = await getTranslations("orders.pos");
+    return { error: t("customerGone"), fields: { customer_id: t("customerGone") }, values };
+  }
   const outcome = await createPosSale({
     org_id: values.org_id ?? "",
     lines: values.lines ?? "",
     method: values.method ?? "",
     reference: values.reference ?? "",
+    codes: splitCodes(values.codes ?? ""),
+    buyer: customer?.data.full_name ?? "",
   });
   if (!outcome.ok) {
     const problem = await translateCommerce(outcome.problem, "orders");
     return { ...problemState(problem, POS_FIELDS), values };
   }
   redirect(`/sales/orders/${outcome.data.order.id}/receipt?new=1`);
+}
+
+const splitCodes = (text: string) =>
+  text
+    .split(/[\s,]+/)
+    .map((c) => c.trim().toUpperCase())
+    .filter(Boolean);
+
+export interface PosQuote {
+  /** Tổng giảm (không gồm quà). */
+  discount: number;
+  applied: { id: string; title: string; code: string | null; amount: number }[];
+  rejected: { code: string; reason: Reason }[];
+  gifts: { name: string; quantity: number }[];
+}
+
+/**
+ * Tạm tính giỏ ở quầy: khuyến mại tự áp và mã giảm giá, như lúc tạo đơn (không giữ lượt, không ghi
+ * gì). Giỏ rỗng trả giảm 0. Lỗi (cửa hàng lạ, SKU lạ) trả `null`: quầy vẫn bán được, máy chủ xét lại.
+ */
+export async function posQuoteAction(input: {
+  org_id: string;
+  lines: readonly (readonly [string, number])[];
+  codes: readonly string[];
+}): Promise<PosQuote | null> {
+  if (await guard(ORDERS_POS_SELL)) return null;
+  const lines = input.lines.filter(([, n]) => n > 0);
+  if (lines.length === 0) return { discount: 0, applied: [], rejected: [], gifts: [] };
+  const outcome = await evaluateCart(
+    {
+      org_id: input.org_id,
+      lines: lines.map(([sku, n]) => `${sku} x ${n}`).join(", "),
+      codes: input.codes.join(" "),
+      customer_group: "",
+      shipping_fee: "0",
+    },
+    await getLocale(),
+  );
+  if (!outcome.ok) return null;
+  const { evaluation, names } = outcome.data;
+  return {
+    discount: Number(evaluation.total_discount.amount),
+    applied: evaluation.applied.map((a) => ({
+      id: a.promotion_id,
+      title: a.title,
+      code: a.code,
+      amount: Number(a.amount.amount),
+    })),
+    rejected: evaluation.rejected_codes.map((r) => ({ code: r.code, reason: r.reason })),
+    gifts: evaluation.gifts.map((g) => ({
+      name: names[g.variant_id]?.name ?? g.variant_id,
+      quantity: g.quantity,
+    })),
+  };
+}
+
+export interface PosCustomer {
+  id: string;
+  name: string;
+  /** Số điện thoại che giữa (thu ngân đối chiếu với khách, không cần đủ số). */
+  phone: string | null;
+  tier: TierCode;
+  points: number;
+}
+
+/** Tìm khách ở quầy theo SĐT hoặc tên; tối đa 6 người. */
+export async function posCustomersAction(q: string): Promise<PosCustomer[]> {
+  if (await guard(ORDERS_POS_SELL)) return [];
+  if (q.trim().length < 2) return [];
+  const { data } = await listProfiles({ q: q.trim(), limit: 6 });
+  return data.map((p) => ({
+    id: p.id,
+    name: p.full_name,
+    phone: p.phone ? maskPhone(p.phone) : null,
+    tier: p.tier_code,
+    points: p.points.balance,
+  }));
 }

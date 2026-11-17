@@ -113,9 +113,18 @@ test("đổi trả, bán tại quầy, giỏ bỏ dở; cửa hàng: bàn giao c
   await dialog(page).getByRole("button", { name: "Cancel" }).click();
 
   // Bán tại quầy: tạo đơn rồi mở bản xem trước hoá đơn.
+  // Quầy: chạm sản phẩm, mã sai nêu lý do (máy chủ xét), tiền khách đưa thiếu chặn thanh toán.
   await page.goto("/sales/orders/pos");
-  await page.getByRole("button", { name: "One more Bát gốm men lam (bộ 6)" }).click();
-  await page.getByRole("button", { name: "Create order and print invoice" }).click();
+  await page.getByRole("button", { name: /^Add Blue glaze ceramic bowls \(set of 6\)/ }).click();
+  await expect(page.getByLabel("Quantity of Blue glaze ceramic bowls (set of 6)")).toHaveText("1");
+  await page.getByLabel("Discount code").fill("khongco");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.locator(".pos-codes li.bad")).toContainText("KHONGCO");
+  await page.getByLabel("Cash received").fill("100000");
+  await expect(page.getByRole("button", { name: /^Charge/ })).toBeDisabled();
+  await page.getByRole("button", { name: "Exact" }).click();
+  await expect(page.locator(".pos-change b")).toHaveText(/^0\s?₫|₫\s?0$/);
+  await page.keyboard.press("F9");
   await expect(page).toHaveURL(/\/receipt\?new=1$/);
   await expect(page.getByRole("heading", { level: 1, name: "Invoice preview" })).toBeVisible();
   await expect(
