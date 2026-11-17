@@ -146,6 +146,8 @@ export interface ListingReview {
   price: Money;
   previous_price: Money | null;
   images: number;
+  /** Tồn có thể bán của sản phẩm (cộng mọi kho của người bán; tóm tắt từ `inventory`, bước 42). */
+  stock: number;
   status: ListingStatus;
   findings: Finding[];
   reason: string | null;
@@ -332,6 +334,8 @@ export interface MarketOrder {
   placed_at: string;
   total: Money;
   items: number;
+  /** Tên người mua như trên đơn (bước 45); người bán thấy để đóng gói, không thấy SĐT / email. */
+  buyer_name: string;
   status: MarketOrderStatus;
 }
 
@@ -598,6 +602,7 @@ function seedListings(): ListingReview[] {
     price: vnd(price),
     previous_price: null,
     images: 4,
+    stock: 24,
     status: "pending",
     findings: [],
     reason: null,
@@ -656,6 +661,34 @@ function seedListings(): ListingReview[] {
         decided_by: MAI,
         decided_at: at(-2 * DAY + 5 * HOUR),
       },
+    ),
+    review(
+      7,
+      SELLER.khanBong,
+      "Tạp dề vải bố chống thấm",
+      CATEGORY_ID.textiles,
+      145_000,
+      "new",
+      1,
+      -4 * DAY,
+      {
+        status: "rejected",
+        stock: 40,
+        reason: "Ảnh có logo của thương hiệu khác; chụp lại ảnh không có logo rồi gửi lại.",
+        decided_by: MAI,
+        decided_at: at(-3 * DAY),
+      },
+    ),
+    review(
+      8,
+      SELLER.khanBong,
+      "Khăn tắm sợi tre 70 × 140 cm",
+      CATEGORY_ID.textiles,
+      189_000,
+      "new",
+      1,
+      -6 * HOUR,
+      { stock: 0, images: 2 },
     ),
     review(
       5,
@@ -1057,6 +1090,7 @@ function seedOrders(): MarketOrder[] {
     total: number,
     items: number,
     status: MarketOrderStatus,
+    buyer: string,
   ): MarketOrder => ({
     id: marketOrderId(number),
     number,
@@ -1064,18 +1098,20 @@ function seedOrders(): MarketOrder[] {
     placed_at: at(placed * DAY),
     total: vnd(total),
     items,
+    buyer_name: buyer,
     status,
   });
   return [
-    order("BM-2611-0413", SELLER.gomSu, -2, 420_000, 1, "paid"),
-    order("BM-2611-0417", SELLER.nhaNa, -1, 414_000, 2, "paid"),
-    order("BM-2611-0404", SELLER.gomSu, -4, 840_000, 2, "delivered"),
-    order("BM-2611-0402", SELLER.khanBong, -3, 297_000, 3, "delivered"),
-    order("BM-2611-0393", SELLER.gomSu, -12, 1_680_000, 4, "completed"),
-    order("BM-2611-0384", SELLER.gomSu, -8, 420_000, 1, "delivered"),
-    order("BM-2611-0360", SELLER.nhaNa, -6, 540_000, 1, "delivered"),
-    order("BM-2611-0350", SELLER.nhaNa, -11, 690_000, 1, "completed"),
-    order("BM-2611-0301", SELLER.nhaNa, -16, 1_240_000, 2, "completed"),
+    // Tên người mua khớp đơn cùng số ở Đơn hàng mẫu (`orders.ts`).
+    order("BM-2611-0413", SELLER.gomSu, -2, 420_000, 1, "paid", "Võ Ngọc Ánh"),
+    order("BM-2611-0417", SELLER.nhaNa, -1, 414_000, 2, "paid", "Trần Minh Khoa"),
+    order("BM-2611-0404", SELLER.gomSu, -4, 840_000, 2, "delivered", "Quách Bảo Ngọc"),
+    order("BM-2611-0402", SELLER.khanBong, -3, 297_000, 3, "delivered", "Lâm Ngọc Diệp"),
+    order("BM-2611-0393", SELLER.gomSu, -12, 1_680_000, 4, "completed", "Hoàng Văn Lộc"),
+    order("BM-2611-0384", SELLER.gomSu, -8, 420_000, 1, "delivered", "Đinh Thu Trang"),
+    order("BM-2611-0360", SELLER.nhaNa, -6, 540_000, 1, "delivered", "Tạ Minh Châu"),
+    order("BM-2611-0350", SELLER.nhaNa, -11, 690_000, 1, "completed", "Châu Minh Quân"),
+    order("BM-2611-0301", SELLER.nhaNa, -16, 1_240_000, 2, "completed", "Phạm Gia Huy"),
   ];
 }
 
