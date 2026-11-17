@@ -9,7 +9,7 @@ import { formatCount, formatMoney } from "@/lib/format";
 import { SELLER_BADGE } from "@/lib/market";
 import { sellerContext } from "@/lib/seller";
 import { ruleAt } from "@/sample/compliance-rules";
-import { listDisputes, moneyStats } from "@/sample/market";
+import { listDisputes, moneyStats, sellerOrderStats } from "@/sample/market";
 import { acceptDocumentAction, submitDocumentAction, submitForReviewAction } from "./actions";
 
 // Tổng quan của Trung tâm người bán: các bước để được bán (Luật TMĐT 122/2025, Điều 17: xác thực người
@@ -24,9 +24,10 @@ export default async function SellerHome() {
     getLocale(),
   ]);
   const s = ctx.seller;
-  const [{ data: stats }, { data: disputes }] = await Promise.all([
+  const [{ data: stats }, { data: disputes }, { data: sales }] = await Promise.all([
     moneyStats(s.org_id),
     listDisputes({ seller: s.org_id, status: "open" }),
+    sellerOrderStats(s.org_id),
   ]);
   const money = (amount: string) => formatMoney(amount, "VND", locale);
   const docNames = (types: string) =>
@@ -58,9 +59,11 @@ export default async function SellerHome() {
     );
   };
   const submittable = s.status === "pending_verification" || s.status === "draft";
+  const done = s.gate.requirements.filter((r) => r.ok).length;
+  const total = s.gate.requirements.length;
   return (
     <div className="page mk-page">
-      <SellerHead title={t("home.title")} description={t("home.description")} />
+      <SellerHead title={t("home.title")} description={t("home.description")} add />
       <div className="blocks">
         <p className={s.gate.can_sell ? "note" : "note warn"}>
           <span className={SELLER_BADGE[s.status]}>
@@ -72,6 +75,34 @@ export default async function SellerHome() {
           {t(`state.${s.gate.can_sell ? "selling" : s.status}.text`)}
           {s.status_note ? ` ${t("state.note", { note: s.status_note })}` : ""}
         </p>
+        <Kpis
+          label={t("home.sales")}
+          items={[
+            {
+              label: t("home.kpiToShip"),
+              value: formatCount(sales.by_status.paid, locale),
+              sub: t("home.kpiToShipSub"),
+            },
+            {
+              label: t("home.kpiRevenue"),
+              value: money(sales.revenue_7d.amount),
+              sub: t("home.kpiRevenueSub", { count: sales.orders_7d }),
+            },
+            {
+              label: t("home.kpiShipping"),
+              value: formatCount(sales.by_status.shipping, locale),
+              sub: t("home.kpiShippingSub"),
+            },
+          ]}
+        />
+        {sales.by_status.paid > 0 ? (
+          <p className="note mk-next">
+            <span>{t("home.toShipNote", { count: sales.by_status.paid })}</span>
+            <Link className="btn sm pri" href="/seller/orders?status=paid">
+              {t("home.toShipOpen")}
+            </Link>
+          </p>
+        ) : null}
         <Kpis
           label={t("home.kpis")}
           items={[
@@ -93,9 +124,15 @@ export default async function SellerHome() {
           ]}
         />
         <section className="block card cp-pad" aria-labelledby="sl-steps-h">
-          <h2 id="sl-steps-h" className="h2">
-            {t("steps.title")}
-          </h2>
+          <div className="block-head">
+            <h2 id="sl-steps-h" className="h2">
+              {t("steps.title")}
+            </h2>
+            <span className={done === total ? "badge b-ok" : "badge b-warn"}>
+              <span className="dot" />
+              {t("steps.progress", { done, total })}
+            </span>
+          </div>
           <p className="fhint">{t("steps.about")}</p>
           <Requirements
             items={s.gate.requirements}
@@ -142,22 +179,21 @@ export default async function SellerHome() {
                   {t("steps.setAccount")}
                 </Link>
               ),
+              // Bước cuối: gửi hồ sơ ngay trên dòng của bước duyệt (đang chờ sàn thì không có nút).
+              review: submittable ? (
+                <ConfirmAction
+                  action={submitForReviewAction}
+                  id={s.org_id}
+                  label={t("steps.submit")}
+                  title={t("steps.submitTitle")}
+                  points={[t("steps.submitPoint1"), t("steps.submitPoint2")]}
+                  submit={t("steps.submit")}
+                  done={t("steps.submitted")}
+                  danger={false}
+                />
+              ) : null,
             }}
           />
-          {submittable ? (
-            <div className="row-acts start">
-              <ConfirmAction
-                action={submitForReviewAction}
-                id={s.org_id}
-                label={t("steps.submit")}
-                title={t("steps.submitTitle")}
-                points={[t("steps.submitPoint1"), t("steps.submitPoint2")]}
-                submit={t("steps.submit")}
-                done={t("steps.submitted")}
-                danger={false}
-              />
-            </div>
-          ) : null}
           <Basis rule={ruleAt("kyc.required_activities")} lead={t("steps.basis")} />
         </section>
       </div>

@@ -9451,7 +9451,8 @@
       "marketplace_document_not_found": "Không tìm thấy giấy tờ.",
       "marketplace_penalty_not_found": "Không tìm thấy chế tài.",
       "marketplace_penalty_already_appealed": "Chế tài này đã khiếu nại; mỗi chế tài khiếu nại được một lần.",
-      "marketplace_not_ready": "Hồ sơ chưa đủ."
+      "marketplace_not_ready": "Hồ sơ chưa đủ.",
+      "marketplace_order_not_found": "Đơn này không còn nữa."
     },
     "fields": {
       "fee_rule_in_past": "Chọn ngày {value} trở đi; đơn đặt hôm nay giữ phí của hôm nay.",
@@ -9531,7 +9532,16 @@
       "description": "Nơi người bán quản lý gian hàng, xem đơn của mình, đối soát tiền và trả lời tranh chấp. Người bán chỉ thấy dữ liệu của nút mình.",
       "kpis": "Số liệu gian hàng",
       "kpiDisputes": "Tranh chấp cần trả lời",
-      "kpiDisputesSub": "Quá hạn thì sàn phân xử"
+      "kpiDisputesSub": "Quá hạn thì sàn phân xử",
+      "sales": "Bán hàng",
+      "kpiToShip": "Đơn cần gửi",
+      "kpiToShipSub": "Đã trả tiền, chờ giao cho hãng",
+      "kpiRevenue": "Doanh thu 7 ngày",
+      "kpiRevenueSub": "{count, plural, other {# đơn}}, không tính đơn huỷ",
+      "kpiShipping": "Đang giao",
+      "kpiShippingSub": "Đang ở hãng vận chuyển",
+      "toShipNote": "{count, plural, other {# đơn}} đang chờ gửi.",
+      "toShipOpen": "Gửi hàng"
     },
     "steps": {
       "title": "Các bước để được bán",
@@ -9563,7 +9573,8 @@
         "rejected": "Bị trả lại; gửi hồ sơ mới trong ứng dụng của đối tác eKYC hoặc VNeID",
         "expired": "Hết hạn; xác thực lại trong ứng dụng của đối tác eKYC hoặc VNeID",
         "none": "Chưa bắt đầu: xác thực trong ứng dụng của đối tác eKYC hoặc VNeID"
-      }
+      },
+      "progress": "Xong {done} / {total}"
     },
     "money": {
       "title": "Đối soát và chi trả",
@@ -9599,14 +9610,37 @@
       "total": "Tổng",
       "status": "Trạng thái",
       "money": "Tiền",
-      "items": "{count} món",
+      "items": "{count, plural, other {# món}}",
       "orderStatus": {
         "paid": "Đã trả, chờ giao",
         "shipping": "Đang giao",
         "delivered": "Đã giao",
         "completed": "Hoàn tất",
         "cancelled": "Đã huỷ"
-      }
+      },
+      "byStatus": "Lọc đơn theo trạng thái",
+      "all": "Tất cả",
+      "chip": {
+        "paid": "Cần gửi",
+        "shipping": "Đang giao",
+        "delivered": "Đã giao",
+        "completed": "Hoàn tất",
+        "cancelled": "Đã huỷ"
+      },
+      "search": "Tìm đơn",
+      "searchHint": "Mã đơn hay tên người mua",
+      "filter": "Lọc",
+      "clear": "Bỏ lọc",
+      "emptyBody": "Đơn hiện ở đây ngay khi người mua trả tiền cho sản phẩm của bạn.",
+      "noMatch": "Không có đơn nào khớp",
+      "noMatchBody": "Thử chữ khác hay trạng thái khác.",
+      "ship": "Giao cho hãng",
+      "shipTitle": "Giao {number} cho hãng vận chuyển?",
+      "shipPoint1": "Đơn đã đóng gói và hãng vận chuyển đã lấy hàng; người mua thấy đơn đang giao.",
+      "shipPoint2": "Tiền vẫn nằm ở đối tác thu hộ tới hết hạn đổi trả.",
+      "shipSubmit": "Chuyển sang đang giao",
+      "shipped": "{number} đang giao.",
+      "answer": "Trả lời tranh chấp"
     },
     "disputes": {
       "needsAnswer": "Cần bạn trả lời",
@@ -9643,7 +9677,26 @@
       "name": "Tên sản phẩm",
       "category": "Danh mục",
       "price": "Giá (₫)",
-      "priceHint": "Số đồng nguyên, đã gồm GTGT."
+      "priceHint": "Số đồng nguyên, đã gồm GTGT.",
+      "addOff": "Gian hàng chưa được bán: làm xong các bước ở trang Tổng quan trước.",
+      "emptyBody": "Thêm sản phẩm đầu tiên; sàn duyệt xong thì người mua mới thấy.",
+      "byStatus": "Lọc sản phẩm theo trạng thái duyệt",
+      "all": "Tất cả",
+      "search": "Tìm sản phẩm",
+      "searchHint": "Tên sản phẩm hay danh mục",
+      "filter": "Lọc",
+      "clear": "Bỏ lọc",
+      "noMatch": "Không có sản phẩm nào khớp",
+      "noMatchBody": "Thử chữ khác hay trạng thái khác.",
+      "stock": "Tồn",
+      "outOfStock": "Hết hàng",
+      "reason": "Lý do từ chối:",
+      "edit": "Sửa",
+      "fixResend": "Sửa và gửi lại",
+      "editOf": "{action}: {name}",
+      "editTitle": "Sửa {name}",
+      "editIntro": "Thay đổi thành một bản sửa mới; sàn duyệt lại rồi người mua mới thấy.",
+      "edited": "Đã gửi thay đổi cho sàn duyệt."
     },
     "shop": {
       "title": "Gian hàng của tôi",

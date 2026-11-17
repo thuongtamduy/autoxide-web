@@ -365,6 +365,7 @@ describe("mã đơn dùng chung giữa các phân hệ", () => {
       const seller = market.sellers.find((s) => s.org_id === m.seller_org_id);
       expect(o?.seller?.name, m.number).toBe(seller?.display_name);
       expect(o?.subtotal.amount, m.number).toBe(m.total.amount);
+      expect(o?.buyer.name, m.number).toBe(m.buyer_name);
       expect(
         o?.lines.reduce((n, l) => n + l.quantity, 0),
         m.number,

@@ -6,6 +6,7 @@ import {
   stopPreviewAction,
 } from "@/app/(seller)/seller/actions";
 import { SampleBadge } from "@/components/sample-badge";
+import { Icon } from "@/components/shell/icon";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { ENDPOINTS_46, SELLER_BADGE } from "@/lib/market";
@@ -14,12 +15,13 @@ import { listCategories } from "@/sample/catalog";
 import { listSellers, marketName } from "@/sample/market";
 
 // Khối dùng chung của Trung tâm người bán (Server Component): băng "Xem như người bán", bộ chọn gian
-// hàng để xem, đầu trang (dòng phạm vi là gian hàng đang xem, nút "Thêm sản phẩm" ở mọi trang như
-// bản thiết kế).
+// hàng để xem, đầu trang (dòng phạm vi là gian hàng đang xem; nút "Thêm sản phẩm" ở Tổng quan và Sản
+// phẩm), nút thêm sản phẩm.
 
 /**
- * Băng trên cùng khi quản trị viên "xem như người bán": nói rõ đây là chế độ thử, không phải quyền của
- * người bán; đổi gian hàng hay thoát ngay tại chỗ.
+ * Băng trên cùng khi quản trị viên "xem như người bán": một dòng gọn — tên gian hàng, bộ chọn, nút
+ * Thoát. Lời giải thích (chế độ thử, không phải quyền của người bán) ở chú thích của biểu tượng "i" và
+ * cho trình đọc màn hình.
  */
 export async function PreviewBar({ current }: { current: string }) {
   const t = await getTranslations("seller.preview");
@@ -27,8 +29,12 @@ export async function PreviewBar({ current }: { current: string }) {
   const name = sellers.find((s) => s.org_id === current)?.display_name ?? "";
   return (
     <aside className="mk-preview" aria-label={t("label")}>
-      <p>
-        <b>{t("title", { name })}</b> {t("body")}
+      <p className="mk-preview-who">
+        <span className="mk-preview-ic" title={t("body")}>
+          <Icon name="info" small />
+          <span className="vh">{t("body")}</span>
+        </span>
+        <b>{t("title", { name })}</b>
       </p>
       <form action={startPreviewAction}>
         <label className="vh" htmlFor="mk-preview-pick">
@@ -51,6 +57,75 @@ export async function PreviewBar({ current }: { current: string }) {
         </button>
       </form>
     </aside>
+  );
+}
+
+/**
+ * Nút "Thêm sản phẩm" (hộp thoại). Gian hàng chưa được bán thì nút bị khoá, lý do hiện ngay dưới nút
+ * (và ở chú thích); gian hàng đã chấm dứt thì không có nút.
+ */
+export async function AddProduct({
+  className = "btn pri",
+  why = "mk-add-why",
+}: {
+  className?: string;
+  /** id của dòng lý do khi nút bị khoá (khác nhau nếu một trang có hai nút). */
+  why?: string;
+}) {
+  const [t, locale, ctx] = await Promise.all([
+    getTranslations("seller"),
+    getLocale(),
+    sellerContext(),
+  ]);
+  if (!ctx || ctx.seller.status === "terminated") return null;
+  const s = ctx.seller;
+  if (!s.gate.can_sell) {
+    return (
+      <span className="mk-add-off">
+        <button
+          type="button"
+          className={className}
+          disabled
+          title={t("products.addOff")}
+          aria-describedby={why}
+        >
+          {t("products.add")}
+        </button>
+        <span id={why} className="mk-add-why">
+          {t("products.addOff")}
+        </span>
+      </span>
+    );
+  }
+  const { data: categories } = await listCategories(locale);
+  return (
+    <FormDialog
+      action={addListingAction}
+      label={t("products.add")}
+      title={t("products.addTitle")}
+      intro={t("products.addIntro")}
+      submit={t("products.addSubmit")}
+      done={t("products.added")}
+      triggerClass={className}
+      fields={[
+        { kind: "text", name: "name", label: t("products.name") },
+        {
+          kind: "select",
+          name: "category_id",
+          label: t("products.category"),
+          defaultValue: s.category_id,
+          options: categories.map((c) => ({ value: c.id, label: c.path })),
+        },
+        {
+          kind: "text",
+          name: "price",
+          label: t("products.price"),
+          mono: true,
+          placeholder: "690000",
+          hint: t("products.priceHint"),
+        },
+      ]}
+    />
   );
 }
 
@@ -114,25 +189,25 @@ export async function SellerPicker() {
   );
 }
 
-/** Đầu trang của một trang trong Trung tâm người bán. */
+/** Đầu trang của một trang trong Trung tâm người bán; `add` hiện nút "Thêm sản phẩm". */
 export async function SellerHead({
   title,
   description,
+  add = false,
   children,
 }: {
   title: string;
   description: string;
+  add?: boolean;
   children?: ReactNode;
 }) {
-  const [t, tm, locale, ctx, market] = await Promise.all([
+  const [t, tm, ctx, market] = await Promise.all([
     getTranslations("seller"),
     getTranslations("market"),
-    getLocale(),
     sellerContext(),
     marketName(),
   ]);
   if (!ctx) return null;
-  const { data: categories } = await listCategories(locale);
   const s = ctx.seller;
   return (
     <>
@@ -147,35 +222,9 @@ export async function SellerHead({
             <SampleBadge step="46" endpoint={ENDPOINTS_46} />
           </span>
         </div>
-        {s.status !== "terminated" ? (
+        {add && s.status !== "terminated" ? (
           <div className="headacts">
-            <FormDialog
-              action={addListingAction}
-              label={t("products.add")}
-              title={t("products.addTitle")}
-              intro={t("products.addIntro")}
-              submit={t("products.addSubmit")}
-              done={t("products.added")}
-              triggerClass="btn pri"
-              fields={[
-                { kind: "text", name: "name", label: t("products.name") },
-                {
-                  kind: "select",
-                  name: "category_id",
-                  label: t("products.category"),
-                  defaultValue: s.category_id,
-                  options: categories.map((c) => ({ value: c.id, label: c.path })),
-                },
-                {
-                  kind: "text",
-                  name: "price",
-                  label: t("products.price"),
-                  mono: true,
-                  placeholder: "690000",
-                  hint: t("products.priceHint"),
-                },
-              ]}
-            />
+            <AddProduct />
           </div>
         ) : null}
       </section>

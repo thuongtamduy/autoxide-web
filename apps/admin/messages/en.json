@@ -9451,7 +9451,8 @@
       "marketplace_document_not_found": "This paper no longer exists.",
       "marketplace_penalty_not_found": "This penalty no longer exists.",
       "marketplace_penalty_already_appealed": "This sanction was already appealed; each sanction can be appealed once.",
-      "marketplace_not_ready": "The application is not complete yet."
+      "marketplace_not_ready": "The application is not complete yet.",
+      "marketplace_order_not_found": "This order no longer exists."
     },
     "fields": {
       "fee_rule_in_past": "Choose {value} or a later date; orders placed today keep today's fee.",
@@ -9531,7 +9532,16 @@
       "description": "Manage your shop, see your orders, check settlements and payouts, answer disputes. You see only the data of your own shop.",
       "kpis": "Your shop in numbers",
       "kpiDisputes": "Disputes to answer",
-      "kpiDisputesSub": "Past the deadline, the marketplace decides"
+      "kpiDisputesSub": "Past the deadline, the marketplace decides",
+      "sales": "Sales",
+      "kpiToShip": "Orders to ship",
+      "kpiToShipSub": "Paid, waiting to be handed to the carrier",
+      "kpiRevenue": "Revenue, last 7 days",
+      "kpiRevenueSub": "{count, plural, one {# order} other {# orders}}, cancelled not counted",
+      "kpiShipping": "Shipping",
+      "kpiShippingSub": "With the carrier now",
+      "toShipNote": "{count, plural, one {# order is} other {# orders are}} waiting to be shipped.",
+      "toShipOpen": "Ship orders"
     },
     "steps": {
       "title": "Steps to start selling",
@@ -9563,7 +9573,8 @@
         "rejected": "Returned; send a new profile in the eKYC partner app or VNeID",
         "expired": "Expired; verify again in the eKYC partner app or VNeID",
         "none": "Not started: verify in the eKYC partner app or VNeID"
-      }
+      },
+      "progress": "{done} / {total} done"
     },
     "money": {
       "title": "Statements and payouts",
@@ -9599,14 +9610,37 @@
       "total": "Total",
       "status": "Status",
       "money": "Money",
-      "items": "{count} items",
+      "items": "{count, plural, one {# item} other {# items}}",
       "orderStatus": {
         "paid": "Paid, to ship",
         "shipping": "Shipping",
         "delivered": "Delivered",
         "completed": "Completed",
         "cancelled": "Cancelled"
-      }
+      },
+      "byStatus": "Filter orders by status",
+      "all": "All",
+      "chip": {
+        "paid": "To ship",
+        "shipping": "Shipping",
+        "delivered": "Delivered",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "search": "Search orders",
+      "searchHint": "Order number or buyer name",
+      "filter": "Filter",
+      "clear": "Clear filters",
+      "emptyBody": "Orders show here as soon as a buyer pays for one of your products.",
+      "noMatch": "No order matches",
+      "noMatchBody": "Try another word or another status.",
+      "ship": "Hand to carrier",
+      "shipTitle": "Hand {number} to the carrier?",
+      "shipPoint1": "The order is packed and the carrier has picked it up; the buyer sees it as shipping.",
+      "shipPoint2": "Money stays at the collection partner until the return window ends.",
+      "shipSubmit": "Mark as shipping",
+      "shipped": "{number} is shipping.",
+      "answer": "Answer dispute"
     },
     "disputes": {
       "needsAnswer": "Needs your answer",
@@ -9643,7 +9677,26 @@
       "name": "Product name",
       "category": "Category",
       "price": "Price (₫)",
-      "priceHint": "Whole dong, VAT included."
+      "priceHint": "Whole dong, VAT included.",
+      "addOff": "Your shop cannot sell yet: finish the setup steps on the Overview page first.",
+      "emptyBody": "Add your first product; the marketplace reviews it before buyers see it.",
+      "byStatus": "Filter products by review status",
+      "all": "All",
+      "search": "Search products",
+      "searchHint": "Product name or category",
+      "filter": "Filter",
+      "clear": "Clear filters",
+      "noMatch": "No product matches",
+      "noMatchBody": "Try another word or another status.",
+      "stock": "Stock",
+      "outOfStock": "Out of stock",
+      "reason": "Why rejected:",
+      "edit": "Edit",
+      "fixResend": "Fix and resend",
+      "editOf": "{action}: {name}",
+      "editTitle": "Edit {name}",
+      "editIntro": "The change becomes a new revision; the marketplace reviews it again before buyers see it.",
+      "edited": "Change sent for review."
     },
     "shop": {
       "title": "My shop",
