@@ -424,7 +424,6 @@ export const NAV_PLATFORM: NavGroup[] = [
         id: "platformProvisioning",
         href: "/platform/provisioning",
         permission: PROVISION,
-        sample: { step: "35" },
       },
     ],
   },

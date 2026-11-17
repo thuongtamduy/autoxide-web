@@ -41,6 +41,7 @@ describe("ghép khách và placement của core với dữ liệu mẫu", () => 
     name: "Platform",
     status: "active",
     placement: "main",
+    read_only: false,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-02T00:00:00Z",
   };
@@ -74,7 +75,14 @@ describe("ghép khách và placement của core với dữ liệu mẫu", () => 
   it("placement đi kèm sổ khách (`expand=placement`), cờ chỉ đọc của core; khách mẫu ghi được", () => {
     const eu = { ...main, id: "p-eu", name: "eu-db", kind: "dedicated", schema_state: "behind" };
     const [own, other] = mergeTenants(
-      [{ ...core, placement: "eu-db", read_only: true, expanded: { placement: eu } }],
+      [
+        {
+          ...core,
+          placement: "eu-db",
+          read_only: true,
+          expanded: { placement: eu, subscription: null, usage: null },
+        },
+      ],
       // Danh sách placement không có `eu-db`: placement lấy từ `expanded`, không tra theo tên.
       [main],
       [tenant("s", "Khách mẫu")],
@@ -181,7 +189,14 @@ describe("sổ khách hàng", () => {
 
   it("lọc: database riêng, chờ migration, cần chú ý", () => {
     const row: TenantRow = {
-      tenant: { ...tenant("a", "A"), source: "core", read_only: false, placement: null },
+      tenant: {
+        ...tenant("a", "A"),
+        source: "core",
+        read_only: false,
+        placement: null,
+        subscription: null,
+        usage: null,
+      },
       placement: {
         id: "p",
         name: "pool-2",

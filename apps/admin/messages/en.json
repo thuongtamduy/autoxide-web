@@ -349,7 +349,7 @@
     "mfaBody": "One of your roles requires it: its permissions stay off until you add an authenticator app or a passkey.",
     "mfaLink": "Set it up",
     "entered": {
-      "text": "You are working in {name} through {access}. Every screen is shown: the customer’s server refuses what your role does not allow.",
+      "text": "You are working in {name} through {access}, with the permissions given there. The customer sees every change in its audit log.",
       "leave": "Back to my customer",
       "endedTitle": "Your access to this customer has ended",
       "endedBody": "The delegation or support access was revoked or expired."
@@ -1355,7 +1355,10 @@
         "commune": "Ward / commune",
         "communeHint": "From the administrative units list, which has effective dates.",
         "line": "Street address",
-        "save": "Save details"
+        "save": "Save details",
+        "none": "No invoice details yet. Add them so invoices name your business.",
+        "choose": "Choose…",
+        "loading": "Loading…"
       },
       "unlimited": "unlimited",
       "noPlan": "No plan",
@@ -5003,7 +5006,8 @@
       "active": "Active",
       "suspended": "Suspended",
       "maintenance": "Maintenance",
-      "moving": "Moving"
+      "moving": "Moving",
+      "deleted": "Deleted"
     },
     "subStatus": {
       "trialing": "Trial",
@@ -5021,7 +5025,8 @@
     "provStatus": {
       "running": "Running",
       "failed": "Stopped with an error",
-      "done": "Done"
+      "done": "Done",
+      "pending": "Waiting"
     },
     "grantStatus": {
       "active": "In effect",
@@ -5325,7 +5330,30 @@
       "exportBusy": "An export is running; refresh the page in a moment.",
       "suspendReason": "Reason",
       "suspendReasonHint": "Written to the customer’s audit log, 1 to 500 characters.",
-      "suspendReasonRequired": "Write the reason."
+      "suspendReasonRequired": "Write the reason.",
+      "periodRange": "Billing period",
+      "periodAmount": "Amount",
+      "periodState": "State",
+      "markPaid": "Mark as paid",
+      "markPaidTitle": "Record a payment from {tenant}?",
+      "markPaidActive": "A past-due or suspended subscription becomes active again.",
+      "markPaidDone": "Payment recorded.",
+      "paymentReference": "Payment reference",
+      "paymentReferenceHint": "The bank's or provider's reference of the transfer.",
+      "billingName": "Invoice to",
+      "billingTax": "Tax code",
+      "billingEmail": "Invoice email",
+      "erase": "Delete for good",
+      "eraseTitle": "Delete {tenant} for good?",
+      "eraseAll": "Every record and file of the customer is deleted; its domains are released.",
+      "eraseKept": "Accounting records the law requires are kept (Accounting Law 88/2015, Article 41).",
+      "eraseExport": "Export its data first if anyone needs it.",
+      "eraseNoUndo": "This cannot be undone. The customer stays listed as deleted.",
+      "eraseSubmit": "Delete for good",
+      "erased": "{tenant} was deleted.",
+      "eraseConfirm": "Type “{slug}” to confirm",
+      "eraseConfirmWrong": "Type the customer’s short name exactly.",
+      "eraseReasonHint": "Kept in the platform’s audit log, 1 to 500 characters."
     },
     "provision": {
       "button": "Provision a customer",
@@ -5353,7 +5381,13 @@
       "noParent": "No parent",
       "email": "First admin email",
       "sample": "Seed sample data",
-      "sampleHint": "Sample products and posts so the customer can try at once."
+      "sampleHint": "Sample products and posts so the customer can try at once.",
+      "stepsCore": "Steps: create the customer → put it on the plan → sample data of the plan's modules → invite the first admin.",
+      "kycCore": "A plan that needs identity checks cannot be provisioned yet.",
+      "dedicatedCore": "A dedicated plan needs a dedicated placement added with the CLI first (its URL holds a password).",
+      "placementHintCore": "By plan: main for a shared plan; a dedicated plan needs a dedicated placement.",
+      "priceOption": "{name} · {price} · {placement}",
+      "adminName": "First admin name (optional)"
     },
     "plans": {
       "crumb": "Autoxide platform · selling",
@@ -5589,7 +5623,10 @@
         "subscribed": "Plan assigned",
         "invited": "Admin invited",
         "done": "Done"
-      }
+      },
+      "descriptionCore": "Create a customer on a plan in one go: the customer, its plan, sample data, and an invitation for its first administrator. It runs in the background; on an error fix it and retry from the step it reached.",
+      "stepsCore": "Steps: create the customer → put it on the plan → sample data → invite the admin → done. A retry never creates a second customer.",
+      "stoppedAfter": "Stopped after: {step}"
     },
     "fleet": {
       "crumb": "Autoxide platform · databases",
@@ -5802,6 +5839,11 @@
       "ready": "Ready",
       "failed": "Failed",
       "expired": "Deleted"
+    },
+    "periodStatus": {
+      "open": "To pay",
+      "paid": "Paid",
+      "void": "Void"
     }
   },
   "catalog": {

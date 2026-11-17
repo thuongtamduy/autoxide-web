@@ -28,7 +28,7 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { type Account, empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
-import { isNearLimit, subscriptionStatusOf } from "./mock-plans.ts";
+import { expandedOf, isNearLimit, subscriptionStatusOf } from "./mock-plans.ts";
 
 type Tenant = Schemas["Tenant"];
 type SettingState = Schemas["TenantSettingState"];
@@ -555,8 +555,14 @@ export async function tenantRoutes(
               ...x,
               expanded: {
                 placement: expand.includes("placement") ? (placementOf(x) ?? null) : null,
-                subscription: null,
-                usage: null,
+                ...(expand.includes("subscription") || expand.includes("usage")
+                  ? {
+                      subscription: expand.includes("subscription")
+                        ? expandedOf(x.id).subscription
+                        : null,
+                      usage: expand.includes("usage") ? expandedOf(x.id).usage : null,
+                    }
+                  : { subscription: null, usage: null }),
               },
             }))
           : result.data,
@@ -620,6 +626,47 @@ export async function tenantRoutes(
       tenants.push(created);
       response.setHeader("Location", `/api/v1/kernel/tenants/${created.id}`);
       send(response, 201, { data: created } satisfies Schemas["Data_Tenant"]);
+      return true;
+    }
+    const eraseMatch = path.match(/^\/api\/v1\/kernel\/tenants\/([^/]+)\/erase$/);
+    if (eraseMatch && method === "POST") {
+      // Như core (D-337): chỉ xoá khách đã tạm khoá; gõ lại slug; khách thành `deleted`.
+      const owner = tenants.find((x) => x.id === eraseMatch[1] || x.slug === eraseMatch[1]);
+      if (!owner || owner.status === "deleted") {
+        problem(response, 404, "tenant_not_found", "No tenant has this id.");
+        return true;
+      }
+      const body = await json(request);
+      const errors: Schemas["ProblemField"][] = [];
+      if (text(body, "confirm") !== owner.slug) {
+        errors.push({ field: "confirm", code: "mismatch", detail: "must be the tenant's slug" });
+      }
+      if (!text(body, "reason").trim()) {
+        errors.push({
+          field: "reason",
+          code: "length",
+          detail: "must be 1 to 500 characters long",
+        });
+      }
+      if (errors.length > 0) {
+        problem(response, 422, "validation_failed", "The request has invalid fields.", errors);
+        return true;
+      }
+      if (owner.status !== "suspended") {
+        problem(response, 409, "tenant_not_suspended", "Suspend the tenant before deleting it.");
+        return true;
+      }
+      owner.status = "deleted";
+      send(response, 200, {
+        data: {
+          tenant_id: owner.id,
+          slug: owner.slug,
+          rows: 0,
+          files: 0,
+          tables: [],
+          retained_tables: [],
+        },
+      });
       return true;
     }
     const exportMatch = path.match(
@@ -1023,4 +1070,23 @@ async function migrationRoute(
   for (const p of pending) if (behind.has(p.name)) p.schema_state = "migrating";
   send(response, 201, { data: run } satisfies Schemas["Data_MigrationRun"]);
   return true;
+}
+
+/** Thêm một khách (luồng cấp phát của `mock-plans.ts`); `null` khi slug đã có. */
+export function addTenant(slug: string, name: string, parent: string | null): string | null {
+  if (tenants.some((x) => x.slug === slug)) return null;
+  const now = new Date().toISOString();
+  const id = randomUUID();
+  tenants.push({
+    id,
+    slug,
+    name,
+    status: "active",
+    placement: "main",
+    parent_id: parent,
+    read_only: false,
+    created_at: now,
+    updated_at: now,
+  });
+  return id;
 }

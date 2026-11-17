@@ -1,22 +1,18 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Chips } from "@/components/engage/common";
 import { PlatformHead } from "@/components/platform/common";
 import { SupportGrantDialog, SupportGrantTable } from "@/components/platform/support-grants";
-import { EmptyState } from "@/components/ui/empty-state";
 import { allRoles } from "@/lib/access";
 import { oneOf, type SearchParams } from "@/lib/engage";
 import { SUPPORT_GRANT } from "@/lib/permissions";
 import { platformData, platformGate, platformRefused } from "@/lib/platform-server";
 import { GRANT_STATES, grantState, type SupportGrant } from "@/lib/support";
-import { loadGrants, loadStaff } from "@/lib/support-server";
+import { loadGrants, loadStaff, supportHours } from "@/lib/support-server";
 
 // Màn "Vào dữ liệu khách" (bước 34 của core, đợt 3b): nhân sự nền tảng chỉ vào dữ liệu một khách khi
 // được cấp quyền có lý do và thời hạn; khách thấy mọi lần cấp và lần vào. Khách tắt hỗ trợ thì chỉ cấp
-// được theo văn bản của cơ quan có thẩm quyền (core từ chối `auth.support_access_disabled`). Core chỉ
-// liệt kê lần cấp theo từng khách (`GET /auth/support-grants?tenant_id=`), nên trang đọc từng khách
-// thường của sổ khách rồi gộp lại, mới trước. Chưa có khách nào thì một trạng thái rỗng duy nhất (thay
-// cho câu "chưa có khách" cộng bảng lần cấp rỗng).
+// được theo văn bản của cơ quan có thẩm quyền (core từ chối `auth.support_access_disabled`). Danh sách:
+// 200 lần cấp mới nhất của mọi khách (`GET /auth/support-grants`, D-335).
 export default async function SupportPage(props: { searchParams: Promise<SearchParams> }) {
   const gate = await platformGate(SUPPORT_GRANT);
   if (gate) return gate;
@@ -33,14 +29,15 @@ export default async function SupportPage(props: { searchParams: Promise<SearchP
     if (refused) return refused;
     throw error;
   }
-  const [lists, staff, roles] = await Promise.all([
-    Promise.all(customers.map((x) => loadGrants(x.id))),
+  const [listed, staff, roles, hours] = await Promise.all([
+    loadGrants(),
     loadStaff(),
     allRoles(),
+    supportHours(),
   ]);
-  const all: SupportGrant[] = lists
-    .flatMap((list) => list ?? [])
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const all: SupportGrant[] = [...(listed ?? [])].sort((a, b) =>
+    b.created_at.localeCompare(a.created_at),
+  );
   const now = Date.now();
   const grants = all.filter((g) => !state || grantState(g, now) === state);
   const name = (id: string) => customers.find((x) => x.id === id)?.name ?? id.slice(0, 8);
@@ -57,6 +54,7 @@ export default async function SupportPage(props: { searchParams: Promise<SearchP
               tenants={customers.map((x) => ({ value: x.id, label: x.name }))}
               staff={staff}
               roles={roles.map((r) => ({ value: r.id, label: r.name }))}
+              hours={hours}
               triggerClass="btn pri"
             />
           ) : undefined
@@ -65,42 +63,28 @@ export default async function SupportPage(props: { searchParams: Promise<SearchP
       <p className="note">
         {t("basisLaw")} {t("review")}
       </p>
-      {customers.length === 0 ? (
-        <div className="card">
-          <EmptyState
-            icon="key"
-            title={t("noCustomersTitle")}
-            actions={
-              <Link className="btn" href="/platform">
-                {t("openRegister")}
-              </Link>
-            }
-          >
-            {t("noCustomersText")}
-          </EmptyState>
+      {customers.length === 0 ? <p className="note">{t("noCustomers")}</p> : null}
+
+      <section className="block" aria-labelledby="pf-grants-h">
+        <h2 id="pf-grants-h" className="h2">
+          {t("listTitle")}
+        </h2>
+        <Chips
+          label={t("filter")}
+          chips={[
+            { href: "/platform/support", label: tp("all"), on: !state, count: all.length },
+            ...GRANT_STATES.map((s) => ({
+              href: `/platform/support?status=${s}`,
+              label: tp(`grantStatus.${s}`),
+              on: s === state,
+              count: all.filter((g) => grantState(g, now) === s).length,
+            })),
+          ]}
+        />
+        <div className="card tcard">
+          <SupportGrantTable grants={grants} tenantName={name} roleName={roleName} manage />
         </div>
-      ) : (
-        <section className="block" aria-labelledby="pf-grants-h">
-          <h2 id="pf-grants-h" className="h2">
-            {t("listTitle")}
-          </h2>
-          <Chips
-            label={t("filter")}
-            chips={[
-              { href: "/platform/support", label: tp("all"), on: !state, count: all.length },
-              ...GRANT_STATES.map((s) => ({
-                href: `/platform/support?status=${s}`,
-                label: tp(`grantStatus.${s}`),
-                on: s === state,
-                count: all.filter((g) => grantState(g, now) === s).length,
-              })),
-            ]}
-          />
-          <div className="card tcard">
-            <SupportGrantTable grants={grants} tenantName={name} roleName={roleName} manage />
-          </div>
-        </section>
-      )}
+      </section>
     </div>
   );
 }

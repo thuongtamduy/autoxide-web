@@ -59,21 +59,18 @@ test("chuyển giữa hai không gian; khung riêng; cấp phát khách mới c�
   await expect(rows.filter({ hasText: "Trà Sen" })).toHaveCount(0);
   await expect(rows.filter({ hasText: "Studio Ảnh Mây" })).toHaveCount(1);
 
-  // Cấp phát: gom lỗi một lần, rồi xong thì mở tab Cấp phát.
+  // Cấp phát (D-338, API thật): gom lỗi một lần, rồi xong thì mở tab Cấp phát.
   await page.getByRole("button", { name: "Provision a customer" }).click();
-  await dialog(page).getByLabel("Slug").fill("bep-moc");
-  await dialog(page).getByLabel("First admin email").fill("sai");
-  await dialog(page).getByRole("button", { name: "Provision" }).click();
-  await expect(dialog(page).getByRole("alert")).toHaveText("3 fields need fixing.");
-  await expect(dialog(page).getByLabel("Customer name")).toHaveAttribute("aria-invalid", "true");
-  await expect(dialog(page).getByText("This value is already in use.")).toBeVisible();
-  await dialog(page).getByLabel("Customer name").fill("Trà Hoa Sen");
   await dialog(page).getByLabel("Slug").fill("tra-hoa-sen-e2e");
+  await dialog(page).getByRole("button", { name: "Provision" }).click();
+  await expect(dialog(page).getByRole("alert")).toHaveText("2 fields need fixing.");
+  await expect(dialog(page).getByLabel("Customer name")).toHaveAttribute("aria-invalid", "true");
+  await dialog(page).getByLabel("Customer name").fill("Trà Hoa Sen");
   await dialog(page).getByLabel("First admin email").fill("chu@example.com");
   await dialog(page).getByRole("button", { name: "Provision" }).click();
   await expect(toast(page)).toContainText("Provisioning queued");
   await expect(page).toHaveURL(/\/platform\/provisioning$/);
-  await expect(page.locator("tbody tr", { hasText: "Trà Hoa Sen" })).toContainText(/Running|Done/);
+  await expect(page.locator("tbody tr", { hasText: "Trà Hoa Sen" })).toContainText(/Waiting|Done/);
 
   await page.getByRole("button", { name: /Account menu/ }).click();
   await page.getByRole("link", { name: "Back to the customer workspace" }).click();
@@ -124,9 +121,27 @@ test("khách của core: một khách thì không thêm được; nhiều khách
   await dialog(page).getByLabel("I understand that Acme Ltd stops completely").check();
   await dialog(page).getByRole("button", { name: "Suspend" }).click();
   await expect(toast(page)).toContainText("Acme Ltd is suspended");
+  // Khách đã tạm khoá mới xoá hẳn được (D-337): gõ đúng tên ngắn và ghi lý do.
+  await page.getByRole("button", { name: "Delete for good" }).click();
+  await expect(dialog(page)).toContainText("This cannot be undone");
+  await dialog(page).getByRole("button", { name: "Delete for good" }).click();
+  await expect(dialog(page).getByRole("alert")).toHaveText("2 fields need fixing.");
+  await dialog(page).getByRole("button", { name: "Cancel" }).click();
+  // Mở lại rồi khoá lại, cuối cùng xoá hẳn.
   await page.getByRole("button", { name: "Reactivate" }).click();
   await dialog(page).getByRole("button", { name: "Reactivate" }).click();
   await expect(toast(page)).toHaveText("Acme Ltd is active again.");
+  await page.getByRole("button", { name: "Suspend completely" }).click();
+  await dialog(page).getByLabel("Reason").fill("Khách đề nghị chấm dứt hợp đồng, phiếu #13");
+  await dialog(page).getByLabel("I understand that Acme Ltd stops completely").check();
+  await dialog(page).getByRole("button", { name: "Suspend" }).click();
+  await expect(toast(page)).toContainText("Acme Ltd is suspended");
+  await page.getByRole("button", { name: "Delete for good" }).click();
+  await dialog(page).getByLabel("Type “acme-e2e” to confirm").fill("acme-e2e");
+  await dialog(page).getByLabel("Reason").fill("Hết thời hạn lưu theo hợp đồng");
+  await dialog(page).getByRole("button", { name: "Delete for good" }).click();
+  await expect(page).toHaveURL(/\/platform$/);
+  await expect(page.locator("tbody tr", { hasText: "acme-e2e" })).toContainText("Deleted");
 
   await page.goto("/platform/fleet");
   await expect(page.locator("tbody tr", { hasText: "main" }).first()).toContainText("Up to date");

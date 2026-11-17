@@ -288,6 +288,10 @@ test("chuyển khách đang làm việc: vào khách con qua uỷ quyền, quay 
   const banner = page.getByTestId("entered-banner");
   await expect(banner).toContainText("You are working in Chi nhánh Đà Nẵng through Delegation");
   await expect(page.getByTestId("tenant-name")).toHaveText("Chi nhánh Đà Nẵng");
+  // Quyền ở khách đang vào (D-339, giả: đọc và viết bài): thanh bên chỉ còn phần dùng được.
+  const areas = page.getByRole("navigation", { name: "Areas" });
+  await expect(areas.getByRole("link", { name: "Content" })).toBeVisible();
+  await expect(areas.getByRole("link", { name: "Organization" })).toHaveCount(0);
 
   await banner.getByRole("button", { name: "Back to my customer" }).click();
   await expect(page.getByTestId("entered-banner")).toHaveCount(0);

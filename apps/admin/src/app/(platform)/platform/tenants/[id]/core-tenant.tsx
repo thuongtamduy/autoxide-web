@@ -2,6 +2,7 @@ import type { components } from "@autoxide/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import {
+  eraseTenant,
   renameTenant,
   resumeCoreTenant,
   setCoreTenantReadOnly,
@@ -24,7 +25,7 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { type Outcome, send } from "@/lib/action";
 import { initialsOf } from "@/lib/initials";
-import { TENANTS_MANAGE, TENANTS_MOVE } from "@/lib/permissions";
+import { TENANTS_DELETE, TENANTS_MANAGE, TENANTS_MOVE } from "@/lib/permissions";
 import { moveFinished, moveSteps, moveTargets } from "@/lib/platform";
 import type { PlatformData } from "@/lib/platform-server";
 import { can } from "@/lib/viewer";
@@ -63,7 +64,11 @@ export async function CoreTenantView({
   search: MoveSearch;
 }) {
   const t = await getTranslations("platform");
-  const [manage, mover] = await Promise.all([can(TENANTS_MANAGE), can(TENANTS_MOVE)]);
+  const [manage, mover, eraser] = await Promise.all([
+    can(TENANTS_MANAGE),
+    can(TENANTS_MOVE),
+    can(TENANTS_DELETE),
+  ]);
   const platform = tenant.id === PLATFORM_TENANT_ID;
   const status = tenant.status as TenantStatus;
   const placement = data.placements.find((p) => p.name === tenant.placement) ?? null;
@@ -288,6 +293,39 @@ export async function CoreTenantView({
               <>
                 <p>{t("tenant.suspendedNow")}</p>
                 <div className="eg-acts">
+                  {eraser ? (
+                    <FormDialog
+                      action={eraseTenant}
+                      label={t("tenant.erase")}
+                      triggerClass="btn sm danger"
+                      danger
+                      title={t("tenant.eraseTitle", { tenant: tenant.name })}
+                      points={[
+                        t("tenant.eraseAll"),
+                        t("tenant.eraseKept"),
+                        t("tenant.eraseExport"),
+                        t("tenant.eraseNoUndo"),
+                      ]}
+                      submit={t("tenant.eraseSubmit")}
+                      done={t("tenant.erased", { tenant: tenant.name })}
+                      fields={[
+                        { kind: "hidden", name: "tenant_id", value: tenant.id },
+                        { kind: "hidden", name: "slug", value: tenant.slug },
+                        {
+                          kind: "text",
+                          name: "confirm",
+                          label: t("tenant.eraseConfirm", { slug: tenant.slug }),
+                          mono: true,
+                        },
+                        {
+                          kind: "textarea",
+                          name: "reason",
+                          label: t("tenant.suspendReason"),
+                          hint: t("tenant.eraseReasonHint"),
+                        },
+                      ]}
+                    />
+                  ) : null}
                   <ConfirmButton
                     action={resumeCoreTenant}
                     fields={tag}

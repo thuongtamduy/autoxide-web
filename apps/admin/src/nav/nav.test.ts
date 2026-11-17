@@ -327,7 +327,7 @@ describe("hai không gian: khách và mặt điều khiển nền tảng (W-014)
     expect(navOf("tenant")).toBe(REAL_NAV);
   });
 
-  it("sổ nền tảng: bảy mục theo bản thiết kế, theo permission của nhân sự vận hành; khách, đội database và vào dữ liệu khách là API thật", async () => {
+  it("sổ nền tảng: bảy mục theo bản thiết kế, theo permission của nhân sự vận hành; khách, cấp phát, đội database và vào dữ liệu khách là API thật", async () => {
     const { NAV_PLATFORM } = await import("./nav");
     const ids = (viewer: Partial<Viewer>) =>
       visibleNav(
@@ -345,6 +345,7 @@ describe("hai không gian: khách và mặt điều khiển nền tảng (W-014)
     ]);
     expect(ids({ allPermissions: true, sample: false })).toEqual([
       "platformTenants",
+      "platformProvisioning",
       "platformFleet",
       "platformSupport",
     ]);

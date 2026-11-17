@@ -7,10 +7,11 @@ import { StatusBadge, SUB_BADGE, UsageMeter } from "@/components/platform/common
 import { PlanSubscriptionActions } from "@/components/platform/plan-subscription-actions";
 import { SupportGrantDialog, SupportGrantTable } from "@/components/platform/support-grants";
 import { FormDialog } from "@/components/ui/form-dialog";
+import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { allRoles } from "@/lib/access";
 import { isNotFound, load } from "@/lib/core";
-import { formatBytes } from "@/lib/format";
+import { formatBytes, formatMoney } from "@/lib/format";
 import {
   SUBSCRIPTIONS_MANAGE,
   SUBSCRIPTIONS_READ,
@@ -19,8 +20,9 @@ import {
 } from "@/lib/permissions";
 import type { Subscription } from "@/lib/plans";
 import { loadAllPlans } from "@/lib/plans-server";
-import { loadGrants, loadStaff } from "@/lib/support-server";
+import { loadGrants, loadStaff, supportAllowed, supportHours } from "@/lib/support-server";
 import { can } from "@/lib/viewer";
+import { markPaidAction } from "../../plan-actions";
 import { exportTenantData } from "../../support-actions";
 
 type Tenant = { id: string; name: string };
@@ -44,17 +46,27 @@ export async function TenantPlanSection({ tenant }: { tenant: Tenant }) {
     if (error.code !== "plans.subscription_not_found") return null;
     sub = null;
   }
-  const [usage, plans, manage] = await Promise.all([
+  const [usage, plans, manage, periods, profile] = await Promise.all([
     load((c) => c.GET("/api/v1/plans/tenants/{tenant_id}/usage", path)).then((r) => r.data),
     loadAllPlans(),
     can(SUBSCRIPTIONS_MANAGE),
+    load((c) => c.GET("/api/v1/plans/tenants/{tenant_id}/billing-periods", path)).then(
+      (r) => r.data,
+    ),
+    load((c) => c.GET("/api/v1/plans/tenants/{tenant_id}/billing-profile", path))
+      .then((r) => r.data)
+      .catch((error: unknown) => {
+        if (isNotFound(error)) return null;
+        throw error;
+      }),
   ]);
+  const locale = await getLocale();
   const plan = plans.find((p) => p.id === sub?.plan_id);
   const scheduled = plans.find((p) => p.id === sub?.scheduled_plan_id);
   const status = sub?.status ?? "";
   const facts: [string, ReactNode][] = [];
   if (sub) {
-    facts.push([t("tenant.plan"), plan?.name ?? sub.plan_id.slice(0, 8)]);
+    facts.push([t("tenant.plan"), sub.plan_name ?? plan?.name ?? sub.plan_id.slice(0, 8)]);
     facts.push([
       sub.cancel_at_period_end ? t("tenant.endsOn") : t("tenant.renewsOn"),
       <Time key="end" value={sub.current_period_end} date />,
@@ -89,6 +101,85 @@ export async function TenantPlanSection({ tenant }: { tenant: Tenant }) {
           <Link href="/platform/plans/overrides">{t("tenant.overridesOpen")}</Link>
         </p>
       </div>
+      {periods.length > 0 ? (
+        <div className="card tcard" data-testid="tenant-periods">
+          <Table cards>
+            <thead>
+              <tr>
+                <Th>{t("tenant.periodRange")}</Th>
+                <Th className="r">{t("tenant.periodAmount")}</Th>
+                <Th>{t("tenant.periodState")}</Th>
+                {manage ? (
+                  <Th>
+                    <span className="vh">{t("tenant.actions")}</span>
+                  </Th>
+                ) : null}
+              </tr>
+            </thead>
+            <tbody>
+              {periods.map((period) => (
+                <tr key={period.id}>
+                  <Td label={t("tenant.periodRange")}>
+                    <Time value={period.period_start} date /> –{" "}
+                    <Time value={period.period_end} date />
+                  </Td>
+                  <Td className="r" label={t("tenant.periodAmount")}>
+                    {formatMoney(period.amount.amount, period.amount.currency, locale)}
+                  </Td>
+                  <Td label={t("tenant.periodState")}>
+                    <span className="cell2">
+                      <span className={PERIOD_BADGE[period.status] ?? "badge"}>
+                        <span className="dot" />
+                        {t.has(`periodStatus.${period.status}`)
+                          ? t(`periodStatus.${period.status}`)
+                          : period.status}
+                      </span>
+                      {period.provider_reference ? (
+                        <span className="sub mono">{period.provider_reference}</span>
+                      ) : null}
+                    </span>
+                  </Td>
+                  {manage ? (
+                    <Td className="rt-acts">
+                      {period.status === "open" ? (
+                        <FormDialog
+                          action={markPaidAction}
+                          label={t("tenant.markPaid")}
+                          title={t("tenant.markPaidTitle", { tenant: tenant.name })}
+                          points={[t("tenant.markPaidActive")]}
+                          submit={t("tenant.markPaid")}
+                          done={t("tenant.markPaidDone")}
+                          fields={[
+                            { kind: "hidden", name: "period_id", value: period.id },
+                            {
+                              kind: "text",
+                              name: "provider_reference",
+                              label: t("tenant.paymentReference"),
+                              mono: true,
+                              hint: t("tenant.paymentReferenceHint"),
+                            },
+                          ]}
+                        />
+                      ) : null}
+                    </Td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      ) : null}
+      {profile ? (
+        <div className="card padded" data-testid="tenant-billing-profile">
+          <Facts
+            items={[
+              [t("tenant.billingName"), profile.legal_name],
+              [t("tenant.billingTax"), profile.tax_code ?? "—"],
+              [t("tenant.billingEmail"), profile.email],
+            ]}
+          />
+        </div>
+      ) : null}
       {usage.length > 0 ? (
         <div className="card padded meters" data-testid="tenant-usage">
           {usage.map((u) => (
@@ -100,6 +191,12 @@ export async function TenantPlanSection({ tenant }: { tenant: Tenant }) {
     </section>
   );
 }
+
+const PERIOD_BADGE: Record<string, string> = {
+  open: "badge b-warn",
+  paid: "badge b-ok",
+  void: "badge b-arch",
+};
 
 const EXPORT_BADGE: Record<string, string> = {
   pending: "badge b-info",
@@ -192,10 +289,12 @@ async function listExports(id: string) {
 export async function TenantSupportSection({ tenant }: { tenant: Tenant }) {
   if (!(await can(SUPPORT_GRANT))) return null;
   const t = await getTranslations("platform");
-  const [grants, staff, roles] = await Promise.all([
+  const [grants, staff, roles, hours, allowed] = await Promise.all([
     loadGrants(tenant.id),
     loadStaff(),
     allRoles(),
+    supportHours(),
+    supportAllowed(tenant.id),
   ]);
   if (grants === null) return null;
   const roleName = (id: string) => roles.find((r) => r.id === id)?.name ?? id.slice(0, 8);
@@ -209,10 +308,17 @@ export async function TenantSupportSection({ tenant }: { tenant: Tenant }) {
           tenants={[{ value: tenant.id, label: tenant.name }]}
           staff={staff}
           roles={roles.map((r) => ({ value: r.id, label: r.name }))}
+          hours={hours}
+          allowed={allowed !== false}
           triggerClass="btn sm"
         />
       </div>
       <p className="fhint">{t("tenant.accessAbout")}</p>
+      {allowed === false ? (
+        <p className="note warn" data-testid="support-off">
+          {t("tenant.supportOff")}
+        </p>
+      ) : null}
       <div className="card tcard" data-testid="tenant-grants">
         <SupportGrantTable grants={grants} roleName={roleName} manage />
       </div>

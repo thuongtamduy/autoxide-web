@@ -147,3 +147,26 @@ async function patchTenant(
   refresh();
   return { done: nextDone(state) };
 }
+
+/**
+ * Xoá hẳn một khách đã tạm khoá (`POST /kernel/tenants/{id}/erase`, D-337 của core): mọi dữ liệu và
+ * tệp của khách bị xoá, trừ chứng từ kế toán phải giữ; không hoàn tác được. Gõ lại tên ngắn của khách
+ * và ghi lý do; core kiểm cả hai.
+ */
+export async function eraseTenant(state: DialogState, formData: FormData): Promise<DialogState> {
+  const values = { confirm: text(formData, "confirm"), reason: text(formData, "reason") };
+  const t = await getTranslations("platform.tenant");
+  const fields: Record<string, string> = {};
+  if (values.confirm !== text(formData, "slug")) fields.confirm = t("eraseConfirmWrong");
+  if (!values.reason) fields.reason = t("suspendReasonRequired");
+  if (Object.keys(fields).length > 0) return { fields, values };
+  const result = await send((client) =>
+    client.POST("/api/v1/kernel/tenants/{id}/erase", {
+      params: { path: { id: text(formData, "tenant_id") } },
+      body: values,
+    }),
+  );
+  if (!result.ok) return { ...problemState(result.problem, ["confirm", "reason"]), values };
+  refresh();
+  return { done: nextDone(state), go: "/platform" };
+}

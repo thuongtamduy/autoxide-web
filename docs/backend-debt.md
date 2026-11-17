@@ -20,6 +20,7 @@ Cập nhật file này mỗi khi gửi đợt yêu cầu mới, khi core làm xo
 | 17/11/2026 | [thuongtamduy/autoxide#73](https://github.com/thuongtamduy/autoxide/pull/73) | Đã nối bước 35 đợt 3b (W-049); còn thiếu: `expand=subscription,usage` luôn `null`, `support-grants` bắt buộc `tenant_id`, trần giờ hỗ trợ, khách tắt hỗ trợ, tên gói trong thuê bao                                  | Đã gửi; không gấp                                                                                                                   |
 | 17/11/2026 | [thuongtamduy/autoxide#75](https://github.com/thuongtamduy/autoxide/pull/75) | Đã dùng các API của D-331 – D-334 (W-050); không có yêu cầu mới                                                                                                                                                      | Đã gửi                                                                                                                              |
 | 17/11/2026 | [thuongtamduy/autoxide#76](https://github.com/thuongtamduy/autoxide/pull/76) | Đã nối chuyển khách (W-051); xin quyền của người dùng ở khách đang vào (`GET /auth/me` trả 401 ở đó)                                                                                                                 | Đã gửi; cần nhất                                                                                                                    |
+| 17/11/2026 | [thuongtamduy/autoxide#81](https://github.com/thuongtamduy/autoxide/pull/81) | Đã dùng D-335 – D-339 (W-055); build release của core hỏng ở `autoxide-plans` (recursion limit) | Đã gửi; chặn phát hành |
 | 17/11/2026 | [thuongtamduy/autoxide#78](https://github.com/thuongtamduy/autoxide/pull/78) | Quầy bán làm lại (W-053): mã giảm giá và khách khi bán tại quầy, tiền khách đưa / tiền thối, tạm tính giỏ và tìm khách bằng quyền bán tại quầy, mã vạch và nhóm hàng trong danh mục quầy                             | Đã gửi; không gấp (bước 45)                                                                                                         |
 
 ## Còn nợ (đếm ngày 16/11/2026; bước 34, 35 đã xong ngày 17/11)
@@ -50,20 +51,13 @@ placement bằng API, số người giữ role, `reason` khi sửa khách.
    (`GET /organizations/public/site`, D-331) và **đã dùng** (W-050).
 3. **Gặp khi nối đợt 2 (17/11, W-046):** **đã có cả ba** (D-333) và **đã dùng** (W-050): tên nút trong membership,
    danh sách khách cấp dưới, `auth` trong client-config.
-4. **Gặp khi nối bước 35 (17/11, W-047):** (a) nhân sự nền tảng chưa đọc được kỳ thanh toán của một khách
-   (`GET /plans/billing-periods` chỉ của khách gọi) — cần để "đánh dấu đã thu"; (b) chưa có danh sách ghi đè của mọi
-   khách (giao diện đọc từng khách); (c) số khách mỗi gói giao diện tự đếm từ `GET /plans/subscriptions`.
-5. **Gặp khi nối bước 35 đợt 3b (17/11, W-049):** (a) `expand=subscription,usage` của `GET /kernel/tenants` vẫn luôn
-   `null` dù đã có module `plans` — giao diện phải đọc mọi thuê bao riêng và gọi `…/tenants/{id}/usage` từng khách;
-   (b) `GET /auth/support-grants` bắt buộc `tenant_id`: màn "Vào dữ liệu khách" phải gọi từng khách — nên cho bỏ
-   `tenant_id` (mọi khách, theo trang); (c) trần thời hạn (`AUTOXIDE_AUTH_SUPPORT_ACCESS_MAX_HOURS`) chưa có trong API
-   — nên đưa vào `GET /kernel/client-config`; (d) nhân sự nền tảng không biết trước khách có tắt quyền vào hỗ trợ
-   không (chỉ biết khi bị từ chối `auth.support_access_disabled`); (e) thuê bao không kèm tên gói và
-   `GET /plans/catalog` chỉ có gói đang bán: khách dùng gói đã ngừng bán không thấy tên gói của mình.
-6. **Gặp khi nối chuyển khách (17/11, W-051) — cần nhất:** ở khách đang vào (uỷ quyền, hỗ trợ — header
-   `Autoxide-Tenant`), `GET /auth/me` trả 401 `auth.invalid_token` và `GET /auth/me/memberships` trả 404, nên giao diện
-   không biết người dùng được làm gì ở đó (thanh bên, nút theo permission). Xin `GET /auth/me` (hay một endpoint riêng)
-   trả permission của người gọi ở khách của request, kèm cách vào (`delegation` / `support`).
+4. **Gặp khi nối bước 35 (17/11, W-047):** **đã có cả ba** (D-335) và **đã dùng** (W-055): kỳ thanh toán của một khách
+   cho nhân sự nền tảng, danh sách ghi đè của mọi khách, `subscriber_count`.
+5. **Gặp khi nối bước 35 đợt 3b (17/11, W-049):** **đã có cả năm** (D-335) và **đã dùng** (W-055): `expand`
+   thuê bao / hạn mức, danh sách lần cấp không cần `tenant_id`, trần thời hạn trong client-config, `…/allowed`, tên gói
+   trong thuê bao.
+6. **Gặp khi nối chuyển khách (17/11, W-051):** **đã có** (D-339) và **đã dùng** (W-055): `GET /auth/me` ở khách đang
+   vào trả quyền ở đó.
 7. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
 
 ### Nhắc khi core tới bước

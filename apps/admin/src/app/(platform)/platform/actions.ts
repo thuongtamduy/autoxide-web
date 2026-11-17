@@ -9,7 +9,6 @@ import type { DialogState } from "@/components/ui/form-dialog";
 import type { FormState } from "@/lib/form";
 import {
   PLANS_MANAGE,
-  PROVISION,
   SUBSCRIPTIONS_MANAGE,
   SUPPORT_GRANT,
   TENANTS_MANAGE,
@@ -18,10 +17,8 @@ import { finishSample, type SampleOutcome, sampleGuard } from "@/lib/sample-acti
 import { can } from "@/lib/viewer";
 import {
   createGrant,
-  createProvisioning,
   migratePlacements,
   requestExport,
-  retryProvisioning,
   revokeGrant,
   setTenantStatus,
 } from "@/sample/platform";
@@ -156,46 +153,6 @@ export async function migrateFleet(state: DialogState, formData: FormData): Prom
   const sent = values(formData, ["confirm"]);
   const outcome = await migratePlacements({ dry_run: false, confirm: sent.confirm ?? "" });
   return finish(state, outcome, ["confirm"], sent);
-}
-
-// ---------------------------------------------------------------- Cấp phát
-
-export async function provisionTenant(
-  state: DialogState,
-  formData: FormData,
-): Promise<DialogState> {
-  const stop = await guard(PROVISION);
-  if (stop) return stop;
-  const fields = [
-    "tenant_name",
-    "slug",
-    "business_model",
-    "plan_id",
-    "placement",
-    "admin_email",
-    "parent_tenant_id",
-  ];
-  const sent = values(formData, [...fields, "sample_data"]);
-  const outcome = await createProvisioning({
-    tenant_name: sent.tenant_name ?? "",
-    slug: sent.slug ?? "",
-    business_model: sent.business_model ?? "",
-    plan_id: sent.plan_id ?? "",
-    placement: sent.placement ?? "",
-    admin_email: sent.admin_email ?? "",
-    sample_data: sent.sample_data === "on",
-    parent_tenant_id: sent.parent_tenant_id ?? "",
-  });
-  return finish(state, outcome, fields, sent, () => ({ go: "/platform/provisioning" }));
-}
-
-export async function retryProvisioningAction(
-  state: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const stop = await guard(PROVISION);
-  if (stop) return stop;
-  return finish(state, await retryProvisioning(text(formData, "id")), []);
 }
 
 // ---------------------------------------------------------------- Gói và giá

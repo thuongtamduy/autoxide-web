@@ -3,12 +3,12 @@
 File nội bộ cho agent phiên sau: trạng thái lúc dừng và việc kế tiếp. Cập nhật khi xong một đợt việc; quyết định
 lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`backend-debt.md`](backend-debt.md).
 
-## Trạng thái (17/11/2026, đợt 13)
+## Trạng thái (17/11/2026, đợt 14)
 
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
-- SDK ghim core ở commit `1c2e4f4` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
-  một khách — D-303 tới D-334). Quyết định mới nhất của repo này: W-051.
+- SDK ghim core ở commit `a24641c` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
+  một khách — D-303 tới D-340). Quyết định mới nhất của repo này: W-055.
 - Đợt 8 (17/11): nối đợt 1 của bước 34 (W-045): màn Cây tổ chức thật, bộ chọn nút góc trên trái (lọc bài, media, form,
   menu theo nút), tab Hồ sơ công khai thật (địa chỉ theo danh mục hành chính của core), tên cửa hàng của website lấy
   từ hồ sơ công khai của nút gốc. Đã chạy thử với core thật.
@@ -23,7 +23,9 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
   website theo tên miền, tên nút trong "Nơi bạn làm việc", chọn khách cấp dưới khi uỷ quyền, ẩn cách đăng nhập máy
   chủ tắt, migrate placement bằng API, số người giữ role, lý do khi tạm khoá khách.
 - Đợt 13 (17/11): chuyển khách đang làm việc (W-051): bộ chọn góc trên trái có khách vào được qua uỷ quyền / hỗ trợ,
-  header `Autoxide-Tenant`, dải báo, trang "quyền đã hết". Chờ core cho biết quyền ở khách đang vào.
+  header `Autoxide-Tenant`, dải báo, trang "quyền đã hết".
+- Đợt 14 (17/11): dùng các trả lời của core D-335 – D-339 (W-055): quyền ở khách đang vào, hồ sơ xuất hoá đơn, kỳ thanh
+  toán và "đánh dấu đã thu", sổ khách theo `expand`, ghi đè một lời gọi, cấp phát khách thật, xoá hẳn khách.
 - Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
   hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị
   khi khách chỉ đọc: dải báo hiện, lưu cài đặt và lưu bài bị từ chối với thông báo `tenant_read_only` của core.
@@ -63,6 +65,9 @@ Core phát triển trên `main` của nó, không chờ bản phát hành (W-025
 
 - **Còn lại của bước 34:** xác nhận lại danh tính (`/auth/me/reauth`) cho lệnh nhạy cảm của tài khoản chỉ có
   passkey; người mua tách khỏi nhân sự (`/auth/customers`); đổi `requires_mfa` của role `admin`.
+- **Bước 36 của core bắt đầu** (D-341, core `4785b50`): module `tax` — engine thuế từ dữ liệu. Nối vào màn Tài chính ›
+  Thuế (đang dữ liệu mẫu) khi SDK ghim tới bản đó.
+- Build release của core `main` đang hỏng (`autoxide-plans`, recursion limit) — đã báo core; thử thật dùng bản debug.
 - Khách tự xuất dữ liệu của mình (`POST /kernel/tenants/{id}/exports` với `kernel.data.export`) ở Cài đặt.
 - Website: ô địa chỉ khi đặt hàng dùng danh mục hành chính công khai của core (`GET /address/provinces`,
   `…/communes`) thay `src/sample/address.ts`; danh sách cửa hàng (`/organizations/public/stores`) thay phần mẫu khi

@@ -2117,7 +2117,31 @@ biểu mẫu, kết nối đối tác, lịch giao, tin đăng kênh bán…), b
 
 Lý do: chủ dự án yêu cầu (17/11); sửa ở chỗ dùng chung trước để nhiều màn lên điểm cùng lúc.
 
-## W-055 · Chuẩn hoá giao diện đợt 2: làm lại các màn tệ nhất — 2026-11-17 — chủ dự án yêu cầu
+## W-055 · Dùng các trả lời của core D-335 – D-339 — 2026-11-17 — agent quyết
+
+Quyết định:
+
+- **Quyền ở khách đang vào** (D-339): `GET /auth/me` gửi kèm khách đang vào và nhận quyền ở đó; bỏ cách tạm "không ẩn
+  màn nào" của W-051. Phần còn lại của `/auth/me…` (sửa hồ sơ, mật khẩu, MFA, passkey, phiên) vẫn ở khách của mình.
+- **Hồ sơ xuất hoá đơn** (`GET/PUT /plans/billing-profile`): thật, thay dữ liệu mẫu; địa chỉ theo danh mục hành chính
+  của core. Chi tiết khách ở mặt điều khiển hiện hồ sơ của khách (`…/tenants/{id}/billing-profile`).
+- **Kỳ thanh toán của một khách và "đánh dấu đã thu"** (`…/tenants/{id}/billing-periods`,
+  `POST /plans/billing-periods/{id}/mark-paid`, bắt buộc mã giao dịch) ở chi tiết khách.
+- **Sổ khách** đọc thuê bao và mức dùng bằng `expand=subscription,usage` (một lời gọi cho cả trang); số khách mỗi gói
+  từ `subscriber_count`; tên gói từ `plan_name` của thuê bao (cả gói đã ngừng bán). Ghi đè của mọi khách từ
+  `GET /plans/overrides`.
+- **Vào dữ liệu khách**: danh sách mọi lần cấp một lời gọi; trần thời hạn từ `auth.support_access_max_hours` của
+  client-config; chi tiết khách báo trước khi khách đã tắt hỗ trợ (`…/support-grants/allowed`) và chọn sẵn căn cứ "yêu
+  cầu của cơ quan".
+- **Cấp phát** (`/plans/provisionings`, D-338): màn và hộp tạo khách theo gói là API thật (bỏ bản mẫu); lượt hỏng có nút
+  chạy lại; trang tự làm mới khi còn lượt đang chạy. Các bước theo core: tạo khách → gán gói → dữ liệu mẫu → mời quản
+  trị viên.
+- **Xoá hẳn khách** (`POST /kernel/tenants/{id}/erase`, D-337): chỉ hiện khi khách đã tạm khoá và người xem có
+  `kernel.tenants.delete`; gõ lại tên ngắn của khách và ghi lý do; hộp xác nhận nêu chứng từ kế toán vẫn được giữ.
+
+Lý do: core trả lời đúng các yêu cầu giao diện gửi (#71, #73, #76); dùng ngay để bỏ dữ liệu mẫu và cách làm tạm.
+
+## W-056 · Chuẩn hoá giao diện đợt 2: làm lại các màn tệ nhất — 2026-11-17 — chủ dự án yêu cầu
 
 Tiếp W-054. Làm lại các màn chấm dưới 2,5/5, theo mẫu của sản phẩm lớn trong từng mảng:
 

@@ -1,22 +1,21 @@
-import { getTranslations } from "next-intl/server";
-import { provisionTenant } from "@/app/(platform)/platform/actions";
+import { getLocale, getTranslations } from "next-intl/server";
+import { provisionTenant } from "@/app/(platform)/platform/provision-actions";
 import { FormDialog } from "@/components/ui/form-dialog";
-import { listPlacements, listTenants } from "@/sample/platform";
-import { BUSINESS_MODELS } from "@/sample/platform-data";
-import { listPlans } from "@/sample/platform-plans";
+import { formatMoney } from "@/lib/format";
+import { priceChoices } from "@/lib/plans";
+import { loadAllPlans } from "@/lib/plans-server";
+import { platformData } from "@/lib/platform-server";
 
 /**
- * Nút "Cấp phát khách mới": hộp thoại tạo một lượt cấp phát chạy bằng job (tạo khách → database →
- * migrate → dữ liệu mẫu → thuê bao → mời quản trị). Lỗi theo ô; xong thì mở tab Cấp phát.
+ * Nút "Cấp phát khách mới" (`POST /plans/provisionings`, D-338 của core): tạo khách trên một gói, chạy
+ * nền (tạo khách → gán gói → dữ liệu mẫu → mời quản trị viên). Lỗi theo ô; xong thì mở tab Cấp phát.
  */
 export async function ProvisionDialog({ primary = true }: { primary?: boolean }) {
   const t = await getTranslations("platform");
-  const [{ data: plans }, { data: placements }, { data: tenants }] = await Promise.all([
-    listPlans({ status: "active", kind: "base" }),
-    listPlacements(),
-    listTenants(),
-  ]);
-  const shared = placements.filter((p) => p.kind === "shared" && !p.control);
+  const locale = await getLocale();
+  const [plans, data] = await Promise.all([loadAllPlans(), platformData()]);
+  const choices = priceChoices(plans);
+  const placements = data.placements.filter((p) => p.source === "core" && !p.control);
   return (
     <FormDialog
       action={provisionTenant}
@@ -24,13 +23,13 @@ export async function ProvisionDialog({ primary = true }: { primary?: boolean })
       triggerClass={primary ? "btn pri" : "btn"}
       title={t("provision.title")}
       intro={t("provision.intro")}
-      points={[t("provision.steps"), t("provision.kyc"), t("provision.dedicated")]}
+      points={[t("provision.stepsCore"), t("provision.kycCore"), t("provision.dedicatedCore")]}
       submit={t("provision.submit")}
       done={t("provision.done")}
       fields={[
         {
           kind: "text",
-          name: "tenant_name",
+          name: "name",
           label: t("provision.name"),
           placeholder: t("provision.namePh"),
         },
@@ -44,20 +43,17 @@ export async function ProvisionDialog({ primary = true }: { primary?: boolean })
         },
         {
           kind: "select",
-          name: "business_model",
-          label: t("provision.model"),
-          defaultValue: "single_store",
-          options: BUSINESS_MODELS.map((model) => ({ value: model, label: t(`models.${model}`) })),
-        },
-        {
-          kind: "select",
-          name: "plan_id",
+          name: "choice",
           label: t("provision.plan"),
-          defaultValue: plans.find((p) => p.is_default)?.id ?? plans[0]?.id ?? "",
-          options: plans.map((plan) => ({
-            value: plan.id,
-            label: t("provision.planOption", {
+          defaultValue: choices.find((c) => c.plan.is_default)?.value ?? choices[0]?.value ?? "",
+          options: choices.map(({ value, plan, price }) => ({
+            value,
+            label: t("provision.priceOption", {
               name: plan.name,
+              price: t("price", {
+                amount: formatMoney(price.amount.amount, price.amount.currency, locale),
+                interval: t(`interval.${price.interval === "year" ? "year" : "month"}`),
+              }),
               placement: t(`placementKind.${plan.placement}`),
             }),
           })),
@@ -66,27 +62,26 @@ export async function ProvisionDialog({ primary = true }: { primary?: boolean })
           kind: "select",
           name: "placement",
           label: t("provision.placement"),
-          defaultValue: "plan",
-          hint: t("provision.placementHint"),
+          defaultValue: "",
+          hint: t("provision.placementHintCore"),
           options: [
-            { value: "plan", label: t("provision.byPlan") },
-            ...shared.map((p) => ({
+            { value: "", label: t("provision.byPlan") },
+            ...placements.map((p) => ({
               value: p.name,
-              label: t("provision.sharedOption", { name: p.name }),
+              label: `${t(`placementKind.${p.kind}`)} · ${p.name}`,
             })),
-            { value: "dedicated", label: t("provision.dedicatedOption") },
           ],
         },
         {
           kind: "select",
-          name: "parent_tenant_id",
+          name: "parent_id",
           label: t("provision.parent"),
           defaultValue: "",
           hint: t("provision.parentHint"),
           options: [
             { value: "", label: t("provision.noParent") },
-            ...tenants
-              .filter((x) => !x.is_platform && x.status === "active")
+            ...data.tenants
+              .filter((x) => x.source === "core" && !x.is_platform && x.status === "active")
               .map((x) => ({ value: x.id, label: x.name })),
           ],
         },
@@ -96,6 +91,7 @@ export async function ProvisionDialog({ primary = true }: { primary?: boolean })
           label: t("provision.email"),
           placeholder: "chu.cua.hang@example.com",
         },
+        { kind: "text", name: "admin_name", label: t("provision.adminName") },
         {
           kind: "check",
           name: "sample_data",
