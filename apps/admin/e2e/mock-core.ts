@@ -72,8 +72,10 @@ import {
 } from "./mock-settings.ts";
 import { storefrontRoutes } from "./mock-storefront.ts";
 import {
+  enteredVia,
   preferencesOf,
   resetTeam,
+  setEntry,
   type TeamDeps,
   teamPublicRoutes,
   teamRoutes,
@@ -400,6 +402,7 @@ const server = createServer(async (request, response) => {
   }
   if (route === "POST /__org/root-name") return setRootName(request, response);
   if (route === "GET /__team/tokens") return teamTokens(response);
+  if (route === "POST /__team/entry") return setEntry(request, response);
   if (route === "POST /__plans/basic-features") return setBasicFeatures(request, response);
   if (route === "POST /__own-tenant") return setOwnTenant(request, response);
   if (route === "POST /__domains/dns") return setDnsRecord(request, response);
@@ -611,6 +614,36 @@ const server = createServer(async (request, response) => {
     return problem(response, 401, "auth.invalid_token", "Sign in.");
   }
   const account = session.account;
+  // Vào khách khác bằng header `Autoxide-Tenant` (uỷ quyền, hỗ trợ — D-310, D-313). Như core: không
+  // vào được → 403 `tenant_mismatch`; `/auth/me` ở khách khác trả 401; khách của request là khách đang
+  // vào. Dữ liệu khác core giả trả như ở khách của mình.
+  const entered = enteredVia(request.headers["autoxide-tenant"]);
+  if (entered === null) {
+    return problem(
+      response,
+      403,
+      "tenant_mismatch",
+      "The credentials belong to another tenant than the one this request is for.",
+    );
+  }
+  if (entered) {
+    if (url.pathname === "/api/v1/auth/me") {
+      return problem(response, 401, "auth.invalid_token", "Your sign-in is not valid.");
+    }
+    if (route === "GET /api/v1/kernel/tenant") {
+      return send(response, 200, {
+        data: {
+          id: entered.id,
+          slug: entered.slug,
+          name: entered.name,
+          status: "active",
+          mode: "multi",
+          platform: false,
+          read_only: false,
+        },
+      });
+    }
+  }
   // Khách bị tạm khoá hay đang bảo trì: mọi route bị từ chối, như `ensure_serving` của core.
   if (ownStatus() === "suspended") {
     return problem(

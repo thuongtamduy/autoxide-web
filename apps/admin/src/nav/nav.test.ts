@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { destinations, filterDestinations } from "@/components/shell/command-items";
+import {
+  destinationAt,
+  destinations,
+  filterDestinations,
+  hitIcon,
+  pushRecent,
+  RECENT_MAX,
+  suggestions,
+} from "@/components/shell/command-items";
 import { fold } from "@/lib/fold";
 import { initialsOf } from "@/lib/initials";
 import { isTheme, themeClass } from "@/lib/theme";
@@ -142,6 +150,59 @@ describe("bảng lệnh", () => {
     expect(filterDestinations(list, "cai dat").map((d) => d.href)).toEqual(["/settings/modules"]);
     expect(filterDestinations(list, "tai khoan").map((d) => d.href)).toEqual(["/account"]);
     expect(filterDestinations(list, "")).toHaveLength(2);
+  });
+
+  const groups = [
+    {
+      id: "content",
+      label: "Nội dung",
+      icon: "page" as const,
+      pages: [
+        { id: "posts", label: "Bài viết", href: "/content" },
+        { id: "media", label: "Thư viện media", href: "/content/media" },
+      ],
+    },
+    {
+      id: "settings",
+      label: "Cài đặt",
+      icon: "gear" as const,
+      pages: [{ id: "plan", label: "Gói", href: "/settings/plan" }],
+    },
+  ];
+  const all = destinations(groups, [
+    { id: "account", label: "Tài khoản của tôi", href: "/account", icon: "user" },
+  ]);
+
+  it("mỗi dòng mang icon của phân hệ; kết quả tìm mang icon theo loại", () => {
+    expect(all.map((d) => d.icon)).toEqual(["page", "page", "gear", "user"]);
+    expect(hitIcon("media/1")).toBe("image");
+    expect(hitIcon("user/1")).toBe("user");
+    expect(hitIcon("entry/1")).toBe("page");
+  });
+
+  it("gần đây: màn mới lên đầu, không trùng, giữ tối đa RECENT_MAX", () => {
+    let keys: string[] = [];
+    for (const key of ["a", "b", "a", "c", "d", "e", "f"]) keys = pushRecent(keys, key);
+    expect(keys).toEqual(["f", "e", "d", "c", "a"]);
+    expect(keys).toHaveLength(RECENT_MAX);
+  });
+
+  it("tìm màn theo địa chỉ, bỏ chuỗi truy vấn", () => {
+    expect(destinationAt(all, "/content/media")?.key).toBe("content/media");
+    expect(destinationAt(all, "/content/abc")).toBeUndefined();
+  });
+
+  it("chưa gõ gì: màn gần đây nếu có (bỏ màn đã mất), không thì màn đầu của mỗi phân hệ", () => {
+    const recent = suggestions(all, groups, ["settings/plan", "gone/page", "content/media"]);
+    expect(recent.kind).toBe("recent");
+    expect(recent.items.map((d) => d.key)).toEqual(["settings/plan", "content/media"]);
+
+    const areas = suggestions(all, groups, ["gone/page"]);
+    expect(areas.kind).toBe("areas");
+    expect(areas.items.map((d) => [d.label, d.href, d.context])).toEqual([
+      ["Nội dung", "/content", ""],
+      ["Cài đặt", "/settings/plan", ""],
+    ]);
   });
 });
 

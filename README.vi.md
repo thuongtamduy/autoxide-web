@@ -44,6 +44,9 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
   thuê bao của mọi khách (đổi gói, huỷ, khoá hẳn). Tổng quan hiện gói của bạn và hạn mức gần chạm nhất;
   việc gói chưa có (tạo API key, gợi ý AI cho bài viết) bị khoá kèm nhãn "Cần gói cao hơn", và phân hệ
   ngoài gói không hiện trên thanh bên.
+- **Chuyển khách đang làm việc**: người được làm việc ở khách khác (qua uỷ quyền của khách cha, hay quyền
+  vào hỗ trợ của nền tảng) chọn khách đó ở bộ chọn góc trên trái; dải báo cho biết đang ở đâu, kèm nút
+  quay về.
 - **Đăng nhập bằng link qua email** và **Tài khoản › Hồ sơ**: tên, ngôn ngữ và múi giờ ưa thích, nơi
   bạn làm việc (các nút và role của bạn, các khách bạn làm việc được).
 - **Cây tổ chức**: các nút theo loại, ai làm việc ở mỗi nút (cả người được gán ở nút trên), cài đặt

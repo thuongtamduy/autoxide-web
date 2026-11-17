@@ -272,3 +272,36 @@ test("trang đăng nhập chỉ hiện cách đăng nhập máy chủ bật (cli
   await expect(page.getByRole("link", { name: "Sign in with a link by email" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Sign in with a passkey" })).toHaveCount(0);
 });
+
+test("chuyển khách đang làm việc: vào khách con qua uỷ quyền, quay về; hết quyền thì báo", async ({
+  page,
+}) => {
+  const child = "00000000-0000-7000-8000-0000000000d1";
+  await page.request.post(`${CORE}/__team/entry`, {
+    data: { id: child, name: "Chi nhánh Đà Nẵng", slug: "da-nang", access: "delegation" },
+  });
+  await signIn(page, "/");
+  await page.getByRole("button", { name: "Change organization unit" }).click();
+  const others = page.getByTestId("other-tenants");
+  await expect(others).toContainText("Delegation");
+  await others.getByRole("button", { name: /Chi nhánh Đà Nẵng/ }).click();
+  const banner = page.getByTestId("entered-banner");
+  await expect(banner).toContainText("You are working in Chi nhánh Đà Nẵng through Delegation");
+  await expect(page.getByTestId("tenant-name")).toHaveText("Chi nhánh Đà Nẵng");
+
+  await banner.getByRole("button", { name: "Back to my customer" }).click();
+  await expect(page.getByTestId("entered-banner")).toHaveCount(0);
+
+  // Vào lại rồi khách cha thu hồi uỷ quyền: trang báo quyền đã hết, cho quay về.
+  await page.getByRole("button", { name: "Change organization unit" }).click();
+  await others.getByRole("button", { name: /Chi nhánh Đà Nẵng/ }).click();
+  await expect(page.getByTestId("entered-banner")).toBeVisible();
+  await page.request.post(`${CORE}/__team/entry`, { data: { id: child, revoke: true } });
+  await page.reload();
+  await expect(page.getByTestId("entry-ended")).toContainText(
+    "Your access to this customer has ended",
+  );
+  await page.getByRole("button", { name: "Back to my customer" }).click();
+  await expect(page.getByTestId("entry-ended")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});

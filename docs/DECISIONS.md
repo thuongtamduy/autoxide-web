@@ -2024,7 +2024,50 @@ Quyết định:
 
 Lý do: core làm theo yêu cầu của giao diện; không dùng thì những chỗ đó vẫn đoán, tự đếm hay đọc thừa.
 
-## W-051 · Quầy bán làm lại theo khung 3 của thiết kế — 2026-11-17 — chủ dự án yêu cầu
+## W-051 · Chuyển khách đang làm việc (uỷ quyền, quyền vào hỗ trợ) — 2026-11-17 — agent quyết
+
+Quyết định:
+
+- Bộ chọn góc trên trái có mục "Khách khác bạn làm việc được" từ `GET /auth/me/tenants` (khách vào qua uỷ quyền hay
+  quyền vào hỗ trợ). Chọn một khách thì Server Action kiểm lại khách đó có trong danh sách của core, rồi ghi ID vào
+  cookie `ax_work` (`httpOnly`); mọi lời gọi core sau đó (trang, Server Action, route handler) gửi
+  `Autoxide-Tenant: <id>` cùng token của người dùng. Quay về khách của mình thì xoá cookie. Đăng nhập, đăng xuất đều
+  xoá nó. Nút đang chọn (`ax_unit`) cũng xoá khi đổi khách.
+- Không gửi header cho `/auth/me…` (tài khoản của chính mình): ở khách khác core trả 401 cho `GET /auth/me`. Làm mới
+  token không đi qua client có header (refresh token tự mang khách).
+- Đang ở khách khác: dải báo ở mọi màn (tên khách, qua uỷ quyền hay hỗ trợ, nút "Về khách của tôi"). Khách không còn
+  trong danh sách (thu hồi, hết hạn) thì khung thay bằng trang "Quyền vào khách này đã hết" có nút quay về.
+- **Quyền ở khách đang vào chưa biết**: core chưa có cách cho biết permission của người dùng ở khách khác (đã báo
+  core). Tạm thời giao diện không ẩn màn nào khi đang ở khách khác; core vẫn kiểm từng lời gọi và trang hiện câu từ chối
+  của core. Dải báo nói rõ điều này.
+
+Lý do: core đã có cơ chế vào khách (D-310, D-313); thiếu phần giao diện thì người được uỷ quyền và nhân sự hỗ trợ không
+dùng được. Đã chạy thử với core thật: nhân viên giữ role được uỷ quyền vào khách con; nhân sự nền tảng vào khách bằng
+quyền vào hỗ trợ; quay về; khách tắt hỗ trợ thì core từ chối cấp.
+
+Đã cân nhắc: suy quyền ở khách đang vào từ role của uỷ quyền / lần cấp — phải đọc role ở khách của mình (cần
+`auth.roles.read`, nhân viên thường không có) và không tính được phần core tự thêm hay bớt; chờ core trả quyền thật.
+
+## W-052 · Bảng lệnh Ctrl K: gợi ý ít dòng, icon, phân hệ bên phải, chân bảng nhắc phím — 2026-11-17 — chủ dự án yêu cầu
+
+Quyết định (học cách Linear, Vercel, GitHub, Raycast làm bảng lệnh):
+
+- **Chưa gõ gì thì gợi ý, không đổ ra mọi màn.** Trước đây bảng mở ra là vài chục dòng "Đi tới", người dùng phải cuộn.
+  Giờ: "Gần đây" (tối đa 5 màn vừa mở trên máy này, bỏ màn đang đứng, lưu ở `localStorage` — mất thì thôi) xếp
+  trước "Tạo mới"; chưa có màn gần đây thì "Tạo mới" rồi "Phân hệ" (màn đầu của mỗi phân hệ, như thanh bên). Gõ chữ
+  thì vẫn tìm trong mọi màn và dữ liệu thật như trước.
+- **Mỗi dòng có icon** (icon của phân hệ; dấu cộng cho "Tạo mới"; bài viết, ảnh, người cho kết quả tìm), tên ở trái,
+  phân hệ mờ ở phải. Trước đây phân hệ đứng trước tên ("Tổng quan › Bảng điều khiển") nên tên các dòng không thẳng
+  cột, mắt phải đọc qua phần lặp lại.
+- **Khung**: rộng 640px, cao tối đa 540px; chỉ danh sách cuộn, ô gõ và chân bảng đứng yên; dòng cao 40px (48px trên
+  điện thoại). Chân bảng nhắc phím ↑↓ / ↵ / Esc (ẩn trên điện thoại). Tên nhóm viết thường, không in hoa giãn chữ.
+- Dòng chọn bằng phím luôn cuộn vào khung (trước đây đi xuống quá khung thì dòng chọn biến mất); rê chuột chọn dòng
+  (`pointermove`, để danh sách tự cuộn dưới con trỏ đứng yên không đổi dòng). Ẩn nút xoá chữ của trình duyệt.
+
+Đã cân nhắc: tô đậm chữ khớp — tìm không dấu (`fold`) làm vị trí khớp trong chữ có dấu khó tính đúng, lợi ít; xếp hạng
+trộn mọi nhóm như Linear — cần điểm khớp, để sau khi danh sách dài thêm.
+
+## W-053 · Quầy bán làm lại theo khung 3 của thiết kế — 2026-11-17 — chủ dự án yêu cầu
 
 Chủ dự án thấy màn "Bán tại quầy" sơ sài so với phần mềm bán hàng trên thị trường. Bản thiết kế cũ chỉ có hộp thoại
 760px (danh sách tên + nút −/+); code kéo nó ra cả trang nên càng trống. Đã vẽ khung mới vào artifact thiết kế
