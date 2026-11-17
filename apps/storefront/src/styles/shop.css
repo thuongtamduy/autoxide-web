@@ -2078,11 +2078,10 @@
   .sp .home-hero > .rise > div:last-child {
     display: none;
   }
-  .sp .home-hero > .rise > div:has(> .btn) {
-    flex-wrap: nowrap;
-  }
+  /* Như `.hero-actions` ở site.css: chia đều một hàng khi đủ chỗ, không đủ thì xuống hàng. */
   .sp .home-hero > .rise > div:has(> .btn) > .btn {
     flex: 1 1 0;
+    min-width: max-content;
     justify-content: center;
     padding-left: 10px;
     padding-right: 10px;
