@@ -1467,7 +1467,7 @@
         "embeddings": "Search by meaning (embeddings)",
         "embeddingModel": "{model} · {dimensions} dimensions",
         "embeddingsOff": "Off.",
-        "about": "The server operator turns AI on with the AUTOXIDE_AI_* and AUTOXIDE_EMBEDDING_* settings. AI output is only ever a suggestion or a draft.",
+        "about": "The server operator turns AI on and picks the provider and model.",
         "name": "Server AI",
         "unknown": "Unknown"
       },
@@ -1476,14 +1476,13 @@
       "checkFailed": "Last test failed",
       "state": {
         "set": "Set",
-        "unset": "Not set",
-        "error": "Last test failed"
+        "unset": "Not set"
       },
       "test": "Test connection",
       "testLabel": "Test the {name} connection",
       "tested": "Tested. The result is in the list.",
       "change": "Change",
-      "secretNote": "Changing a secret does not interrupt anything: the new value is used from the next request. The history records the setting name and who changed it (event kernel.setting_changed), never the value.",
+      "secretNote": "Secrets are encrypted when saved and never shown again, not even to you; to change one, enter a new value. A new value is used from the next request, without interruption. The history records the setting name and who changed it, never the value.",
       "saved": "Connection saved.",
       "secretKeep": "Set. Leave empty to keep the current value.",
       "secretNew": "Secret: stored encrypted, never shown again.",
@@ -1725,25 +1724,7 @@
             "about": "Languages image descriptions (alt) may be translated into, comma-separated, e.g. en,vi."
           }
         }
-      },
-      "title": "Partner connections (sample)",
-      "about": "Connection details of your own partners. Without them, the server-wide configuration is used. Secrets are encrypted when saved and never shown again; to change one, enter a new value. Needs kernel.settings.manage.",
-      "names": {
-        "mail": "Email (SMTP)",
-        "sms": "SMS brand name",
-        "payment": "Payment gateway",
-        "einvoice": "E-invoices"
-      },
-      "notSet": "not set",
-      "hints": {
-        "mail": "Sends sign-in, invitation and notification emails.",
-        "sms": "Needed to verify phone numbers of people who post content. Without it, that feature is off.",
-        "payment": "A licensed partner collects buyers' money; it never goes to your account.",
-        "einvoice": "Issues e-invoices through a licensed provider."
-      },
-      "formTitle": "{name} settings",
-      "setUp": "Set up",
-      "formIntro": "Values are saved for this account only."
+      }
     },
     "jobs": {
       "title": "Recent jobs",
@@ -2062,8 +2043,7 @@
       "eventsEmptyText": "Pick a kind of record and enter its code or id: every event about it is listed newest first, with whether every receiver (modules, webhooks) got it. Useful when a customer asks why an order did not move, or a connected system missed an update.",
       "noEventsText": "Nothing was recorded for {kind} {id}. Check the code, or the kind of record.",
       "clearRecord": "Clear",
-      "eventsFor": "{count, plural, one {# event} other {# events}} for {kind} {id}, newest first.",
-      "eventsAbout": "Pick a kind of record and its id to see every event about it, in order. Try {example}."
+      "eventsFor": "{count, plural, one {# event} other {# events}} for {kind} {id}, newest first."
     },
     "data": {
       "title": "Export all your data",
@@ -3685,9 +3665,7 @@
         "draftNote": "Saving a draft sends nothing. Test, schedule and send come next.",
         "editNote": "After saving, the mail exactly as sent is shown below.",
         "cancel": "Cancel",
-        "senderFallback": "Your shop",
-        "showPreview": "Show preview",
-        "hidePreview": "Hide preview"
+        "senderFallback": "Your shop"
       },
       "test": {
         "open": "Send test",
@@ -5839,8 +5817,7 @@
       },
       "noCustomersTitle": "No customers to support yet",
       "noCustomersText": "Grants give a staff member time-limited access to one customer’s data, with a reason. There is no customer besides the platform yet; once there is one, grants and visits show here.",
-      "openRegister": "Open the customer register",
-      "noCustomers": "There is no customer yet besides the platform."
+      "openRegister": "Open the customer register"
     },
     "platformOnly": "Only staff of the platform tenant (the operator's own) can use the control plane. You are signed in to a customer's account.",
     "newTenant": {
@@ -8752,7 +8729,7 @@
     },
     "calendar": {
       "about": "The expected delivery date shown to buyers comes from the cut-off time, working days and holidays. It is data with an effective date: changing it never alters dates already promised to placed orders.",
-      "formTitle": "Cut-off time and pickup days",
+      "formTitle": "Change cut-off time and pickup days",
       "submit": "Save calendar",
       "done": "Saved; applies to orders from the effective date",
       "cutoff": "Daily cut-off time",
@@ -8807,13 +8784,7 @@
       "pastDay": "Past days can't be changed; orders placed then keep the dates they were promised.",
       "markHoliday": "Mark as holiday",
       "fromPicked": "Applies to orders from {day}.",
-      "fromTomorrow": "Applies from tomorrow, {day}. To start on another date, pick that day on the calendar.",
-      "fromHint": "Tomorrow or later; the old calendar still applies to orders before this date.",
-      "current": "In force: cut-off {cutoff}, pickups {days}.",
-      "orderedAt": "Ordered {time} {day}",
-      "inTime": "Before the cut-off: picked up {pickup}, delivered in 1–2 working days.",
-      "late": "After the cut-off: picked up {pickup}; non-working days are skipped.",
-      "tileFoot": "Within the province, standard delivery"
+      "fromTomorrow": "Applies from tomorrow, {day}. To start on another date, pick that day on the calendar."
     },
     "holiday": {
       "button": "Add holiday",
@@ -9772,7 +9743,7 @@
       "total": "Total",
       "status": "Status",
       "money": "Money",
-      "items": "{count} items",
+      "items": "{count, plural, one {# item} other {# items}}",
       "orderStatus": {
         "paid": "Paid, to ship",
         "shipping": "Shipping",
@@ -11376,7 +11347,6 @@
       "empty": "No accounts match.",
       "emptySearch": "No account matches “{q}”.",
       "clearSearch": "Clear search",
-      "unverifiedTitle": "Unverified phone numbers",
       "aboutCore": "Buyers sign in with their own account on your shop and hold no permissions. Staff need auth.customers.read to view and auth.customers.manage to lock or unlock. Nobody can see passwords.",
       "all": "All",
       "none": "No buyer account here.",

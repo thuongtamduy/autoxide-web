@@ -1467,7 +1467,7 @@
         "embeddings": "Tìm theo ý nghĩa (embedding)",
         "embeddingModel": "{model} · {dimensions} chiều",
         "embeddingsOff": "Đang tắt.",
-        "about": "Nhà vận hành máy chủ bật AI bằng các biến AUTOXIDE_AI_* và AUTOXIDE_EMBEDDING_*. Kết quả của AI chỉ là gợi ý hay bản nháp.",
+        "about": "Nhà vận hành máy chủ bật AI và chọn nhà cung cấp, mô hình.",
         "name": "AI của máy chủ",
         "unknown": "Không rõ"
       },
@@ -1476,14 +1476,13 @@
       "checkFailed": "Lần kiểm tra gần nhất lỗi",
       "state": {
         "set": "Đã đặt",
-        "unset": "Chưa đặt",
-        "error": "Lỗi lần gần nhất"
+        "unset": "Chưa đặt"
       },
       "test": "Kiểm tra kết nối",
       "testLabel": "Kiểm tra kết nối {name}",
       "tested": "Đã kiểm tra. Kết quả ở trong danh sách.",
       "change": "Đổi",
-      "secretNote": "Đổi secret không làm gián đoạn: giá trị mới dùng cho request kế tiếp. Lịch sử chỉ ghi tên cài đặt và người đổi (event kernel.setting_changed), không ghi giá trị.",
+      "secretNote": "Secret được mã hoá khi lưu và không bao giờ hiện lại, kể cả với bạn; muốn đổi thì nhập giá trị mới. Giá trị mới dùng từ request kế tiếp, không gián đoạn. Nhật ký chỉ ghi tên cài đặt và người đổi, không ghi giá trị.",
       "saved": "Đã lưu kết nối.",
       "secretKeep": "Đã đặt. Để trống để giữ giá trị hiện tại.",
       "secretNew": "Secret: lưu mã hoá, không bao giờ hiện lại.",
@@ -1725,25 +1724,7 @@
             "about": "Các ngôn ngữ được dịch mô tả ảnh (alt), cách nhau bằng dấu phẩy, vd vi,en."
           }
         }
-      },
-      "title": "Kết nối đối tác (mẫu)",
-      "about": "Thông tin kết nối riêng của bạn. Không đặt thì dùng cấu hình chung của máy chủ. Secret được mã hoá khi lưu và không bao giờ hiện lại; muốn đổi thì nhập giá trị mới. Cần kernel.settings.manage.",
-      "names": {
-        "mail": "Email (SMTP)",
-        "sms": "SMS brandname",
-        "payment": "Cổng thanh toán",
-        "einvoice": "Hoá đơn điện tử"
-      },
-      "notSet": "chưa đặt",
-      "hints": {
-        "mail": "Gửi thư đăng nhập, lời mời và thông báo.",
-        "sms": "Cần cho mã xác thực số điện thoại khi đăng nội dung. Chưa đặt thì tính năng này tắt.",
-        "payment": "Đối tác có giấy phép thu hộ tiền người mua; tiền không về tài khoản của bạn.",
-        "einvoice": "Phát hành hoá đơn điện tử qua nhà cung cấp có giấy phép."
-      },
-      "formTitle": "Cài đặt {name}",
-      "setUp": "Thiết lập",
-      "formIntro": "Giá trị chỉ lưu cho khách này."
+      }
     },
     "jobs": {
       "title": "Job gần đây",
@@ -2062,8 +2043,7 @@
       "eventsEmptyText": "Chọn loại bản ghi và nhập mã hoặc id: mọi event về nó hiện theo thời gian, mới nhất trước, kèm việc đã giao cho mọi bên nhận (module, webhook) chưa. Dùng khi khách hỏi vì sao đơn đứng yên, hay hệ thống kết nối bị sót một cập nhật.",
       "noEventsText": "Chưa có event nào cho {kind} {id}. Kiểm lại mã hoặc loại bản ghi.",
       "clearRecord": "Xoá",
-      "eventsFor": "{count, plural, other {# event}} của {kind} {id}, mới nhất trước.",
-      "eventsAbout": "Chọn loại bản ghi và mã của nó để xem mọi event về nó theo thứ tự. Thử {example}."
+      "eventsFor": "{count, plural, other {# event}} của {kind} {id}, mới nhất trước."
     },
     "data": {
       "title": "Xuất toàn bộ dữ liệu",
@@ -3685,9 +3665,7 @@
         "draftNote": "Lưu nháp chưa gửi gì. Gửi thử, hẹn giờ và gửi ở bước sau.",
         "editNote": "Lưu xong, thư đúng như khi gửi hiện ở mục bên dưới.",
         "cancel": "Huỷ",
-        "senderFallback": "Cửa hàng của bạn",
-        "showPreview": "Xem trước",
-        "hidePreview": "Ẩn xem trước"
+        "senderFallback": "Cửa hàng của bạn"
       },
       "test": {
         "open": "Gửi thử",
@@ -5839,8 +5817,7 @@
       },
       "noCustomersTitle": "Chưa có khách nào để hỗ trợ",
       "noCustomersText": "Lần cấp cho một nhân sự vào dữ liệu của một khách trong thời hạn, có lý do. Hiện chưa có khách nào ngoài khách nền tảng; khi có, các lần cấp và lần vào hiện ở đây.",
-      "openRegister": "Mở sổ khách hàng",
-      "noCustomers": "Chưa có khách nào ngoài khách nền tảng."
+      "openRegister": "Mở sổ khách hàng"
     },
     "platformOnly": "Chỉ nhân sự của khách nền tảng (của chính nhà vận hành) dùng được mặt điều khiển. Bạn đang đăng nhập vào tài khoản của một khách hàng.",
     "newTenant": {
@@ -8752,7 +8729,7 @@
     },
     "calendar": {
       "about": "Ngày giao dự kiến báo cho người mua tính từ giờ chốt, ngày làm việc và ngày nghỉ. Đây là dữ liệu có ngày hiệu lực: đổi lịch không làm sai ngày dự kiến của đơn đã đặt.",
-      "formTitle": "Giờ chốt và ngày lấy hàng",
+      "formTitle": "Đổi giờ chốt và ngày lấy hàng",
       "submit": "Lưu lịch",
       "done": "Đã lưu; áp dụng cho đơn đặt từ ngày hiệu lực",
       "cutoff": "Giờ chốt trong ngày",
@@ -8807,13 +8784,7 @@
       "pastDay": "Ngày đã qua không sửa được; đơn đặt hôm đó giữ ngày giao đã báo.",
       "markHoliday": "Đặt làm ngày nghỉ",
       "fromPicked": "Áp dụng cho đơn đặt từ {day}.",
-      "fromTomorrow": "Áp dụng từ ngày mai, {day}. Muốn ngày khác thì bấm ngày đó trên lịch.",
-      "fromHint": "Từ ngày mai trở đi; lịch cũ vẫn áp cho đơn đặt trước ngày này.",
-      "current": "Đang áp dụng: chốt {cutoff}, lấy hàng {days}.",
-      "orderedAt": "Đặt {time} {day}",
-      "inTime": "Trước giờ chốt: hãng lấy {pickup}, giao 1–2 ngày làm việc.",
-      "late": "Sau giờ chốt: hãng lấy {pickup}; ngày không làm việc không tính.",
-      "tileFoot": "Nội tỉnh, giao tiêu chuẩn"
+      "fromTomorrow": "Áp dụng từ ngày mai, {day}. Muốn ngày khác thì bấm ngày đó trên lịch."
     },
     "holiday": {
       "button": "Thêm ngày nghỉ",
@@ -9772,7 +9743,7 @@
       "total": "Tổng",
       "status": "Trạng thái",
       "money": "Tiền",
-      "items": "{count} món",
+      "items": "{count, plural, other {# món}}",
       "orderStatus": {
         "paid": "Đã trả, chờ giao",
         "shipping": "Đang giao",
@@ -11344,7 +11315,7 @@
       "verified": "Đã xác thực",
       "notVerified": "Chưa",
       "notVerifiedEffect": "Chưa — mua được, chưa bình luận, đánh giá được (NĐ 147/2024)",
-      "lock": "Khoá tài khoản",
+      "lock": "Khoá",
       "locked": "Đã khoá; mọi phiên đăng nhập của người này bị thu hồi.",
       "unlock": "Mở khoá",
       "unlocked": "Đã mở khoá; người mua đăng nhập lại được.",
@@ -11376,7 +11347,6 @@
       "empty": "Không có tài khoản nào khớp.",
       "emptySearch": "Không có tài khoản nào khớp “{q}”.",
       "clearSearch": "Xoá chữ tìm",
-      "unverifiedTitle": "Số điện thoại chưa xác thực",
       "aboutCore": "Người mua đăng nhập bằng tài khoản riêng ở cửa hàng của bạn, không có permission nào. Nhân viên cần auth.customers.read để xem, auth.customers.manage để khoá / mở. Không ai xem được mật khẩu.",
       "all": "Tất cả",
       "none": "Không có tài khoản người mua nào.",

@@ -2167,3 +2167,27 @@ Cần ở core (gửi khi gom đợt sau): phiên bản riêng từng module; da
 mua (bước 34); email người gửi của bản tin.
 
 Lý do: chủ dự án yêu cầu (17/11). Chưa vẽ vào artifact thiết kế (làm thẳng code cho nhanh); chưa chạy với core thật.
+
+## W-057 · Xác nhận lại danh tính, tài khoản người mua, khách tự xuất dữ liệu, địa chỉ website theo danh mục thật — 2026-11-17 — agent quyết
+
+Quyết định:
+
+- **Xác nhận lại danh tính** (`POST /auth/me/reauth`): đổi email, bật xác thực hai bước, thêm passkey, xoá tài khoản
+  có khối "Xác nhận là bạn" dùng chung — mật khẩu (gửi thẳng như trước), mã của app xác thực hay một passkey đã có (xin
+  `reauth_token` dùng một lần rồi gửi thay mật khẩu). Chỉ đưa ra cách tài khoản có. Tài khoản chỉ có passkey nay làm được
+  các lệnh này; trang Dữ liệu cho xoá tài khoản khi có bất kỳ cách nào. Chưa làm cách "thư xác nhận" (`email_link`): token
+  nằm trong thư, cần trang nhận link riêng — để khi có tài khoản không mật khẩu, không passkey (đăng nhập ngoài, bước 40).
+  Core báo mã sai ở ô `code` dù ô gửi là `totp_code`: giao diện đổi tên (đã báo core).
+- **Tài khoản người mua** (`/auth/customers`): tab thật — tìm theo email hay tên, lọc đang dùng / đã khoá, khoá (hỏi lại,
+  người mua bị đăng xuất mọi nơi) và mở, bật / tắt tự đăng ký (`auth.customer_registration` ở nút gốc). Màn Khách hàng còn
+  lại là dữ liệu mẫu (bước 47); tắt dữ liệu mẫu thì màn chỉ còn tab này (`realWith` của sổ điều hướng), các tab mẫu trả 404.
+- **Cài đặt › Dữ liệu của bạn**: quản trị viên của khách tự xuất toàn bộ dữ liệu (`kernel.data.export`), tải qua route của
+  giao diện. Sửa kèm: tab Gói và thuê bao còn đánh dấu mẫu từ trước W-047 nên bị ẩn khi tắt dữ liệu mẫu.
+- **Website**: ô tỉnh, phường khi đặt hàng và trong sổ địa chỉ đọc danh mục hành chính công khai của core
+  (`GET /address/provinces`, `…/communes`; chọn tỉnh mới tải phường). Core chưa có danh mục thì danh sách mẫu (khi bật mẫu).
+  Mã phường của danh sách mẫu đổi sang mã chính thức (QĐ 19/2025/QĐ-TTg) để địa chỉ mẫu đã lưu khớp danh mục thật; đơn
+  ghi tên tỉnh, phường người mua thấy lúc đặt.
+
+Lý do: core đã có các API này (bước 33–34); đây là bốn việc còn lại trong `NEXT.md`. Đã chạy thử với core thật: bật app
+xác thực rồi đổi email bằng mã; khoá người mua thì người đó không đăng nhập được, mở lại được; tìm không dấu; khách tự
+xuất và tải tệp; website hiện 34 tỉnh, Đà Nẵng 95 phường, tính phí và sang bước thanh toán.

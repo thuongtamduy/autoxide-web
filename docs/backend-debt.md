@@ -58,7 +58,9 @@ placement bằng API, số người giữ role, `reason` khi sửa khách.
    trong thuê bao.
 6. **Gặp khi nối chuyển khách (17/11, W-051):** **đã có** (D-339) và **đã dùng** (W-055): `GET /auth/me` ở khách đang
    vào trả quyền ở đó.
-7. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
+7. **Gặp khi nối xác nhận lại danh tính (17/11, W-057):** `POST /auth/me/reauth` với mã sai báo lỗi ở ô `code`, trong khi
+   ô gửi lên là `totp_code` — giao diện đổi tên ô; nên báo đúng tên ô đã gửi.
+8. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
 
 ### Nhắc khi core tới bước
 
