@@ -13,6 +13,8 @@ async function signIn(page: Page, path: string) {
 
 const toast = (page: Page) => page.locator(".toast[role=status]");
 const dialog = (page: Page) => page.locator("dialog[open]");
+/** Hôm nay theo giờ Việt Nam (YYYY-MM-DD). */
+const today = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
 
 test("khuyến mại: thử giỏ nêu vì sao áp / không áp, bật bị chặn vì vượt trần, sửa giá rồi bật", async ({
   page,
@@ -155,4 +157,40 @@ test("vận chuyển: đặt hãng, vận đơn tay báo lỗi theo ô, khớp C
   const quote = page.locator(".pm-result");
   await expect(quote).toContainText("Add 310,000 ₫ for free delivery.");
   await expect(quote).toContainText("The carrier connection is failing");
+
+  // Lịch giao: lịch tháng, giờ 24h, ngày dd/mm; bấm một ngày để đặt ngày nghỉ và đổi giờ chốt từ
+  // ngày đó. Chọn ngày 15 của tháng sau tháng sau để không đụng ngày giao của test khác.
+  await page.goto("/sales/shipping/calendar");
+  await expect(
+    page.getByRole("heading", { name: "Orders placed before 16:00 are picked up the same day" }),
+  ).toBeVisible();
+  await expect(page.locator(".sc-cal")).not.toContainText(/\d{1,2}:\d\d\s?[AP]M/);
+  const months = page.getByRole("navigation", { name: "Change month" });
+  const target = new Date(`${today().slice(0, 7)}-01T00:00:00Z`);
+  target.setUTCMonth(target.getUTCMonth() + 2);
+  const month = target.toISOString().slice(0, 7);
+  await months.getByRole("link", { name: "Next month" }).click();
+  await expect(page).toHaveURL(/month=/);
+  await months.getByRole("link", { name: "Next month" }).click();
+  await expect(page).toHaveURL(new RegExp(`month=${month}$`));
+  const day = `${month}-15`;
+  const label = `15/${month.slice(5)}/${month.slice(0, 4)}`;
+  await page.locator(`.sc-cal a[href$="day=${day}"]`).click();
+  await expect(page.getByRole("heading", { level: 3, name: new RegExp(label) })).toBeVisible();
+  await page.getByRole("button", { name: "Mark as holiday" }).click();
+  await expect(dialog(page).getByLabel("From")).toHaveValue(day);
+  await dialog(page).getByLabel("Name").fill("Nghỉ thử e2e");
+  await dialog(page).getByRole("button", { name: "Add", exact: true }).click();
+  await expect(toast(page)).toContainText("Holiday added");
+  await expect(
+    page.getByRole("link", { name: new RegExp(`${label} · Holiday: Nghỉ thử e2e`) }),
+  ).toBeVisible();
+  // Giờ chốt chọn trong danh sách 24h, áp từ ngày đang chọn.
+  await expect(page.getByText(`Applies to orders from`)).toContainText(label);
+  await page.getByLabel("Daily cut-off time").selectOption("15:00");
+  await page.getByRole("button", { name: "Save calendar" }).click();
+  await expect(toast(page)).toContainText("Saved");
+  await expect(
+    page.getByRole("row").filter({ hasText: label }).filter({ hasText: "15:00" }),
+  ).toContainText("Upcoming");
 });
