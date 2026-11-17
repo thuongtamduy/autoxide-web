@@ -2202,8 +2202,9 @@ Tiếp W-054, W-056.
   `DialogHostContext`), `SortTh` (`?sort=&dir=`, `aria-sort`), `Pager` (có tổng "1–25 trong 312" khi nguồn có tổng;
   nguồn theo con trỏ chỉ Trước / Sau, không bịa tổng). **Quy ước:** dòng bảng hiện tối đa một nút phụ, còn lại vào
   "⋯". Thao tác hàng loạt trên core thật lặp lệnh từng cái (core chưa có endpoint hàng loạt); sắp theo cột chỉ bật
-  khi nguồn sắp được (core: chỉ `order` theo thời gian). Đã áp: sản phẩm, khách hàng, tài khoản người mua, nhà cung
-  cấp, đơn hàng (thay `ord-bulk`), bình luận, người đăng ký, mã giảm giá (mẫu có thêm "Đã vô hiệu").
+  khi nguồn sắp được (core: chỉ `order` theo thời gian). Đã áp: sản phẩm, khách hàng, nhà cung
+  cấp, đơn hàng (thay `ord-bulk`), bình luận, người đăng ký, mã giảm giá (mẫu có thêm "Đã vô hiệu"). Tài khoản người
+  mua giữ bản của W-057 (API thật `/auth/customers`); áp bộ bảng cho màn đó ở bước sau.
 - **Biểu đồ** (`src/components/ui/charts/`, SVG vẽ ở máy chủ, không thêm thư viện): đường / vùng có kỳ trước nét đứt và
   vạch ngưỡng, cột, sparkline; `role="img"` có nhãn, bảng "Xem số liệu", phím mũi tên xem từng mốc. Màu chuỗi
   `--viz-1…6` ở `globals.css` (đạt kiểm phân biệt màu; luôn có chú giải và bảng). Áp ở Tổng quan (doanh thu 7/30

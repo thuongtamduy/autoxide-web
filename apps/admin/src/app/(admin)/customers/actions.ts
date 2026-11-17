@@ -109,7 +109,6 @@ export async function adjustPointsAction(state: FormState, formData: FormData): 
   return finishCommerce("customers", state, outcome, POINT_FIELDS, values);
 }
 
-
 // ---- Hàng loạt (bảng Hồ sơ khách). Hàm mẫu (bước 47) chỉ có lệnh
 // từng cái: lặp từng id, gom lỗi.
 
