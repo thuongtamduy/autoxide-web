@@ -38,6 +38,10 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
   với độ sâu cho từng permission (bản ghi của mình, nút, nút và các nút dưới, cả khách) và "bắt buộc xác
   thực hai bước"; role của một người ở các nút khác; mời qua email (và trang nhận lời mời), uỷ quyền
   cho khách con, quyền vào hỗ trợ của nhân sự nền tảng (thu hồi, tắt).
+- **Cài đặt › Gói và thuê bao**: gói đang dùng, mức dùng từng hạn mức, kỳ thanh toán, đổi gói (gói lớn
+  hơn có hiệu lực ngay, nhỏ hơn chờ hết kỳ), huỷ và tiếp tục gia hạn. **Nền tảng › Gói và giá**: gói với
+  module, tính năng, hạn mức và giá, bán, gói mặc định, ngừng bán; ghi đè theo khách (có Hoàn tác);
+  thuê bao của mọi khách (đổi gói, huỷ, khoá hẳn).
 - **Đăng nhập bằng link qua email** và **Tài khoản › Hồ sơ**: tên, ngôn ngữ và múi giờ ưa thích, nơi
   bạn làm việc (các nút và role của bạn, các khách bạn làm việc được).
 - **Cây tổ chức**: các nút theo loại, ai làm việc ở mỗi nút (cả người được gán ở nút trên), cài đặt
@@ -61,7 +65,7 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 sau: Bán hàng (đơn hàng, đổi trả, bán tại quầy, vận chuyển và COD, cửa hàng, kênh bán), Sản phẩm
 (danh mục, giá, nhóm thuế, tồn kho), Tiếp thị (khuyến mại, tiếp thị liên kết), Khách hàng, Sàn và
 Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Tuân thủ và phần còn lại
-của Mặt điều khiển nền tảng (gói, thuê bao, cấp phát, sức khoẻ, vào dữ liệu khách). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
+của Mặt điều khiển nền tảng (cấp phát, sức khoẻ, vào dữ liệu khách). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
 liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật, trừ production); thay đổi ở đó nằm
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).

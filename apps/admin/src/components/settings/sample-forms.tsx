@@ -5,11 +5,7 @@
 // mọi lỗi một lần; chỉ khác là action gọi hàm mẫu thay cho API chưa có.
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
-import {
-  changePlanAction,
-  saveBillingProfile,
-  saveConnectionAction,
-} from "@/app/(admin)/settings/sample-actions";
+import { saveBillingProfile, saveConnectionAction } from "@/app/(admin)/settings/sample-actions";
 import { Dialog } from "@/components/ui/dialog";
 import {
   DialogButtons,
@@ -24,56 +20,6 @@ import { useToast } from "@/components/ui/toast";
 export interface Option {
   value: string;
   label: string;
-}
-
-/** "Đổi gói": chọn gói chính và kỳ trả; nâng gói có hiệu lực ngay, hạ gói chờ hết kỳ. */
-export function ChangePlanDialog({ options, current }: { options: Option[]; current: string }) {
-  const t = useTranslations("settings.plan");
-  return (
-    <Dialog
-      label={t("change")}
-      title={t("changeTitle")}
-      intro={
-        <ul className="dlg-list">
-          <li>{t("changeUp")}</li>
-          <li>{t("changeDown")}</li>
-        </ul>
-      }
-    >
-      {(close) => <ChangePlanForm options={options} current={current} close={close} />}
-    </Dialog>
-  );
-}
-
-function ChangePlanForm({
-  options,
-  current,
-  close,
-}: {
-  options: Option[];
-  current: string;
-  close: () => void;
-}) {
-  const t = useTranslations("settings.plan");
-  const toast = useToast();
-  const [state, action, pending] = useActionState(changePlanAction, {});
-  useOnDone(state.done, () => {
-    close();
-    toast(t("changed"));
-  });
-  return (
-    <form action={action} noValidate className="dlg-form">
-      <SelectField
-        label={t("price")}
-        name="price_id"
-        options={options}
-        defaultValue={current}
-        error={state.fields?.price_id}
-      />
-      <FormAlert state={state} />
-      <DialogButtons submit={t("changeSubmit")} pending={pending} close={close} />
-    </form>
-  );
 }
 
 export interface ProfileValues {

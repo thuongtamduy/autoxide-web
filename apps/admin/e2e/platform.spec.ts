@@ -205,24 +205,6 @@ test("dời khách của core: chạy thử ra kế hoạch, chạy thật, theo
   await expect(section.getByLabel("Move to").locator("option")).toHaveText([/^main/]);
 });
 
-test("thuê bao: đánh dấu đã thu đưa khách quá hạn về đang dùng", async ({ page }) => {
-  await signIn(page, "/platform/subscriptions?status=past_due");
-  const row = page.locator("tbody tr", { hasText: "Xưởng Mộc Hưng" });
-  await expect(row).toContainText("Past due · grace");
-  await row.getByRole("button", { name: "Mark as paid" }).click();
-  await dialog(page).getByLabel("Bank transaction reference").fill("");
-  await dialog(page).getByRole("button", { name: "Mark as paid" }).click();
-  await expect(dialog(page).getByLabel("Bank transaction reference")).toHaveAttribute(
-    "aria-invalid",
-    "true",
-  );
-  await dialog(page).getByLabel("Bank transaction reference").fill("FT2631900001");
-  await dialog(page).getByRole("button", { name: "Mark as paid" }).click();
-  await expect(toast(page)).toContainText("marked as paid");
-  await page.goto("/platform/subscriptions");
-  await expect(page.locator("tbody tr", { hasText: "Xưởng Mộc Hưng" })).toContainText("Active");
-});
-
 test("đội database: chạy thử cả đội, migrate cần gõ đúng chữ xác nhận", async ({ page }) => {
   await signIn(page, "/platform/fleet");
   await page.getByRole("button", { name: "Dry run for the whole fleet" }).click();

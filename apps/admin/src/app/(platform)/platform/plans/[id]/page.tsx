@@ -1,12 +1,14 @@
+import { ApiError } from "@autoxide/sdk";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   addPriceAction,
   deactivatePriceAction,
+  makeDefault,
   retirePlan,
   startSelling,
   updatePlanAction,
-} from "@/app/(platform)/platform/actions";
+} from "@/app/(platform)/platform/plan-actions";
 import { Back, DetailHead, Facts } from "@/components/engage/common";
 import { PLAN_BADGE, StatusBadge } from "@/components/platform/common";
 import { planFields } from "@/components/platform/plan-fields";
@@ -14,42 +16,55 @@ import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
+import { load } from "@/lib/core";
 import { formatBytes, formatCount, formatMoney } from "@/lib/format";
 import { PLANS_MANAGE } from "@/lib/permissions";
+import { isBytes, limitsText, type Plan } from "@/lib/plans";
+import { loadAllSubscriptions } from "@/lib/plans-server";
 import { can } from "@/lib/viewer";
-import { getPlan, missingDependency } from "@/sample/platform-plans";
 
-// Chi tiết một gói (dữ liệu mẫu, W-014): module, tính năng, hạn mức, vòng đời thuê bao, giá. Giá đã
-// có không sửa: thêm giá mới rồi tắt giá cũ; khách giữ giá cũ tới khi đổi gói.
+async function loadPlan(id: string): Promise<Plan | null> {
+  try {
+    return (await load((c) => c.GET("/api/v1/plans/plans/{id}", { params: { path: { id } } })))
+      .data;
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 422)) return null;
+    throw error;
+  }
+}
+
+// Chi tiết một gói (`GET /plans/plans/{id}`, bước 35 của core): module, tính năng, hạn mức, vòng đời
+// thuê bao, giá. Giá đã có không sửa: thêm giá mới rồi tắt giá cũ; khách giữ giá cũ tới khi đổi gói.
+// Sửa gói gửi lại cả gói (`PUT`): khách đang dùng nhận nội dung mới ngay.
 export default async function PlanPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
-  const found = await getPlan(id);
-  if (!found) notFound();
-  const plan = found.data;
+  const plan = await loadPlan(id);
+  if (!plan) notFound();
+  const subscribers = (await loadAllSubscriptions({ plan_id: plan.id })).filter(
+    (sub) => sub.status !== "deleted",
+  ).length;
+  const limits = Object.entries(plan.limits as Record<string, number | null>);
   const t = await getTranslations("platform.plans");
   const tp = await getTranslations("platform");
   const locale = await getLocale();
   const manage = await can(PLANS_MANAGE);
   const editable = manage && plan.status !== "retired";
-  const missing = plan.kind === "addon" ? missingDependency(plan.modules) : null;
   const limitValue = (key: string, max: number | null) =>
     max === null
       ? tp("unlimited")
-      : key === "files.storage_bytes"
+      : isBytes(key)
         ? formatBytes(max, locale)
         : formatCount(max, locale);
+  const limitLabel = (key: string) =>
+    tp.has(`limits.${key.replaceAll(".", "_")}`) ? tp(`limits.${key.replaceAll(".", "_")}`) : key;
+  const status = plan.status === "active" || plan.status === "retired" ? plan.status : "draft";
 
   return (
     <div className="blocks">
       <Back href="/platform/plans" label={t("back")} />
       <DetailHead
         title={plan.name}
-        badge={
-          <StatusBadge
-            className={PLAN_BADGE[plan.status]}
-            label={tp(`planStatus.${plan.status}`)}
-          />
-        }
+        badge={<StatusBadge className={PLAN_BADGE[status]} label={tp(`planStatus.${status}`)} />}
         description={plan.description}
         actions={
           manage ? (
@@ -60,6 +75,14 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
                   id={plan.id}
                   label={t("start")}
                   done={t("started", { plan: plan.name })}
+                />
+              ) : null}
+              {plan.status === "active" && plan.kind === "base" && !plan.is_default ? (
+                <InlineAction
+                  action={makeDefault}
+                  id={plan.id}
+                  label={t("makeDefault")}
+                  done={t("madeDefault", { plan: plan.name })}
                 />
               ) : null}
               {editable ? (
@@ -77,6 +100,8 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
                         name: plan.name,
                         description: plan.description,
                         modules: plan.modules.join(", "),
+                        features: plan.features.join(", "),
+                        limits: limitsText(plan.limits as Record<string, number | null>),
                         trial_days: String(plan.trial_days),
                         placement: plan.placement,
                       },
@@ -113,6 +138,13 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
                       placeholder: "1290000",
                       hint: t("amountHint"),
                     },
+                    {
+                      kind: "text",
+                      name: "currency",
+                      label: t("currency"),
+                      mono: true,
+                      defaultValue: plan.prices[0]?.amount.currency ?? "VND",
+                    },
                   ]}
                 />
               ) : null}
@@ -124,7 +156,7 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
                   title={t("retireTitle", { plan: plan.name })}
                   points={[
                     t("retireSignup"),
-                    t("retireKeep", { count: plan.subscriber_count }),
+                    t("retireKeep", { count: subscribers }),
                     t("retireNoDelete"),
                   ]}
                   submit={t("retireSubmit")}
@@ -135,7 +167,6 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
           ) : undefined
         }
       />
-      {missing ? <p className="note warn">{t("dependency", missing)}</p> : null}
 
       <section className="block" aria-labelledby="pf-plan-facts">
         <h2 id="pf-plan-facts" className="h2">
@@ -150,7 +181,11 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
                   {plan.code}
                 </span>,
               ],
-              [t("kind"), t(`kinds.${plan.kind}`) + (plan.is_default ? ` · ${t("default")}` : "")],
+              [
+                t("kind"),
+                t(`kinds.${plan.kind === "addon" ? "addon" : "base"}`) +
+                  (plan.is_default ? ` · ${t("default")}` : ""),
+              ],
               [t("trial"), t("days", { count: plan.trial_days })],
               [
                 t("lifecycle"),
@@ -160,9 +195,12 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
                   retention: plan.retention_days,
                 }),
               ],
-              [t("placement"), tp(`placementKind.${plan.placement}`)],
+              [
+                t("placement"),
+                tp(`placementKind.${plan.placement === "dedicated" ? "dedicated" : "shared"}`),
+              ],
               [t("kyc"), plan.requires_kyc ? t("kycYes") : t("kycNo")],
-              [t("colTenants"), String(plan.subscriber_count)],
+              [t("colTenants"), String(subscribers)],
               [t("updated"), <Time key="u" value={plan.updated_at} />],
             ]}
           />
@@ -198,13 +236,8 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
           {t("limits")}
         </h2>
         <div className="card padded">
-          {plan.limits.length > 0 ? (
-            <Facts
-              items={plan.limits.map((l) => [
-                tp(`limits.${l.key.replaceAll(".", "_")}`),
-                limitValue(l.key, l.max_value),
-              ])}
-            />
+          {limits.length > 0 ? (
+            <Facts items={limits.map(([key, max]) => [limitLabel(key), limitValue(key, max)])} />
           ) : (
             <p className="muted">{t("noLimits")}</p>
           )}
@@ -233,9 +266,13 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
               {plan.prices.map((price) => (
                 <tr key={price.id}>
                   <Td className="rt-title">
-                    <b>{formatMoney(price.amount_minor, price.amount_currency, locale)}</b>
+                    <b>{formatMoney(price.amount.amount, price.amount.currency, locale)}</b>
                   </Td>
-                  <Td label={t("interval")}>{tp(`interval.${price.interval}`)}</Td>
+                  <Td label={t("interval")}>
+                    {price.kind === "metered"
+                      ? t("metered", { key: price.limit_key ?? "" })
+                      : tp(`interval.${price.interval === "year" ? "year" : "month"}`)}
+                  </Td>
                   <Td label={t("added")}>
                     <Time value={price.created_at} date />
                   </Td>

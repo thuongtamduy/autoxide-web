@@ -1258,7 +1258,14 @@
         "communeHint": "From the administrative units list, which has effective dates.",
         "line": "Street address",
         "save": "Save details"
-      }
+      },
+      "unlimited": "unlimited",
+      "noPlan": "No plan",
+      "trialUntil": "Free trial until",
+      "graceUntil": "Unpaid; full access until",
+      "noSubscription": "This customer has no subscription: the default plan applies, or nothing is limited.",
+      "noLimits": "No limits apply.",
+      "overLimit": "Above the limit (after a smaller plan): nothing is removed, but nothing new can be added."
     },
     "domains": {
       "title": "Domains",
@@ -5047,7 +5054,16 @@
       "priceDeactivateTitle": "Turn this price off?",
       "priceDeactivateNew": "New sign-ups and plan changes can no longer choose it.",
       "priceDeactivateKeep": "Customers on this price keep it until they change plan; it cannot be turned on again.",
-      "priceDeactivated": "Price turned off."
+      "priceDeactivated": "Price turned off.",
+      "limitsInvalid": "Lines {lines} are not \"key = number\" (or ∞ for unlimited).",
+      "trialInvalid": "Enter a whole number of days, 0 or more.",
+      "amountInvalid": "Enter the amount in the currency's smallest unit, digits only (for VND: dong).",
+      "featuresHint": "Feature keys of the modules, separated by commas. A feature not listed is off.",
+      "limitsHint": "One limit per line: key = number, or key = ∞ for unlimited. A limit not listed is 0.",
+      "makeDefault": "Make default",
+      "madeDefault": "{plan} is now the default plan.",
+      "currency": "Currency",
+      "metered": "Usage of {key}"
     },
     "overrides": {
       "title": "Overrides per customer",
@@ -5075,7 +5091,8 @@
       "off": "off",
       "remove": "Remove",
       "removeTitle": "Remove this override of {tenant}?",
-      "none": "No override yet."
+      "none": "No override yet.",
+      "valueInvalid": "Module or feature: on / off. Limit: a number, or ∞ for unlimited."
     },
     "subs": {
       "crumb": "Autoxide platform · billing",
@@ -5137,7 +5154,15 @@
       "cancelDelete": "The customer and all their data are deleted after the retention period of the plan (90 days).",
       "cancelNoUndo": "This cannot be undone; signing up again starts a new paid period.",
       "cancelSubmit": "Cancel subscription",
-      "cancelDone": "Subscription of {tenant} canceled; data is read-only and deleted after 90 days."
+      "cancelDone": "Subscription of {tenant} canceled; data is read-only and deleted after 90 days.",
+      "assignConfirmWrong": "Type the customer name exactly: {tenant}",
+      "suspend": "Suspend completely",
+      "suspendTitle": "Suspend {tenant} completely?",
+      "suspendIntro": "Every request of the customer is refused (not just changes) until it is resumed. The reason is kept in the audit trail.",
+      "suspendSubmit": "Suspend",
+      "suspendDone": "{tenant} is suspended.",
+      "defaultPlan": "Default plan (no subscription)",
+      "noSubscription": "No subscription"
     },
     "prov": {
       "crumb": "Autoxide platform · new customers",

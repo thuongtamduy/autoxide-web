@@ -29,8 +29,8 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 - [ ] Chuông thông báo (Hộp thư / Đã lưu / Xong) — mẫu, M
 - [ ] Trang tổng quan của từng phân hệ — mẫu, L
 - [ ] Phân hệ "Báo cáo" (bán hàng, tồn kho và giá vốn, gộp cửa hàng, xuất dữ liệu) — mẫu, L
-- [ ] Thẻ gói và hạn mức trên Tổng quan — mẫu (bước 35), S
-- [ ] Nhãn "Pro" cho tính năng của gói cao hơn — mẫu (bước 35), M
+- [ ] Thẻ gói và hạn mức trên Tổng quan — API có (`/plans/subscription`, `/plans/usage`), chưa nối (đợt 3b), S
+- [ ] Nhãn "Pro" cho tính năng của gói cao hơn — API có (`features` của `/plans/entitlements`), chưa nối (đợt 3b), M
 - [ ] Thanh đáy điện thoại 5 mục (thêm Việc, Tìm) — S
 - [ ] "Phân hệ chưa bật cho gói", trang "không có quyền" có nút "Gửi yêu cầu quyền" — mẫu, M
 - [x] Màn nhận lời mời (`/invitation`: đặt mật khẩu hoặc bỏ trống để đăng nhập bằng link / passkey; đã có tài khoản thì đăng nhập rồi nhận) — API (17/11, W-046)
@@ -45,8 +45,8 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 - [ ] Nhật ký request: chi tiết một dòng (Request ID, Idempotency-Key, trace) — mẫu, S
 - [ ] Nhà phát triển: tab "Job lỗi" dùng lại bảng của Cài đặt › Job — mẫu, S
 - [ ] Job: "Tải file", "Chạy ngay" — mẫu (bước 52), S
-- [ ] Gói: "Trả tiền", "Tải hoá đơn" ở kỳ thanh toán — mẫu (bước 35), S–M
-- [ ] Module theo khách (nguồn: gói / gói thêm / ghi đè, khoá, "Đổi gói") — mẫu (bước 35), M
+- [ ] Gói: "Trả tiền", "Tải hoá đơn" ở kỳ thanh toán — core chưa có cổng thanh toán và hoá đơn cho kỳ (bước 35 chỉ ghi kỳ), S–M
+- [ ] Module theo khách (nguồn: gói / gói thêm / ghi đè, khoá, "Đổi gói") — API có (`/plans/entitlements`), chưa nối (đợt 3b), M
 - [ ] Tuân thủ: "Xuất bộ hồ sơ" mọi website — mẫu, S
 - [ ] Pháp lý › Vụ việc: bước "Chấp nhận phản ánh" — mẫu, S
 

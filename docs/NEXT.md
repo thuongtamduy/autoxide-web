@@ -8,13 +8,15 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
 - SDK ghim core ở commit `5b35b99` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
-  một khách — D-303 tới D-328). Quyết định mới nhất của repo này: W-046.
+  một khách — D-303 tới D-328). Quyết định mới nhất của repo này: W-047.
 - Đợt 8 (17/11): nối đợt 1 của bước 34 (W-045): màn Cây tổ chức thật, bộ chọn nút góc trên trái (lọc bài, media, form,
   menu theo nút), tab Hồ sơ công khai thật (địa chỉ theo danh mục hành chính của core), tên cửa hàng của website lấy
   từ hồ sơ công khai của nút gốc. Đã chạy thử với core thật.
 - Đợt 9 (17/11): nối đợt 2 của bước 34 (W-046): role theo độ sâu và bắt buộc MFA (dải nhắc bật MFA), lời mời thật và
   trang nhận lời mời, đăng nhập bằng link qua email, uỷ quyền, quyền vào hỗ trợ phía khách, sửa hồ sơ (tên, ngôn ngữ,
   múi giờ), "Nơi bạn làm việc", role ở các nút khác gốc. Đã chạy thử với core thật.
+- Đợt 10 (17/11): nối đợt 3a của bước 35 (W-047): gói và thuê bao phía khách, gói và giá, ghi đè theo khách, thuê bao
+  của mọi khách ở mặt điều khiển. Đã chạy thử với core thật.
 - Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
   hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị
   khi khách chỉ đọc: dải báo hiện, lưu cài đặt và lưu bài bị từ chối với thông báo `tenant_read_only` của core.
@@ -56,8 +58,8 @@ Core phát triển trên `main` của nó, không chờ bản phát hành (W-025
   `GET /auth/me/tenants`, gửi `Autoxide-Tenant` với mọi lời gọi khi vào khách qua uỷ quyền / hỗ trợ); xác nhận lại danh
   tính (`/auth/me/reauth`) cho lệnh nhạy cảm của tài khoản chỉ có passkey; người mua tách khỏi nhân sự
   (`/auth/customers`); đổi `requires_mfa` của role `admin`.
-- **Đợt 3 — bước 35:** Gói và giá, Thuê bao, kỳ thanh toán (`/plans/*`), màn "Vào dữ liệu khách" của mặt điều
-  khiển nền tảng (`/auth/support-grants`), thẻ hạn mức trên Tổng quan
+- **Đợt 3b — phần còn lại của bước 35:** màn "Vào dữ liệu khách" của mặt điều khiển nền tảng
+  (`/auth/support-grants`), thẻ hạn mức trên Tổng quan
   (`/plans/usage`), nhãn "Pro" theo `features` của `GET /kernel/modules` và `/plans/entitlements`, sổ khách lọc
   `subscription_status` / `near_limit`, xuất dữ liệu một khách (`/kernel/tenants/{id}/exports`).
 - Website: ô địa chỉ khi đặt hàng dùng danh mục hành chính công khai của core (`GET /address/provinces`,

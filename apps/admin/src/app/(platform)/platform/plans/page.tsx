@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { createPlanAction } from "@/app/(platform)/platform/actions";
+import { createPlanAction } from "@/app/(platform)/platform/plan-actions";
 import { Chips } from "@/components/engage/common";
 import { PLAN_BADGE, StatusBadge } from "@/components/platform/common";
 import { planFields } from "@/components/platform/plan-fields";
@@ -9,19 +9,24 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { oneOf, type SearchParams } from "@/lib/engage";
 import { formatMoney } from "@/lib/format";
 import { PLANS_MANAGE } from "@/lib/permissions";
+import { loadAllPlans, loadAllSubscriptions, subscriberCounts } from "@/lib/plans-server";
 import { can } from "@/lib/viewer";
-import type { PlanStatus } from "@/sample/platform-data";
-import { listPlans } from "@/sample/platform-plans";
 
-const STATUSES: readonly PlanStatus[] = ["active", "draft", "retired"];
+const STATUSES = ["active", "draft", "retired"] as const;
 
-// Tab "Gói": gói chính và gói thêm, lọc theo trạng thái. Không xoá gói đã có khách, chỉ ngừng bán.
+// Tab "Gói" (`GET /plans/plans`, bước 35 của core): gói chính và gói thêm, lọc theo trạng thái, số khách
+// đang dùng (đếm từ `GET /plans/subscriptions`). Không xoá gói đã có khách, chỉ ngừng bán.
 export default async function PlansPage(props: { searchParams: Promise<SearchParams> }) {
   const t = await getTranslations("platform.plans");
   const tp = await getTranslations("platform");
   const locale = await getLocale();
   const status = oneOf(await props.searchParams, "status", STATUSES);
-  const [{ data: all }, manage] = await Promise.all([listPlans(), can(PLANS_MANAGE)]);
+  const [all, subscriptions, manage] = await Promise.all([
+    loadAllPlans(),
+    loadAllSubscriptions(),
+    can(PLANS_MANAGE),
+  ]);
+  const counts = subscriberCounts(subscriptions);
   const plans = all.filter((p) => !status || p.status === status);
   return (
     <div className="blocks">
@@ -80,7 +85,7 @@ export default async function PlansPage(props: { searchParams: Promise<SearchPar
                     </span>
                   </Td>
                   <Td label={t("kind")}>
-                    {t(`kinds.${plan.kind}`)}
+                    {t(`kinds.${plan.kind === "addon" ? "addon" : "base"}`)}
                     {plan.is_default ? <span className="sub"> · {t("default")}</span> : null}
                   </Td>
                   <Td label={t("modules")}>
@@ -96,8 +101,8 @@ export default async function PlansPage(props: { searchParams: Promise<SearchPar
                         .map((p) => (
                           <span key={p.id}>
                             {tp("price", {
-                              amount: formatMoney(p.amount_minor, p.amount_currency, locale),
-                              interval: tp(`interval.${p.interval}`),
+                              amount: formatMoney(p.amount.amount, p.amount.currency, locale),
+                              interval: tp(`interval.${p.interval === "year" ? "year" : "month"}`),
                             })}
                           </span>
                         ))}
@@ -107,12 +112,16 @@ export default async function PlansPage(props: { searchParams: Promise<SearchPar
                     </span>
                   </Td>
                   <Td label={t("colTenants")} className="r">
-                    {plan.subscriber_count}
+                    {counts.get(plan.id) ?? 0}
                   </Td>
                   <Td label={t("colStatus")}>
                     <StatusBadge
-                      className={PLAN_BADGE[plan.status]}
-                      label={tp(`planStatus.${plan.status}`)}
+                      className={PLAN_BADGE[plan.status as (typeof STATUSES)[number]] ?? "badge"}
+                      label={
+                        tp.has(`planStatus.${plan.status}`)
+                          ? tp(`planStatus.${plan.status}`)
+                          : plan.status
+                      }
                     />
                   </Td>
                 </tr>

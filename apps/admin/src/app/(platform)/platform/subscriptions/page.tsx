@@ -1,19 +1,19 @@
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
-import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
+import { getTranslations } from "next-intl/server";
 import { Chips } from "@/components/engage/common";
+import { MessagePanel } from "@/components/message-panel";
 import { PlatformHead, StatusBadge, SUB_BADGE } from "@/components/platform/common";
-import { SubscriptionActions } from "@/components/platform/subscription-actions";
+import { PlanSubscriptionActions } from "@/components/platform/plan-subscription-actions";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { oneOf, type SearchParams } from "@/lib/engage";
-import { formatMoney } from "@/lib/format";
 import { SUBSCRIPTIONS_MANAGE, SUBSCRIPTIONS_READ } from "@/lib/permissions";
+import { loadAllPlans, loadAllSubscriptions } from "@/lib/plans-server";
 import { daysUntil } from "@/lib/platform";
+import { platformData } from "@/lib/platform-server";
 import { can } from "@/lib/viewer";
-import { listTenants } from "@/sample/platform";
-import type { SubscriptionStatus } from "@/sample/platform-data";
-import { listPeriods, listPlans, listSubscriptions } from "@/sample/platform-plans";
+
+type SubscriptionStatus = "trialing" | "active" | "past_due" | "suspended" | "canceled" | "deleted";
 
 const STATUSES: readonly SubscriptionStatus[] = [
   "trialing",
@@ -22,29 +22,32 @@ const STATUSES: readonly SubscriptionStatus[] = [
   "suspended",
   "canceled",
 ];
-const ENDPOINTS =
-  "GET /api/v1/plans/subscriptions?status=, PUT /api/v1/plans/tenants/{id}/subscription, POST …/subscription/cancel, POST /api/v1/plans/billing-periods/{id}/mark-paid (bước 35); mới: danh sách kỳ thanh toán theo khách, đặt / bỏ chỉ đọc";
 
-// Màn "Thuê bao" (dữ liệu mẫu, W-014): vòng đời thuê bao của mọi khách, kỳ thanh toán đang mở,
-// đánh dấu đã thu khi khách chuyển khoản, gán gói, đặt chỉ đọc, huỷ. Job tự chuyển trạng thái tới hạn.
+// Màn "Thuê bao" (`GET /plans/subscriptions`, bước 35 của core): vòng đời thuê bao của mọi khách, gán
+// gói, huỷ, khoá hẳn. Job của core tự chuyển trạng thái tới hạn. Core chưa có danh sách kỳ thanh toán
+// theo khách cho nhân sự nền tảng: chưa có cột "kỳ đang mở" và nút "đánh dấu đã thu".
 export default async function SubscriptionsPage(props: { searchParams: Promise<SearchParams> }) {
-  const gate = await sampleGate(SUBSCRIPTIONS_READ);
-  if (gate) return gate;
+  if (!(await can(SUBSCRIPTIONS_READ))) {
+    const errors = await getTranslations("errors");
+    return (
+      <MessagePanel
+        title={errors("forbiddenTitle")}
+        message={errors("forbidden", { permission: SUBSCRIPTIONS_READ })}
+      />
+    );
+  }
   const t = await getTranslations("platform.subs");
   const tp = await getTranslations("platform");
-  const locale = await getLocale();
   const status = oneOf(await props.searchParams, "status", STATUSES);
-  const [{ data: all }, { data: tenants }, { data: plans }, { data: periods }, manage] =
-    await Promise.all([
-      listSubscriptions(),
-      listTenants(),
-      listPlans(),
-      listPeriods({ status: "open" }),
-      can(SUBSCRIPTIONS_MANAGE),
-    ]);
+  const [all, { tenants }, plans, manage] = await Promise.all([
+    loadAllSubscriptions(),
+    platformData(),
+    loadAllPlans(),
+    can(SUBSCRIPTIONS_MANAGE),
+  ]);
   const now = Date.now();
   // Việc gấp lên đầu: quá hạn, chỉ đọc, rồi dùng thử sắp hết.
-  const rank: Record<SubscriptionStatus, number> = {
+  const rank: Record<string, number> = {
     past_due: 0,
     suspended: 1,
     trialing: 2,
@@ -56,9 +59,14 @@ export default async function SubscriptionsPage(props: { searchParams: Promise<S
     .filter((s) => !status || s.status === status)
     .sort(
       (a, b) =>
-        rank[a.status] - rank[b.status] || a.current_period_end.localeCompare(b.current_period_end),
+        (rank[a.status] ?? 9) - (rank[b.status] ?? 9) ||
+        a.current_period_end.localeCompare(b.current_period_end),
     );
   const count = (s: SubscriptionStatus) => all.filter((x) => x.status === s).length;
+  // Khách của core chưa có thuê bao (dùng gói mặc định): hiện để gán gói. Khách nền tảng không có gói.
+  const without = tenants.filter(
+    (x) => x.source === "core" && !x.is_platform && !all.some((s) => s.tenant_id === x.id),
+  );
   const kpis: [string, number, string][] = [
     ["active", count("active"), t("kpiActive")],
     [
@@ -75,13 +83,7 @@ export default async function SubscriptionsPage(props: { searchParams: Promise<S
   ];
   return (
     <div className="page">
-      <PlatformHead
-        crumb={t("crumb")}
-        title={t("title")}
-        description={t("description")}
-        step="35"
-        endpoint={ENDPOINTS}
-      />
+      <PlatformHead crumb={t("crumb")} title={t("title")} description={t("description")} />
       <section className="kpis pf-kpis" aria-label={t("kpiLabel")}>
         {kpis.map(([key, value, sub]) => (
           <div key={key} className="card kpi">
@@ -117,7 +119,6 @@ export default async function SubscriptionsPage(props: { searchParams: Promise<S
               <tr>
                 <Th>{t("colTenant")}</Th>
                 <Th>{t("colPeriod")}</Th>
-                <Th>{t("colOpen")}</Th>
                 <Th>{t("colStatus")}</Th>
                 <Th>
                   <span className="vh">{tp("tenant.actions")}</span>
@@ -129,7 +130,6 @@ export default async function SubscriptionsPage(props: { searchParams: Promise<S
                 const tenant = tenants.find((x) => x.id === sub.tenant_id);
                 const plan = plans.find((p) => p.id === sub.plan_id);
                 const price = plan?.prices.find((p) => p.id === sub.price_id);
-                const open = periods.find((p) => p.tenant_id === sub.tenant_id);
                 const note =
                   sub.status === "trialing" && sub.trial_ends_at
                     ? tp("tenants.trialLeft", { days: daysUntil(sub.trial_ends_at, now) })
@@ -148,7 +148,9 @@ export default async function SubscriptionsPage(props: { searchParams: Promise<S
                         </Link>
                         <span className="sub">
                           {plan?.name ?? "—"}
-                          {price ? ` · ${tp(`interval.${price.interval}`)}` : ""}
+                          {price
+                            ? ` · ${tp(`interval.${price.interval === "year" ? "year" : "month"}`)}`
+                            : ""}
                         </span>
                       </span>
                     </Td>
@@ -165,49 +167,59 @@ export default async function SubscriptionsPage(props: { searchParams: Promise<S
                         ) : null}
                       </span>
                     </Td>
-                    <Td label={t("colOpen")}>
-                      {open ? (
-                        <span className="cell2">
-                          <span>
-                            {formatMoney(open.amount_minor, open.amount_currency, locale)}
-                          </span>
-                          {open.due_at ? (
-                            <span
-                              className={Date.parse(open.due_at) < now ? "sub tone-bad" : "sub"}
-                            >
-                              {t("due")} <Time value={open.due_at} date />
-                            </span>
-                          ) : null}
-                        </span>
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </Td>
                     <Td label={t("colStatus")}>
                       <span className="cell2">
                         <StatusBadge
-                          className={SUB_BADGE[sub.status]}
-                          label={tp(`subStatus.${sub.status}`)}
+                          className={SUB_BADGE[sub.status as SubscriptionStatus] ?? "badge"}
+                          label={
+                            tp.has(`subStatus.${sub.status}`)
+                              ? tp(`subStatus.${sub.status}`)
+                              : sub.status
+                          }
                         />
                         {note ? <span className="sub">{note}</span> : null}
                       </span>
                     </Td>
                     <Td className="rt-acts">
                       {manage ? (
-                        <SubscriptionActions
-                          tenant={tenant}
-                          subscription={sub}
-                          periods={periods}
-                          plans={plans}
-                        />
+                        <PlanSubscriptionActions tenant={tenant} subscription={sub} plans={plans} />
                       ) : null}
                     </Td>
                   </tr>
                 );
               })}
+              {status
+                ? null
+                : without.map((tenant) => (
+                    <tr key={tenant.id}>
+                      <Td className="rt-title">
+                        <span className="cell2">
+                          <Link href={`/platform/tenants/${tenant.id}`} className="open">
+                            {tenant.name}
+                          </Link>
+                          <span className="sub">{t("defaultPlan")}</span>
+                        </span>
+                      </Td>
+                      <Td label={t("colPeriod")}>—</Td>
+                      <Td label={t("colStatus")}>
+                        <span className="badge b-draft">{t("noSubscription")}</span>
+                      </Td>
+                      <Td className="rt-acts">
+                        {manage ? (
+                          <PlanSubscriptionActions
+                            tenant={tenant}
+                            subscription={null}
+                            plans={plans}
+                          />
+                        ) : null}
+                      </Td>
+                    </tr>
+                  ))}
             </tbody>
           </Table>
-          {subs.length === 0 ? <p className="empty">{t("none")}</p> : null}
+          {subs.length === 0 && (status || without.length === 0) ? (
+            <p className="empty">{t("none")}</p>
+          ) : null}
         </div>
       </section>
     </div>

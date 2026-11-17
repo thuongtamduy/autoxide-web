@@ -42,6 +42,11 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
   permission (own records, the unit, the unit and below, the whole customer) and "requires two-step
   sign-in"; roles of a person at other units; invitations by email (and the page that accepts
   them), delegation to child customers, and the platform staff's support access (revoke, turn off).
+- **Settings › Plan and subscription**: the current plan, usage of each limit, billing periods,
+  changing plan (a bigger plan applies at once, a smaller one at the end of the period), canceling
+  and resuming renewal. **Platform › Plans and prices**: plans with their modules, features, limits
+  and prices, selling, the default plan, retiring; overrides per customer (with undo); the
+  subscription of every customer (change plan, cancel, suspend).
 - **Sign-in with a link by email** and **My account › Profile**: name, preferred language and time
   zone, and where you work (your units and roles, the customers you can work in).
 - **Organization tree**: units by type, who works at each unit (also through a parent unit), the
@@ -66,8 +71,8 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
 builds them in later steps: Sales (orders, returns, counter sales, shipping and COD, stores,
 sales channels), Products (catalog, prices, tax groups, inventory), Marketing (promotions,
 affiliate marketing), Customers, Marketplace and the Seller Center, Finance (ledger, e-invoices,
-tax), Compliance, and the rest of the Platform console (plans, subscriptions,
-provisioning, health, customer data access). Parts of the real screens the core
+tax), Compliance, and the rest of the Platform console (provisioning, health, customer
+data access). Parts of the real screens the core
 has no API for yet use sample data the same way. Sample data shows only when
 `AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes there are kept in the
 app's memory and lost on restart. The sample records agree across screens (an order, its
