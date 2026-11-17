@@ -8,6 +8,7 @@ import { formatDay } from "@/lib/catalog";
 import { CUSTOMERS_LOYALTY_MANAGE } from "@/lib/customers";
 import { formatCount, formatMoney } from "@/lib/format";
 import { can } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
 import { listLoyaltyRules, loyaltyStats, ruleState } from "@/sample/customers";
 import { CUSTOMER_TABS } from "../shared";
 
@@ -17,6 +18,8 @@ const TIER_TONE = { member: "b-arch", silver: "b-info", gold: "b-warn" } as cons
 // Tab "Điểm và hạng": điểm chưa dùng là nghĩa vụ trong sổ cái (điểm × giá trị lúc tích); quy tắc là dữ liệu
 // có ngày hiệu lực, chỉ thêm. Thưởng điểm khi đánh giá không phụ thuộc số sao (đánh giá có điều kiện).
 export default async function LoyaltyPage() {
+  // Tab dữ liệu mẫu (bước 47): tắt dữ liệu mẫu thì không có.
+  if (!sampleDataEnabled()) notFound();
   if (!(await can(CUSTOMER_TABS.loyalty))) notFound();
   const [t, locale, stats, rules, manage] = await Promise.all([
     getTranslations("customers"),

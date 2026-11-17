@@ -20,6 +20,7 @@ import { Price } from "@/components/price";
 import { SampleMark } from "@/components/sample-mark";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
+import { loadProvinces } from "@/lib/address-server";
 import { formatMoney, initials, keepUnits } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
@@ -166,6 +167,7 @@ export default async function AccountPage(props: PageProps<"/[locale]/tai-khoan"
             <SecuritySection locale={locale} phone={buyer.phone} owner={buyer.kind === "sample"} />
           ) : section === "dia-chi" ? (
             <AddressBook
+              provinces={await loadProvinces(locale)}
               initial={buyer.kind === "sample" ? SAMPLE_ADDRESSES : []}
               locale={locale}
             />

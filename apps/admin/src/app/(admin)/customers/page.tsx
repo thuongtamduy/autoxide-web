@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { bulkAddTagAction, bulkAddToGroupAction } from "@/app/(admin)/customers/actions";
 import { AdjustPointsDialog, NoteDialog, TagsDialog } from "@/components/customers/forms";
@@ -33,6 +33,7 @@ import {
 import { formatCount, formatMoney } from "@/lib/format";
 import { readPage, readSort, slicePage } from "@/lib/table";
 import { can } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
 import {
   type CustomerProfile,
   customerStats,
@@ -53,6 +54,8 @@ const TIER_TONE = { member: "b-arch", silver: "b-info", gold: "b-warn" } as cons
 // thật của bộ mẫu. Dữ liệu cá nhân (SĐT, email, ngày sinh) luôn che bớt trên màn (Luật BVDLCN 91/2025).
 // Sắp theo tên / số đơn / đã chi; chọn nhiều để thêm vào nhóm thủ công hay gắn nhãn; menu "⋯" trên dòng.
 export default async function ProfilesPage(props: PageProps<"/customers">) {
+  // Tắt dữ liệu mẫu: màn chỉ còn tab "Tài khoản người mua".
+  if (!sampleDataEnabled()) redirect("/customers/accounts");
   if (!(await can(CUSTOMER_TABS.profiles))) notFound();
   const [t, tt, locale, params] = await Promise.all([
     getTranslations("customers"),

@@ -12,6 +12,7 @@ import { formatDay } from "@/lib/catalog";
 import { maskPhone } from "@/lib/customers";
 import { formatCount, formatMoney } from "@/lib/format";
 import { can } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
 import {
   type BlockChip,
   blockState,
@@ -34,6 +35,8 @@ const BLOCK_TONE: Record<BlockChip, string> = {
 // theo khách; đơn từ kênh bán ngoài không tính (SĐT do kênh che). Không chặn vĩnh viễn: mọi lần chặn có lý
 // do và hạn, người bị chặn vẫn mua được nếu trả trước. Gỡ chặn đảo được (Hoàn tác).
 export default async function CodPage(props: PageProps<"/customers/cod">) {
+  // Tab dữ liệu mẫu (bước 47): tắt dữ liệu mẫu thì không có.
+  if (!sampleDataEnabled()) notFound();
   if (!(await can(CUSTOMER_TABS.cod))) notFound();
   const [t, locale, params, stats, rules] = await Promise.all([
     getTranslations("customers"),

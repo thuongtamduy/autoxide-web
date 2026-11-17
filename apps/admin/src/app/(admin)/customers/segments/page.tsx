@@ -9,12 +9,15 @@ import { Time } from "@/components/ui/time";
 import { CUSTOMERS_SEGMENTS_MANAGE } from "@/lib/customers";
 import { formatCount, formatMoney } from "@/lib/format";
 import { can } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
 import { type GroupRule, listGroups } from "@/sample/customers";
 import { CUSTOMER_TABS, regionOptions } from "../shared";
 
 // Tab "Nhóm khách": nhóm làm tay hoặc theo quy tắc (dữ liệu JSON có kiểm). Số thành viên là số đánh giá
 // lại lúc đọc; bảng giá (bước 41) và khuyến mại (bước 43) dùng nhóm qua mã nhóm, không đọc dữ liệu khách.
 export default async function SegmentsPage(props: PageProps<"/customers/segments">) {
+  // Tab dữ liệu mẫu (bước 47): tắt dữ liệu mẫu thì không có.
+  if (!sampleDataEnabled()) notFound();
   if (!(await can(CUSTOMER_TABS.segments))) notFound();
   const [t, locale, params, groups, orgs, manage] = await Promise.all([
     getTranslations("customers"),

@@ -1,10 +1,7 @@
-// Đơn vị hành chính hai cấp (tỉnh, thành phố → phường, xã; áp dụng từ 01/7/2025) cho ô địa chỉ của
-// website (mẫu, W-030). Core đã quyết module `address` (D-193) nhưng `openapi.json` chưa có endpoint
-// công khai nào của nó: thay bằng danh mục đơn vị hành chính công khai của module đó khi có (dự kiến
-// `GET /api/v1/address/public/provinces`, `…/provinces/{code}/wards` — bước 34 / D-193).
-//
-// Mẫu chỉ có vài tỉnh và vài phường, xã mỗi tỉnh; mã tỉnh như `SAMPLE_PROVINCES` của
-// `apps/admin/src/sample/shipping.ts` (mã của Tổng cục Thống kê), mã phường, xã là mã mẫu.
+// Đơn vị hành chính hai cấp (tỉnh, thành phố → phường, xã; áp dụng từ 01/7/2025): danh sách rút gọn
+// dùng khi core chưa có danh mục (chưa cài module `address` hay chưa nhập — `lib/address-server.ts`
+// đọc danh mục thật trước). Mã tỉnh, phường là mã chính thức (QĐ 19/2025/QĐ-TTg), khớp với danh mục
+// của core, nên địa chỉ mẫu đã lưu cũng chọn lại được trong danh mục thật.
 import type { Localized } from "./index";
 
 const L = (vi: string, en: string): Localized => ({ vi, en });
@@ -27,54 +24,54 @@ export const PROVINCES: readonly Province[] = [
     code: "79",
     name: L("TP. Hồ Chí Minh", "Ho Chi Minh City"),
     wards: [
-      ward("79-01", "Phường Bến Thành", "Bến Thành Ward"),
-      ward("79-02", "Phường Sài Gòn", "Sài Gòn Ward"),
-      ward("79-03", "Phường Tân Định", "Tân Định Ward"),
-      ward("79-04", "Phường Xuân Hoà", "Xuân Hoà Ward"),
-      ward("79-05", "Phường Thủ Đức", "Thủ Đức Ward"),
+      ward("26743", "Phường Bến Thành", "Bến Thành Ward"),
+      ward("26740", "Phường Sài Gòn", "Sài Gòn Ward"),
+      ward("26737", "Phường Tân Định", "Tân Định Ward"),
+      ward("27139", "Phường Xuân Hoà", "Xuân Hoà Ward"),
+      ward("26824", "Phường Thủ Đức", "Thủ Đức Ward"),
     ],
   },
   {
     code: "01",
     name: L("Hà Nội", "Hanoi"),
     wards: [
-      ward("01-01", "Phường Hoàn Kiếm", "Hoàn Kiếm Ward"),
-      ward("01-02", "Phường Ba Đình", "Ba Đình Ward"),
-      ward("01-03", "Phường Cầu Giấy", "Cầu Giấy Ward"),
-      ward("01-04", "Phường Hoàng Mai", "Hoàng Mai Ward"),
-      ward("01-05", "Xã Bát Tràng", "Bát Tràng Commune"),
+      ward("00070", "Phường Hoàn Kiếm", "Hoàn Kiếm Ward"),
+      ward("00004", "Phường Ba Đình", "Ba Đình Ward"),
+      ward("00166", "Phường Cầu Giấy", "Cầu Giấy Ward"),
+      ward("00331", "Phường Hoàng Mai", "Hoàng Mai Ward"),
+      ward("00577", "Xã Bát Tràng", "Bát Tràng Commune"),
     ],
   },
   {
     code: "48",
     name: L("Đà Nẵng", "Da Nang"),
     wards: [
-      ward("48-01", "Phường Hải Châu", "Hải Châu Ward"),
-      ward("48-02", "Phường Sơn Trà", "Sơn Trà Ward"),
+      ward("20242", "Phường Hải Châu", "Hải Châu Ward"),
+      ward("20263", "Phường Sơn Trà", "Sơn Trà Ward"),
     ],
   },
   {
     code: "92",
     name: L("Cần Thơ", "Can Tho"),
     wards: [
-      ward("92-01", "Phường Ninh Kiều", "Ninh Kiều Ward"),
-      ward("92-02", "Phường Cái Răng", "Cái Răng Ward"),
+      ward("31135", "Phường Ninh Kiều", "Ninh Kiều Ward"),
+      ward("31186", "Phường Cái Răng", "Cái Răng Ward"),
     ],
   },
   {
     code: "75",
     name: L("Đồng Nai", "Dong Nai"),
     wards: [
-      ward("75-01", "Phường Trấn Biên", "Trấn Biên Ward"),
-      ward("75-02", "Phường Biên Hoà", "Biên Hoà Ward"),
+      ward("26041", "Phường Trấn Biên", "Trấn Biên Ward"),
+      ward("26068", "Phường Biên Hoà", "Biên Hoà Ward"),
     ],
   },
   {
     code: "56",
     name: L("Khánh Hoà", "Khanh Hoa"),
     wards: [
-      ward("56-01", "Phường Nha Trang", "Nha Trang Ward"),
-      ward("56-02", "Phường Cam Ranh", "Cam Ranh Ward"),
+      ward("22366", "Phường Nha Trang", "Nha Trang Ward"),
+      ward("22420", "Phường Cam Ranh", "Cam Ranh Ward"),
     ],
   },
 ];

@@ -99,6 +99,11 @@ export interface NavPage {
    */
   sample?: { step: string };
   /**
+   * Màn dữ liệu mẫu có phần đã là API thật: tắt dữ liệu mẫu thì vẫn hiện cho người có một trong các
+   * permission này (vd Khách hàng chỉ còn tab "Tài khoản người mua" của `/auth/customers`).
+   */
+  realWith?: readonly string[];
+  /**
    * Số đếm cạnh tên màn (`NavItem.counter` của bước 51, W-020): id các nguồn việc của `src/work/` cộng
    * lại; `"work"` = số việc đang chờ của hộp việc. Chỉ để hiện số, không đổi cách lọc menu.
    */
@@ -270,6 +275,8 @@ export const NAV: NavGroup[] = [
           ORDERS_RISK_MANAGE,
         ],
         sample: { step: "47" },
+        // Tài khoản người mua là API thật (`/auth/customers`, bước 34).
+        realWith: [AUTH_CUSTOMERS_READ],
       },
     ],
   },
@@ -525,7 +532,8 @@ function canSee(page: NavPage, viewer: Viewer): boolean {
     return false;
   }
   if (page.sample) {
-    return viewer.sample === true;
+    if (viewer.sample === true) return true;
+    return page.realWith !== undefined && holds(viewer, page.realWith);
   }
   // Không xem được sổ module thì không biết module nào đã cài: tin vào permission (core có
   // module đó thì người dùng mới có permission của nó).

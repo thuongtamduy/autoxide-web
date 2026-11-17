@@ -387,3 +387,22 @@ test("cấp phát khách theo gói (D-338): chạy xong; lỗi thì chạy lại
   await page.reload();
   await expect(failed).toContainText("Done");
 });
+
+test("Cài đặt › Dữ liệu của bạn: khách tự xuất toàn bộ dữ liệu rồi tải về", async ({ page }) => {
+  await signIn(page, "/settings/data");
+  await expect(page.getByText("No export yet.")).toBeVisible();
+  await page.getByRole("button", { name: "Export data" }).click();
+  await dialog(page).getByRole("button", { name: "Start the export" }).click();
+  await expect(toast(page)).toContainText("Export started");
+  await page.reload();
+  const list = page.getByTestId("own-exports");
+  await expect(list).toContainText("Ready");
+  const href = await list.getByRole("link", { name: "Download" }).getAttribute("href");
+  const file = await page.request.get(href ?? "");
+  expect(file.ok()).toBe(true);
+  expect(await file.text()).toContain('"table":"auth_users"');
+  // Tab Gói và thuê bao là API thật: không còn nhãn "mẫu" trên thanh tab.
+  await expect(page.getByRole("link", { name: "Plan and subscription" })).not.toContainText(
+    "sample",
+  );
+});

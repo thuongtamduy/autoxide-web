@@ -3,6 +3,7 @@ import "server-only";
 import {
   AUDIT_READ,
   BILLING_READ,
+  DATA_EXPORT,
   DEVTOOLS_READ,
   DOMAINS_MANAGE,
   MODULES_READ,
@@ -24,7 +25,8 @@ export interface GeneralTab {
 
 // Thứ tự theo bản thiết kế: gói, tên miền, kết nối, module, job, nhân sự, webhook, audit.
 const TABS: (GeneralTab & { permission: string })[] = [
-  { id: "plan", href: "/settings/plan", permission: BILLING_READ, sample: "35" },
+  // Gói và thuê bao là API thật (W-047); trước còn đánh dấu mẫu nên tắt dữ liệu mẫu thì tab bị ẩn.
+  { id: "plan", href: "/settings/plan", permission: BILLING_READ },
   { id: "domains", href: "/settings/domains", permission: DOMAINS_MANAGE },
   { id: "connections", href: "/settings/connections", permission: TENANT_SETTINGS_MANAGE },
   { id: "modules", href: "/settings/modules", permission: MODULES_READ },
@@ -32,6 +34,7 @@ const TABS: (GeneralTab & { permission: string })[] = [
   { id: "staff", href: "/org/access/users", permission: USERS_READ, external: true },
   { id: "webhooks", href: "/settings/webhooks", permission: WEBHOOKS_MANAGE },
   { id: "audit", href: "/settings/audit", permission: AUDIT_READ },
+  { id: "data", href: "/settings/data", permission: DATA_EXPORT },
 ];
 
 /**

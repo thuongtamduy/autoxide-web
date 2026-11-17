@@ -64,6 +64,7 @@ import { bumpMenu, MENUS_MODULE, menusRoutes, publicMenu, resetMenus } from "./m
 import { ORG_MODULE, orgPerson, orgRoutes, resetOrg, setRootName } from "./mock-org.ts";
 import { plansRoutes, resetPlans, setBasicFeatures, setInstalledModules } from "./mock-plans.ts";
 import {
+  confirmation,
   finishLoginCeremony,
   fireEvent,
   resetSettings,
@@ -191,6 +192,8 @@ const used = new Set<string>();
 const mfa = new Map<string, { account: Account; userAgent: string | null }>();
 const sessions = new Map<string, Session>();
 const ceremonies = new Map<string, Account>();
+/** `reauth_token` đã cấp (dùng một lần). */
+const reauthTokens = new Map<string, Account>();
 let refreshes = 0;
 
 function issue(session: Session) {
@@ -603,7 +606,9 @@ const server = createServer(async (request, response) => {
   // chung với màn Bình luận của trang quản trị (`mock-engage.ts`).
   if (
     route === "GET /api/v1/organizations/public/stores" ||
-    route === "GET /api/v1/organizations/public/site"
+    route === "GET /api/v1/organizations/public/site" ||
+    // Danh mục hành chính: công khai, như core (website đọc khi đặt hàng).
+    (request.method === "GET" && url.pathname.startsWith("/api/v1/address/"))
   ) {
     await orgRoutes(request, response, url, route);
     return;
@@ -766,7 +771,42 @@ async function mine(
 ) {
   const userAgent = request.headers["user-agent"] ?? null;
   const body = request.method === "GET" ? {} : await json(request);
-  const passwordOk = () => text(body, "current_password") === account.password;
+  // Mật khẩu hiện tại, hay `reauth_token` dùng một lần (`POST /auth/me/reauth`), như core.
+  const passwordOk = () => {
+    const token = text(body, "reauth_token");
+    if (token && reauthTokens.get(token) === account) {
+      reauthTokens.delete(token);
+      return true;
+    }
+    return text(body, "current_password") === account.password;
+  };
+  if (route === "POST /api/v1/auth/me/reauth") {
+    // Như core: mã của app xác thực hay passkey (mật khẩu thì gửi thẳng ở lệnh nhạy cảm).
+    const method = text(body, "method");
+    // Mã sai: core báo ở ô `code` (như bước nhập mã khi đăng nhập), không ở `totp_code`.
+    if (method === "totp" && account.mfa && text(body, "totp_code") !== "123456") {
+      return problem(response, 422, "validation_failed", "The request has invalid fields.", [
+        { field: "code", code: "invalid", detail: "is not a current code from your app" },
+      ]);
+    }
+    const refused = confirmation(
+      method === "totp"
+        ? { totp_code: body.totp_code }
+        : method === "passkey"
+          ? {
+              passkey_ceremony_id: body.passkey_ceremony_id,
+              passkey_credential: body.passkey_credential,
+            }
+          : { current_password: body.password },
+      account,
+    );
+    if (refused) return refused(response);
+    const token = randomUUID();
+    reauthTokens.set(token, account);
+    return send(response, 200, {
+      data: { reauth_token: token, expires_at: new Date(Date.now() + 600_000).toISOString() },
+    });
+  }
   const endAll = (keep?: string | null) => {
     const ended = [...sessions.values()].filter((s) => s.account === account && s.id !== keep);
     for (const other of ended) endSession(other.id);

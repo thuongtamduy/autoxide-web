@@ -8,6 +8,7 @@ import { formatDay } from "@/lib/catalog";
 import { CUSTOMERS_ENGAGEMENT_MANAGE } from "@/lib/customers";
 import { formatCount, formatMoney } from "@/lib/format";
 import { can } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
 import { listReminderRules, ruleState } from "@/sample/customers";
 import { listCarts } from "@/sample/orders";
 import { CUSTOMER_TABS } from "../shared";
@@ -18,6 +19,8 @@ const STATE_TONE = { active: "b-ok", scheduled: "b-sched", closed: "b-arch" } as
 // nhắc (`customers_reminder_rules`): mốc nhắc, kênh, bật / tắt — chỉ nhắc người đã đồng ý nhận tin quảng
 // cáo (NĐ 91/2020), kiểm lại lúc gửi.
 export default async function CartsPage() {
+  // Tab dữ liệu mẫu (bước 47): tắt dữ liệu mẫu thì không có.
+  if (!sampleDataEnabled()) notFound();
   if (!(await can(CUSTOMER_TABS.carts))) notFound();
   const [t, locale, carts, rules, manage] = await Promise.all([
     getTranslations("customers"),

@@ -7,7 +7,6 @@ import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { commerceGuard, finishCommerce, translateCommerce, typed } from "@/lib/commerce-action";
 import {
-  AUTH_CUSTOMERS_MANAGE,
   CUSTOMERS_ENGAGEMENT_MANAGE,
   CUSTOMERS_LOYALTY_ADJUST,
   CUSTOMERS_LOYALTY_MANAGE,
@@ -32,16 +31,13 @@ import {
   createProfile,
   deleteGroup,
   getProfile,
-  listBuyerAccounts,
   lookupBuyer,
   previewRule,
   profileNames,
   readRule,
   saveGroup,
-  setAccountLocked,
   setBlockLifted,
   setGroupMember,
-  setRegistrationOpen,
   setTags,
 } from "@/sample/customers";
 
@@ -113,20 +109,8 @@ export async function adjustPointsAction(state: FormState, formData: FormData): 
   return finishCommerce("customers", state, outcome, POINT_FIELDS, values);
 }
 
-// ---- Tài khoản người mua (bước 34)
 
-/** Khoá / mở khoá (đảo được: `status` = `locked` hoặc `active`). */
-export async function lockAction(_state: ChangeState, formData: FormData): Promise<ChangeState> {
-  const blocked = await guard(AUTH_CUSTOMERS_MANAGE);
-  if (blocked) return blocked;
-  const locked = formData.get("status") === "locked";
-  const outcome = await setAccountLocked(idOf(formData), locked);
-  if (!outcome.ok) return problemState(await translateCommerce(outcome.problem, "customers"), []);
-  refresh();
-  return { done: 1, previous: locked ? "active" : "locked", updated: outcome.data.updated_at };
-}
-
-// ---- Hàng loạt (bảng Hồ sơ khách, Tài khoản người mua). Hàm mẫu (và core, bước 34 / 47) chỉ có lệnh
+// ---- Hàng loạt (bảng Hồ sơ khách). Hàm mẫu (bước 47) chỉ có lệnh
 // từng cái: lặp từng id, gom lỗi.
 
 /** Câu lỗi đã dịch của một kết quả hàm mẫu (hoặc `null` khi xong). */
@@ -170,42 +154,9 @@ export async function bulkAddTagAction(input: BulkInput): Promise<BulkResult> {
   return result;
 }
 
-async function bulkLock(input: BulkInput, locked: boolean): Promise<BulkResult> {
-  const ids = cleanIds(input.ids);
-  const blocked = await guard(AUTH_CUSTOMERS_MANAGE);
-  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
-  const { data } = await listBuyerAccounts();
-  const names = new Map(data.map((a) => [a.id, a.name]));
-  const result = await eachId(
-    ids,
-    async (id) => failure(await setAccountLocked(id, locked)),
-    (id) => names.get(id) ?? id,
-  );
-  refresh();
-  return result;
-}
+// ---- Tài khoản người mua (bước 34)
 
-/** Khoá nhiều tài khoản người mua (thu hồi mọi phiên của từng người). */
-export async function bulkLockAction(input: BulkInput): Promise<BulkResult> {
-  return bulkLock(input, true);
-}
-
-/** Mở khoá nhiều tài khoản người mua. */
-export async function bulkUnlockAction(input: BulkInput): Promise<BulkResult> {
-  return bulkLock(input, false);
-}
-
-export async function registrationAction(state: FormState, formData: FormData): Promise<FormState> {
-  const blocked = await guard(AUTH_CUSTOMERS_MANAGE);
-  if (blocked) return blocked;
-  return finishCommerce(
-    "customers",
-    state,
-    await setRegistrationOpen(formData.get("open") === "on"),
-    [],
-  );
-}
-
+/** Khoá / mở khoá (đảo được: `status` = `locked` hoặc `active`). */
 // ---- Nhóm khách
 
 const GROUP_FIELDS = ["name", "kind", "spent", "orders", "days", "tier", "org"] as const;

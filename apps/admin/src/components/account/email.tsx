@@ -8,6 +8,7 @@ import {
   resendVerification,
   sendPasswordLink,
 } from "@/app/(admin)/account/actions";
+import { ConfirmFields, signForProof } from "@/components/account/confirm-identity";
 import { Dialog } from "@/components/ui/dialog";
 import {
   DialogButtons,
@@ -18,6 +19,8 @@ import {
   useSubmit,
 } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
+import type { ConfirmMethods } from "@/lib/confirm";
+import type { FormState } from "@/lib/form";
 
 /** Nút gửi lại thư xác minh; lỗi (vd gửi quá nhanh) hiện ngay dưới nút. */
 export function ResendVerification({ email }: { email: string }) {
@@ -72,20 +75,25 @@ export function PasswordLinkButton({ email }: { email: string }) {
   );
 }
 
-export function ChangeEmailDialog() {
+export function ChangeEmailDialog({ methods }: { methods: ConfirmMethods }) {
   const t = useTranslations("account.email");
   return (
     <Dialog label={t("change")} title={t("changeTitle")} intro={t("changeIntro")}>
-      {(close) => <ChangeEmailForm close={close} />}
+      {(close) => <ChangeEmailForm close={close} methods={methods} />}
     </Dialog>
   );
 }
 
-function ChangeEmailForm({ close }: { close: () => void }) {
+function ChangeEmailForm({ close, methods }: { close: () => void; methods: ConfirmMethods }) {
   const t = useTranslations("account.email");
+  const tc = useTranslations("account.confirm");
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
-  const [state, action, pending] = useActionState(changeEmail, {});
+  const [state, action, pending] = useActionState(
+    async (previous: FormState, data: FormData) =>
+      (await signForProof(data, tc)) ?? changeEmail(previous, data),
+    {},
+  );
   useFocusInvalid(form, state);
   useOnDone(state.done, () => {
     close();
@@ -103,13 +111,7 @@ function ChangeEmailForm({ close }: { close: () => void }) {
         error={state.fields?.new_email}
         autoFocus
       />
-      <Field
-        label={t("password")}
-        name="current_password"
-        type="password"
-        autoComplete="current-password"
-        error={state.fields?.current_password}
-      />
+      <ConfirmFields methods={methods} state={state} />
       <FormAlert state={state} />
       <DialogButtons submit={t("submit")} pending={pending} close={close} />
     </form>

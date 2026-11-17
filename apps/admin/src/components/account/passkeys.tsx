@@ -3,17 +3,19 @@
 import { useTranslations } from "next-intl";
 import { type FormEvent, useRef, useState, useTransition } from "react";
 import { finishPasskey, removePasskey, startPasskey } from "@/app/(admin)/account/actions";
+import { ConfirmFields, signForProof } from "@/components/account/confirm-identity";
 import { Dialog } from "@/components/ui/dialog";
 import { DialogButtons, Field, FormAlert, useFocusInvalid, useSubmit } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
+import type { ConfirmMethods } from "@/lib/confirm";
 import type { FormState } from "@/lib/form";
 import { ceremonyErrorKey, creationOptionsJson, passkeysSupported } from "@/lib/webauthn";
 
-export function AddPasskeyDialog() {
+export function AddPasskeyDialog({ methods }: { methods: ConfirmMethods }) {
   const t = useTranslations("account.passkeys");
   return (
     <Dialog label={t("add")} title={t("addTitle")} intro={t("addIntro")} triggerClass="btn sm pri">
-      {(close) => <AddPasskey close={close} />}
+      {(close) => <AddPasskey close={close} methods={methods} />}
     </Dialog>
   );
 }
@@ -23,8 +25,9 @@ export function AddPasskeyDialog() {
  * core bằng token trong cookie), authenticator của máy tạo khoá, kết quả gửi lại qua Server
  * Action. Khoá riêng không bao giờ rời authenticator.
  */
-function AddPasskey({ close }: { close: () => void }) {
+function AddPasskey({ close, methods }: { close: () => void; methods: ConfirmMethods }) {
   const t = useTranslations("account.passkeys");
+  const tc = useTranslations("account.confirm");
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<FormState>({});
@@ -39,6 +42,12 @@ function AddPasskey({ close }: { close: () => void }) {
       return;
     }
     startTransition(async () => {
+      // Xác nhận bằng passkey đã có: ký trước, rồi mới tạo passkey mới.
+      const refused = await signForProof(data, tc);
+      if (refused) {
+        setState(refused);
+        return;
+      }
       const started = await startPasskey(data);
       if (started.options === undefined) {
         setState(started);
@@ -78,13 +87,7 @@ function AddPasskey({ close }: { close: () => void }) {
         error={state.fields?.name}
         autoFocus
       />
-      <Field
-        label={t("password")}
-        name="current_password"
-        type="password"
-        autoComplete="current-password"
-        error={state.fields?.current_password}
-      />
+      <ConfirmFields methods={methods} state={state} />
       <FormAlert state={state} />
       <DialogButtons submit={t("addSubmit")} pending={pending} close={close} />
     </form>

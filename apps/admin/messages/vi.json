@@ -614,6 +614,25 @@
       "done": "Đã nhận lời mời: role mới có hiệu lực từ trang tiếp theo.",
       "noToken": "Link này không có mã lời mời.",
       "home": "Về Tổng quan"
+    },
+    "confirm": {
+      "title": "Xác nhận là bạn",
+      "by": {
+        "password": "Mật khẩu",
+        "totp": "Mã app xác thực",
+        "passkey": "Passkey"
+      },
+      "password": "Mật khẩu hiện tại",
+      "totpCode": "Mã từ app xác thực",
+      "totpHint": "6 chữ số, đổi sau mỗi 30 giây.",
+      "passkeyHint": "Trình duyệt sẽ hỏi passkey của tài khoản này khi bạn tiếp tục.",
+      "passkeyUnsupported": "Trình duyệt này không dùng được passkey.",
+      "passkeyCancelled": "Chưa dùng passkey. Thử lại.",
+      "passkeyFailed": "Không dùng được passkey. Thử lại hay chọn cách khác.",
+      "passkeyExpired": "Lượt kiểm passkey đã hết hạn. Thử lại.",
+      "passwordRequired": "Nhập mật khẩu hiện tại.",
+      "codeRequired": "Nhập mã.",
+      "none": "Cần đặt mật khẩu hay thêm passkey trước khi làm việc này."
     }
   },
   "sample": {
@@ -1240,7 +1259,8 @@
       "jobs": "Job",
       "staff": "Nhân sự",
       "webhooks": "Webhook",
-      "audit": "Nhật ký audit"
+      "audit": "Nhật ký audit",
+      "data": "Dữ liệu của bạn"
     },
     "general": {
       "title": "Cài đặt chung",
@@ -2024,6 +2044,21 @@
       "noEventsText": "Chưa có event nào cho {kind} {id}. Kiểm lại mã hoặc loại bản ghi.",
       "clearRecord": "Xoá",
       "eventsFor": "{count, plural, other {# event}} của {kind} {id}, mới nhất trước."
+    },
+    "data": {
+      "title": "Xuất toàn bộ dữ liệu",
+      "about": "Một tệp JSON Lines chứa mọi bản ghi của doanh nghiệp bạn ở đây, để lưu giữ hay chuyển sang nhà cung cấp khác. Không có mật khẩu đã băm, secret và nội dung tệp tải lên. Cần kernel.data.export.",
+      "export": "Xuất dữ liệu",
+      "exportTitle": "Xuất toàn bộ dữ liệu của doanh nghiệp bạn?",
+      "exportAll": "Mọi bản ghi vào một tệp; chạy nền.",
+      "exportPersonal": "Tệp có dữ liệu cá nhân của người mua và nhân viên: giữ cẩn thận.",
+      "exportKeep": "Tệp bị xoá sau số ngày lưu của máy chủ.",
+      "exportSubmit": "Bắt đầu xuất",
+      "exportDone": "Đã bắt đầu xuất; tệp hiện bên dưới khi xong.",
+      "busy": "Đang xuất; trang tự làm mới tới khi xong.",
+      "download": "Tải về",
+      "keptUntil": "giữ tới",
+      "none": "Chưa xuất lần nào."
     }
   },
   "content": {
@@ -11293,7 +11328,8 @@
       "chips": {
         "active": "Hoạt động",
         "locked": "Đã khoá",
-        "unverified": "Chưa xác thực SĐT"
+        "unverified": "Chưa xác thực SĐT",
+        "disabled": "Đã khoá"
       },
       "account": "Tài khoản",
       "site": "Đăng ký tại",
@@ -11337,7 +11373,16 @@
       "clearSearch": "Xoá chữ tìm",
       "bulkLockTitle": "Khoá các tài khoản đã chọn?",
       "bulkLockSessions": "Mọi phiên đăng nhập của từng người bị thu hồi; họ không đăng nhập được tới khi mở khoá.",
-      "bulkLockUndo": "Mở khoá lại được; tài khoản không đổi gì khác."
+      "bulkLockUndo": "Mở khoá lại được; tài khoản không đổi gì khác.",
+      "aboutCore": "Người mua đăng nhập bằng tài khoản riêng ở cửa hàng của bạn, không có permission nào. Nhân viên cần auth.customers.read để xem, auth.customers.manage để khoá / mở. Không ai xem được mật khẩu.",
+      "all": "Tất cả",
+      "none": "Không có tài khoản người mua nào.",
+      "lockTitle": "Khoá tài khoản của {name}?",
+      "lockSignsOut": "Người này bị đăng xuất mọi nơi và không đăng nhập được tới khi mở lại.",
+      "lockUndo": "Mở lại bất cứ lúc nào để người này vào lại.",
+      "pages": "Các trang tài khoản người mua",
+      "first": "Trang đầu",
+      "next": "Trang sau"
     },
     "segments": {
       "title": "Nhóm",

@@ -164,7 +164,7 @@ function secret(): string {
  * Xác nhận lại khi tạo API key, như core (D-272): đúng một trong mật khẩu, mã TOTP, passkey. Trả
  * hàm trả lỗi khi bị từ chối, `null` khi đúng.
  */
-function confirmation(
+export function confirmation(
   body: Record<string, unknown>,
   account: Account,
 ): ((response: ServerResponse) => void) | null {
