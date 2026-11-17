@@ -1374,39 +1374,22 @@
         "embeddings": "Search by meaning (embeddings)",
         "embeddingModel": "{model} · {dimensions} dimensions",
         "embeddingsOff": "Off.",
-        "about": "The server operator turns AI on with the AUTOXIDE_AI_* and AUTOXIDE_EMBEDDING_* settings. AI output is only ever a suggestion or a draft."
-      },
-      "title": "Partner connections (sample)",
-      "about": "Connection details of your own partners. Without them, the server-wide configuration is used. Secrets are encrypted when saved and never shown again; to change one, enter a new value. Needs kernel.settings.manage.",
-      "names": {
-        "mail": "Email (SMTP)",
-        "sms": "SMS brand name",
-        "payment": "Payment gateway",
-        "einvoice": "E-invoices"
+        "about": "The server operator turns AI on and picks the provider and model.",
+        "name": "Server AI",
+        "unknown": "Unknown"
       },
       "isSet": "set",
-      "notSet": "not set",
       "checkOk": "Last test passed",
       "checkFailed": "Last test failed",
-      "hints": {
-        "mail": "Sends sign-in, invitation and notification emails.",
-        "sms": "Needed to verify phone numbers of people who post content. Without it, that feature is off.",
-        "payment": "A licensed partner collects buyers' money; it never goes to your account.",
-        "einvoice": "Issues e-invoices through a licensed provider."
-      },
       "state": {
         "set": "Set",
-        "unset": "Not set",
-        "error": "Last test failed"
+        "unset": "Not set"
       },
       "test": "Test connection",
       "testLabel": "Test the {name} connection",
       "tested": "Tested. The result is in the list.",
-      "formTitle": "{name} settings",
-      "setUp": "Set up",
       "change": "Change",
-      "secretNote": "Changing a secret does not interrupt anything: the new value is used from the next request. The history records the setting name and who changed it (event kernel.setting_changed), never the value.",
-      "formIntro": "Values are saved for this account only.",
+      "secretNote": "Secrets are encrypted when saved and never shown again, not even to you; to change one, enter a new value. A new value is used from the next request, without interruption. The history records the setting name and who changed it, never the value.",
       "saved": "Connection saved.",
       "secretKeep": "Set. Leave empty to keep the current value.",
       "secretNew": "Secret: stored encrypted, never shown again.",
@@ -1431,6 +1414,223 @@
         "connectionGroup": "Partner connections",
         "connectionAbout": "Accounts with outside services (mail server, AI provider, payment gateway…). Secrets are stored encrypted and never shown again.",
         "businessGroup": "Business settings"
+      },
+      "intro": "Connect your own accounts with outside services: email, messaging, payments, e-invoices, AI. A connection that is not set up uses the server-wide configuration.",
+      "categories": {
+        "email": {
+          "title": "Email",
+          "about": "Sends sign-in, invitation and notification emails."
+        },
+        "messaging": {
+          "title": "SMS and Zalo",
+          "about": "Verification codes and notifications sent to phones."
+        },
+        "payment": {
+          "title": "Payments",
+          "about": "Collects buyers' money through a licensed partner."
+        },
+        "einvoice": {
+          "title": "E-invoices",
+          "about": "Issues invoices through a licensed provider."
+        },
+        "shipping": {
+          "title": "Shipping",
+          "about": "Creates shipments and tracks deliveries."
+        },
+        "ai": {
+          "title": "AI",
+          "about": "Suggestions, drafts and translations. AI output is only ever a suggestion or a draft."
+        },
+        "other": {
+          "title": "Other connections",
+          "about": "Connections of other installed modules."
+        }
+      },
+      "kinds": {
+        "mail": {
+          "smtp": {
+            "name": "Your own mail server (SMTP)",
+            "about": "Sends mail from your own mail server and address instead of the server-wide one."
+          }
+        },
+        "ai": {
+          "text": {
+            "name": "Your own AI account",
+            "about": "Uses your API key and model with the AI provider the server is set up for."
+          }
+        },
+        "sms": {
+          "gateway": {
+            "name": "SMS brand name",
+            "about": "Sends phone verification codes to people who post content. Without it, that feature is off."
+          }
+        },
+        "payments": {
+          "gateway": {
+            "name": "Payment gateway",
+            "about": "A licensed partner collects buyers' money; it never goes to your account."
+          }
+        },
+        "invoices": {
+          "einvoice": {
+            "name": "E-invoices",
+            "about": "Issues e-invoices through a licensed provider."
+          }
+        }
+      },
+      "fields": {
+        "mail": {
+          "smtp": {
+            "url": {
+              "label": "SMTP server address",
+              "hint": "Like smtps://user:password@smtp.example.com."
+            },
+            "from": {
+              "label": "Sender",
+              "hint": "Like Shop '<'no-reply@example.com'>'. Its domain must be allowed to send through the SMTP server."
+            }
+          }
+        },
+        "ai": {
+          "text": {
+            "api_key": {
+              "label": "API key"
+            },
+            "model": {
+              "label": "Model",
+              "hint": "A model name from the provider the server is set up for."
+            }
+          }
+        },
+        "sms": {
+          "gateway": {
+            "provider": {
+              "label": "Provider"
+            },
+            "brandname": {
+              "label": "Brand name"
+            },
+            "api_key": {
+              "label": "API key"
+            }
+          }
+        },
+        "payments": {
+          "gateway": {
+            "provider": {
+              "label": "Payment partner"
+            },
+            "merchant_id": {
+              "label": "Merchant ID"
+            },
+            "secret_key": {
+              "label": "Secret key"
+            }
+          }
+        },
+        "invoices": {
+          "einvoice": {
+            "provider": {
+              "label": "Provider"
+            },
+            "username": {
+              "label": "Account"
+            },
+            "certificate": {
+              "label": "Signing certificate"
+            }
+          }
+        }
+      },
+      "status": {
+        "connected": "Connected",
+        "unset": "Not set up",
+        "error": "Error"
+      },
+      "configure": "Set up",
+      "edit": "Edit",
+      "configureLabel": "Set up {name}",
+      "serverDefault": "Using the server-wide configuration.",
+      "notConnected": "Not connected.",
+      "changedAt": "Last changed",
+      "dialog": {
+        "save": "Save",
+        "required": "Enter a value.",
+        "serverDefault": "Server default",
+        "saved": "Saved {name}.",
+        "removed": "Removed {name}; the server-wide configuration applies.",
+        "removeAsk": "Remove your own values for {name}? The server-wide configuration applies again from the next request. A removed secret cannot be recovered.",
+        "disconnect": "Disconnect",
+        "reset": "Reset to default",
+        "back": "Back"
+      },
+      "business": {
+        "title": "Business settings",
+        "about": "Set for this account only. Left empty, the server-wide configuration applies.",
+        "modules": {
+          "kernel": "Website",
+          "comments": "Comments",
+          "content": "Content",
+          "forms": "Forms",
+          "media": "Images and files"
+        },
+        "custom": "Custom",
+        "default": "Default",
+        "set": "Set",
+        "value": "Value",
+        "secretSet": "Set (secret)"
+      },
+      "settings": {
+        "kernel": {
+          "public_url": {
+            "label": "Website address",
+            "about": "Public address of the site, e.g. https://shop.example; used in links sent by email."
+          }
+        },
+        "comments": {
+          "banned_words": {
+            "label": "Banned words",
+            "about": "A comment with any of these comma-separated words or phrases is refused, ignoring case and accents. Enter - for none."
+          },
+          "suspect_words": {
+            "label": "Words to review",
+            "about": "A comment with any of these words is held for approval. Enter - for none."
+          },
+          "max_links": {
+            "label": "Maximum links",
+            "about": "A comment with more links than this (0 to 100) is held for approval."
+          },
+          "guest_moderation": {
+            "label": "Approval of guest comments",
+            "about": "pre: approve every comment; first_time: only the first one; post: show at once, review later."
+          },
+          "user_moderation": {
+            "label": "Approval of signed-in users' comments",
+            "about": "pre: approve every comment; first_time: only the first one; post: show at once, review later."
+          }
+        },
+        "content": {
+          "locales": {
+            "label": "Content languages",
+            "about": "Comma-separated language codes, e.g. en,vi. Entries written in a language left out stay as they are."
+          },
+          "default_locale": {
+            "label": "Default language",
+            "about": "Used when a request names no language, e.g. en."
+          }
+        },
+        "forms": {
+          "retention_days": {
+            "label": "Days to keep submissions",
+            "about": "Form submissions are kept this many days, then deleted (0 to 36500; 0 keeps them until deleted by hand). A form's own setting still wins."
+          }
+        },
+        "media": {
+          "alt_locales": {
+            "label": "Image description languages",
+            "about": "Languages image descriptions (alt) may be translated into, comma-separated, e.g. en,vi."
+          }
+        }
       }
     },
     "jobs": {

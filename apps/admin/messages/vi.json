@@ -1374,39 +1374,22 @@
         "embeddings": "Tìm theo ý nghĩa (embedding)",
         "embeddingModel": "{model} · {dimensions} chiều",
         "embeddingsOff": "Đang tắt.",
-        "about": "Nhà vận hành máy chủ bật AI bằng các biến AUTOXIDE_AI_* và AUTOXIDE_EMBEDDING_*. Kết quả của AI chỉ là gợi ý hay bản nháp."
-      },
-      "title": "Kết nối đối tác (mẫu)",
-      "about": "Thông tin kết nối riêng của bạn. Không đặt thì dùng cấu hình chung của máy chủ. Secret được mã hoá khi lưu và không bao giờ hiện lại; muốn đổi thì nhập giá trị mới. Cần kernel.settings.manage.",
-      "names": {
-        "mail": "Email (SMTP)",
-        "sms": "SMS brandname",
-        "payment": "Cổng thanh toán",
-        "einvoice": "Hoá đơn điện tử"
+        "about": "Nhà vận hành máy chủ bật AI và chọn nhà cung cấp, mô hình.",
+        "name": "AI của máy chủ",
+        "unknown": "Không rõ"
       },
       "isSet": "đã đặt",
-      "notSet": "chưa đặt",
       "checkOk": "Lần kiểm tra gần nhất đạt",
       "checkFailed": "Lần kiểm tra gần nhất lỗi",
-      "hints": {
-        "mail": "Gửi thư đăng nhập, lời mời và thông báo.",
-        "sms": "Cần cho mã xác thực số điện thoại khi đăng nội dung. Chưa đặt thì tính năng này tắt.",
-        "payment": "Đối tác có giấy phép thu hộ tiền người mua; tiền không về tài khoản của bạn.",
-        "einvoice": "Phát hành hoá đơn điện tử qua nhà cung cấp có giấy phép."
-      },
       "state": {
         "set": "Đã đặt",
-        "unset": "Chưa đặt",
-        "error": "Lỗi lần gần nhất"
+        "unset": "Chưa đặt"
       },
       "test": "Kiểm tra kết nối",
       "testLabel": "Kiểm tra kết nối {name}",
       "tested": "Đã kiểm tra. Kết quả ở trong danh sách.",
-      "formTitle": "Cài đặt {name}",
-      "setUp": "Thiết lập",
       "change": "Đổi",
-      "secretNote": "Đổi secret không làm gián đoạn: giá trị mới dùng cho request kế tiếp. Lịch sử chỉ ghi tên cài đặt và người đổi (event kernel.setting_changed), không ghi giá trị.",
-      "formIntro": "Giá trị chỉ lưu cho khách này.",
+      "secretNote": "Secret được mã hoá khi lưu và không bao giờ hiện lại, kể cả với bạn; muốn đổi thì nhập giá trị mới. Giá trị mới dùng từ request kế tiếp, không gián đoạn. Nhật ký chỉ ghi tên cài đặt và người đổi, không ghi giá trị.",
       "saved": "Đã lưu kết nối.",
       "secretKeep": "Đã đặt. Để trống để giữ giá trị hiện tại.",
       "secretNew": "Secret: lưu mã hoá, không bao giờ hiện lại.",
@@ -1431,6 +1414,223 @@
         "connectionGroup": "Kết nối đối tác",
         "connectionAbout": "Tài khoản với dịch vụ bên ngoài (máy chủ thư, nhà cung cấp AI, cổng thanh toán…). Secret được lưu mã hoá và không bao giờ hiện lại.",
         "businessGroup": "Cấu hình nghiệp vụ"
+      },
+      "intro": "Nối tài khoản của bạn ở các dịch vụ bên ngoài: gửi thư, nhắn tin, thu tiền, hoá đơn điện tử, AI. Kết nối nào chưa cấu hình thì hệ thống dùng cấu hình chung của máy chủ.",
+      "categories": {
+        "email": {
+          "title": "Email",
+          "about": "Gửi thư đăng nhập, lời mời và thông báo."
+        },
+        "messaging": {
+          "title": "SMS và Zalo",
+          "about": "Tin nhắn mã xác thực và thông báo tới điện thoại."
+        },
+        "payment": {
+          "title": "Thanh toán",
+          "about": "Thu tiền người mua qua đối tác có giấy phép."
+        },
+        "einvoice": {
+          "title": "Hoá đơn điện tử",
+          "about": "Phát hành hoá đơn qua nhà cung cấp có giấy phép."
+        },
+        "shipping": {
+          "title": "Vận chuyển",
+          "about": "Tạo vận đơn và theo dõi giao hàng."
+        },
+        "ai": {
+          "title": "AI",
+          "about": "Gợi ý, viết nháp và dịch. Kết quả của AI chỉ là gợi ý hay bản nháp."
+        },
+        "other": {
+          "title": "Kết nối khác",
+          "about": "Kết nối của các module khác đã cài."
+        }
+      },
+      "kinds": {
+        "mail": {
+          "smtp": {
+            "name": "Máy chủ thư riêng (SMTP)",
+            "about": "Gửi thư từ máy chủ thư và địa chỉ của bạn thay cho máy chủ thư chung."
+          }
+        },
+        "ai": {
+          "text": {
+            "name": "Tài khoản AI riêng",
+            "about": "Dùng khoá API và mô hình của bạn ở nhà cung cấp AI mà máy chủ đang dùng."
+          }
+        },
+        "sms": {
+          "gateway": {
+            "name": "SMS brandname",
+            "about": "Gửi mã xác thực số điện thoại khi đăng nội dung. Chưa kết nối thì tính năng này tắt."
+          }
+        },
+        "payments": {
+          "gateway": {
+            "name": "Cổng thanh toán",
+            "about": "Đối tác có giấy phép thu hộ tiền người mua; tiền không về tài khoản của bạn."
+          }
+        },
+        "invoices": {
+          "einvoice": {
+            "name": "Hoá đơn điện tử",
+            "about": "Phát hành hoá đơn điện tử qua nhà cung cấp có giấy phép."
+          }
+        }
+      },
+      "fields": {
+        "mail": {
+          "smtp": {
+            "url": {
+              "label": "Địa chỉ máy chủ SMTP",
+              "hint": "Dạng smtps://tên:mật-khẩu@smtp.example.com."
+            },
+            "from": {
+              "label": "Người gửi",
+              "hint": "Dạng Cửa hàng '<'no-reply@example.com'>'. Tên miền phải được máy chủ SMTP cho gửi."
+            }
+          }
+        },
+        "ai": {
+          "text": {
+            "api_key": {
+              "label": "Khoá API"
+            },
+            "model": {
+              "label": "Mô hình",
+              "hint": "Tên mô hình ở nhà cung cấp mà máy chủ đang dùng."
+            }
+          }
+        },
+        "sms": {
+          "gateway": {
+            "provider": {
+              "label": "Nhà cung cấp"
+            },
+            "brandname": {
+              "label": "Tên thương hiệu (brandname)"
+            },
+            "api_key": {
+              "label": "Khoá API"
+            }
+          }
+        },
+        "payments": {
+          "gateway": {
+            "provider": {
+              "label": "Đối tác thanh toán"
+            },
+            "merchant_id": {
+              "label": "Mã người bán"
+            },
+            "secret_key": {
+              "label": "Khoá bí mật"
+            }
+          }
+        },
+        "invoices": {
+          "einvoice": {
+            "provider": {
+              "label": "Nhà cung cấp"
+            },
+            "username": {
+              "label": "Tài khoản"
+            },
+            "certificate": {
+              "label": "Chứng thư số"
+            }
+          }
+        }
+      },
+      "status": {
+        "connected": "Đã kết nối",
+        "unset": "Chưa cấu hình",
+        "error": "Lỗi"
+      },
+      "configure": "Cấu hình",
+      "edit": "Sửa",
+      "configureLabel": "Cấu hình {name}",
+      "serverDefault": "Đang dùng cấu hình chung của máy chủ.",
+      "notConnected": "Chưa kết nối.",
+      "changedAt": "Đổi lần cuối",
+      "dialog": {
+        "save": "Lưu",
+        "required": "Nhập giá trị.",
+        "serverDefault": "Mặc định của máy chủ",
+        "saved": "Đã lưu {name}.",
+        "removed": "Đã gỡ {name}; dùng cấu hình chung của máy chủ.",
+        "removeAsk": "Gỡ giá trị đặt riêng của {name}? Cấu hình chung của máy chủ áp dụng lại từ request kế tiếp. Secret đã gỡ không lấy lại được.",
+        "disconnect": "Ngắt kết nối",
+        "reset": "Về mặc định",
+        "back": "Quay lại"
+      },
+      "business": {
+        "title": "Cấu hình nghiệp vụ",
+        "about": "Đặt riêng cho tài khoản này. Để trống thì dùng cấu hình chung của máy chủ.",
+        "modules": {
+          "kernel": "Trang web",
+          "comments": "Bình luận",
+          "content": "Nội dung",
+          "forms": "Biểu mẫu",
+          "media": "Ảnh và tệp"
+        },
+        "custom": "Đặt riêng",
+        "default": "Mặc định",
+        "set": "Đặt",
+        "value": "Giá trị",
+        "secretSet": "Đã đặt (bí mật)"
+      },
+      "settings": {
+        "kernel": {
+          "public_url": {
+            "label": "Địa chỉ trang web",
+            "about": "Địa chỉ công khai của trang, vd https://shop.example; dùng trong link gửi qua thư."
+          }
+        },
+        "comments": {
+          "banned_words": {
+            "label": "Từ cấm",
+            "about": "Bình luận có một trong các từ hay cụm từ này (cách nhau bằng dấu phẩy) bị từ chối; không phân biệt hoa thường, có dấu hay không. Ghi - nếu không cấm từ nào."
+          },
+          "suspect_words": {
+            "label": "Từ cần duyệt",
+            "about": "Bình luận có một trong các từ này phải chờ duyệt. Ghi - nếu không có."
+          },
+          "max_links": {
+            "label": "Số link tối đa",
+            "about": "Bình luận có nhiều link hơn số này (0 đến 100) phải chờ duyệt."
+          },
+          "guest_moderation": {
+            "label": "Duyệt bình luận của khách vãng lai",
+            "about": "pre: duyệt mọi bình luận; first_time: chỉ duyệt bình luận đầu tiên; post: hiện ngay, duyệt sau."
+          },
+          "user_moderation": {
+            "label": "Duyệt bình luận của người đã đăng nhập",
+            "about": "pre: duyệt mọi bình luận; first_time: chỉ duyệt bình luận đầu tiên; post: hiện ngay, duyệt sau."
+          }
+        },
+        "content": {
+          "locales": {
+            "label": "Ngôn ngữ của nội dung",
+            "about": "Mã ngôn ngữ cách nhau bằng dấu phẩy, vd vi,en. Bài đã viết bằng ngôn ngữ bị bỏ vẫn giữ nguyên."
+          },
+          "default_locale": {
+            "label": "Ngôn ngữ mặc định",
+            "about": "Dùng khi yêu cầu không nêu ngôn ngữ, vd vi."
+          }
+        },
+        "forms": {
+          "retention_days": {
+            "label": "Số ngày giữ bài gửi",
+            "about": "Bài gửi qua biểu mẫu được giữ bấy nhiêu ngày rồi tự xoá (0 đến 36500; 0 là giữ tới khi xoá tay). Số ngày riêng của từng biểu mẫu vẫn được ưu tiên."
+          }
+        },
+        "media": {
+          "alt_locales": {
+            "label": "Ngôn ngữ của mô tả ảnh",
+            "about": "Các ngôn ngữ được dịch mô tả ảnh (alt), cách nhau bằng dấu phẩy, vd vi,en."
+          }
+        }
       }
     },
     "jobs": {
