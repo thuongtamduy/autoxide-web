@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { asksForWorkspace, normalizeWorkspace, tenantHeaders } from "./tenant";
+import {
+  asksForWorkspace,
+  enteredTenant,
+  normalizeWorkspace,
+  sendsEntered,
+  tenantHeaders,
+} from "./tenant";
 
 describe("normalizeWorkspace", () => {
   it("nhận slug và UUID, chữ hoa thành chữ thường", () => {
@@ -43,5 +49,22 @@ describe("tenantHeaders", () => {
     expect(asksForWorkspace("tenant_not_found")).toBe(true);
     expect(asksForWorkspace("auth.invalid_credentials")).toBe(false);
     expect(asksForWorkspace(undefined)).toBe(false);
+  });
+});
+
+describe("khách đang vào (uỷ quyền, hỗ trợ)", () => {
+  it("chỉ nhận UUID trong cookie", () => {
+    expect(enteredTenant(" 00000000-0000-7000-8000-0000000000D1 ")).toBe(
+      "00000000-0000-7000-8000-0000000000d1",
+    );
+    expect(enteredTenant("tra-sen")).toBeNull();
+    expect(enteredTenant(undefined)).toBeNull();
+  });
+
+  it("không gửi khách đang vào cho phần tài khoản của chính mình", () => {
+    expect(sendsEntered("/api/v1/auth/me")).toBe(false);
+    expect(sendsEntered("/api/v1/auth/me/tenants")).toBe(false);
+    expect(sendsEntered("/api/v1/auth/memberships")).toBe(true);
+    expect(sendsEntered("/api/v1/content/entries")).toBe(true);
   });
 });

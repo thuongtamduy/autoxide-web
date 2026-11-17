@@ -3,8 +3,18 @@
 import { useTranslations } from "next-intl";
 import { useId, useRef, useState } from "react";
 import { pickUnit } from "@/app/(admin)/org/actions";
+import { enterTenant, leaveTenant } from "@/app/(admin)/workspace-actions";
 import { initialsOf } from "@/lib/initials";
 import { Icon } from "./icon";
+
+/** Một khách khác người dùng làm việc được (`GET /auth/me/tenants`). */
+export interface PickerTenant {
+  id: string;
+  name: string;
+  slug: string;
+  /** `direct` (khách của mình), `delegation` hay `support`. */
+  access: string;
+}
 
 export interface PickerNode {
   id: string;
@@ -23,7 +33,10 @@ export function OrgPicker({
   tenant,
   nodes,
   current,
+  others = [],
 }: {
+  /** Khách khác vào được (kể cả khách của mình khi đang ở khách khác); rỗng: không có mục này. */
+  others?: readonly PickerTenant[];
   /** `true` khi `title` là tên khách (core nhiều khách), không phải tên ứng dụng. */
   tenant: boolean;
   /** Dòng trên: tên khách (core nhiều khách) hay tên ứng dụng. */
@@ -65,7 +78,7 @@ export function OrgPicker({
             {title}
           </span>
           <span className="ell ctx-sub" data-testid="unit-name">
-            {chosen ? chosen.name : t("all", { name: root?.name ?? title })}
+            {chosen ? chosen.name : root ? t("all", { name: root.name }) : t("whole")}
           </span>
         </span>
         <Icon name="chev" />
@@ -84,14 +97,16 @@ export function OrgPicker({
             <Icon name="x" />
           </button>
         </div>
-        <input
-          className="inp"
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t("search")}
-          aria-label={t("search")}
-        />
+        {nodes.length > 0 ? (
+          <input
+            className="inp"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("search")}
+            aria-label={t("search")}
+          />
+        ) : null}
         <form action={pickUnit} onSubmit={() => ref.current?.close()} className="op-list">
           {shown.map((node) => {
             const isRoot = node.id === root?.id;
@@ -113,9 +128,32 @@ export function OrgPicker({
               </button>
             );
           })}
-          {shown.length === 0 ? <p className="empty">{t("none")}</p> : null}
+          {nodes.length > 0 && shown.length === 0 ? <p className="empty">{t("none")}</p> : null}
         </form>
-        <p className="fhint">{t("hint")}</p>
+        {nodes.length > 0 ? <p className="fhint">{t("hint")}</p> : null}
+        {others.length > 0 ? (
+          <section aria-label={t("others")} data-testid="other-tenants">
+            <h3 className="cap">{t("others")}</h3>
+            <div className="op-list">
+              {others.map((other) => (
+                <form
+                  key={other.id}
+                  action={other.access === "direct" ? leaveTenant : enterTenant}
+                  onSubmit={() => ref.current?.close()}
+                >
+                  <input type="hidden" name="tenant_id" value={other.id} />
+                  <button type="submit" className="op-node">
+                    <span className="ell" style={{ flex: 1, minWidth: 0 }}>
+                      {other.name}
+                    </span>
+                    <span className="op-kind">{t(`access.${other.access}`)}</span>
+                  </button>
+                </form>
+              ))}
+            </div>
+            <p className="fhint">{t("othersHint")}</p>
+          </section>
+        ) : null}
       </dialog>
     </>
   );
