@@ -15,6 +15,7 @@ import {
   Status,
   Timeline,
 } from "@/components/growth/blocks";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import {
@@ -102,6 +103,7 @@ export default async function ProfilesPage(props: PageProps<"/customers">) {
       <section className="block" aria-labelledby="profiles-h">
         <BlockHead id="profiles-h" title={t("profiles.title")} about={t("profiles.about")} />
         <form className="filters" action="/customers">
+          <AutoFilter />
           <div className="fld grow">
             <label className="lab" htmlFor="profiles-q">
               {t("profiles.search")}

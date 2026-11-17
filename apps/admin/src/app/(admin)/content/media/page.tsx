@@ -6,6 +6,7 @@ import { MediaDropArea, UploadButton } from "@/components/media/media-drop-area"
 import { MediaGrid, MediaTable } from "@/components/media/media-list";
 import { MessagePanel } from "@/components/message-panel";
 import { Icon } from "@/components/shell/icon";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { getClientConfig } from "@/lib/client-config";
 import { FALLBACK_CONTENT_LOCALES } from "@/lib/content";
 import { optional } from "@/lib/content-server";
@@ -123,6 +124,7 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
 
       <div className="md-filters">
         <form className="md-search" action="/content/media">
+          <AutoFilter />
           {Object.entries({
             folder: filters.folder,
             kind: filters.kind,

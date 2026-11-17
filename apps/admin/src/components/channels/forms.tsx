@@ -201,6 +201,7 @@ function LinkFields({
       {mode === "fixed" ? (
         <div className="gr-two">
           <Field
+            money
             label={t("fixed")}
             name="value"
             inputMode="numeric"

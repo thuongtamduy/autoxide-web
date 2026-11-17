@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { revokeAnyApiKey } from "@/app/(admin)/settings/actions";
 import { ConfirmAction } from "@/components/ui/confirm";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { load } from "@/lib/core";
@@ -18,6 +19,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export default async function AllApiKeysPage(props: PageProps<"/settings/api-keys/all">) {
   if (!(await can(API_KEYS_MANAGE))) notFound();
   const t = await getTranslations();
+  const e = await getTranslations("emptyStates");
   const params = await props.searchParams;
   const cursor = typeof params.cursor === "string" ? params.cursor : undefined;
   const user = typeof params.user === "string" && UUID.test(params.user) ? params.user : undefined;
@@ -48,7 +50,9 @@ export default async function AllApiKeysPage(props: PageProps<"/settings/api-key
         <p className="fhint">{k("allAbout")}</p>
         <div className="card tcard">
           {page.data.length === 0 ? (
-            <p className="empty">{k("allEmpty")}</p>
+            <EmptyState icon="key" title={k("allEmpty")}>
+              {e("apiKeysAll.body")}
+            </EmptyState>
           ) : (
             <Table cards>
               <thead>

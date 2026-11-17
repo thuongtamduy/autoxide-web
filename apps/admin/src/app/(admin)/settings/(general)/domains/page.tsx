@@ -228,7 +228,6 @@ export default async function DomainsPage() {
             </h2>
             <SampleBadge step="34" endpoint="GET /api/v1/organizations/nodes" />
           </div>
-          <p className="fhint">{t("unitAbout")}</p>
         </section>
       ) : null}
     </div>

@@ -43,9 +43,6 @@ export default async function NotificationsPage() {
           />
         </div>
       </section>
-      <p className="note warn block half">
-        <b>{t("languageTitle")}</b> {t("languageNote")}
-      </p>
     </div>
   );
 }

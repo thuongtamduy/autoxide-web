@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   type InputHTMLAttributes,
   type ReactNode,
@@ -21,6 +21,7 @@ export function Field({
   error,
   hint,
   mono = false,
+  money = false,
   ...input
 }: InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -28,6 +29,8 @@ export function Field({
   error?: string | undefined;
   hint?: string | undefined;
   mono?: boolean;
+  /** Ô tiền (đồng): hiện dấu phân cách nghìn khi gõ; gửi đi chỉ chữ số. */
+  money?: boolean;
 }) {
   const id = useId();
   const described = [hint ? `${id}-hint` : "", error ? `${id}-err` : ""].filter(Boolean).join(" ");
@@ -36,13 +39,17 @@ export function Field({
       <label className="lab" htmlFor={id}>
         {label}
       </label>
-      <input
-        id={id}
-        className={mono ? "inp mono" : "inp"}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={described || undefined}
-        {...input}
-      />
+      {money ? (
+        <MoneyInput {...input} id={id} error={!!error} described={described || undefined} />
+      ) : (
+        <input
+          id={id}
+          className={mono ? "inp mono" : "inp"}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={described || undefined}
+          {...input}
+        />
+      )}
       {hint ? (
         <span id={`${id}-hint`} className="fhint">
           {hint}
@@ -54,6 +61,79 @@ export function Field({
         </span>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Chỉ giữ chữ số khi chữ gõ là số nguyên có dấu phân cách nghìn đúng chỗ ("1.500.000", "1,500,000",
+ * "1500000"). Chữ khác ("1.000,50", "3k") giữ nguyên để máy chủ báo lỗi, không tự đổi thành số khác.
+ */
+export function moneyDigits(text: string): string {
+  const t = text.replace(/[\s₫đ]/g, "");
+  if (/^\d*$/.test(t)) return t;
+  if (/^\d{1,3}(\.\d{3})+$/.test(t) || /^\d{1,3}(,\d{3})+$/.test(t)) return t.replace(/[.,]/g, "");
+  return text;
+}
+
+/**
+ * Định dạng khi gõ: bỏ dấu phân cách nghìn của ngôn ngữ giao diện (dấu "." với tiếng Việt) rồi viết
+ * lại, "1.5000" → "15.000". Chữ không phải số nguyên ("1.000,50") giữ nguyên.
+ */
+export function formatMoneyInput(text: string, locale: string): string {
+  const fmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+  const group = fmt.formatToParts(1000).find((p) => p.type === "group")?.value ?? ",";
+  const digits = text
+    .replace(/[\s₫đ]/g, "")
+    .split(group)
+    .join("")
+    .replace(/\u00a0/g, "");
+  if (!/^\d+$/.test(digits)) return text;
+  return fmt.format(Number(digits));
+}
+
+/**
+ * Ô tiền: người dùng thấy "1.500.000", form gửi "1500000" qua ô ẩn cùng `name` — máy chủ nhận như cũ.
+ */
+function MoneyInput({
+  id,
+  error,
+  described,
+  name,
+  defaultValue,
+  value: _value,
+  onChange,
+  className,
+  ...rest
+}: InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  error: boolean;
+  described: string | undefined;
+}) {
+  const locale = useLocale();
+  const [text, setText] = useState(() =>
+    formatMoneyInput(String(_value ?? defaultValue ?? ""), locale),
+  );
+  useEffect(() => {
+    if (_value !== undefined) setText(formatMoneyInput(String(_value), locale));
+  }, [_value, locale]);
+  return (
+    <>
+      <input
+        id={id}
+        className={className ?? "inp num"}
+        inputMode="numeric"
+        autoComplete="off"
+        aria-invalid={error || undefined}
+        aria-describedby={described}
+        value={text}
+        onChange={(e) => {
+          setText(formatMoneyInput(e.target.value, locale));
+          onChange?.(e);
+        }}
+        {...rest}
+      />
+      <input type="hidden" name={name} value={moneyDigits(text)} />
+    </>
   );
 }
 

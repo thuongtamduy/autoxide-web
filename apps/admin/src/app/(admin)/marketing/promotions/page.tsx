@@ -10,6 +10,7 @@ import { ChangeButtons } from "@/components/engage/actions";
 import { EvaluateForm, ExtendDialog } from "@/components/promotions/forms";
 import { Meter } from "@/components/promotions/meter";
 import { Checks, historyText, STATUS_BADGE } from "@/components/promotions/views";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { ConfirmAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatDay, toVietnamInput } from "@/lib/catalog";
@@ -137,6 +138,7 @@ export default async function ProgramsPage(props: PageProps<"/marketing/promotio
         </nav>
         <search aria-label={t("programs.search")}>
           <form className="filters" action="/marketing/promotions">
+            <AutoFilter />
             {status ? <input type="hidden" name="status" value={status} /> : null}
             <div className="fld grow">
               <label className="lab" htmlFor="pm-q">

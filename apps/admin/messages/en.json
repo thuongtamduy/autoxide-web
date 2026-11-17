@@ -1027,7 +1027,6 @@
       "isOn": "Platform staff may enter to help when you report a problem.",
       "isOff": "Only requests from a competent authority (with a document number) can be granted.",
       "revokeNoteTitle": "Revoking from your side",
-      "revokeNote": "Step 34 of the core only lets the platform operator revoke a grant. The Revoke button below follows the proposed API: you control the data, so you should be able to end access yourself.",
       "grants": "Grants and visits",
       "staff": "Platform staff",
       "basis": "Basis and reason",
@@ -1356,11 +1355,9 @@
       "added": "Domain added. Create its TXT record.",
       "addSubmit": "Add domain",
       "unitTitle": "Use a domain for one store or branch",
-      "unitAbout": "The core can attach a domain to a store or branch of your organization (so the website of that branch answers on it), but the organization tree itself comes with step 34 of the core. Until then every domain belongs to the whole workspace.",
       "node": "For the organization node"
     },
     "connections": {
-      "agentNote": "AI agents cannot write secrets: no MCP tool sets or reads them. Testing a connection, last use and last error need new API (listed in the API gaps).",
       "ai": {
         "title": "AI",
         "text": "Text generation",
@@ -1437,7 +1434,6 @@
       }
     },
     "jobs": {
-      "cliNote": "Not in the API yet: the core has only the server command autoxide jobs for operators. The list per account, progress and retry with audit wait for step 52.",
       "title": "Recent jobs",
       "about": "Background work: exports, printing, sending invoices, image processing. See progress, errors and the dead-letter queue; a retry is written to the audit log.",
       "filter": "Filter jobs by status",
@@ -1549,7 +1545,6 @@
       }
     },
     "audit": {
-      "kindNote": "Filtering by AI agent or service needs API: the log tells only “user” and “system” apart; API key kinds (person / agent / service) come with step 51, and there is no filter by kind of actor yet.",
       "title": "Log",
       "about": "Who changed what, when, before and after. Needs audit.read.",
       "filter": "Filter the audit log",
@@ -1609,7 +1604,6 @@
       "revokeNoUndo": "This cannot be undone.",
       "revokeSubmit": "Revoke key",
       "revoked": "Revoked {name}.",
-      "kindNote": "Key kinds (person, agent, service) and approval of risky agent commands come with step 51 of the core.",
       "breadcrumb": "Back to API keys",
       "back": "All API keys",
       "newTitle": "New API key",
@@ -1728,7 +1722,6 @@
       "filter": "Filter by status",
       "all": "All",
       "noEndpoints": "No endpoints yet. Add one under Settings › Webhooks.",
-      "resendNote": "Resending one delivery needs API (step 52); deliveries are retried automatically for about two hours.",
       "requests": "Request log",
       "requestsAbout": "Route templates (no real ids), status, error code, time and API key. Kept for 14 days.",
       "anyStatus": "Any status",
@@ -3705,7 +3698,22 @@
       "eraseNoUndo": "This cannot be undone. Download the data first if the person asked for a copy.",
       "eraseVerify": "Do this only for a verified request of the person the data is about.",
       "eraseSubmit": "Erase for good",
-      "erased": "Data erased."
+      "erased": "Data erased.",
+      "stepsTitle": "Handling a data subject request",
+      "steps": {
+        "verify": {
+          "title": "Verify the requester",
+          "body": "Email that exact address and wait for a reply, or check their documents. Never hand data to someone you have not verified."
+        },
+        "lookup": {
+          "title": "Look up by email",
+          "body": "Enter the address above. Results include everything this area keeps about it."
+        },
+        "deliver": {
+          "title": "Send a copy or erase",
+          "body": "Download the JSON to send to them; erase it permanently if they ask. Note when you handled it so you reply on time."
+        }
+      }
     }
   },
   "orgtree": {
@@ -4416,7 +4424,6 @@
           "click_wrap": "click to accept",
           "signature": "signature"
         },
-        "countNote": "Acceptance counts per version need an API; today the core only lists the evidence of each person.",
         "evidenceLaw": "Each acceptance keeps the person, version, channel, time and SHA-256 of the version shown."
       },
       "cases": {
@@ -5644,7 +5651,7 @@
         "length": "Length (mm)",
         "width": "Width (mm)",
         "height": "Height (mm)",
-        "shippingHint": "Packed size, used by shipping (step 44).",
+        "shippingHint": "Packed dimensions, used to calculate shipping fees.",
         "variant": "Variant",
         "package": "Weight · package",
         "price": "Price (head office)",
@@ -10305,7 +10312,6 @@
       "empty": "Nothing left. New work shows here when an area has data to handle.",
       "emptyFilter": "No work matches the filter.",
       "incomplete": "{count, plural, one {# work source did not answer} other {# work sources did not answer}}: {names}. Their work is missing from the list; reload the page to try again.",
-      "sampleNote": "Items tagged \"sample\" come from sample data of areas without an API yet; comments, form submissions and posts waiting for review come from the real core. Snoozing and assigning are kept in sample data until the core has the API.",
       "blocking": "Urgent",
       "due": {
         "overdue": "Overdue {when}",
@@ -10499,7 +10505,7 @@
     "activity": {
       "title": "Recent activity",
       "about": "Readable lines built from the core's audit log: who did what, and when. Sign-ins and password changes are personal and not shown here.",
-      "forbidden": "Seeing activity needs {permission}. Once the core lists activity by read permission on each record (step 51), everyone sees activity within their scope.",
+      "forbidden": "You need the {permission} permission to see activity.",
       "empty": "No activity yet.",
       "unnamed": "untitled",
       "actors": {
@@ -10639,9 +10645,7 @@
         }
       },
       "save": "Save settings",
-      "saved": "Notification settings saved",
-      "languageTitle": "Language of delayed notifications.",
-      "languageNote": "Notifications sent later (summary emails, reminders) do not know your language yet, because the core does not store a \"preferred language\"; listed as a missing API."
+      "saved": "Notification settings saved"
     }
   },
   "customers": {
@@ -10814,7 +10818,7 @@
       "unlocked": "Unlocked; the buyer can sign in again.",
       "registered": "Registered",
       "lastLogin": "Last sign-in",
-      "phoneVerify": "Phone verification (step 37)",
+      "phoneVerify": "Phone verification",
       "lockedBy": "Locked by",
       "lockedAt": "Locked at",
       "lockReason": "Reason",
@@ -10829,11 +10833,11 @@
       "saved": "Registration setting saved.",
       "unverifiedTitle": "Unverified phone numbers",
       "unverifiedCount": "{n} accounts have not verified their phone number.",
-      "unverifiedText": "They can still buy but cannot comment or review yet (Decree 147/2024 — check the original text). Phone verification belongs to Compliance (step 37)."
+      "unverifiedText": "They can still buy, but cannot comment or review until their phone number is verified (Decree 147/2024 — check the original text)."
     },
     "segments": {
       "title": "Groups",
-      "about": "Manual or rule-based. Groups are re-evaluated when a profile changes and every night; price lists (step 41) and promotions (step 43) use groups by ID, never reading customer data.",
+      "about": "Segments are manual or rule-based. They are re-evaluated when a profile changes and every night; price lists and promotions use segments by their code.",
       "group": "Group",
       "how": "How customers join",
       "members": "Profiles",
@@ -12450,5 +12454,44 @@
   "planLock": {
     "badge": "Higher plan",
     "hint": "Your plan does not include this. Open Settings › Plan to change plan."
+  },
+  "emptyStates": {
+    "apiKeys": {
+      "body": "API keys let other software or AI agents call Autoxide on your behalf, with only the permissions you pick. A key is shown once when created.",
+      "action": "Create API key"
+    },
+    "apiKeysAll": {
+      "body": "When staff create API keys, they show up here so you can review permissions, last use, and revoke them when needed."
+    },
+    "webhooks": {
+      "body": "Webhooks notify other systems whenever something happens, such as a new order or a published post. Add an endpoint to start.",
+      "action": "Add endpoint"
+    },
+    "invitations": {
+      "body": "Invite staff by email. Invitations stay here until accepted or expired; you can resend or revoke them."
+    },
+    "print": {
+      "body": "Pick orders in the Orders list, then choose \"Print packing slips\" to print several at once.",
+      "action": "Pick orders to print"
+    },
+    "bans": {
+      "body": "Ban by email, account or IP address when someone posts spam or abuse. Bans can expire and can be lifted at any time."
+    },
+    "suppressions": {
+      "body": "Bounced addresses, spam complaints and unsubscribes land here and receive no more email. You can add addresses yourself too."
+    },
+    "lists": {
+      "body": "Lists group recipients by topic (deals, kitchen tips…). Create a list, then attach it to a sign-up form on your website."
+    },
+    "pages": {
+      "body": "Pages hold content that rarely changes, such as About, Returns policy or Contact. Pages form a tree that builds their URLs.",
+      "action": "Create page"
+    },
+    "overrides": {
+      "body": "Overrides add or remove modules and limits for one customer beyond their plan, when you have a special agreement."
+    },
+    "support": {
+      "body": "When a customer lets the support team access their data, the grant shows here with who received it and until when."
+    }
   }
 }

@@ -855,6 +855,7 @@ export function OpenShiftDialog({ stores }: { stores: Option[] }) {
             error={state.fields?.register}
           />
           <Field
+            money
             label={t("opening")}
             name="opening"
             mono
@@ -886,6 +887,7 @@ export function CloseShiftDialog({ id, expected }: { id: string; expected: strin
       {(state) => (
         <>
           <Field
+            money
             label={t("counted")}
             name="counted"
             mono

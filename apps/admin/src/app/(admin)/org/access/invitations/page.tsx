@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { InviteDialog } from "@/components/access/team-forms";
 import { MessagePanel } from "@/components/message-panel";
 import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { allRoles } from "@/lib/access";
@@ -35,6 +36,7 @@ export default async function InvitationsPage(props: PageProps<"/org/access/invi
     );
   }
   const t = await getTranslations("access.invitations");
+  const e = await getTranslations("emptyStates");
   const { status } = await props.searchParams;
   const current = STATUSES.find((s) => s === status);
   const asked = current === "expired" ? "pending" : current;
@@ -100,7 +102,9 @@ export default async function InvitationsPage(props: PageProps<"/org/access/invi
         </nav>
         <div className="card tcard">
           {rows.length === 0 ? (
-            <p className="empty">{t("empty")}</p>
+            <EmptyState icon="mail" title={t("empty")}>
+              {e("invitations.body")}
+            </EmptyState>
           ) : (
             <Table cards>
               <thead>

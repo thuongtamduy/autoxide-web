@@ -95,7 +95,6 @@ export default async function WorkPage(props: PageProps<"/work">) {
             <TaskList rows={shown} now={now} candidates={candidates} actions={sample} />
           )}
         </div>
-        {sample ? <p className="fhint">{t("box.sampleNote")}</p> : null}
       </section>
     </div>
   );

@@ -126,6 +126,7 @@ export function ShipmentDialog({
               error={state.fields?.weight_grams}
             />
             <Field
+              money
               label={t("cod")}
               name="cod"
               mono
@@ -225,6 +226,7 @@ export function MethodDialog({ orgs, carriers }: { orgs: Option[]; carriers: Opt
           </div>
           <div className="fld-row">
             <Field
+              money
               label={t("free")}
               name="free_over"
               mono
@@ -285,6 +287,7 @@ export function QuoteForm({ stores, provinces }: { stores: Option[]; provinces: 
           </div>
           <div className="fld-row">
             <Field
+              money
               label={t("value")}
               name="order_value"
               mono

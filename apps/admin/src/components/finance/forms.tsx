@@ -289,6 +289,7 @@ export function VietQrForm({
         error={state.fields?.bank_account_id}
       />
       <Field
+        money
         label={t("amount")}
         name="amount"
         mono
@@ -364,6 +365,7 @@ export function TaxQuoteForm({
       />
       <div className="fld-row">
         <Field
+          money
           label={t("gross")}
           name="gross"
           mono

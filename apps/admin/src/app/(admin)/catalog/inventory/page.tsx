@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { STOCK_BADGE } from "@/components/catalog/badges";
 import { AdjustDialog, ReorderDialog, TransferDialog } from "@/components/inventory/forms";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { INVENTORY_ADJUST, INVENTORY_SETTINGS, INVENTORY_TRANSFER, signed } from "@/lib/catalog";
@@ -118,6 +119,7 @@ export default async function LevelsPage(props: PageProps<"/catalog/inventory">)
         </nav>
         <search aria-label={t("levels.search")}>
           <form className="filters" action="/catalog/inventory">
+            <AutoFilter />
             {status ? <input type="hidden" name="status" value={status} /> : null}
             <div className="fld grow">
               <label className="lab" htmlFor="inv-q">

@@ -115,7 +115,8 @@
 }
 .ax .dash-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  /* Ô tối thiểu 150px: 6 ô vừa một hàng ở màn 1440px (trước 210px nên ô thứ 6 rơi xuống một mình) */
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: 12px;
 }
 .ax .dash-tile {

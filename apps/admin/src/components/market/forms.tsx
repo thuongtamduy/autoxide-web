@@ -65,6 +65,7 @@ export function FeePreviewForm({
           error={state.fields?.category_id}
         />
         <Field
+          money
           label={labels.price}
           name="price"
           mono

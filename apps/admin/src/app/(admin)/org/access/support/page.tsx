@@ -62,7 +62,6 @@ export default async function SupportPage() {
         <h2 id="revoke-h" className="h2">
           {t("revokeNoteTitle")}
         </h2>
-        <p className="note warn">{t("revokeNote")}</p>
       </section>
       <section className="block" aria-labelledby="grants-h">
         <div className="block-head">

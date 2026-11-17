@@ -28,7 +28,8 @@ test("khách hàng: hồ sơ từ đơn thật, dữ liệu cá nhân che bớt,
   ).toBeVisible();
 
   await page.getByLabel("Find a customer").fill("nguyen thi hoa");
-  await page.locator("form.filters").getByRole("button", { name: "Search" }).click();
+  // Lọc tự chạy khi ngừng gõ, không cần bấm nút.
+  await expect(page).toHaveURL(/q=nguyen/);
   await page.getByRole("link", { name: "Nguyễn Thị Hoa" }).click();
   await expect(page.getByRole("link", { name: "BM-2611-0412" })).toBeVisible();
   await expect(page.getByText(/^09•• ••• \d{3}$/).first()).toBeVisible();

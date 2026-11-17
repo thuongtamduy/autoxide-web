@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
 import { AuthorDialog } from "@/components/structure/forms";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { ConfirmAction } from "@/components/ui/confirm";
 import type { Author } from "@/lib/content";
 import { isForbidden, load } from "@/lib/core";
@@ -51,6 +52,7 @@ export default async function AuthorsTab(props: PageProps<"/content/structure/au
         </div>
         <p className="fhint">{t("about")}</p>
         <form method="get" action="/content/structure/authors" className="filters">
+          <AutoFilter />
           <label className="fld grow">
             <span className="lab">{t("search")}</span>
             <input

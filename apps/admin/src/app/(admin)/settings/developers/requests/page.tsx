@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
 import { TipHeading } from "@/components/help/info-tip";
 import { SampleBadge } from "@/components/sample-badge";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { DEVTOOLS_READ } from "@/lib/permissions";
@@ -61,6 +62,7 @@ export default async function RequestsPage(props: PageProps<"/settings/developer
             ))}
           </nav>
           <form method="get" action="/settings/developers/requests" className="inline-row">
+            <AutoFilter />
             {current ? <input type="hidden" name="status" value={current} /> : null}
             <label className="fld">
               <span className="lab">{t("apiKey")}</span>

@@ -128,6 +128,7 @@ export function CreatePromotionDialog({
           </div>
           <div className="fld-row">
             <Field
+              money
               label={t("minOrder")}
               name="min_order"
               mono
@@ -273,6 +274,7 @@ export function FlashPriceDialog({
       {(state) => (
         <div className="fld-row">
           <Field
+            money
             label={t("salePrice")}
             name="sale_price"
             mono
@@ -446,6 +448,7 @@ export function EvaluateForm({ stores }: { stores: Option[] }) {
               error={state.fields?.codes}
             />
             <Field
+              money
               label={t("fee")}
               name="shipping_fee"
               mono

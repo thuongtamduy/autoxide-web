@@ -5,6 +5,7 @@ import { deleteForm, setFormStatus } from "@/app/(admin)/marketing/forms/actions
 import { ChangeButtons, ConfirmButton } from "@/components/engage/actions";
 import { BackgroundExport } from "@/components/engage/background-export";
 import { Back, Chips, Facts, Forbidden, PageHead, Pager } from "@/components/engage/common";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -153,6 +154,7 @@ export default async function FormPage(props: PageProps<"/marketing/forms/[id]">
           ]}
         />
         <form method="get" action={base} className="filters">
+          <AutoFilter />
           {status ? <input type="hidden" name="status" value={status} /> : null}
           <label className="fld grow">
             <span className="lab">{t("search")}</span>

@@ -2,6 +2,7 @@ import type { components } from "@autoxide/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { actorNames, auditFilter, auditHref } from "@/lib/audit";
@@ -46,7 +47,6 @@ export default async function AuditPage(props: PageProps<"/settings/audit">) {
   const filtered = Object.keys(filter).length > 0;
   return (
     <div className="blocks">
-      <p className="note warn">{a("kindNote")}</p>
       <section className="block" aria-labelledby="audit-h">
         <div className="block-head">
           <h2 id="audit-h" className="h2">
@@ -55,6 +55,7 @@ export default async function AuditPage(props: PageProps<"/settings/audit">) {
         </div>
         <p className="fhint">{a("about")}</p>
         <form className="filters" method="get" action={BASE} aria-label={a("filter")}>
+          <AutoFilter />
           {modules ? (
             <label className="fld">
               <span className="lab">{a("module")}</span>
