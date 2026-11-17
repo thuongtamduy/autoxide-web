@@ -52,10 +52,14 @@
 .ax .mk-preview form {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
+/* Cao bằng nút nhỏ (`.btn.sm`, 32px) cạnh nó: ô chọn và hai nút thẳng một hàng. */
 .ax .mk-preview select {
-  min-height: 36px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
 }
 
 /* Thẻ việc của người bán (tranh chấp cần trả lời, bước còn thiếu) */
