@@ -65,11 +65,16 @@ export async function renameTenant(state: FormState, formData: FormData): Promis
 
 /** Tạm khoá khách: mọi request vào khách đó nhận 403 `tenant_suspended`. */
 export async function suspendCoreTenant(state: FormState, formData: FormData): Promise<FormState> {
+  // Lý do vào nhật ký audit của khách (`reason`, D-334 của core); core kiểm độ dài. Gom mọi ô thiếu
+  // để báo một lần.
+  const reason = text(formData, "reason");
+  const fields: Record<string, string> = {};
+  if (!reason) fields.reason = (await getTranslations("platform.tenant"))("suspendReasonRequired");
   if (formData.get("acknowledged") !== "on") {
-    const t = await getTranslations("sample.fields");
-    return { fields: { acknowledged: t("acknowledge") } };
+    fields.acknowledged = (await getTranslations("sample.fields"))("acknowledge");
   }
-  return patchTenant(state, formData, { status: "suspended" }, []);
+  if (Object.keys(fields).length > 0) return { fields, values: { reason } };
+  return patchTenant(state, formData, { status: "suspended", reason }, ["reason"]);
 }
 
 /**
@@ -121,7 +126,7 @@ export async function startMove(state: DialogState, formData: FormData): Promise
 async function patchTenant(
   state: FormState,
   formData: FormData,
-  body: { name?: string; status?: string; read_only?: boolean },
+  body: { name?: string; status?: string; read_only?: boolean; reason?: string },
   fields: readonly string[],
 ): Promise<FormState> {
   const id = text(formData, "tenant_id") || text(formData, "id");

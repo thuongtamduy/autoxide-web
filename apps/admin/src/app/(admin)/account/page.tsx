@@ -8,23 +8,20 @@ import { ProfileForm } from "@/components/account/profile-form";
 import { Icon } from "@/components/shell/icon";
 import { Time } from "@/components/ui/time";
 import { load } from "@/lib/core";
-import { loadUnits } from "@/lib/org-server";
 import { getCurrentTenant, getMe } from "@/lib/viewer";
 
 // Tab "Hồ sơ": tên, ngôn ngữ và múi giờ ưa thích (`PATCH /auth/me`, bước 34 của core), email và
 // trạng thái xác minh, email đang chờ xác minh sau khi xin đổi (huỷ được), và "Nơi bạn làm việc":
-// các nút tổ chức kèm role ở đó (`GET /auth/me/memberships`), các khách vào được
+// các nút tổ chức (tên nút core trả kèm, D-333) và role ở đó (`GET /auth/me/memberships`), các khách vào được
 // (`GET /auth/me/tenants`: của mình, qua uỷ quyền, qua quyền vào hỗ trợ).
 export default async function ProfilePage() {
   const t = await getTranslations("account.profile");
   const me = await getMe();
-  const [memberships, tenants, units, current] = await Promise.all([
+  const [memberships, tenants, current] = await Promise.all([
     load((c) => c.GET("/api/v1/auth/me/memberships")).then((r) => r.data),
     load((c) => c.GET("/api/v1/auth/me/tenants")).then((r) => r.data),
-    loadUnits(),
     getCurrentTenant(),
   ]);
-  const unitName = new Map((units ?? []).map((u) => [u.id, u.name]));
   // Gợi ý múi giờ: danh sách của máy chủ Node, thêm tên thường dùng ở Việt Nam (ICU gọi nó là
   // `Asia/Saigon`; core nhận cả hai).
   const zones = ["Asia/Ho_Chi_Minh", ...Intl.supportedValuesOf("timeZone")];
@@ -116,7 +113,7 @@ export default async function ProfilePage() {
                 </span>
                 <span className="item-main">
                   <span className="item-title ell">
-                    {unitName.get(m.org_id) ??
+                    {m.org_name ??
                       (m.org_id === current?.id ? (current?.name ?? t("root")) : m.org_id)}
                   </span>
                   <span className="item-meta mono">{m.roles.map((r) => r.name).join(", ")}</span>

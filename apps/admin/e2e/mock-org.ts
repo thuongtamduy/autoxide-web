@@ -56,22 +56,36 @@ const TYPES: Schemas["UnitTypeResponse"][] = [
   updated_at: "2026-11-12T00:00:00Z",
 }));
 
+/** `schema` của cài đặt: SDK sinh kiểu object rỗng cho JSON Schema tự do, nên ép kiểu ở đây. */
+function shape(schema: object): Record<string, never> {
+  return schema as Record<string, never>;
+}
+
 const CATALOG: Schemas["SettingResponse"][] = [
   {
     key: "organizations.timezone",
     description: "Time zone of the unit (IANA name, e.g. `Asia/Ho_Chi_Minh`).",
     default: "UTC",
+    // Dạng giá trị như core khai (D-332).
+    schema: shape({ type: "string", format: "iana-time-zone", examples: ["Asia/Ho_Chi_Minh"] }),
   },
-  { key: "organizations.currency", description: "Currency (ISO 4217, e.g. `VND`).", default: null },
+  {
+    key: "organizations.currency",
+    description: "Currency (ISO 4217, e.g. `VND`).",
+    default: null,
+    schema: shape({ type: "string", pattern: "^[A-Z]{3}$", examples: ["VND"] }),
+  },
   {
     key: "auth.support_access",
     description: "Whether platform staff may be granted time-limited access for support.",
     default: true,
+    schema: shape({ type: "boolean" }),
   },
   {
     key: "organizations.languages",
     description: "Languages of the website, the first is the default.",
     default: ["en"],
+    schema: shape({ type: "array", items: { type: "string" }, minItems: 1, uniqueItems: true }),
   },
 ];
 
@@ -255,6 +269,11 @@ export async function setRootName(request: IncomingMessage, response: ServerResp
   send(response, 204);
 }
 
+/** Nút của cây (tên, loại) cho `org_name` / `org_unit_type` của membership (D-333). */
+export function unitOf(id: string): { name: string; unit_type: string } | undefined {
+  return units.find((u) => u.id === id);
+}
+
 /** Người dùng trong cây (cho `GET /auth/users/{id}`); `undefined` khi không phải người của cây. */
 export function orgPerson(id: string): Schemas["UserResponse"] | undefined {
   return ORG_PEOPLE.find((p) => p.id === id);
@@ -319,6 +338,24 @@ export async function orgRoutes(
   };
   if (route === "GET /api/v1/organizations/public/stores") {
     return done(200, { data: publicStores() });
+  }
+  if (route === "GET /api/v1/organizations/public/site") {
+    // Như core (D-331): `?site=` chọn nút; không có thì nút gốc (core giả không gắn tên miền với nút).
+    const site = url.searchParams.get("site") ?? ROOT_UNIT;
+    const unit = units.find((u) => u.id === site && u.status === "active");
+    if (!unit) return fail(404, "site_not_found", "No active unit with this id in this tenant.");
+    return done(200, { data: profiles.get(unit.id) ?? profile(unit.id) });
+  }
+  if (route === "GET /api/v1/auth/memberships/counts") {
+    // Như core (D-332): mỗi nút một dòng; `total` gồm người ở nút trên, mỗi người một lần.
+    return done(200, {
+      data: units.map((u) => {
+        const above = new Set(chain(u.id).map((x) => x.id));
+        const people = (ids: Set<string>) =>
+          new Set(memberships.filter((m) => ids.has(m.org_id)).map((m) => m.user_id)).size;
+        return { org_id: u.id, direct: people(new Set([u.id])), total: people(above) };
+      }),
+    });
   }
   if (route === "GET /api/v1/auth/memberships") {
     const org = url.searchParams.get("org_id");

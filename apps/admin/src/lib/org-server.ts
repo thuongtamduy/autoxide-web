@@ -50,6 +50,16 @@ export const loadUnitTypes = cache(async (): Promise<UnitType[]> => {
 });
 
 /**
+ * Số người ở mỗi nút (`GET /auth/memberships/counts`, D-332 của core): `direct` gán ở chính nút, `total`
+ * gồm cả người ở nút trên. Rỗng khi thiếu `auth.users.read`.
+ */
+export async function loadMemberCounts(): Promise<Map<string, { direct: number; total: number }>> {
+  if (!(await can(USERS_READ))) return new Map();
+  const answer = await load((client) => client.GET("/api/v1/auth/memberships/counts"));
+  return new Map(answer.data.map((c) => [c.org_id, { direct: c.direct, total: c.total }]));
+}
+
+/**
  * Dòng membership (mỗi dòng một role ở một nút), lọc theo `query`; đọc tới `MAX_PAGES` trang. Có
  * `org_id` thì gồm cả membership ở các nút trên (`inherited=true`, đánh dấu `inherited`). Cần
  * `auth.users.read`: không có thì rỗng.

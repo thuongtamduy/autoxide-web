@@ -5,25 +5,33 @@ import { InviteDialog } from "@/components/access/team-forms";
 import { TipHeading } from "@/components/help/info-tip";
 import { MessagePanel } from "@/components/message-panel";
 import { InlineAction } from "@/components/ui/confirm";
-import { FormDialog } from "@/components/ui/form-dialog";
+import { type FieldSpec, FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { ToastProvider } from "@/components/ui/toast";
 import { allRoles } from "@/lib/access";
 import { load } from "@/lib/core";
 import { initialsOf } from "@/lib/initials";
 import {
+  asSettingSchema,
   chainOf,
   groupMemberships,
   invitationStatus,
-  memberCounts,
   ordered,
   SCOPES,
   type Scope,
+  type SettingInput,
+  settingInput,
   settingText,
   typeLabel,
   widestScope,
 } from "@/lib/org";
-import { loadMemberships, loadUnits, loadUnitTypes, loadUser } from "@/lib/org-server";
+import {
+  loadMemberCounts,
+  loadMemberships,
+  loadUnits,
+  loadUnitTypes,
+  loadUser,
+} from "@/lib/org-server";
 import {
   INVITATIONS_MANAGE,
   ROLES_READ,
@@ -69,7 +77,7 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
   const node = tree.find((entry) => entry.unit.id === wanted)?.unit ?? root;
   const view = wanted ? "node" : "tree";
 
-  const [types, settings, catalog, rows, allRows, write, manage, writeSettings, readRoles, users] =
+  const [types, settings, catalog, rows, counts, write, manage, writeSettings, readRoles, users] =
     await Promise.all([
       loadUnitTypes(),
       load((c) =>
@@ -77,7 +85,7 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
       ).then((r) => r.data),
       load((c) => c.GET("/api/v1/organizations/settings")).then((r) => r.data),
       loadMemberships({ org_id: node.id }),
-      loadMemberships({}),
+      loadMemberCounts(),
       can(UNITS_WRITE),
       can(UNITS_MANAGE),
       can(SETTINGS_WRITE),
@@ -85,7 +93,6 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
       can(USERS_READ),
     ]);
   const members = groupMemberships(rows);
-  const counts = memberCounts(allRows);
   const roles = readRoles ? await allRoles() : [];
   // Lời mời đang chờ vào nút này (`auth.invitations.manage`): hiện cùng bảng người ở nút.
   const invite = await can(INVITATIONS_MANAGE);
@@ -116,6 +123,56 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
   const path = chainOf(units, node.id).slice(1).reverse();
   const describe = new Map(catalog.map((s) => [s.key, s.description]));
   const defaults = new Map(catalog.map((s) => [s.key, s.default ?? null]));
+  const schemaOf = new Map(catalog.map((s) => [s.key, asSettingSchema(s.schema)]));
+  // Ô nhập theo dạng giá trị core khai (`schema`): bật / tắt, chọn một, số, danh sách, chữ.
+  const valueField = (
+    input: SettingInput | null,
+    label: string,
+    value: unknown,
+    shown: string,
+  ): FieldSpec => {
+    const base = { name: "value", label };
+    switch (input?.kind) {
+      case "boolean":
+        return {
+          ...base,
+          kind: "select",
+          defaultValue: value === true ? "true" : "false",
+          options: [
+            { value: "true", label: t("settings.on") },
+            { value: "false", label: t("settings.off") },
+          ],
+        };
+      case "choice":
+        return {
+          ...base,
+          kind: "select",
+          defaultValue: typeof value === "string" ? value : (input.options[0] ?? ""),
+          options: input.options.map((o) => ({ value: o, label: o })),
+        };
+      case "number":
+        return { ...base, kind: "number", defaultValue: shown };
+      case "choices":
+        return {
+          ...base,
+          kind: "text",
+          defaultValue: shown,
+          hint: t("settings.optionsHint", { list: input.options.join(", ") }),
+        };
+      case "list":
+        return { ...base, kind: "text", defaultValue: shown, hint: t("settings.listHint") };
+      case "text":
+        return {
+          ...base,
+          kind: "text",
+          defaultValue: shown,
+          ...(input.example ? { placeholder: input.example } : {}),
+          hint: t("settings.setIntro"),
+        };
+      default:
+        return { ...base, kind: "text", defaultValue: shown, hint: t("settings.setIntro") };
+    }
+  };
   const settingLabel = (key: string) => {
     const id = `settings.keys.${key.replaceAll(".", "_")}`;
     return t.has(id) ? t(id) : key;
@@ -191,8 +248,14 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                     {unit.status !== "active" ? (
                       <span className="badge b-warn">{t(`status.${unit.status}`)}</span>
                     ) : null}
-                    <span className="cnt" title={t("membersCount")}>
-                      {counts.get(unit.id) ?? 0}
+                    <span
+                      className="cnt"
+                      title={t("membersCountBoth", {
+                        direct: counts.get(unit.id)?.direct ?? 0,
+                        total: counts.get(unit.id)?.total ?? 0,
+                      })}
+                    >
+                      {counts.get(unit.id)?.direct ?? 0}
                     </span>
                   </Link>
                 </li>
@@ -426,12 +489,16 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                                         value: JSON.stringify(defaults.get(setting.key) ?? null),
                                       },
                                       {
-                                        kind: "text",
-                                        name: "value",
-                                        label,
-                                        defaultValue: shown,
-                                        hint: t("settings.setIntro"),
+                                        kind: "hidden",
+                                        name: "schema",
+                                        value: JSON.stringify(schemaOf.get(setting.key) ?? null),
                                       },
+                                      valueField(
+                                        settingInput(schemaOf.get(setting.key) ?? null),
+                                        label,
+                                        setting.value,
+                                        shown,
+                                      ),
                                     ]}
                                   />
                                   {!setting.inherited ? (

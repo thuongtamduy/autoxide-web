@@ -1283,6 +1283,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/roles/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count the people holding each role.
+         * @description Requires `auth.roles.read`. One entry per role of the tenant, including roles nobody holds.
+         */
+        get: operations["auth_count_role_members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/roles/{id}": {
         parameters: {
             query?: never;
@@ -3632,6 +3652,54 @@ export interface paths {
          *     is kept; connection URLs are never shown (placements are added with `autoxide placement add`).
          */
         get: operations["kernel_list_placements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/placements/migrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the recent migration runs.
+         * @description Platform staff with `kernel.tenants.operate`. Newest first, at most 50.
+         */
+        get: operations["kernel_list_placement_migrations"];
+        put?: never;
+        /**
+         * Migrate the tenant databases (placements), or see what would run.
+         * @description Platform staff with `kernel.tenants.operate`. With `dry_run: true` the answer (200) lists the
+         *     pending migrations of each placement and nothing changes. Otherwise a run starts in the
+         *     background (201, `Location` is its status): placements by name, each `migrating` then `ready`;
+         *     the first failure marks that placement `behind` and stops the run — fix it and start again,
+         *     what is already applied is skipped. One run at a time.
+         */
+        post: operations["kernel_start_placement_migrations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kernel/placements/migrations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a migration run.
+         * @description Platform staff with `kernel.tenants.operate`. Poll it until `done` or `failed`.
+         */
+        get: operations["kernel_get_placement_migration"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8928,6 +8996,44 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_MigrationDryRun: {
+            /** @description The pending migrations a dry run found. */
+            data: {
+                /** @description Always `true`. */
+                dry_run: boolean;
+                /** @description Per placement, the migrations that would run (empty: up to date). */
+                pending: components["schemas"]["PlacementMigrationList"][];
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_MigrationRun: {
+            /** @description A run of the migrations of the tenant databases (placements). */
+            data: {
+                /** @description Migrations applied, per placement done (also when a later placement failed). */
+                applied: components["schemas"]["PlacementMigrationList"][];
+                /** Format: date-time */
+                created_at: string;
+                /**
+                 * @description Why it failed: the placement and its error. Fix it and start a new run; what is already
+                 *     applied is skipped.
+                 */
+                error?: string | null;
+                /** Format: uuid */
+                id: string;
+                /** @description The placement it runs on; `null`: every placement, by name. */
+                placement?: string | null;
+                /** Format: uuid */
+                requested_by?: string | null;
+                /**
+                 * @description `pending`, `running`, `done` or `failed`.
+                 * @example done
+                 */
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_ModuleInfo: {
             /** @description A module installed in this server, and everything it declares. */
             data: {
@@ -10183,8 +10289,9 @@ export interface components {
                 blocking: components["schemas"]["TenantMoveBlocker"][];
                 /**
                  * Format: int64
-                 * @description Files of the tenant that would be copied to the file storage of `to`; `0` when both
-                 *     placements keep files in the same storage (nothing to copy).
+                 * @description Files of the tenant that would be copied to the file storage of `to`. `0` in two cases:
+                 *     both placements keep files in the same storage (nothing to copy), or the tenant has no
+                 *     files.
                  */
                 files: number;
                 /**
@@ -10768,6 +10875,33 @@ export interface components {
             }[];
         };
         /** @description Envelope of a single result. */
+        Data_Vec_MigrationRun: {
+            data: {
+                /** @description Migrations applied, per placement done (also when a later placement failed). */
+                applied: components["schemas"]["PlacementMigrationList"][];
+                /** Format: date-time */
+                created_at: string;
+                /**
+                 * @description Why it failed: the placement and its error. Fix it and start a new run; what is already
+                 *     applied is skipped.
+                 */
+                error?: string | null;
+                /** Format: uuid */
+                id: string;
+                /** @description The placement it runs on; `null`: every placement, by name. */
+                placement?: string | null;
+                /** Format: uuid */
+                requested_by?: string | null;
+                /**
+                 * @description `pending`, `running`, `done` or `failed`.
+                 * @example done
+                 */
+                status: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
         Data_Vec_ModuleInfo: {
             data: {
                 /**
@@ -11118,6 +11252,19 @@ export interface components {
                  * @description `null` until the profile is first saved.
                  */
                 updated_at?: string | null;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_RoleCountResponse: {
+            data: {
+                /**
+                 * Format: int64
+                 * @description People holding the role, at any unit; each person once. List them with
+                 *     `GET /api/v1/auth/memberships?role_id=…`.
+                 */
+                members: number;
+                /** Format: uuid */
+                role_id: string;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -12786,6 +12933,49 @@ export interface components {
             recovery_codes_remaining: number;
             /** @description Sign-in asks for a code from an authenticator app. */
             totp_enabled: boolean;
+        };
+        /** @description The pending migrations a dry run found. */
+        MigrationDryRun: {
+            /** @description Always `true`. */
+            dry_run: boolean;
+            /** @description Per placement, the migrations that would run (empty: up to date). */
+            pending: components["schemas"]["PlacementMigrationList"][];
+        };
+        /** @description A run of the migrations of the tenant databases (placements). */
+        MigrationRun: {
+            /** @description Migrations applied, per placement done (also when a later placement failed). */
+            applied: components["schemas"]["PlacementMigrationList"][];
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * @description Why it failed: the placement and its error. Fix it and start a new run; what is already
+             *     applied is skipped.
+             */
+            error?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description The placement it runs on; `null`: every placement, by name. */
+            placement?: string | null;
+            /** Format: uuid */
+            requested_by?: string | null;
+            /**
+             * @description `pending`, `running`, `done` or `failed`.
+             * @example done
+             */
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description What to migrate. */
+        MigrationRunRequest: {
+            /** @description `true`: only list the migrations that would run, change nothing. Default `false`. */
+            dry_run?: boolean;
+            /**
+             * @description Name of one placement; omitted: every placement (not `main`, which the server migrates
+             *     before it starts).
+             * @example eu-1
+             */
+            placement?: string | null;
         };
         /** @description A deprecated endpoint. */
         ModuleDeprecation: {
@@ -15218,6 +15408,18 @@ export interface components {
             schema_state: string;
             storage?: components["schemas"]["PlacementStorage"] | null;
         };
+        /** @description Migrations of one placement. */
+        PlacementMigrationList: {
+            /**
+             * @description `<module>/<migration>`: pending ones for a dry run, applied ones for a run.
+             * @example [
+             *       "notes/m0002_add_tags"
+             *     ]
+             */
+            migrations: string[];
+            /** @example eu-1 */
+            placement: string;
+        };
         /** @description Where a placement keeps its tenants' files. Access keys are never shown. */
         PlacementStorage: {
             /**
@@ -16364,6 +16566,17 @@ export interface components {
              */
             snapshot?: Record<string, never> | null;
         };
+        /** @description How many people hold one role. */
+        RoleCountResponse: {
+            /**
+             * Format: int64
+             * @description People holding the role, at any unit; each person once. List them with
+             *     `GET /api/v1/auth/memberships?role_id=…`.
+             */
+            members: number;
+            /** Format: uuid */
+            role_id: string;
+        };
         /** @description A permission a role grants, with how far it reaches in the organization tree. */
         RoleGrant: {
             /** @example notes.read */
@@ -17170,6 +17383,12 @@ export interface components {
              */
             read_only?: boolean | null;
             /**
+             * @description Why (1 to 500 characters), kept with the change in the audit log (event
+             *     `kernel.tenant_updated`) — e.g. why a tenant was suspended.
+             * @example Unpaid invoices after the grace period
+             */
+            reason?: string | null;
+            /**
              * @description `active` or `suspended`. A suspended tenant refuses every request, reads included.
              * @example suspended
              */
@@ -17355,8 +17574,9 @@ export interface components {
             blocking: components["schemas"]["TenantMoveBlocker"][];
             /**
              * Format: int64
-             * @description Files of the tenant that would be copied to the file storage of `to`; `0` when both
-             *     placements keep files in the same storage (nothing to copy).
+             * @description Files of the tenant that would be copied to the file storage of `to`. `0` in two cases:
+             *     both placements keep files in the same storage (nothing to copy), or the tenant has no
+             *     files.
              */
             files: number;
             /**
@@ -22413,6 +22633,56 @@ export interface operations {
             };
             /** @description A value is invalid, e.g. an unknown permission; see `errors`. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_count_role_members: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The counts, one entry per role. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_RoleCountResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.roles.read`; code `permission_denied`. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32881,6 +33151,203 @@ export interface operations {
             };
             /** @description Missing permission `kernel.placements.read` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_list_placement_migrations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The runs, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_MigrationRun"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `kernel.tenants.operate` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_start_placement_migrations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MigrationRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Dry run: the pending migrations of each placement. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_MigrationDryRun"];
+                };
+            };
+            /** @description The run, `pending`; `Location` is its status. */
+            201: {
+                headers: {
+                    /** @description Where the new record is, e.g. `/api/v1/auth/users/<id>`. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_MigrationRun"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `kernel.tenants.operate` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such placement; code `tenant_placement_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A run is already in progress; code `kernel.migration_run_busy`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_get_placement_migration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The run. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_MigrationRun"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `kernel.tenants.operate` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such run; code `kernel.migration_run_not_found`. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -18,8 +18,14 @@ export function LoginForm({
   next,
   initialStep,
   workspace,
+  passkeys = true,
+  loginLink = true,
 }: {
   next: string;
+  /** Máy chủ bật passkey (`auth.passkeys`): có thì hiện nút đăng nhập bằng passkey. */
+  passkeys?: boolean;
+  /** Máy chủ bật đăng nhập bằng link (`auth.login_link`): có thì hiện link sang trang đó. */
+  loginLink?: boolean;
   initialStep: LoginState["step"];
   /** Khách đã chọn lần trước (cookie); có thì hiện sẵn ô "Không gian làm việc". */
   workspace?: string | undefined;
@@ -148,7 +154,7 @@ export function LoginForm({
           <Button type="submit" name="intent" value={mfa ? "code" : "password"} disabled={pending}>
             {mfa ? t("verify") : t("submit")}
           </Button>
-          {mfa ? null : (
+          {mfa || !passkeys ? null : (
             <Button
               type="button"
               variant="outline"
@@ -163,7 +169,7 @@ export function LoginForm({
               {t("forgot")}
             </Link>
           )}
-          {mfa ? null : (
+          {mfa || !loginLink ? null : (
             <Link className="text-sm underline" href="/sign-in/link">
               {t("linkSignIn")}
             </Link>

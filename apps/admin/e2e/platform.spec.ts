@@ -118,7 +118,9 @@ test("khách của core: một khách thì không thêm được; nhiều khách
 
   await page.getByRole("button", { name: "Suspend completely" }).click();
   await dialog(page).getByRole("button", { name: "Suspend" }).click();
-  await expect(dialog(page).locator(".ferr")).toBeVisible();
+  // Thiếu lý do và chưa xác nhận: báo cả hai một lần; lý do vào nhật ký audit (D-334).
+  await expect(dialog(page).getByRole("alert")).toHaveText("2 fields need fixing.");
+  await dialog(page).getByLabel("Reason").fill("Khách yêu cầu tạm dừng, phiếu #12");
   await dialog(page).getByLabel("I understand that Acme Ltd stops completely").check();
   await dialog(page).getByRole("button", { name: "Suspend" }).click();
   await expect(toast(page)).toContainText("Acme Ltd is suspended");
@@ -423,4 +425,25 @@ test("trạng thái toàn khung: tên khách ở góc trái; tạm khoá, bảo 
   await expect(page).toHaveURL(/\/login/);
   await request.post(`${CORE}/__own-tenant`, { data: { read_only: false } });
   await request.post(`${CORE}/__tenancy`, { data: { mode: "single" } });
+});
+
+test("đội database: migrate một placement của core bằng API (D-334), theo dõi lượt chạy", async ({
+  page,
+  request,
+}) => {
+  await request.post(`${CORE}/__placements/behind`, {
+    data: { name: "eu-db", migrations: ["notes/m0009_tags"] },
+  });
+  await signIn(page, "/platform/fleet");
+  const row = page.locator("tbody tr", { hasText: "eu-db" });
+  await expect(row).toContainText("notes/m0009_tags");
+  await row.getByRole("button", { name: "Migrate" }).click();
+  await expect(dialog(page)).toContainText("Runs notes/m0009_tags.");
+  await dialog(page).getByRole("button", { name: "Migrate" }).click();
+  await expect(toast(page)).toContainText("Migration of eu-db started");
+  await page.reload();
+  const runs = page.getByTestId("migration-runs");
+  await expect(runs).toContainText("Done");
+  await expect(runs).toContainText("eu-db: notes/m0009_tags");
+  await expect(row.getByRole("button", { name: "Migrate" })).toHaveCount(0);
 });

@@ -65,7 +65,6 @@ import {
   ORG_MODULE,
   orgPerson,
   orgRoutes,
-  publicStores,
   resetOrg,
   setRootName,
 } from "./mock-org.ts";
@@ -93,6 +92,7 @@ import {
   ownStatus,
   resetTenants,
   setOwnTenant,
+  setPlacementBehind,
   setTenancy,
   tenancyMode,
   tenantRoutes,
@@ -108,7 +108,7 @@ const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 
 /** Như giá trị mặc định của core (`GET /api/v1/kernel/client-config`; đã đối chiếu với core thật). */
 const CLIENT_CONFIG: Schemas["ClientConfigResponse"] = {
-  auth: { login_link: true, passkeys: false, self_registration: false },
+  auth: { login_link: true, passkeys: true, self_registration: false },
   kernel: { version: "0.15.0", public_url: null },
   mail: { from: "Autoxide <noreply@localhost>", sends: false },
   media: {
@@ -374,6 +374,7 @@ const server = createServer(async (request, response) => {
     return send(response, 200, { refreshes });
   }
   if (route === "POST /__reset") {
+    Object.assign(CLIENT_CONFIG.auth ?? {}, { login_link: true, passkeys: true });
     accounts = seed();
     access.clear();
     refresh.clear();
@@ -397,6 +398,12 @@ const server = createServer(async (request, response) => {
     return send(response, 204);
   }
   if (route === "POST /__tenancy") return setTenancy(request, response);
+  if (route === "POST /__placements/behind") return setPlacementBehind(request, response);
+  if (route === "POST /__auth-config") {
+    // Bật / tắt đăng nhập bằng link và passkey trong `GET /kernel/client-config`.
+    Object.assign(CLIENT_CONFIG.auth ?? {}, await json(request));
+    return send(response, 204);
+  }
   if (route === "POST /__org/root-name") return setRootName(request, response);
   if (route === "GET /__team/tokens") return teamTokens(response);
   if (route === "POST /__plans/basic-features") return setBasicFeatures(request, response);
@@ -593,8 +600,12 @@ const server = createServer(async (request, response) => {
   }
   // Phần công khai của website: không cần đăng nhập, như core. Cài đặt bình luận công khai dùng
   // chung với màn Bình luận của trang quản trị (`mock-engage.ts`).
-  if (route === "GET /api/v1/organizations/public/stores") {
-    return send(response, 200, { data: publicStores() });
+  if (
+    route === "GET /api/v1/organizations/public/stores" ||
+    route === "GET /api/v1/organizations/public/site"
+  ) {
+    await orgRoutes(request, response, url, route);
+    return;
   }
   if (route === "GET /api/v1/comments/public/settings") {
     await engageRoutes(request, response, url, route);

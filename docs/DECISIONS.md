@@ -1998,3 +1998,28 @@ lọc thuê bao và gần chạm hạn mức; phía khách: thẻ gói, khoá n�
 
 Đã cân nhắc: gọi `…/usage` cho mọi khách để có cột hạn mức đầy đủ — một lời gọi mỗi khách mỗi lần mở trang; chỉ gọi
 cho khách gần chạm là đủ để nhân sự thấy việc cần làm, phần còn lại chờ `expand=usage` của core.
+
+## W-050 · Dùng các API mới của core (D-331 – D-334) — 2026-11-17 — agent quyết
+
+Quyết định:
+
+- **Cây tổ chức**: số người ở mỗi nút đọc một lần từ `GET /auth/memberships/counts` (thay đọc mọi membership rồi
+  tự đếm); nhãn số là người gán ở chính nút, chú thích kèm số kể cả từ nút trên.
+- **Cài đặt theo nút**: ô nhập theo `schema` core khai (D-332): `boolean` → chọn Bật / Tắt, `string` có `enum` →
+  chọn một, `integer` / `number` → ô số, `array` → danh sách cách bằng dấu phẩy, `string` → ô chữ có ví dụ. Không có
+  `schema` thì vẫn đoán như cũ (`settingValue`). Schema chỉ để dựng ô; core vẫn kiểm giá trị.
+- **Website**: tên cửa hàng từ hồ sơ của website đang được gọi (`GET /organizations/public/site`, D-331) — tên miền
+  gắn với cửa hàng con hiện tên cửa hàng đó. Như trước, chỉ dùng khi hồ sơ đã bật "Công khai"; không thì tên trong
+  cấu hình.
+- **Nơi bạn làm việc**: tên nút lấy từ `org_name` của membership (D-333), không cần quyền đọc cây tổ chức.
+- **Uỷ quyền**: chọn khách cấp dưới từ `GET /auth/delegations/tenants` (D-333), bảng hiện tên khách; không đọc được
+  thì vẫn gõ ID.
+- **Trang đăng nhập**: chỉ hiện "Đăng nhập bằng passkey" và "Đăng nhập bằng link" khi `auth` của client-config bật
+  (D-333); không đọc được thì hiện cả hai như trước.
+- **Đội database**: migrate placement của core bằng `POST /kernel/placements/migrations` (D-334) — từng placement hay
+  mọi placement, hộp xác nhận nêu migration sẽ chạy (lấy bằng chạy thử, core không đổi gì); mục "Các lượt chạy" từ
+  `GET …/migrations`, trang tự làm mới khi còn lượt đang chạy. Placement chỉ có trong dữ liệu mẫu giữ nút mẫu cũ.
+- **Phân quyền › Role**: cột số người giữ role (`GET /auth/roles/counts`, D-334).
+- **Tạm khoá khách**: bắt buộc ghi lý do, gửi `reason` (D-334) để core ghi vào nhật ký audit của khách.
+
+Lý do: core làm theo yêu cầu của giao diện; không dùng thì những chỗ đó vẫn đoán, tự đếm hay đọc thừa.

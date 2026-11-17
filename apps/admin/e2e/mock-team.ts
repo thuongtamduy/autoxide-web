@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { roleById } from "./mock-access.ts";
 import { type Account, empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
-import { membershipsOf, ROOT_UNIT, setMembershipsOf } from "./mock-org.ts";
+import { membershipsOf, ROOT_UNIT, setMembershipsOf, unitOf } from "./mock-org.ts";
 
 type Invitation = Schemas["InvitationResponse"];
 
@@ -319,6 +319,21 @@ export async function teamRoutes(
     return true;
   }
   // ------------------------------------------------------------ Uỷ quyền
+  if (route === "GET /api/v1/auth/delegations/tenants") {
+    // Như core (D-333): mọi khách cấp dưới, chỉ tên / slug / trạng thái.
+    send(response, 200, {
+      data: [
+        {
+          id: CHILD_TENANT,
+          parent_id: ROOT_UNIT,
+          name: "Chi nhánh Đà Nẵng",
+          slug: "da-nang",
+          status: "active",
+        },
+      ],
+    });
+    return true;
+  }
   if (route === "GET /api/v1/auth/delegations") {
     const incoming = url.searchParams.get("direction") === "incoming";
     send(response, 200, { data: incoming ? [] : delegations });
@@ -467,6 +482,8 @@ export async function teamRoutes(
 function grouped(userId: string): Schemas["MembershipResponse"][] {
   return membershipsOf(userId).map((m) => ({
     org_id: m.org_id,
+    org_name: unitOf(m.org_id)?.name ?? null,
+    org_unit_type: unitOf(m.org_id)?.unit_type ?? null,
     roles: m.role_ids
       .map((id) => roleById(id))
       .filter((r): r is Schemas["RoleResponse"] => Boolean(r)),

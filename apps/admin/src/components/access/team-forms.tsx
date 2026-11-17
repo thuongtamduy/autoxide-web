@@ -110,7 +110,17 @@ function InviteForm({
 }
 
 /** "Uỷ quyền mới": khách con, role, hạn (không bắt buộc), lý do. */
-export function DelegateDialog({ roles }: { roles: Option[] }) {
+/**
+ * Uỷ quyền một role cho khách cấp dưới. `childTenants`: khách cấp dưới chọn được
+ * (`GET /auth/delegations/tenants`, D-333 của core); rỗng thì gõ ID của khách con.
+ */
+export function DelegateDialog({
+  roles,
+  childTenants,
+}: {
+  roles: Option[];
+  childTenants: Option[];
+}) {
   const t = useTranslations("access.delegations");
   return (
     <Dialog
@@ -119,12 +129,20 @@ export function DelegateDialog({ roles }: { roles: Option[] }) {
       intro={t("createIntro")}
       triggerClass="btn sm"
     >
-      {(close) => <DelegateForm roles={roles} close={close} />}
+      {(close) => <DelegateForm roles={roles} childTenants={childTenants} close={close} />}
     </Dialog>
   );
 }
 
-function DelegateForm({ roles, close }: { roles: Option[]; close: () => void }) {
+function DelegateForm({
+  roles,
+  childTenants,
+  close,
+}: {
+  roles: Option[];
+  childTenants: Option[];
+  close: () => void;
+}) {
   const t = useTranslations("access.delegations");
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
@@ -136,15 +154,25 @@ function DelegateForm({ roles, close }: { roles: Option[]; close: () => void }) 
   });
   return (
     <form ref={form} action={action} noValidate className="dlg-form">
-      <Field
-        label={t("childId")}
-        name="child_tenant_id"
-        autoComplete="off"
-        mono
-        hint={t("childIdHint")}
-        defaultValue={state.values?.child_tenant_id}
-        error={state.fields?.child_tenant_id}
-      />
+      {childTenants.length > 0 ? (
+        <SelectField
+          label={t("childPick")}
+          name="child_tenant_id"
+          options={childTenants}
+          defaultValue={state.values?.child_tenant_id}
+          error={state.fields?.child_tenant_id}
+        />
+      ) : (
+        <Field
+          label={t("childId")}
+          name="child_tenant_id"
+          autoComplete="off"
+          mono
+          hint={t("childIdHint")}
+          defaultValue={state.values?.child_tenant_id}
+          error={state.fields?.child_tenant_id}
+        />
+      )}
       <SelectField
         label={t("role")}
         name="role_id"
