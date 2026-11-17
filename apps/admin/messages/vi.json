@@ -179,7 +179,77 @@
     "status": "Trạng thái",
     "applied": "Đã áp dụng",
     "pending": "Chưa áp dụng",
-    "pendingHint": "Chạy `autoxide migrate up` trên máy chủ để áp dụng migration còn thiếu."
+    "pendingHint": "Chạy `autoxide migrate up` trên máy chủ để áp dụng migration còn thiếu.",
+    "serverVersion": "Máy chủ phiên bản {version}; mọi module đi kèm phiên bản này.",
+    "technical": "Chi tiết kỹ thuật",
+    "noBlurb": "Module của máy chủ này.",
+    "state": {
+      "always": "Luôn bật",
+      "on": "Đang bật",
+      "off": "Gói chưa có"
+    },
+    "names": {
+      "kernel": "Lõi hệ thống",
+      "antispam": "Chống spam",
+      "auth": "Đăng nhập và tài khoản",
+      "audit": "Nhật ký audit",
+      "address": "Địa chỉ Việt Nam",
+      "ai": "Trợ lý AI",
+      "files": "Tệp",
+      "media": "Thư viện media",
+      "content": "Bài viết và trang",
+      "menus": "Menu",
+      "forms": "Biểu mẫu",
+      "newsletter": "Bản tin",
+      "comments": "Bình luận",
+      "notes": "Ghi chú",
+      "organizations": "Cây tổ chức",
+      "plans": "Gói và thuê bao",
+      "webhooks": "Webhook",
+      "notifications": "Thông báo",
+      "catalog": "Sản phẩm",
+      "inventory": "Tồn kho",
+      "promotions": "Khuyến mại",
+      "shipping": "Vận chuyển",
+      "orders": "Đơn hàng",
+      "customers": "Khách hàng và tích điểm",
+      "marketplace": "Sàn",
+      "channels": "Bán đa kênh",
+      "affiliate": "Tiếp thị liên kết",
+      "finance": "Kế toán",
+      "compliance": "Tuân thủ"
+    },
+    "blurbs": {
+      "kernel": "Khách thuê, cài đặt, tên miền, job chạy nền và sổ module.",
+      "antispam": "Giới hạn tần suất và lọc spam cho biểu mẫu, bình luận công khai.",
+      "auth": "Tài khoản nhân viên và người mua, role, permission, API key, đăng nhập hai bước.",
+      "audit": "Ai làm gì, lúc nào, cho mọi thay đổi.",
+      "address": "Tỉnh, phường và tra địa chỉ Việt Nam.",
+      "ai": "Bản nháp và gợi ý do AI viết, người duyệt.",
+      "files": "Tệp tải lên và tải xuống riêng tư.",
+      "media": "Ảnh, video, tài liệu có thư mục, thẻ, chữ thay thế.",
+      "content": "Bài viết và trang: nháp, duyệt, hẹn giờ, bản dịch, lịch sử sửa.",
+      "menus": "Menu website theo ngôn ngữ.",
+      "forms": "Biểu mẫu trên website và bài gửi.",
+      "newsletter": "Chiến dịch, danh sách, người đăng ký có bằng chứng đồng ý.",
+      "comments": "Bình luận dưới bài, có kiểm duyệt và cấm.",
+      "notes": "Module ví dụ: ghi chú ngắn.",
+      "organizations": "Trụ sở, miền, cửa hàng, kho và ai làm ở đâu.",
+      "plans": "Gói, giá, thuê bao và hạn mức của từng khách.",
+      "webhooks": "Gửi event sang hệ thống khác, có thử lại.",
+      "notifications": "Thông báo trong ứng dụng và qua email.",
+      "catalog": "Sản phẩm, biến thể, danh mục và bảng giá.",
+      "inventory": "Tồn theo kho, chuyển kho và kiểm kê.",
+      "promotions": "Chương trình, mã giảm giá và flash sale.",
+      "shipping": "Vận đơn, phí giao và hãng vận chuyển.",
+      "orders": "Đơn hàng, đổi trả, hoàn tiền và bán tại quầy.",
+      "customers": "Hồ sơ khách, nhóm, điểm và hạng.",
+      "marketplace": "Người bán, duyệt sản phẩm, phí sàn và chi trả.",
+      "channels": "Bán trên sàn và mạng xã hội từ cùng một kho.",
+      "affiliate": "Cộng tác viên, hoa hồng và chi trả.",
+      "finance": "Sổ kép, hoá đơn và thuế.",
+      "compliance": "Đăng ký thương mại điện tử, dữ liệu cá nhân và hồ sơ pháp lý."
+    }
   },
   "duration": {
     "seconds": "{count} giây",
@@ -1377,39 +1447,22 @@
         "embeddings": "Tìm theo ý nghĩa (embedding)",
         "embeddingModel": "{model} · {dimensions} chiều",
         "embeddingsOff": "Đang tắt.",
-        "about": "Nhà vận hành máy chủ bật AI bằng các biến AUTOXIDE_AI_* và AUTOXIDE_EMBEDDING_*. Kết quả của AI chỉ là gợi ý hay bản nháp."
-      },
-      "title": "Kết nối đối tác (mẫu)",
-      "about": "Thông tin kết nối riêng của bạn. Không đặt thì dùng cấu hình chung của máy chủ. Secret được mã hoá khi lưu và không bao giờ hiện lại; muốn đổi thì nhập giá trị mới. Cần kernel.settings.manage.",
-      "names": {
-        "mail": "Email (SMTP)",
-        "sms": "SMS brandname",
-        "payment": "Cổng thanh toán",
-        "einvoice": "Hoá đơn điện tử"
+        "about": "Nhà vận hành máy chủ bật AI và chọn nhà cung cấp, mô hình.",
+        "name": "AI của máy chủ",
+        "unknown": "Không rõ"
       },
       "isSet": "đã đặt",
-      "notSet": "chưa đặt",
       "checkOk": "Lần kiểm tra gần nhất đạt",
       "checkFailed": "Lần kiểm tra gần nhất lỗi",
-      "hints": {
-        "mail": "Gửi thư đăng nhập, lời mời và thông báo.",
-        "sms": "Cần cho mã xác thực số điện thoại khi đăng nội dung. Chưa đặt thì tính năng này tắt.",
-        "payment": "Đối tác có giấy phép thu hộ tiền người mua; tiền không về tài khoản của bạn.",
-        "einvoice": "Phát hành hoá đơn điện tử qua nhà cung cấp có giấy phép."
-      },
       "state": {
         "set": "Đã đặt",
-        "unset": "Chưa đặt",
-        "error": "Lỗi lần gần nhất"
+        "unset": "Chưa đặt"
       },
       "test": "Kiểm tra kết nối",
       "testLabel": "Kiểm tra kết nối {name}",
       "tested": "Đã kiểm tra. Kết quả ở trong danh sách.",
-      "formTitle": "Cài đặt {name}",
-      "setUp": "Thiết lập",
       "change": "Đổi",
-      "secretNote": "Đổi secret không làm gián đoạn: giá trị mới dùng cho request kế tiếp. Lịch sử chỉ ghi tên cài đặt và người đổi (event kernel.setting_changed), không ghi giá trị.",
-      "formIntro": "Giá trị chỉ lưu cho khách này.",
+      "secretNote": "Secret được mã hoá khi lưu và không bao giờ hiện lại, kể cả với bạn; muốn đổi thì nhập giá trị mới. Giá trị mới dùng từ request kế tiếp, không gián đoạn. Nhật ký chỉ ghi tên cài đặt và người đổi, không ghi giá trị.",
       "saved": "Đã lưu kết nối.",
       "secretKeep": "Đã đặt. Để trống để giữ giá trị hiện tại.",
       "secretNew": "Secret: lưu mã hoá, không bao giờ hiện lại.",
@@ -1434,6 +1487,223 @@
         "connectionGroup": "Kết nối đối tác",
         "connectionAbout": "Tài khoản với dịch vụ bên ngoài (máy chủ thư, nhà cung cấp AI, cổng thanh toán…). Secret được lưu mã hoá và không bao giờ hiện lại.",
         "businessGroup": "Cấu hình nghiệp vụ"
+      },
+      "intro": "Nối tài khoản của bạn ở các dịch vụ bên ngoài: gửi thư, nhắn tin, thu tiền, hoá đơn điện tử, AI. Kết nối nào chưa cấu hình thì hệ thống dùng cấu hình chung của máy chủ.",
+      "categories": {
+        "email": {
+          "title": "Email",
+          "about": "Gửi thư đăng nhập, lời mời và thông báo."
+        },
+        "messaging": {
+          "title": "SMS và Zalo",
+          "about": "Tin nhắn mã xác thực và thông báo tới điện thoại."
+        },
+        "payment": {
+          "title": "Thanh toán",
+          "about": "Thu tiền người mua qua đối tác có giấy phép."
+        },
+        "einvoice": {
+          "title": "Hoá đơn điện tử",
+          "about": "Phát hành hoá đơn qua nhà cung cấp có giấy phép."
+        },
+        "shipping": {
+          "title": "Vận chuyển",
+          "about": "Tạo vận đơn và theo dõi giao hàng."
+        },
+        "ai": {
+          "title": "AI",
+          "about": "Gợi ý, viết nháp và dịch. Kết quả của AI chỉ là gợi ý hay bản nháp."
+        },
+        "other": {
+          "title": "Kết nối khác",
+          "about": "Kết nối của các module khác đã cài."
+        }
+      },
+      "kinds": {
+        "mail": {
+          "smtp": {
+            "name": "Máy chủ thư riêng (SMTP)",
+            "about": "Gửi thư từ máy chủ thư và địa chỉ của bạn thay cho máy chủ thư chung."
+          }
+        },
+        "ai": {
+          "text": {
+            "name": "Tài khoản AI riêng",
+            "about": "Dùng khoá API và mô hình của bạn ở nhà cung cấp AI mà máy chủ đang dùng."
+          }
+        },
+        "sms": {
+          "gateway": {
+            "name": "SMS brandname",
+            "about": "Gửi mã xác thực số điện thoại khi đăng nội dung. Chưa kết nối thì tính năng này tắt."
+          }
+        },
+        "payments": {
+          "gateway": {
+            "name": "Cổng thanh toán",
+            "about": "Đối tác có giấy phép thu hộ tiền người mua; tiền không về tài khoản của bạn."
+          }
+        },
+        "invoices": {
+          "einvoice": {
+            "name": "Hoá đơn điện tử",
+            "about": "Phát hành hoá đơn điện tử qua nhà cung cấp có giấy phép."
+          }
+        }
+      },
+      "fields": {
+        "mail": {
+          "smtp": {
+            "url": {
+              "label": "Địa chỉ máy chủ SMTP",
+              "hint": "Dạng smtps://tên:mật-khẩu@smtp.example.com."
+            },
+            "from": {
+              "label": "Người gửi",
+              "hint": "Dạng Cửa hàng '<'no-reply@example.com'>'. Tên miền phải được máy chủ SMTP cho gửi."
+            }
+          }
+        },
+        "ai": {
+          "text": {
+            "api_key": {
+              "label": "Khoá API"
+            },
+            "model": {
+              "label": "Mô hình",
+              "hint": "Tên mô hình ở nhà cung cấp mà máy chủ đang dùng."
+            }
+          }
+        },
+        "sms": {
+          "gateway": {
+            "provider": {
+              "label": "Nhà cung cấp"
+            },
+            "brandname": {
+              "label": "Tên thương hiệu (brandname)"
+            },
+            "api_key": {
+              "label": "Khoá API"
+            }
+          }
+        },
+        "payments": {
+          "gateway": {
+            "provider": {
+              "label": "Đối tác thanh toán"
+            },
+            "merchant_id": {
+              "label": "Mã người bán"
+            },
+            "secret_key": {
+              "label": "Khoá bí mật"
+            }
+          }
+        },
+        "invoices": {
+          "einvoice": {
+            "provider": {
+              "label": "Nhà cung cấp"
+            },
+            "username": {
+              "label": "Tài khoản"
+            },
+            "certificate": {
+              "label": "Chứng thư số"
+            }
+          }
+        }
+      },
+      "status": {
+        "connected": "Đã kết nối",
+        "unset": "Chưa cấu hình",
+        "error": "Lỗi"
+      },
+      "configure": "Cấu hình",
+      "edit": "Sửa",
+      "configureLabel": "Cấu hình {name}",
+      "serverDefault": "Đang dùng cấu hình chung của máy chủ.",
+      "notConnected": "Chưa kết nối.",
+      "changedAt": "Đổi lần cuối",
+      "dialog": {
+        "save": "Lưu",
+        "required": "Nhập giá trị.",
+        "serverDefault": "Mặc định của máy chủ",
+        "saved": "Đã lưu {name}.",
+        "removed": "Đã gỡ {name}; dùng cấu hình chung của máy chủ.",
+        "removeAsk": "Gỡ giá trị đặt riêng của {name}? Cấu hình chung của máy chủ áp dụng lại từ request kế tiếp. Secret đã gỡ không lấy lại được.",
+        "disconnect": "Ngắt kết nối",
+        "reset": "Về mặc định",
+        "back": "Quay lại"
+      },
+      "business": {
+        "title": "Cấu hình nghiệp vụ",
+        "about": "Đặt riêng cho tài khoản này. Để trống thì dùng cấu hình chung của máy chủ.",
+        "modules": {
+          "kernel": "Trang web",
+          "comments": "Bình luận",
+          "content": "Nội dung",
+          "forms": "Biểu mẫu",
+          "media": "Ảnh và tệp"
+        },
+        "custom": "Đặt riêng",
+        "default": "Mặc định",
+        "set": "Đặt",
+        "value": "Giá trị",
+        "secretSet": "Đã đặt (bí mật)"
+      },
+      "settings": {
+        "kernel": {
+          "public_url": {
+            "label": "Địa chỉ trang web",
+            "about": "Địa chỉ công khai của trang, vd https://shop.example; dùng trong link gửi qua thư."
+          }
+        },
+        "comments": {
+          "banned_words": {
+            "label": "Từ cấm",
+            "about": "Bình luận có một trong các từ hay cụm từ này (cách nhau bằng dấu phẩy) bị từ chối; không phân biệt hoa thường, có dấu hay không. Ghi - nếu không cấm từ nào."
+          },
+          "suspect_words": {
+            "label": "Từ cần duyệt",
+            "about": "Bình luận có một trong các từ này phải chờ duyệt. Ghi - nếu không có."
+          },
+          "max_links": {
+            "label": "Số link tối đa",
+            "about": "Bình luận có nhiều link hơn số này (0 đến 100) phải chờ duyệt."
+          },
+          "guest_moderation": {
+            "label": "Duyệt bình luận của khách vãng lai",
+            "about": "pre: duyệt mọi bình luận; first_time: chỉ duyệt bình luận đầu tiên; post: hiện ngay, duyệt sau."
+          },
+          "user_moderation": {
+            "label": "Duyệt bình luận của người đã đăng nhập",
+            "about": "pre: duyệt mọi bình luận; first_time: chỉ duyệt bình luận đầu tiên; post: hiện ngay, duyệt sau."
+          }
+        },
+        "content": {
+          "locales": {
+            "label": "Ngôn ngữ của nội dung",
+            "about": "Mã ngôn ngữ cách nhau bằng dấu phẩy, vd vi,en. Bài đã viết bằng ngôn ngữ bị bỏ vẫn giữ nguyên."
+          },
+          "default_locale": {
+            "label": "Ngôn ngữ mặc định",
+            "about": "Dùng khi yêu cầu không nêu ngôn ngữ, vd vi."
+          }
+        },
+        "forms": {
+          "retention_days": {
+            "label": "Số ngày giữ bài gửi",
+            "about": "Bài gửi qua biểu mẫu được giữ bấy nhiêu ngày rồi tự xoá (0 đến 36500; 0 là giữ tới khi xoá tay). Số ngày riêng của từng biểu mẫu vẫn được ưu tiên."
+          }
+        },
+        "media": {
+          "alt_locales": {
+            "label": "Ngôn ngữ của mô tả ảnh",
+            "about": "Các ngôn ngữ được dịch mô tả ảnh (alt), cách nhau bằng dấu phẩy, vd vi,en."
+          }
+        }
       }
     },
     "jobs": {
@@ -1742,13 +2012,18 @@
       "code": "Mã lỗi",
       "agent": "agent",
       "events": "Event theo bản ghi",
-      "eventsAbout": "Chọn loại bản ghi và mã của nó để xem mọi event về nó theo thứ tự. Thử {example}.",
       "kind": "Loại bản ghi",
       "recordId": "Mã hoặc ID",
       "show": "Xem event",
       "noEvents": "Bản ghi này không có event nào.",
       "delivered": "đã giao cho mọi bên nhận",
-      "undelivered": "chưa giao xong"
+      "undelivered": "chưa giao xong",
+      "tryExample": "Thử với đơn mẫu {id}",
+      "eventsEmptyTitle": "Xem mọi việc đã xảy ra với một bản ghi",
+      "eventsEmptyText": "Chọn loại bản ghi và nhập mã hoặc id: mọi event về nó hiện theo thời gian, mới nhất trước, kèm việc đã giao cho mọi bên nhận (module, webhook) chưa. Dùng khi khách hỏi vì sao đơn đứng yên, hay hệ thống kết nối bị sót một cập nhật.",
+      "noEventsText": "Chưa có event nào cho {kind} {id}. Kiểm lại mã hoặc loại bản ghi.",
+      "clearRecord": "Xoá",
+      "eventsFor": "{count, plural, other {# event}} của {kind} {id}, mới nhất trước."
     }
   },
   "content": {
@@ -2572,7 +2847,13 @@
       "restoreTitle": "Khôi phục {label} thành bản nháp?",
       "restoreIntro": "Bản nháp được thay bằng phiên bản này. Bản đang đăng không đổi tới khi đăng lại; lịch sử giữ mọi phiên bản.",
       "restored": "Đã khôi phục thành bản nháp",
-      "conflict": "Bài đã đổi sau khi trang được tải. Tải lại rồi thử lại."
+      "conflict": "Bài đã đổi sau khi trang được tải. Tải lại rồi thử lại.",
+      "recentTitle": "Vừa sửa",
+      "edited": "sửa",
+      "recentHint": "Chọn một bài hoặc trang để xem các phiên bản, so hai phiên bản và khôi phục. Trong trình soạn bài, tab Lịch sử cũng hiện các phiên bản này.",
+      "emptyTitle": "Chưa có bài viết hay trang nào",
+      "emptyText": "Mỗi bài và trang được giữ phiên bản trong lúc sửa. Viết bài đầu tiên thì lịch sử của nó hiện ở đây và ở tab Lịch sử của trình soạn bài.",
+      "goPosts": "Tới danh sách bài"
     },
     "diff": {
       "open": "Xem khác biệt",
@@ -3045,7 +3326,31 @@
         "emailLimit": "Mỗi email mỗi giờ",
         "limitHint": "Trống: mặc định của máy chủ. Vượt thì bỏ qua, không báo.",
         "create": "Tạo biểu mẫu",
-        "save": "Lưu biểu mẫu"
+        "save": "Lưu biểu mẫu",
+        "tabsLabel": "Các phần của trình sửa biểu mẫu",
+        "tabSettings": "Cài đặt",
+        "secSubmit": "Nhận bài",
+        "secNotify": "Thông báo",
+        "secSpam": "Chống spam",
+        "requiredTag": "Bắt buộc",
+        "hasErrors": "Cần sửa",
+        "dragHint": "Kéo để đổi chỗ",
+        "noFields": "Chưa có trường nào",
+        "noFieldsAbout": "Biểu mẫu cần ít nhất một trường. Thêm trường theo loại.",
+        "preview": "Xem trước",
+        "previewAbout": "Người xem thấy như thế này trên website. Ô nhập bị khoá trong bản xem trước.",
+        "previewLang": "Ngôn ngữ xem trước",
+        "langVi": "Tiếng Việt",
+        "langEn": "English",
+        "previewSubmit": "Gửi",
+        "previewChoose": "Chọn…",
+        "previewNoOptions": "Chưa có lựa chọn",
+        "previewEmpty": "Thêm trường để xem biểu mẫu ở đây.",
+        "previewHidden": "Trường ẩn “{key}”: gửi kèm mỗi bài, người xem không thấy.",
+        "previewSuccess": "Sau khi gửi: {text}",
+        "previewClosed": "Biểu mẫu đang đóng: người xem không gửi được.",
+        "untitledForm": "Biểu mẫu chưa đặt tên",
+        "summary": "{count} trường · {required} bắt buộc"
       },
       "bgExport": {
         "start": "Xuất nền",
@@ -3297,13 +3602,35 @@
         "bodyTextHint": "Chữ thường cho mọi hộp thư. Xuống dòng được giữ.",
         "bodyHtml": "Bản HTML (không bắt buộc)",
         "bodyHtmlHint": "Gửi nguyên văn. Bản xem trước chạy trong hộp cát: không script, không cookie.",
-        "showPreview": "Xem trước",
-        "hidePreview": "Ẩn xem trước",
         "previewTitle": "Xem trước bản HTML",
         "footer": "Máy chủ thêm chân thư vào mọi thư: link huỷ đăng ký một chạm, link chọn danh sách và địa chỉ người gửi.",
         "create": "Lưu nháp",
         "save": "Lưu thay đổi",
-        "saved": "Đã lưu chiến dịch."
+        "saved": "Đã lưu chiến dịch.",
+        "groupAudience": "Người nhận",
+        "groupMessage": "Tiêu đề thư",
+        "groupContent": "Nội dung",
+        "tabsLabel": "Phiên bản nội dung",
+        "tabCompose": "Soạn",
+        "tabHtml": "HTML",
+        "preview": "Xem trước hộp thư",
+        "previewAbout": "Gần đúng như người nhận thấy. Thư đúng như khi gửi, kèm chân thư, ở trang chiến dịch sau khi lưu.",
+        "deviceLabel": "Màn hình",
+        "desktop": "Máy tính",
+        "phone": "Điện thoại",
+        "versionLabel": "Phiên bản đang xem",
+        "inboxLabel": "Hộp thư đến",
+        "now": "Bây giờ",
+        "to": "Đến: {list}",
+        "noList": "chưa chọn danh sách",
+        "noSubject": "(Chưa có tiêu đề)",
+        "emptyBody": "Soạn thư ở tab Soạn, thư hiện ở đây.",
+        "previewTextTitle": "Xem trước bản chữ",
+        "footerShort": "Máy chủ thêm vào đây link huỷ đăng ký, link chọn danh sách và địa chỉ người gửi.",
+        "draftNote": "Lưu nháp chưa gửi gì. Gửi thử, hẹn giờ và gửi ở bước sau.",
+        "editNote": "Lưu xong, thư đúng như khi gửi hiện ở mục bên dưới.",
+        "cancel": "Huỷ",
+        "senderFallback": "Cửa hàng của bạn"
       },
       "test": {
         "open": "Gửi thử",
@@ -5152,7 +5479,15 @@
       "makeDefault": "Đặt làm mặc định",
       "madeDefault": "{plan} giờ là gói mặc định.",
       "currency": "Tiền tệ",
-      "metered": "Theo mức dùng {key}"
+      "metered": "Theo mức dùng {key}",
+      "editShort": "Sửa",
+      "details": "Chi tiết",
+      "tenantsUsing": "{count, plural, other {khách đang dùng}}",
+      "trialDays": "{count, plural, other {dùng thử # ngày}}",
+      "noLimitsShort": "Chưa đặt hạn mức.",
+      "moreLimits": "{count, plural, other {và # hạn mức khác}}",
+      "noneYet": "Chưa có gói nào",
+      "noneYetText": "Chưa có gói thì mọi khách dùng được mọi module, không giới hạn (chế độ một khách). Tạo gói để bán module và hạn mức theo kỳ."
     },
     "overrides": {
       "title": "Ghi đè cho từng khách",
@@ -5251,7 +5586,10 @@
       "suspendSubmit": "Khoá hẳn",
       "suspendDone": "Đã khoá hẳn {tenant}.",
       "defaultPlan": "Gói mặc định (chưa có thuê bao)",
-      "noSubscription": "Chưa có thuê bao"
+      "noSubscription": "Chưa có thuê bao",
+      "emptyTitle": "Chưa có thuê bao nào",
+      "emptyText": "Thuê bao gắn một khách với một gói và kỳ thanh toán. Hiện chưa có khách nào ngoài khách nền tảng; thêm khách ở sổ khách hàng rồi gán gói ở đây.",
+      "openRegister": "Mở sổ khách hàng"
     },
     "prov": {
       "crumb": "Nền tảng Autoxide · khách mới",
@@ -5442,7 +5780,9 @@
         "reason": "Ghi lý do.",
         "legal": "Nhập số văn bản của cơ quan có thẩm quyền."
       },
-      "noCustomers": "Chưa có khách nào ngoài khách nền tảng."
+      "noCustomersTitle": "Chưa có khách nào để hỗ trợ",
+      "noCustomersText": "Lần cấp cho một nhân sự vào dữ liệu của một khách trong thời hạn, có lý do. Hiện chưa có khách nào ngoài khách nền tảng; khi có, các lần cấp và lần vào hiện ở đây.",
+      "openRegister": "Mở sổ khách hàng"
     },
     "platformOnly": "Chỉ nhân sự của khách nền tảng (của chính nhà vận hành) dùng được mặt điều khiển. Bạn đang đăng nhập vào tài khoản của một khách hàng.",
     "newTenant": {
@@ -8354,7 +8694,7 @@
     },
     "calendar": {
       "about": "Ngày giao dự kiến báo cho người mua tính từ giờ chốt, ngày làm việc và ngày nghỉ. Đây là dữ liệu có ngày hiệu lực: đổi lịch không làm sai ngày dự kiến của đơn đã đặt.",
-      "formTitle": "Giờ chốt và ngày lấy hàng",
+      "formTitle": "Đổi giờ chốt và ngày lấy hàng",
       "submit": "Lưu lịch",
       "done": "Đã lưu; áp dụng cho đơn đặt từ ngày hiệu lực",
       "cutoff": "Giờ chốt trong ngày",
@@ -8366,18 +8706,50 @@
         "all": "Mọi ngày"
       },
       "from": "Áp dụng từ",
-      "fromHint": "Từ ngày mai trở đi; lịch cũ vẫn áp cho đơn đặt trước ngày này.",
-      "current": "Đang áp dụng: chốt {cutoff}, lấy hàng {days}.",
-      "orderedAt": "Đặt {time} {day}",
-      "inTime": "Trước giờ chốt: hãng lấy {pickup}, giao 1–2 ngày làm việc.",
-      "late": "Sau giờ chốt: hãng lấy {pickup}; ngày không làm việc không tính.",
-      "tileFoot": "Nội tỉnh, giao tiêu chuẩn",
       "versions": "Các phiên bản lịch",
       "state": "Trạng thái",
       "inForce": "Đang áp dụng",
       "upcoming": "Sắp áp dụng",
       "past": "Đã thay",
-      "allChain": "Cả chuỗi"
+      "allChain": "Cả chuỗi",
+      "summary": "Đơn đặt trước {cutoff} được hãng lấy ngay trong ngày",
+      "summaryMore": "Hãng lấy hàng {days}; giao nội tỉnh 1–2 ngày làm việc. Đơn đặt sau {cutoff} được lấy vào ngày làm việc kế tiếp; ngày nghỉ không tính.",
+      "egBefore": "Đặt hôm nay trước {cutoff}",
+      "egAfter": "Đặt hôm nay sau {cutoff}",
+      "egNoPickup": "Đặt hôm nay (hôm nay hãng không lấy)",
+      "nextVersion": "Từ {day}: chốt {cutoff}, lấy hàng {days}.",
+      "calendarLabel": "Lịch giao theo tháng",
+      "monthNav": "Đổi tháng",
+      "prevMonth": "Tháng trước",
+      "nextMonth": "Tháng sau",
+      "thisMonth": "Hôm nay",
+      "today": "Hôm nay",
+      "cellCutoff": "Hãng lấy hàng, chốt {time}",
+      "cellHoliday": "Ngày nghỉ: {name}",
+      "cellOff": "Hãng không lấy hàng",
+      "cellOffShort": "Không lấy",
+      "cellLocal": "Một nút nghỉ: {name}",
+      "cellNew": "Lịch mới bắt đầu",
+      "legend": "Chú thích",
+      "legendPickup": "Ngày hãng lấy · giờ chốt",
+      "legendHoliday": "Ngày nghỉ",
+      "legendOff": "Không lấy hàng",
+      "legendLocal": "Một nút nghỉ riêng",
+      "legendNew": "Lịch mới bắt đầu",
+      "kindPickup": "Hãng lấy hàng · chốt {cutoff}",
+      "kindHoliday": "Ngày nghỉ: {name}",
+      "kindOff": "Hãng không lấy hàng",
+      "dayBefore": "Đặt trước {cutoff}",
+      "dayAfter": "Đặt sau {cutoff}",
+      "dayAny": "Đặt trong ngày này",
+      "pickupOn": "Hãng lấy {day}",
+      "planFoot": "Ngày giao dự kiến của giao tiêu chuẩn nội tỉnh.",
+      "dayLocal": "{org} nghỉ: {name}. Lịch cả chuỗi không đổi.",
+      "dayStarts": "Lịch mới bắt đầu từ ngày này: chốt {cutoff}, lấy hàng {days}.",
+      "pastDay": "Ngày đã qua không sửa được; đơn đặt hôm đó giữ ngày giao đã báo.",
+      "markHoliday": "Đặt làm ngày nghỉ",
+      "fromPicked": "Áp dụng cho đơn đặt từ {day}.",
+      "fromTomorrow": "Áp dụng từ ngày mai, {day}. Muốn ngày khác thì bấm ngày đó trên lịch."
     },
     "holiday": {
       "button": "Thêm ngày nghỉ",
@@ -9177,7 +9549,8 @@
       "marketplace_document_not_found": "Không tìm thấy giấy tờ.",
       "marketplace_penalty_not_found": "Không tìm thấy chế tài.",
       "marketplace_penalty_already_appealed": "Chế tài này đã khiếu nại; mỗi chế tài khiếu nại được một lần.",
-      "marketplace_not_ready": "Hồ sơ chưa đủ."
+      "marketplace_not_ready": "Hồ sơ chưa đủ.",
+      "marketplace_order_not_found": "Đơn này không còn nữa."
     },
     "fields": {
       "fee_rule_in_past": "Chọn ngày {value} trở đi; đơn đặt hôm nay giữ phí của hôm nay.",
@@ -9257,7 +9630,16 @@
       "description": "Nơi người bán quản lý gian hàng, xem đơn của mình, đối soát tiền và trả lời tranh chấp. Người bán chỉ thấy dữ liệu của nút mình.",
       "kpis": "Số liệu gian hàng",
       "kpiDisputes": "Tranh chấp cần trả lời",
-      "kpiDisputesSub": "Quá hạn thì sàn phân xử"
+      "kpiDisputesSub": "Quá hạn thì sàn phân xử",
+      "sales": "Bán hàng",
+      "kpiToShip": "Đơn cần gửi",
+      "kpiToShipSub": "Đã trả tiền, chờ giao cho hãng",
+      "kpiRevenue": "Doanh thu 7 ngày",
+      "kpiRevenueSub": "{count, plural, other {# đơn}}, không tính đơn huỷ",
+      "kpiShipping": "Đang giao",
+      "kpiShippingSub": "Đang ở hãng vận chuyển",
+      "toShipNote": "{count, plural, other {# đơn}} đang chờ gửi.",
+      "toShipOpen": "Gửi hàng"
     },
     "steps": {
       "title": "Các bước để được bán",
@@ -9289,7 +9671,8 @@
         "rejected": "Bị trả lại; gửi hồ sơ mới trong ứng dụng của đối tác eKYC hoặc VNeID",
         "expired": "Hết hạn; xác thực lại trong ứng dụng của đối tác eKYC hoặc VNeID",
         "none": "Chưa bắt đầu: xác thực trong ứng dụng của đối tác eKYC hoặc VNeID"
-      }
+      },
+      "progress": "Xong {done} / {total}"
     },
     "money": {
       "title": "Đối soát và chi trả",
@@ -9325,14 +9708,37 @@
       "total": "Tổng",
       "status": "Trạng thái",
       "money": "Tiền",
-      "items": "{count} món",
+      "items": "{count, plural, other {# món}}",
       "orderStatus": {
         "paid": "Đã trả, chờ giao",
         "shipping": "Đang giao",
         "delivered": "Đã giao",
         "completed": "Hoàn tất",
         "cancelled": "Đã huỷ"
-      }
+      },
+      "byStatus": "Lọc đơn theo trạng thái",
+      "all": "Tất cả",
+      "chip": {
+        "paid": "Cần gửi",
+        "shipping": "Đang giao",
+        "delivered": "Đã giao",
+        "completed": "Hoàn tất",
+        "cancelled": "Đã huỷ"
+      },
+      "search": "Tìm đơn",
+      "searchHint": "Mã đơn hay tên người mua",
+      "filter": "Lọc",
+      "clear": "Bỏ lọc",
+      "emptyBody": "Đơn hiện ở đây ngay khi người mua trả tiền cho sản phẩm của bạn.",
+      "noMatch": "Không có đơn nào khớp",
+      "noMatchBody": "Thử chữ khác hay trạng thái khác.",
+      "ship": "Giao cho hãng",
+      "shipTitle": "Giao {number} cho hãng vận chuyển?",
+      "shipPoint1": "Đơn đã đóng gói và hãng vận chuyển đã lấy hàng; người mua thấy đơn đang giao.",
+      "shipPoint2": "Tiền vẫn nằm ở đối tác thu hộ tới hết hạn đổi trả.",
+      "shipSubmit": "Chuyển sang đang giao",
+      "shipped": "{number} đang giao.",
+      "answer": "Trả lời tranh chấp"
     },
     "disputes": {
       "needsAnswer": "Cần bạn trả lời",
@@ -9369,7 +9775,26 @@
       "name": "Tên sản phẩm",
       "category": "Danh mục",
       "price": "Giá (₫)",
-      "priceHint": "Số đồng nguyên, đã gồm GTGT."
+      "priceHint": "Số đồng nguyên, đã gồm GTGT.",
+      "addOff": "Gian hàng chưa được bán: làm xong các bước ở trang Tổng quan trước.",
+      "emptyBody": "Thêm sản phẩm đầu tiên; sàn duyệt xong thì người mua mới thấy.",
+      "byStatus": "Lọc sản phẩm theo trạng thái duyệt",
+      "all": "Tất cả",
+      "search": "Tìm sản phẩm",
+      "searchHint": "Tên sản phẩm hay danh mục",
+      "filter": "Lọc",
+      "clear": "Bỏ lọc",
+      "noMatch": "Không có sản phẩm nào khớp",
+      "noMatchBody": "Thử chữ khác hay trạng thái khác.",
+      "stock": "Tồn",
+      "outOfStock": "Hết hàng",
+      "reason": "Lý do từ chối:",
+      "edit": "Sửa",
+      "fixResend": "Sửa và gửi lại",
+      "editOf": "{action}: {name}",
+      "editTitle": "Sửa {name}",
+      "editIntro": "Thay đổi thành một bản sửa mới; sàn duyệt lại rồi người mua mới thấy.",
+      "edited": "Đã gửi thay đổi cho sàn duyệt."
     },
     "shop": {
       "title": "Gian hàng của tôi",
@@ -10854,7 +11279,7 @@
       "verified": "Đã xác thực",
       "notVerified": "Chưa",
       "notVerifiedEffect": "Chưa — mua được, chưa bình luận, đánh giá được (NĐ 147/2024)",
-      "lock": "Khoá tài khoản",
+      "lock": "Khoá",
       "locked": "Đã khoá; mọi phiên đăng nhập của người này bị thu hồi.",
       "unlock": "Mở khoá",
       "unlocked": "Đã mở khoá; người mua đăng nhập lại được.",
@@ -10873,9 +11298,19 @@
       "selfSignupHint": "Tắt thì trang đăng ký trả lỗi auth.customer_registration_closed; khách vẫn mua vãng lai được.",
       "save": "Lưu",
       "saved": "Đã lưu cài đặt đăng ký.",
-      "unverifiedTitle": "Số điện thoại chưa xác thực",
       "unverifiedCount": "{n} tài khoản chưa xác thực số điện thoại.",
-      "unverifiedText": "Họ vẫn mua hàng được nhưng chưa bình luận, đánh giá được cho tới khi xác thực số điện thoại (NĐ 147/2024 — cần đối chiếu văn bản gốc)."
+      "unverifiedText": "Họ vẫn mua hàng được nhưng chưa bình luận, đánh giá được cho tới khi xác thực số điện thoại (NĐ 147/2024 — cần đối chiếu văn bản gốc).",
+      "search": "Tìm tài khoản",
+      "searchHint": "Tên, email hoặc số điện thoại",
+      "find": "Tìm",
+      "verification": "Xác thực",
+      "emailVerified": "Đã xác thực email",
+      "emailNotVerified": "Chưa xác thực email",
+      "phoneVerified": "Đã xác thực SĐT",
+      "phoneNotVerified": "Chưa xác thực SĐT",
+      "empty": "Không có tài khoản nào khớp.",
+      "emptySearch": "Không có tài khoản nào khớp “{q}”.",
+      "clearSearch": "Xoá chữ tìm"
     },
     "segments": {
       "title": "Nhóm",
@@ -11357,7 +11792,31 @@
       "pushed": "Đẩy gần nhất",
       "error": "Lỗi",
       "missingAttr": "thiếu thuộc tính “Chất liệu” bắt buộc của ngành Gốm sứ",
-      "taxNote": "Giá kênh đã gồm thuế. Khi nhập đơn, thuế tính lại bằng bộ tính thuế của Autoxide, không tin số thuế kênh trả."
+      "taxNote": "Giá kênh đã gồm thuế. Khi nhập đơn, thuế tính lại bằng bộ tính thuế của Autoxide, không tin số thuế kênh trả.",
+      "search": "Tìm sản phẩm",
+      "searchHint": "Tên, SKU hay mã trên kênh",
+      "find": "Tìm",
+      "accountFilter": "Tài khoản",
+      "allAccounts": "Mọi tài khoản ({count})",
+      "accountOption": "{name} ({count})",
+      "states": {
+        "live": "Đang bán",
+        "error": "Lỗi",
+        "pending": "Đang đăng",
+        "off": "Chưa đăng"
+      },
+      "channels": "Kênh",
+      "chipLabel": "{account} ({kind}): {state}",
+      "channelsOf": "Các kênh của {name}",
+      "notLinked": "Chưa gắn mã",
+      "notLinkedHint": "Chưa có mã trên tài khoản này. Bấm “Gắn sản phẩm” để thêm.",
+      "shown": "Đang xem {from}–{to} trong {total} sản phẩm",
+      "pages": "Trang",
+      "prev": "Trang trước",
+      "next": "Trang sau",
+      "empty": "Không có sản phẩm khớp",
+      "emptyHint": "Thử tên khác hoặc bỏ bộ lọc.",
+      "clear": "Bỏ lọc"
     },
     "link": {
       "button": "Gắn sản phẩm",

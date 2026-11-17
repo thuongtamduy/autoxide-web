@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   answerText,
   emptyField,
+  errorPlaces,
   type FormField,
   fieldErrors,
   fieldFromCore,
   fieldToCore,
+  moveItem,
   parseOptions,
   retention,
   type Submission,
@@ -123,6 +125,31 @@ const SUB: Submission = {
     answer("agree", "consent", "Đồng ý", true),
   ],
 };
+
+describe("trình sửa: chỗ của lỗi, đổi thứ tự", () => {
+  it("đếm lỗi theo tab và tìm thẻ có lỗi", () => {
+    expect(
+      errorPlaces({
+        name: "required",
+        fields: "at least one",
+        "fields[2].options[1].value": "x",
+        "fields[0].key": "y",
+        "fields[2].label": "z",
+        notify_emails: "bad",
+        "success_message.vi": "too long",
+      }),
+    ).toEqual({ fields: 4, settings: 2, cards: [0, 2] });
+    expect(errorPlaces(undefined)).toEqual({ fields: 0, settings: 0, cards: [] });
+  });
+
+  it("đưa một phần tử tới chỗ mới, chỉ số sai thì giữ nguyên", () => {
+    expect(moveItem(["a", "b", "c"], 0, 2)).toEqual(["b", "c", "a"]);
+    expect(moveItem(["a", "b", "c"], 2, 0)).toEqual(["c", "a", "b"]);
+    expect(moveItem(["a", "b", "c"], 1, 1)).toEqual(["a", "b", "c"]);
+    expect(moveItem(["a", "b"], 0, -1)).toEqual(["a", "b"]);
+    expect(moveItem(["a", "b"], 1, 2)).toEqual(["a", "b"]);
+  });
+});
 
 describe("bài nộp", () => {
   it("tóm tắt: tên, email, câu trả lời dài nhất", () => {

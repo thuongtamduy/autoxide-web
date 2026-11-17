@@ -357,7 +357,12 @@ export function PreviewRuleForm({ orgs }: { orgs: Option[] }) {
 export function RegistrationForm({ open }: { open: boolean }) {
   const t = useTranslations("customers.accounts");
   return (
-    <ActionForm<FormState> action={registrationAction} submit={t("save")} done={t("saved")}>
+    <ActionForm<FormState>
+      action={registrationAction}
+      submit={t("save")}
+      done={t("saved")}
+      className="card cu-signup"
+    >
       {() => (
         <CheckField
           label={t("selfSignup")}

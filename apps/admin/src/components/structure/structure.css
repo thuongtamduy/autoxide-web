@@ -163,3 +163,22 @@
   font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
   color: var(--ink-3);
 }
+
+/* Lịch sử: các bài vừa sửa khi chưa chọn bài. */
+.ax .st-recent-h {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ax .st-recent {
+  list-style: none;
+  margin: 0;
+}
+.ax .st-recent .item-title {
+  color: var(--ink);
+  text-decoration: none;
+}
+.ax .st-recent .item-title:hover {
+  color: var(--accent-ink);
+  text-decoration: underline;
+}

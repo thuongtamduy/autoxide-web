@@ -1,0 +1,71 @@
+/* Màn "Khách hàng" (tiền tố cu-). */
+
+/* Tài khoản người mua: bấm cả dòng để mở chi tiết (link tên phủ cả dòng), nút khoá nằm trên lớp phủ. */
+.ax .cu-accounts tbody tr:not(.cat-detail-row) {
+  position: relative;
+}
+.ax .cu-accounts tbody tr:not(.cat-detail-row) a.open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.ax .cu-accounts tbody tr:not(.cat-detail-row):hover {
+  background: var(--hover);
+}
+.ax .cu-accounts td.rt-acts {
+  position: relative;
+  z-index: 1;
+  vertical-align: middle;
+}
+/* Nút "Khoá" giống nhau ở mọi dòng: máy có chuột thì chỉ hiện ở dòng đang rê hoặc đang chọn bằng phím. */
+@media (hover: hover) {
+  .ax .cu-accounts tbody tr:not(:hover):not(:focus-within) .cu-reveal {
+    opacity: 0;
+  }
+}
+
+/* Xác thực email / SĐT: hai biểu tượng nhỏ, chữ đầy đủ ở `title`. */
+.ax .cu-verify {
+  display: inline-flex;
+  gap: 6px;
+}
+.ax .cu-vf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--hover);
+  color: var(--ink-3);
+}
+.ax .cu-vf.on {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.ax .cu-vf svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Cài đặt đăng ký: một dòng (chữ bên trái, nút Lưu bên phải). */
+.ax .cu-signup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 6px 12px 6px 6px;
+}
+.ax .cu-signup > .check {
+  flex: 1 1 320px;
+  align-items: center;
+}
+.ax .cu-signup > .role-foot {
+  padding: 0;
+}
+.ax .cu-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+}

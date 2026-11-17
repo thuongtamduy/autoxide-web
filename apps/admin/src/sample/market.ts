@@ -14,6 +14,7 @@
 // Việc core làm bằng job (đối tác báo kết quả lệnh chi, tranh chấp quá hạn người bán chuyển sàn phân
 // xử, quyết toán qua hạn đổi trả) tiến theo thời gian thật mỗi lần đọc (`sync`).
 import type { Problem } from "@autoxide/sdk";
+import { fold } from "@/lib/fold";
 import { type CategorySummary, listCategories, listRestrictionRules, type Money } from "./catalog";
 import { type KycProfile, listKycProfiles } from "./compliance";
 import { acceptanceOf, type DocumentKind, recordAcceptance } from "./compliance-records";
@@ -31,6 +32,7 @@ import {
   type ListingReview,
   type ListingStatus,
   type MarketOrder,
+  type MarketOrderStatus,
   type MarketStore,
   marketOrderId,
   PAYOUT_SEEDS,
@@ -1738,6 +1740,7 @@ export async function addListing(
     price: vnd(price),
     previous_price: null,
     images: 0,
+    stock: 0,
     status: "pending",
     findings: await findingsFor(s, seller, input.category_id),
     reason: null,
@@ -1822,16 +1825,28 @@ export async function appealPenalty(
   return { ok: true, data: { ...p } };
 }
 
-/** Đơn của người bán (phần nhìn của `orders`, bước 45): mới trước, trang theo con trỏ. */
+export type SellerOrderView = MarketOrder & {
+  settlement: SettlementStatus | null;
+  dispute: DisputeStatus | null;
+};
+
+/**
+ * Đơn của người bán (phần nhìn của `orders`, bước 45): mới trước, trang theo con trỏ. Lọc theo trạng
+ * thái; `q` tìm không dấu theo mã đơn hay tên người mua. Thay bằng `GET /api/v1/orders?seller=me` khi có.
+ */
 export async function listSellerOrders(
   orgId: string,
-  query: { cursor?: string | null } = {},
-): Promise<
-  SamplePage<MarketOrder & { settlement: SettlementStatus | null; dispute: DisputeStatus | null }>
-> {
+  query: { status?: MarketOrderStatus; q?: string; cursor?: string | null } = {},
+): Promise<SamplePage<SellerOrderView>> {
   const s = await store();
+  const q = fold(query.q ?? "");
   const list = s.orders
-    .filter((o) => o.seller_org_id === orgId)
+    .filter(
+      (o) =>
+        o.seller_org_id === orgId &&
+        (!query.status || o.status === query.status) &&
+        (!q || fold(`${o.number} ${o.buyer_name}`).includes(q)),
+    )
     .sort((a, b) => b.placed_at.localeCompare(a.placed_at))
     .map((o) => ({
       ...o,
@@ -1839,6 +1854,108 @@ export async function listSellerOrders(
       dispute: s.disputes.find((d) => d.order_id === o.id)?.status ?? null,
     }));
   return samplePage(list, { limit: 25, cursor: query.cursor ?? null });
+}
+
+export const MARKET_ORDER_STATUSES: readonly MarketOrderStatus[] = [
+  "paid",
+  "shipping",
+  "delivered",
+  "completed",
+  "cancelled",
+];
+
+export interface SellerOrderStats {
+  by_status: Record<MarketOrderStatus, number>;
+  /** Doanh thu 7 ngày qua: tổng tiền đơn đặt trong 7 ngày, trừ đơn huỷ. */
+  revenue_7d: Money;
+  orders_7d: number;
+}
+
+/** Hàm thuần: số đơn theo trạng thái và doanh thu 7 ngày (tính tới `now`). */
+export function orderStats(orders: readonly MarketOrder[], now: number): SellerOrderStats {
+  const by_status = Object.fromEntries(MARKET_ORDER_STATUSES.map((st) => [st, 0])) as Record<
+    MarketOrderStatus,
+    number
+  >;
+  let revenue = 0;
+  let count = 0;
+  for (const o of orders) {
+    by_status[o.status] += 1;
+    if (o.status !== "cancelled" && now - Date.parse(o.placed_at) <= 7 * ID.DAY) {
+      revenue += amount(o.total);
+      count += 1;
+    }
+  }
+  return { by_status, revenue_7d: vnd(revenue), orders_7d: count };
+}
+
+/** Đề xuất (mới): số liệu đơn của một người bán cho chip lọc và trang Tổng quan. */
+export async function sellerOrderStats(orgId: string): Promise<{ data: SellerOrderStats }> {
+  const s = await store();
+  return {
+    data: orderStats(
+      s.orders.filter((o) => o.seller_org_id === orgId),
+      Date.now(),
+    ),
+  };
+}
+
+/**
+ * Đề xuất (mới, bước 45 + vận chuyển): người bán đã đóng gói và giao đơn cho hãng vận chuyển — đơn
+ * "đã trả, chờ gửi" thành "đang giao". Chỉ đơn của chính người bán; đơn ở trạng thái khác thì 409.
+ */
+export async function shipSellerOrder(
+  orgId: string,
+  id: string,
+): Promise<SampleOutcome<MarketOrder>> {
+  const s = await store();
+  const o = s.orders.find((x) => x.id === id && x.seller_org_id === orgId);
+  if (!o) return failed(404, "marketplace.order_not_found", "No order has this id.");
+  if (o.status !== "paid")
+    return failed(409, "marketplace.invalid_transition", `${o.status} → shipping`);
+  o.status = "shipping";
+  return { ok: true, data: { ...o } };
+}
+
+/**
+ * Người bán sửa tên hay giá một sản phẩm của mình: thành lượt duyệt mới (bản sửa tiếp theo) chờ sàn
+ * duyệt lại, phát hiện tự động tính lại; lý do từ chối cũ bỏ đi. Thay bằng PATCH
+ * /api/v1/catalog/products/{id} (bước 41) + lượt duyệt của bước 46 khi core có.
+ */
+export async function editListing(
+  orgId: string,
+  id: string,
+  input: { name: string; price: string },
+): Promise<SampleOutcome<ListingReview>> {
+  const s = await store();
+  const seller = mine(s, orgId);
+  const listing = s.listings.find((l) => l.id === id && l.seller_org_id === orgId);
+  if (!seller || !listing)
+    return failed(404, "marketplace.listing_not_found", "No listing review has this id.");
+  const errors: NonNullable<Problem["errors"]> = [];
+  const name = input.name.trim();
+  if (name.length < 1 || name.length > 120)
+    errors.push({ field: "name", code: "length_1_120", detail: "1 to 120" });
+  const price = parseDong(input.price);
+  if (price === null) errors.push({ field: "price", code: "money_vnd", detail: "whole dong" });
+  if (errors.length > 0 || price === null) return invalid(errors);
+  if (seller.status === "terminated")
+    return failed(409, "marketplace.seller_not_active", seller.display_name);
+  const priceChanged = price !== amount(listing.price);
+  const nameChanged = name !== listing.product_name;
+  if (!priceChanged && !nameChanged) return { ok: true, data: structuredClone(listing) };
+  listing.previous_price = priceChanged ? { ...listing.price } : null;
+  listing.price = vnd(price);
+  listing.product_name = name;
+  listing.revision += 1;
+  listing.change = nameChanged ? "edit" : "price";
+  listing.status = "pending";
+  listing.findings = await findingsFor(s, seller, listing.category_id);
+  listing.reason = null;
+  listing.decided_by = null;
+  listing.decided_at = null;
+  listing.created_at = new Date().toISOString();
+  return { ok: true, data: structuredClone(listing) };
 }
 
 /** Ô CSV an toàn: chặn công thức (`=`, `+`, `-`, `@`) và bọc dấu ngoặc kép. */

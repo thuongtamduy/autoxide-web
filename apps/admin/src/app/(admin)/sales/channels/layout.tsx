@@ -11,6 +11,7 @@ import { inboundStats, settlementSummary } from "@/sample/channels";
 import { CHANNEL_TABS, ENDPOINTS_48, ownerOrgOptions } from "./shared";
 import "@/components/catalog/catalog.css";
 import "@/components/orders/orders.css";
+import "@/components/channels/channels.css";
 
 // Màn "Kênh bán" (bản thiết kế Channels): bán cùng lúc trên website và các sàn, mạng xã hội mà vẫn một kho,
 // một danh sách sản phẩm, đơn về một chỗ. Cả màn dựng bằng dữ liệu mẫu (W-006, W-019) vì core chưa có

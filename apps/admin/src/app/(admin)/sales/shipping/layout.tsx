@@ -10,6 +10,7 @@ import { activeMethods, originOptions } from "@/sample/shipping";
 import { ENDPOINTS_44, provinceOptions, TAB_PERMISSIONS } from "./shared";
 import "@/components/catalog/catalog.css";
 import "@/components/promotions/promotions.css";
+import "@/components/shipping/shipping.css";
 
 // Màn "Vận chuyển": cả màn dựng bằng dữ liệu mẫu (W-006, W-015) vì core chưa có module `shipping`
 // (bước 44). Vận đơn trỏ tới đơn mẫu của `sample/order-refs.ts`; màn Đơn hàng (bước 45) dựng sau.

@@ -179,7 +179,77 @@
     "status": "Status",
     "applied": "Applied",
     "pending": "Not applied",
-    "pendingHint": "Run `autoxide migrate up` on the server to apply pending migrations."
+    "pendingHint": "Run `autoxide migrate up` on the server to apply pending migrations.",
+    "serverVersion": "Server version {version}; every module ships with it.",
+    "technical": "Technical details",
+    "noBlurb": "Module of this server.",
+    "state": {
+      "always": "Always on",
+      "on": "On",
+      "off": "Not in your plan"
+    },
+    "names": {
+      "kernel": "Core",
+      "antispam": "Spam protection",
+      "auth": "Sign-in and accounts",
+      "audit": "Audit log",
+      "address": "Vietnamese addresses",
+      "ai": "AI assistant",
+      "files": "Files",
+      "media": "Media library",
+      "content": "Posts and pages",
+      "menus": "Menus",
+      "forms": "Forms",
+      "newsletter": "Newsletter",
+      "comments": "Comments",
+      "notes": "Notes",
+      "organizations": "Organization tree",
+      "plans": "Plans and subscriptions",
+      "webhooks": "Webhooks",
+      "notifications": "Notifications",
+      "catalog": "Products",
+      "inventory": "Inventory",
+      "promotions": "Promotions",
+      "shipping": "Shipping",
+      "orders": "Orders",
+      "customers": "Customers and loyalty",
+      "marketplace": "Marketplace",
+      "channels": "Multichannel selling",
+      "affiliate": "Affiliate marketing",
+      "finance": "Accounting",
+      "compliance": "Compliance"
+    },
+    "blurbs": {
+      "kernel": "Tenants, settings, domains, background jobs and the module register.",
+      "antispam": "Rate limits and spam checks for public forms and comments.",
+      "auth": "Staff and buyer accounts, roles, permissions, API keys and two-step sign-in.",
+      "audit": "Who did what and when, for every change.",
+      "address": "Provinces, wards and address lookup for Vietnam.",
+      "ai": "Drafts and suggestions written by AI, with a human approving.",
+      "files": "Uploaded files and private downloads.",
+      "media": "Images, videos and documents with folders, tags and alt text.",
+      "content": "Posts and pages: drafts, review, scheduling, translations, revision history.",
+      "menus": "Website menus per language.",
+      "forms": "Website forms and their submissions.",
+      "newsletter": "Campaigns, lists and subscribers with proof of consent.",
+      "comments": "Comments on posts, with moderation and bans.",
+      "notes": "Example module: short notes.",
+      "organizations": "Head office, regions, stores, warehouses and who works where.",
+      "plans": "Plans, prices, subscriptions and limits per customer.",
+      "webhooks": "Send events to other systems, with retries.",
+      "notifications": "In-app and email notifications.",
+      "catalog": "Products, variants, categories and price lists.",
+      "inventory": "Stock by warehouse, transfers and counts.",
+      "promotions": "Programs, discount codes and flash sales.",
+      "shipping": "Shipments, delivery fees and carriers.",
+      "orders": "Orders, returns, refunds and counter sales.",
+      "customers": "Customer profiles, groups, points and tiers.",
+      "marketplace": "Sellers, product review, fees and payouts.",
+      "channels": "Sell on marketplaces and social shops from one stock.",
+      "affiliate": "Affiliates, commission and payouts.",
+      "finance": "Double-entry ledger, invoices and tax.",
+      "compliance": "E-commerce registration, personal data and legal records."
+    }
   },
   "duration": {
     "seconds": "{count, plural, one {# second} other {# seconds}}",
@@ -1377,39 +1447,22 @@
         "embeddings": "Search by meaning (embeddings)",
         "embeddingModel": "{model} · {dimensions} dimensions",
         "embeddingsOff": "Off.",
-        "about": "The server operator turns AI on with the AUTOXIDE_AI_* and AUTOXIDE_EMBEDDING_* settings. AI output is only ever a suggestion or a draft."
-      },
-      "title": "Partner connections (sample)",
-      "about": "Connection details of your own partners. Without them, the server-wide configuration is used. Secrets are encrypted when saved and never shown again; to change one, enter a new value. Needs kernel.settings.manage.",
-      "names": {
-        "mail": "Email (SMTP)",
-        "sms": "SMS brand name",
-        "payment": "Payment gateway",
-        "einvoice": "E-invoices"
+        "about": "The server operator turns AI on and picks the provider and model.",
+        "name": "Server AI",
+        "unknown": "Unknown"
       },
       "isSet": "set",
-      "notSet": "not set",
       "checkOk": "Last test passed",
       "checkFailed": "Last test failed",
-      "hints": {
-        "mail": "Sends sign-in, invitation and notification emails.",
-        "sms": "Needed to verify phone numbers of people who post content. Without it, that feature is off.",
-        "payment": "A licensed partner collects buyers' money; it never goes to your account.",
-        "einvoice": "Issues e-invoices through a licensed provider."
-      },
       "state": {
         "set": "Set",
-        "unset": "Not set",
-        "error": "Last test failed"
+        "unset": "Not set"
       },
       "test": "Test connection",
       "testLabel": "Test the {name} connection",
       "tested": "Tested. The result is in the list.",
-      "formTitle": "{name} settings",
-      "setUp": "Set up",
       "change": "Change",
-      "secretNote": "Changing a secret does not interrupt anything: the new value is used from the next request. The history records the setting name and who changed it (event kernel.setting_changed), never the value.",
-      "formIntro": "Values are saved for this account only.",
+      "secretNote": "Secrets are encrypted when saved and never shown again, not even to you; to change one, enter a new value. A new value is used from the next request, without interruption. The history records the setting name and who changed it, never the value.",
       "saved": "Connection saved.",
       "secretKeep": "Set. Leave empty to keep the current value.",
       "secretNew": "Secret: stored encrypted, never shown again.",
@@ -1434,6 +1487,223 @@
         "connectionGroup": "Partner connections",
         "connectionAbout": "Accounts with outside services (mail server, AI provider, payment gateway…). Secrets are stored encrypted and never shown again.",
         "businessGroup": "Business settings"
+      },
+      "intro": "Connect your own accounts with outside services: email, messaging, payments, e-invoices, AI. A connection that is not set up uses the server-wide configuration.",
+      "categories": {
+        "email": {
+          "title": "Email",
+          "about": "Sends sign-in, invitation and notification emails."
+        },
+        "messaging": {
+          "title": "SMS and Zalo",
+          "about": "Verification codes and notifications sent to phones."
+        },
+        "payment": {
+          "title": "Payments",
+          "about": "Collects buyers' money through a licensed partner."
+        },
+        "einvoice": {
+          "title": "E-invoices",
+          "about": "Issues invoices through a licensed provider."
+        },
+        "shipping": {
+          "title": "Shipping",
+          "about": "Creates shipments and tracks deliveries."
+        },
+        "ai": {
+          "title": "AI",
+          "about": "Suggestions, drafts and translations. AI output is only ever a suggestion or a draft."
+        },
+        "other": {
+          "title": "Other connections",
+          "about": "Connections of other installed modules."
+        }
+      },
+      "kinds": {
+        "mail": {
+          "smtp": {
+            "name": "Your own mail server (SMTP)",
+            "about": "Sends mail from your own mail server and address instead of the server-wide one."
+          }
+        },
+        "ai": {
+          "text": {
+            "name": "Your own AI account",
+            "about": "Uses your API key and model with the AI provider the server is set up for."
+          }
+        },
+        "sms": {
+          "gateway": {
+            "name": "SMS brand name",
+            "about": "Sends phone verification codes to people who post content. Without it, that feature is off."
+          }
+        },
+        "payments": {
+          "gateway": {
+            "name": "Payment gateway",
+            "about": "A licensed partner collects buyers' money; it never goes to your account."
+          }
+        },
+        "invoices": {
+          "einvoice": {
+            "name": "E-invoices",
+            "about": "Issues e-invoices through a licensed provider."
+          }
+        }
+      },
+      "fields": {
+        "mail": {
+          "smtp": {
+            "url": {
+              "label": "SMTP server address",
+              "hint": "Like smtps://user:password@smtp.example.com."
+            },
+            "from": {
+              "label": "Sender",
+              "hint": "Like Shop '<'no-reply@example.com'>'. Its domain must be allowed to send through the SMTP server."
+            }
+          }
+        },
+        "ai": {
+          "text": {
+            "api_key": {
+              "label": "API key"
+            },
+            "model": {
+              "label": "Model",
+              "hint": "A model name from the provider the server is set up for."
+            }
+          }
+        },
+        "sms": {
+          "gateway": {
+            "provider": {
+              "label": "Provider"
+            },
+            "brandname": {
+              "label": "Brand name"
+            },
+            "api_key": {
+              "label": "API key"
+            }
+          }
+        },
+        "payments": {
+          "gateway": {
+            "provider": {
+              "label": "Payment partner"
+            },
+            "merchant_id": {
+              "label": "Merchant ID"
+            },
+            "secret_key": {
+              "label": "Secret key"
+            }
+          }
+        },
+        "invoices": {
+          "einvoice": {
+            "provider": {
+              "label": "Provider"
+            },
+            "username": {
+              "label": "Account"
+            },
+            "certificate": {
+              "label": "Signing certificate"
+            }
+          }
+        }
+      },
+      "status": {
+        "connected": "Connected",
+        "unset": "Not set up",
+        "error": "Error"
+      },
+      "configure": "Set up",
+      "edit": "Edit",
+      "configureLabel": "Set up {name}",
+      "serverDefault": "Using the server-wide configuration.",
+      "notConnected": "Not connected.",
+      "changedAt": "Last changed",
+      "dialog": {
+        "save": "Save",
+        "required": "Enter a value.",
+        "serverDefault": "Server default",
+        "saved": "Saved {name}.",
+        "removed": "Removed {name}; the server-wide configuration applies.",
+        "removeAsk": "Remove your own values for {name}? The server-wide configuration applies again from the next request. A removed secret cannot be recovered.",
+        "disconnect": "Disconnect",
+        "reset": "Reset to default",
+        "back": "Back"
+      },
+      "business": {
+        "title": "Business settings",
+        "about": "Set for this account only. Left empty, the server-wide configuration applies.",
+        "modules": {
+          "kernel": "Website",
+          "comments": "Comments",
+          "content": "Content",
+          "forms": "Forms",
+          "media": "Images and files"
+        },
+        "custom": "Custom",
+        "default": "Default",
+        "set": "Set",
+        "value": "Value",
+        "secretSet": "Set (secret)"
+      },
+      "settings": {
+        "kernel": {
+          "public_url": {
+            "label": "Website address",
+            "about": "Public address of the site, e.g. https://shop.example; used in links sent by email."
+          }
+        },
+        "comments": {
+          "banned_words": {
+            "label": "Banned words",
+            "about": "A comment with any of these comma-separated words or phrases is refused, ignoring case and accents. Enter - for none."
+          },
+          "suspect_words": {
+            "label": "Words to review",
+            "about": "A comment with any of these words is held for approval. Enter - for none."
+          },
+          "max_links": {
+            "label": "Maximum links",
+            "about": "A comment with more links than this (0 to 100) is held for approval."
+          },
+          "guest_moderation": {
+            "label": "Approval of guest comments",
+            "about": "pre: approve every comment; first_time: only the first one; post: show at once, review later."
+          },
+          "user_moderation": {
+            "label": "Approval of signed-in users' comments",
+            "about": "pre: approve every comment; first_time: only the first one; post: show at once, review later."
+          }
+        },
+        "content": {
+          "locales": {
+            "label": "Content languages",
+            "about": "Comma-separated language codes, e.g. en,vi. Entries written in a language left out stay as they are."
+          },
+          "default_locale": {
+            "label": "Default language",
+            "about": "Used when a request names no language, e.g. en."
+          }
+        },
+        "forms": {
+          "retention_days": {
+            "label": "Days to keep submissions",
+            "about": "Form submissions are kept this many days, then deleted (0 to 36500; 0 keeps them until deleted by hand). A form's own setting still wins."
+          }
+        },
+        "media": {
+          "alt_locales": {
+            "label": "Image description languages",
+            "about": "Languages image descriptions (alt) may be translated into, comma-separated, e.g. en,vi."
+          }
+        }
       }
     },
     "jobs": {
@@ -1742,13 +2012,18 @@
       "code": "Error code",
       "agent": "agent",
       "events": "Events by record",
-      "eventsAbout": "Pick a kind of record and its id to see every event about it, in order. Try {example}.",
       "kind": "Kind of record",
       "recordId": "Code or id",
       "show": "Show events",
       "noEvents": "No events for this record.",
       "delivered": "delivered to every receiver",
-      "undelivered": "not delivered yet"
+      "undelivered": "not delivered yet",
+      "tryExample": "Try sample order {id}",
+      "eventsEmptyTitle": "See everything that happened to one record",
+      "eventsEmptyText": "Pick a kind of record and enter its code or id: every event about it is listed newest first, with whether every receiver (modules, webhooks) got it. Useful when a customer asks why an order did not move, or a connected system missed an update.",
+      "noEventsText": "Nothing was recorded for {kind} {id}. Check the code, or the kind of record.",
+      "clearRecord": "Clear",
+      "eventsFor": "{count, plural, one {# event} other {# events}} for {kind} {id}, newest first."
     }
   },
   "content": {
@@ -2572,7 +2847,13 @@
       "restoreTitle": "Restore {label} as the draft?",
       "restoreIntro": "The draft is replaced by this version. The published version does not change until you publish again; the history keeps every version.",
       "restored": "Version restored as the draft",
-      "conflict": "The post changed since this page was loaded. Reload and try again."
+      "conflict": "The post changed since this page was loaded. Reload and try again.",
+      "recentTitle": "Recently edited",
+      "edited": "edited",
+      "recentHint": "Pick a post or page to see its versions, compare two of them and restore one. In the editor, the History tab shows the same versions.",
+      "emptyTitle": "No posts or pages yet",
+      "emptyText": "Versions are kept for every post and page as you edit. Once you write one, its history shows here and in the History tab of the editor.",
+      "goPosts": "Go to posts"
     },
     "diff": {
       "open": "Show changes",
@@ -3045,7 +3326,31 @@
         "emailLimit": "Per email address per hour",
         "limitHint": "Empty: the server default. More are dropped silently.",
         "create": "Create form",
-        "save": "Save form"
+        "save": "Save form",
+        "tabsLabel": "Form editor sections",
+        "tabSettings": "Settings",
+        "secSubmit": "Submissions",
+        "secNotify": "Notifications",
+        "secSpam": "Spam protection",
+        "requiredTag": "Required",
+        "hasErrors": "Needs fixing",
+        "dragHint": "Drag to reorder",
+        "noFields": "No fields yet",
+        "noFieldsAbout": "A form needs at least one field. Add one by type.",
+        "preview": "Preview",
+        "previewAbout": "What visitors see on your website. Inputs are locked in the preview.",
+        "previewLang": "Preview language",
+        "langVi": "Tiếng Việt",
+        "langEn": "English",
+        "previewSubmit": "Submit",
+        "previewChoose": "Choose…",
+        "previewNoOptions": "No choices yet",
+        "previewEmpty": "Add fields to see the form here.",
+        "previewHidden": "Hidden field “{key}”: sent with each submission, not shown to visitors.",
+        "previewSuccess": "After sending: {text}",
+        "previewClosed": "This form is closed: visitors cannot send it.",
+        "untitledForm": "Untitled form",
+        "summary": "{count, plural, one {# field} other {# fields}} · {required} required"
       },
       "bgExport": {
         "start": "Export in the background",
@@ -3297,13 +3602,35 @@
         "bodyTextHint": "Plain text for every inbox. Line breaks are kept.",
         "bodyHtml": "HTML version (optional)",
         "bodyHtmlHint": "Sent as written. The preview runs in a sandbox: no scripts, no cookies.",
-        "showPreview": "Show preview",
-        "hidePreview": "Hide preview",
         "previewTitle": "Preview of the HTML version",
         "footer": "The server adds a footer to every mail: the one-click unsubscribe link, the preferences link and the sender's address.",
         "create": "Save draft",
         "save": "Save changes",
-        "saved": "Campaign saved."
+        "saved": "Campaign saved.",
+        "groupAudience": "Audience",
+        "groupMessage": "Subject line",
+        "groupContent": "Content",
+        "tabsLabel": "Content version",
+        "tabCompose": "Compose",
+        "tabHtml": "HTML",
+        "preview": "Inbox preview",
+        "previewAbout": "Close to what subscribers see. The exact mail, footer included, is on the campaign page after saving.",
+        "deviceLabel": "Screen",
+        "desktop": "Desktop",
+        "phone": "Phone",
+        "versionLabel": "Version shown",
+        "inboxLabel": "Inbox",
+        "now": "Now",
+        "to": "To: {list}",
+        "noList": "no list chosen",
+        "noSubject": "(No subject)",
+        "emptyBody": "Write the mail under Compose and it shows here.",
+        "previewTextTitle": "Preview of the text version",
+        "footerShort": "Unsubscribe link, preferences link and sender's address are added here by the server.",
+        "draftNote": "Saving a draft sends nothing. Test, schedule and send come next.",
+        "editNote": "After saving, the mail exactly as sent is shown below.",
+        "cancel": "Cancel",
+        "senderFallback": "Your shop"
       },
       "test": {
         "open": "Send test",
@@ -5152,7 +5479,15 @@
       "makeDefault": "Make default",
       "madeDefault": "{plan} is now the default plan.",
       "currency": "Currency",
-      "metered": "Usage of {key}"
+      "metered": "Usage of {key}",
+      "editShort": "Edit",
+      "details": "Details",
+      "tenantsUsing": "{count, plural, one {customer on this plan} other {customers on this plan}}",
+      "trialDays": "{count, plural, one {# day trial} other {# days trial}}",
+      "noLimitsShort": "No limit set.",
+      "moreLimits": "{count, plural, one {and # more limit} other {and # more limits}}",
+      "noneYet": "No plans yet",
+      "noneYetText": "Without a plan every customer may use every module, with no limit (single-customer mode). Create a plan to sell modules and limits by period."
     },
     "overrides": {
       "title": "Overrides per customer",
@@ -5251,7 +5586,10 @@
       "suspendSubmit": "Suspend",
       "suspendDone": "{tenant} is suspended.",
       "defaultPlan": "Default plan (no subscription)",
-      "noSubscription": "No subscription"
+      "noSubscription": "No subscription",
+      "emptyTitle": "No subscriptions yet",
+      "emptyText": "A subscription ties a customer to a plan and a billing period. There is no customer besides the platform yet; add one in the customer register, then assign a plan here.",
+      "openRegister": "Open the customer register"
     },
     "prov": {
       "crumb": "Autoxide platform · new customers",
@@ -5442,7 +5780,9 @@
         "reason": "Write the reason.",
         "legal": "Enter the number of the authority’s document."
       },
-      "noCustomers": "There is no customer yet besides the platform."
+      "noCustomersTitle": "No customers to support yet",
+      "noCustomersText": "Grants give a staff member time-limited access to one customer’s data, with a reason. There is no customer besides the platform yet; once there is one, grants and visits show here.",
+      "openRegister": "Open the customer register"
     },
     "platformOnly": "Only staff of the platform tenant (the operator's own) can use the control plane. You are signed in to a customer's account.",
     "newTenant": {
@@ -8354,7 +8694,7 @@
     },
     "calendar": {
       "about": "The expected delivery date shown to buyers comes from the cut-off time, working days and holidays. It is data with an effective date: changing it never alters dates already promised to placed orders.",
-      "formTitle": "Cut-off time and pickup days",
+      "formTitle": "Change cut-off time and pickup days",
       "submit": "Save calendar",
       "done": "Saved; applies to orders from the effective date",
       "cutoff": "Daily cut-off time",
@@ -8366,18 +8706,50 @@
         "all": "Every day"
       },
       "from": "Applies from",
-      "fromHint": "Tomorrow or later; the old calendar still applies to orders before this date.",
-      "current": "In force: cut-off {cutoff}, pickups {days}.",
-      "orderedAt": "Ordered {time} {day}",
-      "inTime": "Before the cut-off: picked up {pickup}, delivered in 1–2 working days.",
-      "late": "After the cut-off: picked up {pickup}; non-working days are skipped.",
-      "tileFoot": "Within the province, standard delivery",
       "versions": "Calendar versions",
       "state": "Status",
       "inForce": "In force",
       "upcoming": "Upcoming",
       "past": "Replaced",
-      "allChain": "Whole chain"
+      "allChain": "Whole chain",
+      "summary": "Orders placed before {cutoff} are picked up the same day",
+      "summaryMore": "Carrier pickups {days}; delivery within the province takes 1–2 working days. Orders after {cutoff} are picked up on the next working day; holidays are skipped.",
+      "egBefore": "Ordered today before {cutoff}",
+      "egAfter": "Ordered today after {cutoff}",
+      "egNoPickup": "Ordered today (no pickup today)",
+      "nextVersion": "From {day}: cut-off {cutoff}, pickups {days}.",
+      "calendarLabel": "Delivery calendar",
+      "monthNav": "Change month",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "thisMonth": "Today",
+      "today": "Today",
+      "cellCutoff": "Carrier pickup, cut-off {time}",
+      "cellHoliday": "Holiday: {name}",
+      "cellOff": "No carrier pickup",
+      "cellOffShort": "No pickup",
+      "cellLocal": "One node closed: {name}",
+      "cellNew": "New calendar starts",
+      "legend": "Legend",
+      "legendPickup": "Pickup day · cut-off time",
+      "legendHoliday": "Holiday",
+      "legendOff": "No pickup",
+      "legendLocal": "One node closed",
+      "legendNew": "New calendar starts",
+      "kindPickup": "Carrier pickup · cut-off {cutoff}",
+      "kindHoliday": "Holiday: {name}",
+      "kindOff": "No carrier pickup",
+      "dayBefore": "Ordered before {cutoff}",
+      "dayAfter": "Ordered after {cutoff}",
+      "dayAny": "Ordered on this day",
+      "pickupOn": "Picked up {day}",
+      "planFoot": "Expected delivery for standard shipping within the province.",
+      "dayLocal": "{org} is closed: {name}. The chain's calendar is unchanged.",
+      "dayStarts": "A new calendar starts this day: cut-off {cutoff}, pickups {days}.",
+      "pastDay": "Past days can't be changed; orders placed then keep the dates they were promised.",
+      "markHoliday": "Mark as holiday",
+      "fromPicked": "Applies to orders from {day}.",
+      "fromTomorrow": "Applies from tomorrow, {day}. To start on another date, pick that day on the calendar."
     },
     "holiday": {
       "button": "Add holiday",
@@ -9177,7 +9549,8 @@
       "marketplace_document_not_found": "This paper no longer exists.",
       "marketplace_penalty_not_found": "This penalty no longer exists.",
       "marketplace_penalty_already_appealed": "This sanction was already appealed; each sanction can be appealed once.",
-      "marketplace_not_ready": "The application is not complete yet."
+      "marketplace_not_ready": "The application is not complete yet.",
+      "marketplace_order_not_found": "This order no longer exists."
     },
     "fields": {
       "fee_rule_in_past": "Choose {value} or a later date; orders placed today keep today's fee.",
@@ -9257,7 +9630,16 @@
       "description": "Manage your shop, see your orders, check settlements and payouts, answer disputes. You see only the data of your own shop.",
       "kpis": "Your shop in numbers",
       "kpiDisputes": "Disputes to answer",
-      "kpiDisputesSub": "Past the deadline, the marketplace decides"
+      "kpiDisputesSub": "Past the deadline, the marketplace decides",
+      "sales": "Sales",
+      "kpiToShip": "Orders to ship",
+      "kpiToShipSub": "Paid, waiting to be handed to the carrier",
+      "kpiRevenue": "Revenue, last 7 days",
+      "kpiRevenueSub": "{count, plural, one {# order} other {# orders}}, cancelled not counted",
+      "kpiShipping": "Shipping",
+      "kpiShippingSub": "With the carrier now",
+      "toShipNote": "{count, plural, one {# order is} other {# orders are}} waiting to be shipped.",
+      "toShipOpen": "Ship orders"
     },
     "steps": {
       "title": "Steps to start selling",
@@ -9289,7 +9671,8 @@
         "rejected": "Returned; send a new profile in the eKYC partner app or VNeID",
         "expired": "Expired; verify again in the eKYC partner app or VNeID",
         "none": "Not started: verify in the eKYC partner app or VNeID"
-      }
+      },
+      "progress": "{done} / {total} done"
     },
     "money": {
       "title": "Statements and payouts",
@@ -9325,14 +9708,37 @@
       "total": "Total",
       "status": "Status",
       "money": "Money",
-      "items": "{count} items",
+      "items": "{count, plural, one {# item} other {# items}}",
       "orderStatus": {
         "paid": "Paid, to ship",
         "shipping": "Shipping",
         "delivered": "Delivered",
         "completed": "Completed",
         "cancelled": "Cancelled"
-      }
+      },
+      "byStatus": "Filter orders by status",
+      "all": "All",
+      "chip": {
+        "paid": "To ship",
+        "shipping": "Shipping",
+        "delivered": "Delivered",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "search": "Search orders",
+      "searchHint": "Order number or buyer name",
+      "filter": "Filter",
+      "clear": "Clear filters",
+      "emptyBody": "Orders show here as soon as a buyer pays for one of your products.",
+      "noMatch": "No order matches",
+      "noMatchBody": "Try another word or another status.",
+      "ship": "Hand to carrier",
+      "shipTitle": "Hand {number} to the carrier?",
+      "shipPoint1": "The order is packed and the carrier has picked it up; the buyer sees it as shipping.",
+      "shipPoint2": "Money stays at the collection partner until the return window ends.",
+      "shipSubmit": "Mark as shipping",
+      "shipped": "{number} is shipping.",
+      "answer": "Answer dispute"
     },
     "disputes": {
       "needsAnswer": "Needs your answer",
@@ -9369,7 +9775,26 @@
       "name": "Product name",
       "category": "Category",
       "price": "Price (₫)",
-      "priceHint": "Whole dong, VAT included."
+      "priceHint": "Whole dong, VAT included.",
+      "addOff": "Your shop cannot sell yet: finish the setup steps on the Overview page first.",
+      "emptyBody": "Add your first product; the marketplace reviews it before buyers see it.",
+      "byStatus": "Filter products by review status",
+      "all": "All",
+      "search": "Search products",
+      "searchHint": "Product name or category",
+      "filter": "Filter",
+      "clear": "Clear filters",
+      "noMatch": "No product matches",
+      "noMatchBody": "Try another word or another status.",
+      "stock": "Stock",
+      "outOfStock": "Out of stock",
+      "reason": "Why rejected:",
+      "edit": "Edit",
+      "fixResend": "Fix and resend",
+      "editOf": "{action}: {name}",
+      "editTitle": "Edit {name}",
+      "editIntro": "The change becomes a new revision; the marketplace reviews it again before buyers see it.",
+      "edited": "Change sent for review."
     },
     "shop": {
       "title": "My shop",
@@ -10873,9 +11298,19 @@
       "selfSignupHint": "When off, the sign-up page returns auth.customer_registration_closed; guests can still check out.",
       "save": "Save",
       "saved": "Registration setting saved.",
-      "unverifiedTitle": "Unverified phone numbers",
       "unverifiedCount": "{n} accounts have not verified their phone number.",
-      "unverifiedText": "They can still buy, but cannot comment or review until their phone number is verified (Decree 147/2024 — check the original text)."
+      "unverifiedText": "They can still buy, but cannot comment or review until their phone number is verified (Decree 147/2024 — check the original text).",
+      "search": "Search accounts",
+      "searchHint": "Name, email or phone number",
+      "find": "Search",
+      "verification": "Verified",
+      "emailVerified": "Email verified",
+      "emailNotVerified": "Email not verified",
+      "phoneVerified": "Phone verified",
+      "phoneNotVerified": "Phone not verified",
+      "empty": "No accounts match.",
+      "emptySearch": "No account matches “{q}”.",
+      "clearSearch": "Clear search"
     },
     "segments": {
       "title": "Groups",
@@ -11357,7 +11792,31 @@
       "pushed": "Last push",
       "error": "Error",
       "missingAttr": "missing the channel’s required “Material” attribute for Ceramics",
-      "taxNote": "Channel prices include tax. When an order is imported, tax is recalculated by Autoxide’s tax engine; the channel’s tax figures are not trusted."
+      "taxNote": "Channel prices include tax. When an order is imported, tax is recalculated by Autoxide’s tax engine; the channel’s tax figures are not trusted.",
+      "search": "Find a product",
+      "searchHint": "Name, SKU or channel code",
+      "find": "Find",
+      "accountFilter": "Account",
+      "allAccounts": "All accounts ({count})",
+      "accountOption": "{name} ({count})",
+      "states": {
+        "live": "On sale",
+        "error": "Error",
+        "pending": "Publishing",
+        "off": "Not listed"
+      },
+      "channels": "Channels",
+      "chipLabel": "{account} ({kind}): {state}",
+      "channelsOf": "Channels of {name}",
+      "notLinked": "Not linked",
+      "notLinkedHint": "No code on this account yet. Use “Link a product” to add one.",
+      "shown": "Showing {from}–{to} of {total, plural, one {# product} other {# products}}",
+      "pages": "Pages",
+      "prev": "Previous",
+      "next": "Next",
+      "empty": "No products match",
+      "emptyHint": "Try another name or clear the filters.",
+      "clear": "Clear filters"
     },
     "link": {
       "button": "Link a product",

@@ -44,6 +44,9 @@ test("người bán: KYC duyệt ở Tuân thủ, người bán gửi hồ sơ, 
   await expect(page).toHaveURL(/\/seller$/);
   await expect(page.getByText("You are viewing as Dao Kéo Đa Sỹ Truyền Thống.")).toBeVisible();
   await expect(page.locator(".cp-check")).toContainText("Verified by eKYC partner");
+  // Chưa được bán: nút "Thêm sản phẩm" bị khoá, lý do ngay dưới nút.
+  await expect(page.getByRole("button", { name: "Add product" })).toBeDisabled();
+  await expect(page.locator(".mk-add-why")).toContainText("Your shop cannot sell yet");
   await page.getByRole("button", { name: "Send application for review" }).click();
   await dialog(page).getByRole("button", { name: "Send application for review" }).click();
   await expect(toast(page)).toHaveText("Application sent; the marketplace reviews it.");
@@ -168,6 +171,44 @@ test("trung tâm người bán: không gian riêng, trả lời tranh chấp, t�
   await dialog(page).getByLabel("Your answer").fill("Shop có video đóng gói đủ 3 bộ khăn.");
   await dialog(page).getByRole("button", { name: "Send answer" }).click();
   await expect(toast(page)).toHaveText("Answer sent; the buyer has 48 hours to reply.");
+
+  // Đơn: chip có số; tìm theo mã đơn; đơn có tranh chấp mở dẫn sang trả lời.
+  await page.goto("/seller/orders");
+  await expect(page.getByRole("link", { name: "Delivered 1" })).toBeVisible();
+  await page.getByRole("searchbox", { name: "Search orders" }).fill("không có");
+  await expect(page.getByText("No order matches")).toBeVisible();
+  await page.getByRole("searchbox", { name: "Search orders" }).fill("0402");
+  await expect(page).toHaveURL(/q=0402/);
+  await expect(row(page, "BM-2611-0402")).toContainText("Lâm Ngọc Diệp");
+
+  // Sản phẩm: lý do bị từ chối hiện trên dòng; sửa xong thành bản sửa chờ duyệt lại.
+  await page.goto("/seller/products");
+  await expect(page.getByRole("button", { name: "Add product" })).toBeEnabled();
+  await page.getByRole("link", { name: /^Rejected 1/ }).click();
+  await expect(page).toHaveURL(/status=rejected/);
+  const apron = row(page, "Tạp dề vải bố chống thấm");
+  await expect(apron).toContainText("Why rejected:");
+  await apron.getByRole("button", { name: /^Fix and resend/ }).click();
+  await dialog(page).getByLabel("Price (₫)").fill("155000");
+  await dialog(page).getByRole("button", { name: "Send for review" }).click();
+  await expect(toast(page)).toHaveText("Change sent for review.");
+  await page.getByRole("link", { name: /^Waiting for review/ }).click();
+  await expect(row(page, "Tạp dề vải bố chống thấm")).toContainText("155,000 ₫");
+
+  // Đổi gian hàng ngay trên băng; đơn chờ gửi giao cho hãng từ Tổng quan.
+  await page.getByLabel("Switch shop").selectOption({ label: "Gia Dụng Nhà Na" });
+  await page.getByRole("button", { name: "Switch shop" }).click();
+  await expect(page.getByText("You are viewing as Gia Dụng Nhà Na.")).toBeVisible();
+  await expect(page.getByText("1 order is waiting to be shipped.")).toBeVisible();
+  await page.getByRole("link", { name: "Ship orders" }).click();
+  await expect(page).toHaveURL(/\/seller\/orders\?status=paid$/);
+  await row(page, "BM-2611-0417").getByRole("button", { name: "Hand to carrier" }).click();
+  await dialog(page).getByRole("button", { name: "Mark as shipping" }).click();
+  await expect(toast(page)).toHaveText("BM-2611-0417 is shipping.");
+  await expect(page.getByText("No order matches")).toBeVisible();
+  await page.getByLabel("Switch shop").selectOption({ label: "Khăn Bông Hạ Long" });
+  await page.getByRole("button", { name: "Switch shop" }).click();
+  await expect(page.getByText("You are viewing as Khăn Bông Hạ Long.")).toBeVisible();
 
   // Tài khoản nhận tiền: số sai báo dưới ô; lưu xong chỉ hiện 4 số cuối, ô số để trống.
   await page.goto("/seller/shop");

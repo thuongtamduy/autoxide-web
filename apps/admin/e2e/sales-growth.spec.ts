@@ -81,6 +81,14 @@ test("khách hàng: hồ sơ từ đơn thật, dữ liệu cá nhân che bớt,
   await expect(toast(page)).toContainText("Locked; every session of this person was revoked.");
   await toast(page).getByRole("button", { name: "Undo" }).click();
   await expect(toast(page)).toContainText("Undone.");
+  // Tìm theo tên (không dấu) lọc ngay khi gõ; xác thực hiện bằng biểu tượng có chữ đầy đủ.
+  await page.getByLabel("Search accounts").fill("nguyen thi hoa");
+  await expect(page).toHaveURL(/q=nguyen/);
+  await expect(page.locator(".cu-accounts tbody tr")).toHaveCount(1);
+  await expect(page.locator(".cu-accounts tbody tr").first()).toContainText("Nguyễn Thị Hoa");
+  await expect(page.getByRole("img", { name: "Email verified" })).toBeVisible();
+  await page.getByLabel("Search accounts").fill("khong co ai");
+  await expect(page.getByText("No account matches “khong co ai”.")).toBeVisible();
 
   // Nhóm: xem trước số khớp không lưu gì.
   await page.goto("/customers/segments");
@@ -128,6 +136,35 @@ test("kênh bán: tạm dừng có Hoàn tác, khoá sai báo dưới ô, gắn 
   await expect(dialog(page).getByText(/The channel rejected this key/)).toBeVisible();
   await expect(dialog(page).getByLabel("Connection key")).toHaveValue("");
   await dialog(page).getByRole("button", { name: "Cancel" }).click();
+
+  // Tin đăng gom theo sản phẩm: mỗi sản phẩm một dòng, kênh là chip trạng thái; hành động (gỡ bán,
+  // thử lại) chỉ nằm trong dòng mở rộng, không lặp trên danh sách.
+  await page.goto("/sales/channels/listings");
+  await expect(page.getByText(/^Showing 1–\d+ of \d+ products?$/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delist" })).toHaveCount(0);
+  await page.getByLabel("Find a product").fill("bg6");
+  await expect(page).toHaveURL(/q=bg6/);
+  await expect(page.getByText("Showing 1–1 of 1 product")).toBeVisible();
+  await page
+    .getByRole("row", { name: /BG6/ })
+    .getByRole("link", { name: "Bếp Mộc Official (Shopee): Push failed" })
+    .click();
+  await expect(page).toHaveURL(/open=/);
+  await expect(page.getByRole("heading", { level: 3, name: /^Channels of / })).toBeVisible();
+  await page.getByRole("button", { name: "Retry BG6-SHP" }).click();
+  await expect(toast(page)).toContainText("Push queued again.");
+  await page.goto("/sales/channels/listings");
+  await page
+    .getByRole("combobox", { name: "Account" })
+    .selectOption({ label: "Bếp Mộc Hà Nội (6)" });
+  await expect(page).toHaveURL(/account=/);
+  await expect(page.getByText("Showing 1–6 of 6 products")).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Filter listings" })
+    .getByRole("link", { name: /^Not listed/ })
+    .click();
+  await expect(page).toHaveURL(/state=off/);
+  await expect(page).toHaveURL(/account=/);
 
   // Đơn cần xử lý: gắn dòng KB4-BE với biến thể rồi nhập thành đơn.
   await page.goto("/sales/channels/inbound?chip=needs_mapping");

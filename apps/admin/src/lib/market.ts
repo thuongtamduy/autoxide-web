@@ -65,6 +65,15 @@ export const LISTING_BADGE: Record<string, string> = {
   delisted: "badge b-arch",
 };
 
+/** Đơn của người bán: "chờ gửi" là việc phải làm nên màu cảnh báo; xong / huỷ thì nhạt. */
+export const ORDER_BADGE: Record<string, string> = {
+  paid: "badge b-warn",
+  shipping: "badge b-info",
+  delivered: "badge b-sched",
+  completed: "badge b-ok",
+  cancelled: "badge b-arch",
+};
+
 export const PAYOUT_BADGE: Record<string, string> = {
   building: "badge b-draft",
   sent: "badge b-info",

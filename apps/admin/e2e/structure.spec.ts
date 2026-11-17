@@ -196,4 +196,12 @@ test("lịch sử phiên bản: so hai phiên bản; 'Xem khác biệt' trong tr
   await expect(page.getByRole("heading", { name: "Version 1 → version 2" })).toBeVisible();
   await expect(page.locator(".st-diff del")).toContainText("Vệ sinh thớt gỗ đúng cách");
   await expect(page.locator(".st-diff ins")).toContainText("Vệ sinh thớt gỗ, bản mới");
+
+  // Chưa chọn bài: hiện các bài vừa sửa, bài mới sửa đứng đầu; bấm vào là xem lịch sử của nó.
+  await page.goto("/content/structure/history");
+  const recent = page.locator(".st-recent li");
+  await expect(recent.first()).toContainText("Vệ sinh thớt gỗ, bản mới");
+  await recent.first().getByRole("link").click();
+  await expect(page).toHaveURL(/\/content\/structure\/history\?entry=/);
+  await expect(page.getByRole("heading", { name: "Version 1 → version 2" })).toBeVisible();
 });

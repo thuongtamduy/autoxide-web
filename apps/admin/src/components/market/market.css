@@ -32,22 +32,37 @@
   border-top: 1px solid var(--line);
 }
 
-/* Băng "Xem như người bán": luôn thấy, nói rõ đây là chế độ thử, không phải quyền của người bán */
+/* Băng "Xem như người bán": một dòng gọn (tên gian hàng, bộ chọn, Thoát); lời giải thích ở chú thích
+   của biểu tượng "i" */
 .ax .mk-preview {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
   margin: 0 0 16px;
-  padding: 10px 14px;
+  padding: 6px 8px 6px 12px;
   border-radius: 12px;
   background: var(--accent-tint);
   color: var(--accent-ink);
   font-size: 13.5px;
 }
-.ax .mk-preview p {
-  flex: 1 1 320px;
+.ax .mk-preview .mk-preview-who {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   margin: 0;
+}
+.ax .mk-preview-who b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ax .mk-preview-ic {
+  display: inline-flex;
+  flex: none;
+  cursor: help;
 }
 .ax .mk-preview form {
   display: flex;
@@ -110,9 +125,12 @@
   .ax .mk-preview {
     margin-bottom: 12px;
   }
-  .ax .mk-preview form,
-  .ax .mk-preview .btn {
-    width: 100%;
+  .ax .mk-preview .mk-preview-who {
+    flex-basis: 100%;
+  }
+  .ax .mk-preview form:first-of-type {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
   }
   .ax .mk-preview .btn,
   .ax .mk-preview select {
@@ -132,6 +150,58 @@
 @media (max-width: 720px) {
   .ax .mk-preview select.inp {
     width: 100%;
+    min-width: 0;
     max-width: none;
   }
+  .ax .mk-preview form:first-of-type {
+    min-width: 0;
+  }
+}
+
+/* Nút "Thêm sản phẩm" bị khoá khi gian hàng chưa được bán: lý do hiện ngay dưới nút */
+.ax .mk-add-off {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 280px;
+}
+.ax .mk-add-why {
+  color: var(--ink-3);
+  font-size: 12px;
+  text-align: right;
+  text-wrap: pretty;
+}
+.ax .empty-state .mk-add-off {
+  align-items: center;
+}
+.ax .empty-state .mk-add-why {
+  text-align: center;
+}
+@media (max-width: 720px) {
+  .ax .headacts > .mk-add-off {
+    flex: 1 1 auto;
+    align-items: stretch;
+    max-width: none;
+  }
+  .ax .headacts > .mk-add-off .mk-add-why {
+    text-align: left;
+  }
+}
+
+/* Lý do sàn từ chối sản phẩm: rõ, ngay dưới nhãn trạng thái */
+.ax .mk-reason {
+  max-width: 320px;
+  color: var(--bad);
+  font-size: 12.5px;
+  text-wrap: pretty;
+}
+
+/* Câu nhắc việc kế tiếp kèm nút (vd đơn cần gửi) */
+.ax .mk-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
 }
