@@ -49,10 +49,15 @@ test("danh sách module, chi tiết, module không có, đăng xuất", async ({
 
   // kernel, notes, content, menus, organizations và forms, newsletter, comments (core giả có các
   // module này cho màn Nội dung, Menu, Cây tổ chức và phân hệ Tiếp thị).
-  const rows = page.locator("tbody tr");
+  // Mỗi module một dòng: tên dễ đọc, tên mã, mô tả; số đếm kỹ thuật nằm trong phần thu gọn.
+  const rows = page.locator(".se-mod");
   await expect(rows).toHaveCount(8);
-  await expect(rows.nth(0)).toContainText("kernel");
-  await expect(rows.nth(0)).toContainText("Built-in");
+  const kernel = rows.filter({ hasText: "kernel" });
+  await expect(kernel.getByRole("link", { name: "Core" })).toBeVisible();
+  await expect(kernel).toContainText("Built-in");
+  await expect(kernel.getByText("Migrations")).toBeHidden();
+  await kernel.getByText("Technical details").click();
+  await expect(kernel.getByText("Migrations")).toBeVisible();
 
   // Trình duyệt không đọc được token: cookie là httpOnly.
   const cookies = await context.cookies();
@@ -60,7 +65,7 @@ test("danh sách module, chi tiết, module không có, đăng xuất", async ({
     expect(cookies.find((cookie) => cookie.name === name)?.httpOnly).toBe(true);
   }
 
-  await page.getByRole("link", { name: "notes" }).click();
+  await page.getByRole("link", { name: "Notes", exact: true }).click();
   await expect(page).toHaveURL(/\/modules\/notes$/);
   await expect(page.getByText("Not applied")).toBeVisible();
   await expect(page.getByText("notes.delete_note")).toBeVisible();
@@ -91,9 +96,9 @@ test("access token hết hạn thì tự làm mới, mỗi refresh token chỉ d
   // Cookie access hết sau 1 giây.
   await page.waitForTimeout(1_500);
   await page.reload();
-  await expect(page.locator("tbody tr")).toHaveCount(8);
+  await expect(page.locator(".se-mod")).toHaveCount(8);
   await page.waitForTimeout(1_500);
-  await page.getByRole("link", { name: "notes" }).click();
+  await page.getByRole("link", { name: "Notes", exact: true }).click();
   await expect(page.getByRole("heading", { name: "notes" })).toBeVisible();
 
   // Core giả từ chối refresh token đã dùng: tới đây mà vẫn đăng nhập nghĩa là không có lần

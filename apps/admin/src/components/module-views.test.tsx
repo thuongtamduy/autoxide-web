@@ -4,36 +4,67 @@ import { afterEach, describe, expect, it } from "vitest";
 import { KERNEL, NOTES } from "@/test/fixtures";
 import { renderIntl } from "@/test/render";
 import { ModuleDetail } from "./module-detail";
-import { ModuleTable } from "./module-table";
+import { ModuleList, moduleState } from "./module-list";
 
 afterEach(cleanup);
 
-describe("ModuleTable", () => {
-  it("mỗi module một dòng, có link tới trang chi tiết và số đếm", () => {
-    renderIntl(<ModuleTable modules={[KERNEL, NOTES]} />);
+describe("ModuleList", () => {
+  it("mỗi module một dòng: tên dễ đọc (xếp theo tên), tên mã, mô tả, link chi tiết, số đếm thu gọn", () => {
+    renderIntl(<ModuleList modules={[NOTES, KERNEL]} />);
 
-    const rows = screen.getAllByRole("row").slice(1);
+    const rows = screen.getAllByRole("listitem");
     expect(rows).toHaveLength(2);
-    const notes = within(rows[1] as HTMLElement);
-    expect(notes.getByRole("link", { name: "notes" }).getAttribute("href")).toBe(
+    const [core, notes] = rows.map((row) => within(row as HTMLElement));
+    expect(core?.getByRole("link", { name: "Core" }).getAttribute("href")).toBe(
+      "/settings/modules/kernel",
+    );
+    expect(core?.getByText("Built-in")).toBeTruthy();
+    expect(notes?.getByRole("link", { name: "Notes" }).getAttribute("href")).toBe(
       "/settings/modules/notes",
     );
-    expect(notes.getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
+    expect(notes?.getByText("notes")).toBeTruthy();
+    expect(notes?.getByText("Example module: short notes.")).toBeTruthy();
+    expect(notes?.getByText("Technical details")).toBeTruthy();
+    expect(notes?.getAllByRole("definition").map((cell) => cell.textContent)).toEqual([
       "2",
-      "notes",
       "1",
       "1",
       "1",
       "2",
       "2",
     ]);
-    expect(within(rows[0] as HTMLElement).getByText("Built-in")).toBeTruthy();
+  });
+
+  it("module lạ hiện tên mã; trạng thái theo gói", () => {
+    const shop = { ...NOTES, name: "shop" };
+    const always = { ...NOTES, name: "audit", always_enabled: true };
+    renderIntl(<ModuleList modules={[shop, always, NOTES]} enabled={["notes"]} />);
+
+    const row = (name: string) =>
+      within(screen.getByRole("link", { name }).closest("li") as HTMLElement);
+    expect(row("shop").getByText("Not in your plan")).toBeTruthy();
+    expect(row("shop").getByText("Module of this server.")).toBeTruthy();
+    expect(row("Audit log").getByText("Always on")).toBeTruthy();
+    expect(row("Notes").getByText("On")).toBeTruthy();
+  });
+
+  it("không biết gói thì coi như bật", () => {
+    expect(moduleState(NOTES, null)).toBe("on");
+    expect(moduleState(NOTES, [])).toBe("off");
+    expect(moduleState({ ...NOTES, always_enabled: true }, [])).toBe("always");
   });
 
   it("không có module thì báo rỗng", () => {
-    renderIntl(<ModuleTable modules={[]} />);
+    renderIntl(<ModuleList modules={[]} />);
 
     expect(screen.getByText("No modules.")).toBeTruthy();
+  });
+
+  it("tiếng Việt", () => {
+    renderIntl(<ModuleList modules={[KERNEL]} />, "vi");
+
+    expect(screen.getByRole("link", { name: "Lõi hệ thống" })).toBeTruthy();
+    expect(screen.getByText("Chi tiết kỹ thuật")).toBeTruthy();
   });
 });
 

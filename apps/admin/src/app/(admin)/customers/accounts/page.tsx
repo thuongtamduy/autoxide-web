@@ -14,6 +14,8 @@ import {
   Status,
 } from "@/components/growth/blocks";
 import { SampleBadge } from "@/components/sample-badge";
+import { Icon } from "@/components/shell/icon";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { AUTH_CUSTOMERS_MANAGE, maskEmail, maskPhone } from "@/lib/customers";
@@ -26,7 +28,8 @@ const CHIPS: readonly AccountChip[] = ["active", "locked", "unverified"];
 
 // Tab "Tài khoản người mua" (bước 34, module `auth`): người mua là tài khoản riêng của khách hàng, không
 // có permission; nhân viên cần `auth.customers.read` để xem, `auth.customers.manage` để khoá / mở. Khoá thu
-// hồi mọi phiên của người đó; đảo được (Hoàn tác).
+// hồi mọi phiên của người đó; đảo được (Hoàn tác). Bấm một dòng mở chi tiết; nút khoá chỉ hiện khi rê
+// chuột lên dòng (máy có chuột), vì 25 nút giống nhau làm rối bảng.
 export default async function AccountsPage(props: PageProps<"/customers/accounts">) {
   if (!(await can(CUSTOMER_TABS.accounts))) notFound();
   const [t, locale, params] = await Promise.all([
@@ -36,15 +39,16 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
   ]);
   const chip = CHIPS.find((c) => c === param(params, "chip")) ?? null;
   const open = param(params, "open");
+  const q = param(params, "q").slice(0, 60);
   const [all, rows, open_, manage] = await Promise.all([
     listBuyerAccounts(),
-    listBuyerAccounts(chip),
+    listBuyerAccounts(chip, q),
     registrationOpen(),
     can(AUTH_CUSTOMERS_MANAGE),
   ]);
   const unverified = all.data.filter((a) => !a.phone_verified).length;
-  const shown = rows.data.slice(0, chip ? 100 : 25);
-  const base = { chip: chip ?? "" };
+  const shown = rows.data.slice(0, chip || q ? 100 : 25);
+  const base = { q, chip: chip ?? "" };
   return (
     <div className="blocks">
       <section className="block" aria-labelledby="accounts-h">
@@ -54,12 +58,38 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
           about={t("accounts.about")}
           actions={<SampleBadge step="34" endpoint={ENDPOINTS_34} />}
         />
+        <form className="filters" action="/customers/accounts">
+          <AutoFilter />
+          <div className="fld grow">
+            <label className="lab" htmlFor="accounts-q">
+              {t("accounts.search")}
+            </label>
+            <input
+              id="accounts-q"
+              className="inp"
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder={t("accounts.searchHint")}
+            />
+          </div>
+          {chip ? <input type="hidden" name="chip" value={chip} /> : null}
+          <div className="filters-acts">
+            <button type="submit" className="btn">
+              {t("accounts.find")}
+            </button>
+          </div>
+        </form>
         <Chips
           label={t("accounts.filter")}
           chips={[
-            { href: "/customers/accounts", label: t("accounts.recent"), on: !chip },
+            {
+              href: hrefWith("/customers/accounts", { q }, {}),
+              label: t("accounts.recent"),
+              on: !chip,
+            },
             ...CHIPS.map((c) => ({
-              href: hrefWith("/customers/accounts", {}, { chip: c }),
+              href: hrefWith("/customers/accounts", { q }, { chip: c }),
               label: t(`accounts.chips.${c}`),
               on: chip === c,
               count: all.data.filter((a) =>
@@ -69,13 +99,13 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
           ]}
         />
         <div className="card tcard">
-          <Table cards>
+          <Table cards className="cu-accounts">
             <thead>
               <tr>
                 <Th>{t("accounts.account")}</Th>
                 <Th>{t("accounts.site")}</Th>
-                <Th>{t("accounts.email")}</Th>
-                <Th>{t("accounts.phone")}</Th>
+                <Th>{t("accounts.verification")}</Th>
+                <Th>{t("accounts.lastLogin")}</Th>
                 <Th>{t("accounts.state")}</Th>
                 <Th>
                   <span className="vh">{t("accounts.actions")}</span>
@@ -83,6 +113,13 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
               </tr>
             </thead>
             <tbody>
+              {shown.length === 0 ? (
+                <tr>
+                  <Td colSpan={6} className="empty">
+                    {q ? t("accounts.emptySearch", { q }) : t("accounts.empty")}
+                  </Td>
+                </tr>
+              ) : null}
               {shown.map((a) => {
                 const isOpen = open === a.id;
                 return [
@@ -105,11 +142,30 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
                       </span>
                     </Td>
                     <Td label={t("accounts.site")}>{a.registered_on}</Td>
-                    <Td label={t("accounts.email")}>
-                      {a.email_verified ? t("accounts.verified") : t("accounts.notVerified")}
+                    <Td label={t("accounts.verification")}>
+                      <span className="cu-verify">
+                        <Verified
+                          on={a.email_verified}
+                          icon="mail"
+                          label={
+                            a.email_verified
+                              ? t("accounts.emailVerified")
+                              : t("accounts.emailNotVerified")
+                          }
+                        />
+                        <Verified
+                          on={a.phone_verified}
+                          icon="phone"
+                          label={
+                            a.phone_verified
+                              ? t("accounts.phoneVerified")
+                              : t("accounts.phoneNotVerified")
+                          }
+                        />
+                      </span>
                     </Td>
-                    <Td label={t("accounts.phone")}>
-                      {a.phone_verified ? t("accounts.verified") : t("accounts.notVerified")}
+                    <Td label={t("accounts.lastLogin")}>
+                      {a.last_login_at ? <Time value={a.last_login_at} /> : "—"}
                     </Td>
                     <Td label={t("accounts.state")}>
                       <Status tone={a.status === "active" ? "b-ok" : "b-bad"}>
@@ -118,31 +174,33 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
                     </Td>
                     <Td className="rt-acts">
                       {manage ? (
-                        <ChangeButtons
-                          action={lockAction}
-                          id={a.id}
-                          expect={a.updated_at}
-                          moves={
-                            a.status === "active"
-                              ? [
-                                  {
-                                    value: "locked",
-                                    label: t("accounts.lock"),
-                                    done: t("accounts.locked"),
-                                    tone: "danger",
-                                  },
-                                ]
-                              : [
-                                  {
-                                    value: "active",
-                                    label: t("accounts.unlock"),
-                                    done: t("accounts.unlocked"),
-                                    tone: "pri",
-                                  },
-                                ]
-                          }
-                          undo={{ label: t("undo"), done: t("undone") }}
-                        />
+                        <span className={a.status === "active" ? "cu-reveal" : undefined}>
+                          <ChangeButtons
+                            action={lockAction}
+                            id={a.id}
+                            expect={a.updated_at}
+                            moves={
+                              a.status === "active"
+                                ? [
+                                    {
+                                      value: "locked",
+                                      label: t("accounts.lock"),
+                                      done: t("accounts.locked"),
+                                      tone: "danger",
+                                    },
+                                  ]
+                                : [
+                                    {
+                                      value: "active",
+                                      label: t("accounts.unlock"),
+                                      done: t("accounts.unlocked"),
+                                      tone: "pri",
+                                    },
+                                  ]
+                            }
+                            undo={{ label: t("undo"), done: t("undone") }}
+                          />
+                        </span>
                       ) : null}
                     </Td>
                   </tr>,
@@ -153,8 +211,10 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
                         items={[
                           [t("accounts.registered"), <Time key="r" value={a.registered_at} date />],
                           [
-                            t("accounts.lastLogin"),
-                            a.last_login_at ? <Time key="l" value={a.last_login_at} /> : "—",
+                            t("accounts.email"),
+                            <span key="e" className="gr-mask">
+                              {maskEmail(a.email)}
+                            </span>,
                           ],
                           [
                             t("accounts.phone"),
@@ -183,11 +243,19 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
             </tbody>
           </Table>
         </div>
-        <p className="fhint">
-          {t("accounts.shown", { shown: shown.length, total: rows.data.length })}
-        </p>
+        <div className="cu-foot">
+          <p className="fhint">
+            {t("accounts.shown", { shown: shown.length, total: rows.data.length })}
+          </p>
+          {unverified > 0 ? (
+            <p className="fhint">
+              {t("accounts.unverifiedCount", { n: formatCount(unverified, locale) })}{" "}
+              {t("accounts.unverifiedText")}
+            </p>
+          ) : null}
+        </div>
       </section>
-      <section className="block half" aria-labelledby="signup-h">
+      <section className="block" aria-labelledby="signup-h">
         <BlockHead id="signup-h" title={t("accounts.signupTitle")} />
         {manage ? (
           <RegistrationForm open={open_} />
@@ -195,12 +263,15 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
           <p className="note">{open_ ? t("accounts.signupOn") : t("accounts.signupOff")}</p>
         )}
       </section>
-      <section className="block half" aria-label={t("accounts.unverifiedTitle")}>
-        <p className="note warn">
-          <b>{t("accounts.unverifiedCount", { n: formatCount(unverified, locale) })}</b>{" "}
-          {t("accounts.unverifiedText")}
-        </p>
-      </section>
     </div>
+  );
+}
+
+/** Biểu tượng xác thực (email hoặc SĐT): xanh khi đã xác thực; chữ đầy đủ ở `title` và cho máy đọc. */
+function Verified({ on, icon, label }: { on: boolean; icon: "mail" | "phone"; label: string }) {
+  return (
+    <span className={on ? "cu-vf on" : "cu-vf"} title={label} role="img" aria-label={label}>
+      <Icon name={icon} small />
+    </span>
   );
 }

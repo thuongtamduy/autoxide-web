@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { RevisionDiffView } from "@/components/content/revision-diff";
+import { EntryStatusBadges } from "@/components/content/status";
 import { MessagePanel } from "@/components/message-panel";
 import { RestoreRevisionButton } from "@/components/structure/restore-revision";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { abilities, type Revision } from "@/lib/content";
@@ -16,9 +18,12 @@ import { getMe } from "@/lib/viewer";
 
 // Tab "Lịch sử phiên bản": chọn một bài, xem mọi phiên bản core giữ, so hai phiên bản (ô nào đổi,
 // thân bài khác ở khối nào) và khôi phục một phiên bản thành bản nháp (bản đang đăng không đổi).
-// Chọn bài và phiên bản nằm trên địa chỉ (`?entry=&a=&b=`) để mở thẳng được.
+// Chọn bài và phiên bản nằm trên địa chỉ (`?entry=&a=&b=`) để mở thẳng được. Chưa chọn bài thì hiện
+// các bài vừa sửa (core không có danh sách phiên bản của mọi bài; `GET /content/entries` xếp theo
+// `updated_at` là gần nhất), bấm một bài để xem lịch sử của nó.
 export default async function HistoryTab(props: PageProps<"/content/structure/history">) {
   const t = await getTranslations("structure.history");
+  const kinds = await getTranslations("content.kinds");
   const params = await props.searchParams;
   const entryId =
     typeof params.entry === "string" && isUuid(params.entry) ? params.entry : undefined;
@@ -112,6 +117,46 @@ export default async function HistoryTab(props: PageProps<"/content/structure/hi
           </span>
         </form>
         {entryId && !found ? <p className="note warn">{t("gone")}</p> : null}
+        {!found && recent.data.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon="posts"
+              title={t("emptyTitle")}
+              actions={
+                <Link className="btn" href="/content">
+                  {t("goPosts")}
+                </Link>
+              }
+            >
+              {t("emptyText")}
+            </EmptyState>
+          </div>
+        ) : null}
+        {!found && recent.data.length > 0 ? (
+          <>
+            <h3 className="st-recent-h">{t("recentTitle")}</h3>
+            <ul className="card list st-recent">
+              {recent.data.slice(0, RECENT).map((entry) => (
+                <li key={entry.id} className="item">
+                  <span className="item-main">
+                    <Link
+                      className="item-title"
+                      href={`/content/structure/history?entry=${entry.id}`}
+                    >
+                      {entry.title || t("untitled")}
+                    </Link>
+                    <span className="item-meta">
+                      {kinds(entry.kind)} · {entry.locale.toUpperCase()} · {t("edited")}{" "}
+                      <Time value={entry.updated_at} />
+                    </span>
+                  </span>
+                  <EntryStatusBadges entry={entry} />
+                </li>
+              ))}
+            </ul>
+            <p className="fhint">{t("recentHint")}</p>
+          </>
+        ) : null}
         {found ? (
           <div className="card tcard">
             {revisions.length === 0 ? (
@@ -203,6 +248,9 @@ export default async function HistoryTab(props: PageProps<"/content/structure/hi
     </div>
   );
 }
+
+/** Số bài vừa sửa hiện khi chưa chọn bài. */
+const RECENT = 8;
 
 function loadRecent() {
   return load((c) =>

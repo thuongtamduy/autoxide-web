@@ -5,6 +5,7 @@ import { type PageTab, PageTabs } from "@/components/ui/page-tabs";
 import { ToastProvider } from "@/components/ui/toast";
 import { AUDIT_READ, MODULES_READ, WEBHOOKS_MANAGE } from "@/lib/permissions";
 import { generalTabs } from "./tabs";
+import "@/components/settings/settings.css";
 
 // Màn "Cài đặt chung": mỗi tab một đường dẫn con. Module, webhook, nhật ký audit gọi core thật;
 // gói và thuê bao, tên miền, kết nối đối tác, job chờ API (bước 33, 35, 52): dựng bằng dữ liệu

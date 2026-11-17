@@ -7,6 +7,7 @@ import { coreUrl } from "@/lib/env";
 import { DEVTOOLS_READ, WEBHOOKS_MANAGE } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
+import "@/components/settings/settings.css";
 
 /** Core có bật trang xem tài liệu API (`AUTOXIDE_HTTP_API_DOCS=true`, ở `/api/docs`) không. */
 async function docsPage(): Promise<string | null> {

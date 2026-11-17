@@ -1351,14 +1351,34 @@ export async function adjustPoints(
 
 export type AccountChip = "active" | "locked" | "unverified";
 
-// Thay bằng GET /api/v1/auth/customers?status= (bước 34) khi core có.
+/**
+ * Tài khoản khớp chữ tìm không: tên (không dấu), email, hay SĐT (gõ "0909 555 777" hay "+84…" đều
+ * khớp vì chuẩn hoá trước). Chữ tìm rỗng thì khớp mọi tài khoản. Dự kiến core nhận `?q=` (bước 34).
+ */
+export function accountMatches(
+  a: Pick<BuyerAccount, "name" | "email" | "phone">,
+  q: string,
+): boolean {
+  const text = q.trim();
+  if (!text) return true;
+  const phone = normalizePhone(text);
+  if (phone && a.phone === phone) return true;
+  const digits = text.replace(/[\s.\-()]/g, "");
+  if (/^\d{4,}$/.test(digits) && (a.phone ?? "").includes(digits)) return true;
+  const needle = fold(text);
+  return fold(a.name).includes(needle) || fold(a.email).includes(needle);
+}
+
+// Thay bằng GET /api/v1/auth/customers?status=&q= (bước 34) khi core có.
 export async function listBuyerAccounts(
   chip: AccountChip | null = null,
+  q = "",
 ): Promise<{ data: BuyerAccount[] }> {
   const s = await store();
   return {
     data: s.accounts
       .filter((a) => (!chip ? true : chip === "unverified" ? !a.phone_verified : a.status === chip))
+      .filter((a) => accountMatches(a, q))
       .sort((a, b) => (b.last_login_at ?? "").localeCompare(a.last_login_at ?? "")),
   };
 }

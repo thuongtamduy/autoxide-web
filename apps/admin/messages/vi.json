@@ -179,7 +179,77 @@
     "status": "Trạng thái",
     "applied": "Đã áp dụng",
     "pending": "Chưa áp dụng",
-    "pendingHint": "Chạy `autoxide migrate up` trên máy chủ để áp dụng migration còn thiếu."
+    "pendingHint": "Chạy `autoxide migrate up` trên máy chủ để áp dụng migration còn thiếu.",
+    "serverVersion": "Máy chủ phiên bản {version}; mọi module đi kèm phiên bản này.",
+    "technical": "Chi tiết kỹ thuật",
+    "noBlurb": "Module của máy chủ này.",
+    "state": {
+      "always": "Luôn bật",
+      "on": "Đang bật",
+      "off": "Gói chưa có"
+    },
+    "names": {
+      "kernel": "Lõi hệ thống",
+      "antispam": "Chống spam",
+      "auth": "Đăng nhập và tài khoản",
+      "audit": "Nhật ký audit",
+      "address": "Địa chỉ Việt Nam",
+      "ai": "Trợ lý AI",
+      "files": "Tệp",
+      "media": "Thư viện media",
+      "content": "Bài viết và trang",
+      "menus": "Menu",
+      "forms": "Biểu mẫu",
+      "newsletter": "Bản tin",
+      "comments": "Bình luận",
+      "notes": "Ghi chú",
+      "organizations": "Cây tổ chức",
+      "plans": "Gói và thuê bao",
+      "webhooks": "Webhook",
+      "notifications": "Thông báo",
+      "catalog": "Sản phẩm",
+      "inventory": "Tồn kho",
+      "promotions": "Khuyến mại",
+      "shipping": "Vận chuyển",
+      "orders": "Đơn hàng",
+      "customers": "Khách hàng và tích điểm",
+      "marketplace": "Sàn",
+      "channels": "Bán đa kênh",
+      "affiliate": "Tiếp thị liên kết",
+      "finance": "Kế toán",
+      "compliance": "Tuân thủ"
+    },
+    "blurbs": {
+      "kernel": "Khách thuê, cài đặt, tên miền, job chạy nền và sổ module.",
+      "antispam": "Giới hạn tần suất và lọc spam cho biểu mẫu, bình luận công khai.",
+      "auth": "Tài khoản nhân viên và người mua, role, permission, API key, đăng nhập hai bước.",
+      "audit": "Ai làm gì, lúc nào, cho mọi thay đổi.",
+      "address": "Tỉnh, phường và tra địa chỉ Việt Nam.",
+      "ai": "Bản nháp và gợi ý do AI viết, người duyệt.",
+      "files": "Tệp tải lên và tải xuống riêng tư.",
+      "media": "Ảnh, video, tài liệu có thư mục, thẻ, chữ thay thế.",
+      "content": "Bài viết và trang: nháp, duyệt, hẹn giờ, bản dịch, lịch sử sửa.",
+      "menus": "Menu website theo ngôn ngữ.",
+      "forms": "Biểu mẫu trên website và bài gửi.",
+      "newsletter": "Chiến dịch, danh sách, người đăng ký có bằng chứng đồng ý.",
+      "comments": "Bình luận dưới bài, có kiểm duyệt và cấm.",
+      "notes": "Module ví dụ: ghi chú ngắn.",
+      "organizations": "Trụ sở, miền, cửa hàng, kho và ai làm ở đâu.",
+      "plans": "Gói, giá, thuê bao và hạn mức của từng khách.",
+      "webhooks": "Gửi event sang hệ thống khác, có thử lại.",
+      "notifications": "Thông báo trong ứng dụng và qua email.",
+      "catalog": "Sản phẩm, biến thể, danh mục và bảng giá.",
+      "inventory": "Tồn theo kho, chuyển kho và kiểm kê.",
+      "promotions": "Chương trình, mã giảm giá và flash sale.",
+      "shipping": "Vận đơn, phí giao và hãng vận chuyển.",
+      "orders": "Đơn hàng, đổi trả, hoàn tiền và bán tại quầy.",
+      "customers": "Hồ sơ khách, nhóm, điểm và hạng.",
+      "marketplace": "Người bán, duyệt sản phẩm, phí sàn và chi trả.",
+      "channels": "Bán trên sàn và mạng xã hội từ cùng một kho.",
+      "affiliate": "Cộng tác viên, hoa hồng và chi trả.",
+      "finance": "Sổ kép, hoá đơn và thuế.",
+      "compliance": "Đăng ký thương mại điện tử, dữ liệu cá nhân và hồ sơ pháp lý."
+    }
   },
   "duration": {
     "seconds": "{count} giây",
@@ -1739,13 +1809,18 @@
       "code": "Mã lỗi",
       "agent": "agent",
       "events": "Event theo bản ghi",
-      "eventsAbout": "Chọn loại bản ghi và mã của nó để xem mọi event về nó theo thứ tự. Thử {example}.",
       "kind": "Loại bản ghi",
       "recordId": "Mã hoặc ID",
       "show": "Xem event",
       "noEvents": "Bản ghi này không có event nào.",
       "delivered": "đã giao cho mọi bên nhận",
-      "undelivered": "chưa giao xong"
+      "undelivered": "chưa giao xong",
+      "tryExample": "Thử với đơn mẫu {id}",
+      "eventsEmptyTitle": "Xem mọi việc đã xảy ra với một bản ghi",
+      "eventsEmptyText": "Chọn loại bản ghi và nhập mã hoặc id: mọi event về nó hiện theo thời gian, mới nhất trước, kèm việc đã giao cho mọi bên nhận (module, webhook) chưa. Dùng khi khách hỏi vì sao đơn đứng yên, hay hệ thống kết nối bị sót một cập nhật.",
+      "noEventsText": "Chưa có event nào cho {kind} {id}. Kiểm lại mã hoặc loại bản ghi.",
+      "clearRecord": "Xoá",
+      "eventsFor": "{count, plural, other {# event}} của {kind} {id}, mới nhất trước."
     }
   },
   "content": {
@@ -2569,7 +2644,13 @@
       "restoreTitle": "Khôi phục {label} thành bản nháp?",
       "restoreIntro": "Bản nháp được thay bằng phiên bản này. Bản đang đăng không đổi tới khi đăng lại; lịch sử giữ mọi phiên bản.",
       "restored": "Đã khôi phục thành bản nháp",
-      "conflict": "Bài đã đổi sau khi trang được tải. Tải lại rồi thử lại."
+      "conflict": "Bài đã đổi sau khi trang được tải. Tải lại rồi thử lại.",
+      "recentTitle": "Vừa sửa",
+      "edited": "sửa",
+      "recentHint": "Chọn một bài hoặc trang để xem các phiên bản, so hai phiên bản và khôi phục. Trong trình soạn bài, tab Lịch sử cũng hiện các phiên bản này.",
+      "emptyTitle": "Chưa có bài viết hay trang nào",
+      "emptyText": "Mỗi bài và trang được giữ phiên bản trong lúc sửa. Viết bài đầu tiên thì lịch sử của nó hiện ở đây và ở tab Lịch sử của trình soạn bài.",
+      "goPosts": "Tới danh sách bài"
     },
     "diff": {
       "open": "Xem khác biệt",
@@ -5118,7 +5199,15 @@
       "makeDefault": "Đặt làm mặc định",
       "madeDefault": "{plan} giờ là gói mặc định.",
       "currency": "Tiền tệ",
-      "metered": "Theo mức dùng {key}"
+      "metered": "Theo mức dùng {key}",
+      "editShort": "Sửa",
+      "details": "Chi tiết",
+      "tenantsUsing": "{count, plural, other {khách đang dùng}}",
+      "trialDays": "{count, plural, other {dùng thử # ngày}}",
+      "noLimitsShort": "Chưa đặt hạn mức.",
+      "moreLimits": "{count, plural, other {và # hạn mức khác}}",
+      "noneYet": "Chưa có gói nào",
+      "noneYetText": "Chưa có gói thì mọi khách dùng được mọi module, không giới hạn (chế độ một khách). Tạo gói để bán module và hạn mức theo kỳ."
     },
     "overrides": {
       "title": "Ghi đè cho từng khách",
@@ -5217,7 +5306,10 @@
       "suspendSubmit": "Khoá hẳn",
       "suspendDone": "Đã khoá hẳn {tenant}.",
       "defaultPlan": "Gói mặc định (chưa có thuê bao)",
-      "noSubscription": "Chưa có thuê bao"
+      "noSubscription": "Chưa có thuê bao",
+      "emptyTitle": "Chưa có thuê bao nào",
+      "emptyText": "Thuê bao gắn một khách với một gói và kỳ thanh toán. Hiện chưa có khách nào ngoài khách nền tảng; thêm khách ở sổ khách hàng rồi gán gói ở đây.",
+      "openRegister": "Mở sổ khách hàng"
     },
     "prov": {
       "crumb": "Nền tảng Autoxide · khách mới",
@@ -5405,7 +5497,9 @@
         "reason": "Ghi lý do.",
         "legal": "Nhập số văn bản của cơ quan có thẩm quyền."
       },
-      "noCustomers": "Chưa có khách nào ngoài khách nền tảng."
+      "noCustomersTitle": "Chưa có khách nào để hỗ trợ",
+      "noCustomersText": "Lần cấp cho một nhân sự vào dữ liệu của một khách trong thời hạn, có lý do. Hiện chưa có khách nào ngoài khách nền tảng; khi có, các lần cấp và lần vào hiện ở đây.",
+      "openRegister": "Mở sổ khách hàng"
     },
     "platformOnly": "Chỉ nhân sự của khách nền tảng (của chính nhà vận hành) dùng được mặt điều khiển. Bạn đang đăng nhập vào tài khoản của một khách hàng.",
     "newTenant": {
@@ -10812,7 +10906,7 @@
       "verified": "Đã xác thực",
       "notVerified": "Chưa",
       "notVerifiedEffect": "Chưa — mua được, chưa bình luận, đánh giá được (NĐ 147/2024)",
-      "lock": "Khoá tài khoản",
+      "lock": "Khoá",
       "locked": "Đã khoá; mọi phiên đăng nhập của người này bị thu hồi.",
       "unlock": "Mở khoá",
       "unlocked": "Đã mở khoá; người mua đăng nhập lại được.",
@@ -10831,9 +10925,19 @@
       "selfSignupHint": "Tắt thì trang đăng ký trả lỗi auth.customer_registration_closed; khách vẫn mua vãng lai được.",
       "save": "Lưu",
       "saved": "Đã lưu cài đặt đăng ký.",
-      "unverifiedTitle": "Số điện thoại chưa xác thực",
       "unverifiedCount": "{n} tài khoản chưa xác thực số điện thoại.",
-      "unverifiedText": "Họ vẫn mua hàng được nhưng chưa bình luận, đánh giá được cho tới khi xác thực số điện thoại (NĐ 147/2024 — cần đối chiếu văn bản gốc)."
+      "unverifiedText": "Họ vẫn mua hàng được nhưng chưa bình luận, đánh giá được cho tới khi xác thực số điện thoại (NĐ 147/2024 — cần đối chiếu văn bản gốc).",
+      "search": "Tìm tài khoản",
+      "searchHint": "Tên, email hoặc số điện thoại",
+      "find": "Tìm",
+      "verification": "Xác thực",
+      "emailVerified": "Đã xác thực email",
+      "emailNotVerified": "Chưa xác thực email",
+      "phoneVerified": "Đã xác thực SĐT",
+      "phoneNotVerified": "Chưa xác thực SĐT",
+      "empty": "Không có tài khoản nào khớp.",
+      "emptySearch": "Không có tài khoản nào khớp “{q}”.",
+      "clearSearch": "Xoá chữ tìm"
     },
     "segments": {
       "title": "Nhóm",

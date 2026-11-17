@@ -1,0 +1,114 @@
+/* Màn "Cài đặt" và "Nhà phát triển" (tiền tố se-). */
+
+/* Module: mỗi module một dòng; tên dễ đọc, tên mã mờ, mô tả, chi tiết kỹ thuật thu gọn. */
+.ax .se-mods {
+  list-style: none;
+  margin: 0;
+}
+.ax .se-mod {
+  align-items: flex-start;
+}
+.ax .se-mod > .sq-ic {
+  font-weight: 600;
+}
+.ax .se-mod-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+.ax .se-mod-title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+.ax .se-mod-title a:hover {
+  color: var(--accent-ink);
+  text-decoration: underline;
+}
+.ax .se-code {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.ax .se-mod-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ax .se-tech {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .se-tech summary {
+  width: fit-content;
+  cursor: pointer;
+}
+.ax .se-tech summary:hover {
+  color: var(--ink);
+}
+.ax .se-tech dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 6px 0 0;
+}
+.ax .se-tech dl > div {
+  display: flex;
+  gap: 6px;
+}
+.ax .se-tech dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+/* Event theo bản ghi: dòng thời gian các event gần đây. */
+.ax .se-events {
+  list-style: none;
+  margin: 0;
+  padding: 4px 18px;
+}
+.ax .se-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 12px 0 12px 22px;
+}
+.ax .se-event + .se-event {
+  border-top: 1px solid var(--line);
+}
+.ax .se-event::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 18px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.ax .se-event.undelivered::before {
+  background: var(--warn);
+}
+.ax .se-event-name {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ax .se-event-meta {
+  grid-column: 1 / -1;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .se-event-meta a {
+  color: inherit;
+}
+.ax .se-event > .badge {
+  align-self: start;
+}
+@media (max-width: 640px) {
+  .ax .se-mod-state {
+    width: 100%;
+    padding-left: 44px;
+  }
+}
