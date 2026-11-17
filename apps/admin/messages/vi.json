@@ -211,6 +211,11 @@
     "searchHint": "Tìm trong mọi phân hệ…",
     "searchPlaceholder": "Tìm màn, bài viết, tệp hay người…",
     "goTo": "Đi tới",
+    "recent": "Gần đây",
+    "keys": {
+      "move": "Di chuyển",
+      "open": "Mở"
+    },
     "noMatch": "Không có gì khớp. Thử tên một phân hệ, như \"module\", hay hai chữ của tiêu đề.",
     "quickNav": "Điều hướng nhanh",
     "close": "Đóng",

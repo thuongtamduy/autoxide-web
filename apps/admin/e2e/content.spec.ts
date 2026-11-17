@@ -279,6 +279,9 @@ test("Ctrl K: Tạo mới theo permission, Kết quả tìm bài viết và ngư
   const sheet = page.getByRole("dialog", { name: "Search" });
   await expect(sheet.getByTestId("qs-create")).toContainText("New post");
   await expect(sheet.getByTestId("qs-create")).toContainText("New role");
+  // Chưa gõ gì, chưa mở màn nào khác: gợi ý màn đầu của mỗi phân hệ, không đổ ra mọi màn.
+  await expect(sheet.getByTestId("qs-areas")).toContainText("Settings");
+  await expect(sheet.getByTestId("qs-goto")).toHaveCount(0);
 
   // Gõ không dấu: tìm cả bài viết của core (sau khi ngừng gõ).
   await sheet.getByRole("searchbox").fill("thot go");
@@ -288,8 +291,10 @@ test("Ctrl K: Tạo mới theo permission, Kết quả tìm bài viết và ngư
   await results.getByRole("option", { name: /Vệ sinh thớt gỗ/ }).click();
   await expect(page).toHaveURL(/\/content\/[0-9a-f-]+$/);
 
-  // Người dùng: theo email.
+  // Người dùng: theo email. Màn vừa rời ("Posts") nằm trong "Gần đây", xếp trước "Tạo mới".
   await page.keyboard.press("Control+k");
+  await expect(sheet.getByTestId("qs-recent")).toContainText("Posts");
+  await expect(sheet.getByRole("option").first()).toContainText("Posts");
   await sheet.getByRole("searchbox").fill("admin@example");
   await expect(sheet.getByTestId("qs-results")).toContainText("admin@example.com");
   // Lối tắt "Tạo mới" cũng lọc theo chữ gõ: "post" chỉ còn "New post".

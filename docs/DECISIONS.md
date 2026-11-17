@@ -2023,3 +2023,22 @@ Quyết định:
 - **Tạm khoá khách**: bắt buộc ghi lý do, gửi `reason` (D-334) để core ghi vào nhật ký audit của khách.
 
 Lý do: core làm theo yêu cầu của giao diện; không dùng thì những chỗ đó vẫn đoán, tự đếm hay đọc thừa.
+
+## W-051 · Bảng lệnh Ctrl K: gợi ý ít dòng, icon, phân hệ bên phải, chân bảng nhắc phím — 2026-11-17 — chủ dự án yêu cầu
+
+Quyết định (học cách Linear, Vercel, GitHub, Raycast làm bảng lệnh):
+
+- **Chưa gõ gì thì gợi ý, không đổ ra mọi màn.** Trước đây bảng mở ra là vài chục dòng "Đi tới", người dùng phải cuộn.
+  Giờ: "Gần đây" (tối đa 5 màn vừa mở trên máy này, bỏ màn đang đứng, lưu ở `localStorage` — mất thì thôi) xếp
+  trước "Tạo mới"; chưa có màn gần đây thì "Tạo mới" rồi "Phân hệ" (màn đầu của mỗi phân hệ, như thanh bên). Gõ chữ
+  thì vẫn tìm trong mọi màn và dữ liệu thật như trước.
+- **Mỗi dòng có icon** (icon của phân hệ; dấu cộng cho "Tạo mới"; bài viết, ảnh, người cho kết quả tìm), tên ở trái,
+  phân hệ mờ ở phải. Trước đây phân hệ đứng trước tên ("Tổng quan › Bảng điều khiển") nên tên các dòng không thẳng
+  cột, mắt phải đọc qua phần lặp lại.
+- **Khung**: rộng 640px, cao tối đa 540px; chỉ danh sách cuộn, ô gõ và chân bảng đứng yên; dòng cao 40px (48px trên
+  điện thoại). Chân bảng nhắc phím ↑↓ / ↵ / Esc (ẩn trên điện thoại). Tên nhóm viết thường, không in hoa giãn chữ.
+- Dòng chọn bằng phím luôn cuộn vào khung (trước đây đi xuống quá khung thì dòng chọn biến mất); rê chuột chọn dòng
+  (`pointermove`, để danh sách tự cuộn dưới con trỏ đứng yên không đổi dòng). Ẩn nút xoá chữ của trình duyệt.
+
+Đã cân nhắc: tô đậm chữ khớp — tìm không dấu (`fold`) làm vị trí khớp trong chữ có dấu khó tính đúng, lợi ít; xếp hạng
+trộn mọi nhóm như Linear — cần điểm khớp, để sau khi danh sách dài thêm.

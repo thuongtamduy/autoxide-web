@@ -336,7 +336,7 @@ export async function AdminShell({
 
       <CommandPalette
         groups={groups}
-        extra={[account, ...others.map((o) => o.page)]}
+        extra={[{ ...account, icon: "user" }, ...others.map((o) => ({ ...o.page, icon: o.icon }))]}
         create={create}
         labels={{
           title: t("shell.search"),
@@ -346,6 +346,11 @@ export async function AdminShell({
           create: t("shell.createNew"),
           results: t("shell.results.title"),
           searching: t("shell.results.searching"),
+          recent: t("shell.recent"),
+          areas: t("shell.areas"),
+          keyMove: t("shell.keys.move"),
+          keyOpen: t("shell.keys.open"),
+          keyClose: t("shell.close"),
         }}
       />
 
