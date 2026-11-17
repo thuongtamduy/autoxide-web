@@ -29,6 +29,10 @@ function module(name: string, position: number, permissions: string[]): ModuleIn
   return {
     name,
     internal: false,
+    always_enabled: false,
+    features: [],
+    limits: [],
+    requires: [],
     position,
     permissions: permissions.map((p) => ({
       name: `${name}.${p}`,

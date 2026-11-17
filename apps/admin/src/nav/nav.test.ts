@@ -218,7 +218,12 @@ describe("nhóm Tiếp thị", () => {
 });
 
 describe("Cây tổ chức và phân hệ Tuân thủ (dữ liệu mẫu, W-012)", () => {
-  const admin: Viewer = { allPermissions: true, permissions: [], modules: [], sample: true };
+  const admin: Viewer = {
+    allPermissions: true,
+    permissions: [],
+    modules: ["organizations"],
+    sample: true,
+  };
 
   it("Cây tổ chức đứng trước Người dùng và role; Tuân thủ đứng sau Tổ chức, trước Cài đặt", () => {
     const nav = visibleNav(admin, REAL_NAV);
@@ -239,7 +244,8 @@ describe("Cây tổ chức và phân hệ Tuân thủ (dữ liệu mẫu, W-012)
   it("tắt dữ liệu mẫu thì không có; người thiếu permission dự kiến thì không thấy", () => {
     const off = visibleNav({ ...admin, sample: false }, REAL_NAV);
     expect(off.find((g) => g.id === "legal")).toBeUndefined();
-    expect(off.find((g) => g.id === "org")?.pages.map((p) => p.id)).toEqual(["access"]);
+    // Cây tổ chức là API thật: vẫn hiện khi tắt dữ liệu mẫu (khi core có module `organizations`).
+    expect(off.find((g) => g.id === "org")?.pages.map((p) => p.id)).toEqual(["orgTree", "access"]);
     const legal = visibleNav(
       { allPermissions: false, permissions: ["compliance.kyc.read"], modules: [], sample: true },
       REAL_NAV,

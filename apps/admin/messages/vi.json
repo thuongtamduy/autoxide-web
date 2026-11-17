@@ -251,6 +251,15 @@
       "untitled": "(chưa có tiêu đề)",
       "media": "Tệp media",
       "user": "Người dùng"
+    },
+    "org": {
+      "open": "Đổi nút tổ chức",
+      "title": "Chọn nút tổ chức",
+      "search": "Tìm cửa hàng, kho, vùng…",
+      "all": "Toàn bộ {name}",
+      "none": "Không có nút nào khớp.",
+      "close": "Đóng",
+      "hint": "Chọn một nút thì chỉ hiện bài, media, form và menu của nút đó; màn đang xem giữ nguyên. Role của bạn quyết định bạn sửa được gì ở đó."
     }
   },
   "dashboard": {
@@ -925,10 +934,11 @@
       "line": "Số nhà, đường",
       "opens": "Mở cửa",
       "closes": "Đóng cửa",
-      "hoursHint": "Cùng giờ mọi ngày. Giờ riêng từng ngày và ngày nghỉ đặc biệt cần API.",
+      "hoursHint": "Cùng giờ mọi ngày. Giờ riêng từng ngày và ngày đặc biệt đặt được qua API.",
       "pickup": "Nhận hàng tại quầy",
       "pickupHint": "Người mua chọn cửa hàng này lúc thanh toán.",
-      "save": "Lưu hồ sơ"
+      "save": "Lưu hồ sơ",
+      "loading": "Đang tải…"
     },
     "support": {
       "allowTitle": "Cho phép vào để hỗ trợ",
@@ -3600,21 +3610,6 @@
       "suspended": "Tạm khoá",
       "archived": "Đã lưu trữ"
     },
-    "values": {
-      "tax_profile": {
-        "company_deduction": "Doanh nghiệp, khấu trừ",
-        "household_flat": "Hộ kinh doanh, khoán",
-        "per_seller": "Theo hồ sơ từng người bán"
-      },
-      "bool": {
-        "true": "Bật",
-        "false": "Tắt"
-      },
-      "language": {
-        "en": "Tiếng Anh",
-        "vi": "Tiếng Việt"
-      }
-    },
     "add": {
       "button": "Thêm nút con",
       "title": "Thêm nút dưới {parent}",
@@ -3628,19 +3623,6 @@
       "code": "Mã nội bộ (không bắt buộc)",
       "codeHint": "Vd mã cửa hàng; không trùng trong khách hàng."
     },
-    "split": {
-      "button": "Yêu cầu tách",
-      "title": "Yêu cầu tách {unit} thành khách riêng",
-      "intro": "Nhân sự vận hành nền tảng xem yêu cầu, chạy thử (dry-run) rồi hẹn giờ tách với bạn. Nhánh thành khách con có database riêng, vẫn nằm trong cây khách hàng.",
-      "copy": "Dữ liệu của nhánh được chép sang database riêng bằng job.",
-      "readOnly": "Nhánh chỉ đọc trong vài phút lúc chuyển; việc tách không huỷ được giữa chừng.",
-      "keeps": "ID và lịch sử giữ nguyên; role ở đây vẫn có hiệu lực qua uỷ quyền; báo cáo gộp vẫn thấy số của nhánh.",
-      "submit": "Gửi yêu cầu",
-      "done": "Đã gửi yêu cầu tách {unit}; bạn nhận thông báo khi có lịch.",
-      "note": "Ghi chú cho nhân sự vận hành (không bắt buộc)",
-      "ack": "Tôi hiểu việc tách chạy nền và không huỷ được giữa chừng",
-      "waiting": "Có một yêu cầu tách đang chờ nhân sự vận hành nền tảng, gửi lúc"
-    },
     "members": {
       "title": "Ai làm việc ở nút này",
       "hint": "Gồm cả người được gán ở nút cha với độ sâu chảy xuống nút này.",
@@ -3650,8 +3632,7 @@
       "depth": "Độ sâu",
       "from": "Gán ở",
       "inherited": "Từ {unit}",
-      "direct": "Trực tiếp ở nút này",
-      "invited": "Đã mời · chờ chấp nhận"
+      "direct": "Trực tiếp ở nút này"
     },
     "scopes": {
       "own": "Của mình",
@@ -3681,8 +3662,14 @@
         "organizations_currency": "Tiền tệ",
         "organizations_language": "Ngôn ngữ",
         "auth_customer_registration": "Người mua tự đăng ký",
-        "tax_profile": "Hồ sơ thuế"
-      }
+        "tax_profile": "Hồ sơ thuế",
+        "organizations_languages": "Ngôn ngữ của website",
+        "auth_support_access": "Cho nhân sự nền tảng vào hỗ trợ"
+      },
+      "empty": "Chưa có module nào cho đặt cài đặt theo nút.",
+      "unset": "Chưa đặt",
+      "on": "Bật",
+      "off": "Tắt"
     },
     "depth": {
       "title": "Độ sâu của quyền",
@@ -3692,7 +3679,10 @@
       "subtree": "Nút được gán và mọi nút con; cha tạo dữ liệu cho con được.",
       "tenant": "Toàn bộ khách hàng này.",
       "staff": "Nhân sự là tài khoản toàn nền tảng: một người làm được cho nhiều khách, nhiều nút. Người mua là tài khoản riêng của từng khách."
-    }
+    },
+    "approve": "Duyệt nút",
+    "approved": "Đã duyệt nút; giờ có thể ghi dữ liệu vào nút này.",
+    "suspendedNote": "Nút đang tạm khoá; không ghi được dữ liệu vào nút này và các nút bên dưới."
   },
   "compliance": {
     "crumb": "Tuân thủ · bộ quy định {ruleset}",

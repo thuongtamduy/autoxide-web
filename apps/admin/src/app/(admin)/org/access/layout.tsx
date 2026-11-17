@@ -17,15 +17,16 @@ import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 
 // Màn "Người dùng và role" của phân hệ Tổ chức. Mỗi tab một đường dẫn con; tab chỉ hiện khi
-// người xem có permission đọc của nó. Người dùng và role gọi core thật. Lời mời, uỷ quyền, hồ sơ
-// công khai, quyền vào hỗ trợ chờ API của bước 34: dựng bằng dữ liệu mẫu (W-006), chỉ hiện khi
-// bật dữ liệu mẫu, có nhãn "mẫu".
+// người xem có permission đọc của nó. Người dùng, role và hồ sơ công khai gọi core thật. Lời mời,
+// uỷ quyền, quyền vào hỗ trợ còn dựng bằng dữ liệu mẫu (W-006), chỉ hiện khi bật dữ liệu mẫu, có
+// nhãn "mẫu" (core đã có API ở bước 34: nối ở đợt sau).
 export default async function AccessLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations();
-  const [users, roles, manage] = await Promise.all([
+  const [users, roles, manage, units] = await Promise.all([
     can(USERS_READ),
     can(ROLES_READ),
     can(USERS_MANAGE),
+    can(UNITS_READ),
   ]);
   if (!users && !roles) {
     return (
@@ -39,13 +40,13 @@ export default async function AccessLayout({ children }: { children: ReactNode }
   const sampleTabs: [string, string, string][] = [
     ["invitations", "/org/access/invitations", INVITATIONS_MANAGE],
     ["delegations", "/org/access/delegations", DELEGATIONS_READ],
-    ["public", "/org/access/public", UNITS_READ],
     ["support", "/org/access/support", SUPPORT_ACCESS_READ],
   ];
   const allowed = sample ? await Promise.all(sampleTabs.map(([, , p]) => can(p))) : [];
   const tabs: PageTab[] = [
     ...(users ? [{ href: "/org/access/users", label: t("access.tabs.users"), nested: true }] : []),
     ...(roles ? [{ href: "/org/access/roles", label: t("access.tabs.roles"), nested: true }] : []),
+    ...(units ? [{ href: "/org/access/public", label: t("access.tabs.public") }] : []),
     ...sampleTabs
       .filter((_, index) => allowed[index])
       .map(([id, href]) => ({ href, label: t(`access.tabs.${id}`), badge: t("sample.tab") })),

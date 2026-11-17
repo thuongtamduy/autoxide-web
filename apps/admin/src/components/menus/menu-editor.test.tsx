@@ -20,6 +20,7 @@ function menu(labels: string[]): SiteMenu {
     id: "0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a81",
     key: "main",
     locale: "vi",
+    org_id: "00000000-0000-7000-8000-000000000001",
     created_at: AT,
     updated_at: AT,
     items: labels.map((label, i) => ({

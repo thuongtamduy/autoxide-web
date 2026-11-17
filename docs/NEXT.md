@@ -3,13 +3,15 @@
 File nội bộ cho agent phiên sau: trạng thái lúc dừng và việc kế tiếp. Cập nhật khi xong một đợt việc; quyết định
 lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`backend-debt.md`](backend-debt.md).
 
-## Trạng thái (16/11/2026, đợt 5)
+## Trạng thái (17/11/2026, đợt 8)
 
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
-- SDK ghim core ở commit `fb3ba06` của `main` (bước 33 của core tới D-297: đa khách, tên miền riêng, dời khách, chỉ
-  đọc, cấu hình theo khách, nhóm `connection`). Core `main` mới nhất (`f62f5a2`) chỉ thêm ghi chú tài liệu, OpenAPI
-  không đổi: SDK không cần sinh lại. Quyết định mới nhất của repo này: W-044.
+- SDK ghim core ở commit `5b35b99` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
+  một khách — D-303 tới D-328). Quyết định mới nhất của repo này: W-045.
+- Đợt 8 (17/11): nối đợt 1 của bước 34 (W-045): màn Cây tổ chức thật, bộ chọn nút góc trên trái (lọc bài, media, form,
+  menu theo nút), tab Hồ sơ công khai thật (địa chỉ theo danh mục hành chính của core), tên cửa hàng của website lấy
+  từ hồ sơ công khai của nút gốc. Đã chạy thử với core thật.
 - Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
   hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị
   khi khách chỉ đọc: dải báo hiện, lưu cài đặt và lưu bài bị từ chối với thông báo `tenant_read_only` của core.
@@ -45,13 +47,28 @@ Core phát triển trên `main` của nó, không chờ bản phát hành (W-025
 
 ## Việc kế tiếp
 
+**Core đã có API, chưa nối** (làm tiếp theo thứ tự, mỗi đợt gate xanh và thử với core thật):
+
+- **Đợt 2 — bước 34 phần còn lại:** role theo độ sâu (`grants`, `requires_mfa`) ở trình sửa role; báo người dùng phải
+  bật MFA (`mfa_required` của `GET /auth/me`); lời mời thật (`/auth/invitations`, màn nhận lời mời
+  `/auth/invitations/accept`) — thay tab mẫu và đặt lại nút "Mời" ở màn Cây tổ chức; đăng nhập bằng link email
+  (`/auth/login/link`); uỷ quyền (`/auth/delegations`), quyền vào hỗ trợ (`/auth/support-grants`, `/auth/support-access`)
+  thay tab mẫu; tài khoản: ngôn ngữ và múi giờ (`PATCH /auth/me`), "Nơi bạn làm việc" (`/auth/me/memberships`,
+  `/auth/me/tenants`), xác nhận lại danh tính (`/auth/me/reauth`) cho lệnh nhạy cảm; phần "khách hàng khác" của bộ chọn
+  nút; người mua tách khỏi nhân sự (`/auth/customers`); gán membership theo nút ở trang người dùng
+  (`/auth/users/{id}/memberships`).
+- **Đợt 3 — bước 35:** Gói và giá, Thuê bao, kỳ thanh toán (`/plans/*`), thẻ hạn mức trên Tổng quan
+  (`/plans/usage`), nhãn "Pro" theo `features` của `GET /kernel/modules` và `/plans/entitlements`, sổ khách lọc
+  `subscription_status` / `near_limit`, xuất dữ liệu một khách (`/kernel/tenants/{id}/exports`).
+- Website: ô địa chỉ khi đặt hàng dùng danh mục hành chính công khai của core (`GET /address/provinces`,
+  `…/communes`) thay `src/sample/address.ts`; danh sách cửa hàng (`/organizations/public/stores`) thay phần mẫu khi
+  phần thương mại có API (cửa hàng mẫu đang gắn với tồn kho mẫu).
+
 Chờ core (nối ngay khi có):
 
-- **Bước 34** (cây tổ chức, hồ sơ công khai của khách): form gắn tên miền với nút (`PATCH /kernel/domains/{id}`, hiện
-  core chỉ nhận `null`); tên, logo, thông tin pháp lý của cửa hàng trên website lấy theo khách thay cho
-  `AUTOXIDE_STOREFRONT_NAME`; role theo nút; màn Tổ chức bỏ dữ liệu mẫu.
-- **Bước 35** (gói, thuê bao): `expand=subscription,usage`, lọc `subscription_status` / `near_limit` ở sổ khách (hợp
-  đồng đã có, core trả `null` / rỗng); màn Gói và giá, Thuê bao bỏ dữ liệu mẫu.
+- Hồ sơ công khai chưa có logo, thông tin pháp lý (mã số doanh nghiệp…), và website chưa biết nút nào là "website
+  này" (tên miền gắn với một cửa hàng con vẫn hiện tên của nút gốc). Đã ghi ở `backend-debt.md`.
+- **Bước 38**: tách nhánh thành khách con (nút "Yêu cầu tách" ở màn Cây tổ chức đã bỏ ở W-045).
 - **Bước 41–49** (thương mại): website và các màn Bán hàng, Sản phẩm, Sàn… bỏ dữ liệu mẫu theo từng module.
 - **Bước 51**: `POST /kernel/settings/{name}/test` → gom cài đặt của một kết nối thành form có nút kiểm tra (W-037).
 
@@ -78,4 +95,7 @@ Tự làm được, chưa làm:
 - `next dev` chặn script khi mở bằng `127.0.0.1`: mở bằng `localhost`, nếu không nút bấm không chạy.
 - Sau mỗi lần `./gate.sh`: xoá `.turbo` (cache phình rất nhanh). `next build` của gate làm `next dev` đang chạy trên
   cùng thư mục ngừng: bật lại sau gate.
+- Core thật trên máy thử: danh mục hành chính cần `autoxide task address.import` một lần; chỉ có loại nút `tenant`,
+  tạo thêm bằng `POST /organizations/unit-types`. Script thử bấm nhanh dễ chạm giới hạn 600 lời / phút của core (mọi
+  lời đi từ một máy chủ Next.js): khi thử đặt `AUTOXIDE_HTTP_RATE_LIMIT_PER_MINUTE=0` ở core.
 - Hai gate không chạy cùng lúc trên một máy (e2e dùng chung cổng 4010, 3100, 4012, 3200–3203).

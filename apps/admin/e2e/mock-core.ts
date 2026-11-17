@@ -61,6 +61,14 @@ import {
 import { mediaContent, mediaRoutes, resetMedia } from "./mock-media.ts";
 import { bumpMenu, MENUS_MODULE, menusRoutes, publicMenu, resetMenus } from "./mock-menus.ts";
 import {
+  ORG_MODULE,
+  orgPerson,
+  orgRoutes,
+  publicStores,
+  resetOrg,
+  setRootName,
+} from "./mock-org.ts";
+import {
   finishLoginCeremony,
   fireEvent,
   resetSettings,
@@ -163,6 +171,9 @@ type Session = {
 };
 
 let accounts = seed();
+/** Tài khoản admin (gắn ở nút gốc của cây tổ chức giả). */
+const adminId = () => accounts.find((a) => a.email === "admin@example.com")?.id;
+resetOrg(adminId());
 const access = new Map<string, Session>();
 const refresh = new Map<string, Session>();
 const used = new Set<string>();
@@ -309,9 +320,11 @@ const server = createServer(async (request, response) => {
     resetFlags();
     resetTenants();
     resetDomains();
+    resetOrg(adminId());
     return send(response, 204);
   }
   if (route === "POST /__tenancy") return setTenancy(request, response);
+  if (route === "POST /__org/root-name") return setRootName(request, response);
   if (route === "POST /__own-tenant") return setOwnTenant(request, response);
   if (route === "POST /__domains/dns") return setDnsRecord(request, response);
   if (route === "POST /__webhooks/fire") {
@@ -504,6 +517,9 @@ const server = createServer(async (request, response) => {
   }
   // Phần công khai của website: không cần đăng nhập, như core. Cài đặt bình luận công khai dùng
   // chung với màn Bình luận của trang quản trị (`mock-engage.ts`).
+  if (route === "GET /api/v1/organizations/public/stores") {
+    return send(response, 200, { data: publicStores() });
+  }
   if (route === "GET /api/v1/comments/public/settings") {
     await engageRoutes(request, response, url, route);
     return;
@@ -553,6 +569,7 @@ const server = createServer(async (request, response) => {
         permissions: [],
         has_password: account.hasPassword,
         pending_email: account.pendingEmail,
+        mfa_required: false,
         created_at: "2026-11-12T00:00:00Z",
       } satisfies Me,
     });
@@ -565,6 +582,9 @@ const server = createServer(async (request, response) => {
   if (url.pathname.startsWith("/api/v1/auth/me/") || url.pathname === "/api/v1/auth/me") {
     return mine(request, response, url, route, account);
   }
+  const person = /^\/api\/v1\/auth\/users\/([^/]+)$/.exec(url.pathname);
+  const orgUser = person && request.method === "GET" ? orgPerson(person[1] ?? "") : undefined;
+  if (orgUser) return send(response, 200, { data: orgUser });
   const handled = await accessRoutes(
     request,
     response,
@@ -579,6 +599,7 @@ const server = createServer(async (request, response) => {
   );
   if (handled) return;
   if (await flagRoutes(request, response, url, account)) return;
+  if (await orgRoutes(request, response, url, route)) return;
   if (await tenantRoutes(request, response, url, account)) return;
   if (await domainRoutes(request, response, url, account)) return;
   if (await settingsRoutes(request, response, url, account, () => accounts)) return;
@@ -593,18 +614,28 @@ const server = createServer(async (request, response) => {
       );
     }
     if (url.pathname === "/api/v1/kernel/modules") {
-      const listed = [KERNEL, NOTES, CONTENT_MODULE, MENUS_MODULE, ...ENGAGE_MODULES].map(
-        (module) => ({
-          ...module,
-          migrations: module.migrations.map((m) => ({ ...m, applied: null })),
-        }),
-      );
+      const listed = [
+        KERNEL,
+        NOTES,
+        CONTENT_MODULE,
+        MENUS_MODULE,
+        ORG_MODULE,
+        ...ENGAGE_MODULES,
+      ].map((module) => ({
+        ...module,
+        migrations: module.migrations.map((m) => ({ ...m, applied: null })),
+      }));
       return send(response, 200, { data: listed });
     }
     const name = decodeURIComponent(url.pathname.slice("/api/v1/kernel/modules/".length));
-    const module = [KERNEL, NOTES, CONTENT_MODULE, MENUS_MODULE, ...ENGAGE_MODULES].find(
-      (m) => m.name === name,
-    );
+    const module = [
+      KERNEL,
+      NOTES,
+      CONTENT_MODULE,
+      MENUS_MODULE,
+      ORG_MODULE,
+      ...ENGAGE_MODULES,
+    ].find((m) => m.name === name);
     if (!module) {
       return problem(response, 404, "kernel.module_not_found", `No module named \`${name}\`.`);
     }

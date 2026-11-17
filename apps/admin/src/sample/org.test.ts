@@ -9,7 +9,6 @@ import {
   invitationStatus,
   listDelegations,
   listInvitations,
-  listProfiles,
   listUnits,
   resendInvitation,
   resetSampleOrg,
@@ -18,7 +17,6 @@ import {
   revokeSupportGrant,
   SAMPLE_CHILD_TENANTS,
   setSupportAccess,
-  updateProfile,
 } from "./org";
 
 afterEach(resetSampleOrg);
@@ -114,42 +112,6 @@ describe("uỷ quyền mẫu", () => {
       expires_at: null,
     });
     expect(good.ok).toBe(true);
-  });
-});
-
-describe("hồ sơ công khai mẫu", () => {
-  it("mọi nút trừ gốc có hồ sơ; công khai thì cần đủ địa chỉ", async () => {
-    const { data } = await listProfiles();
-    // Trụ sở là gốc; sàn và người bán không có hồ sơ cửa hàng (bước 46).
-    expect(data).toHaveLength(6);
-    const warehouse = must(data.find((p) => !p.public));
-    const input = {
-      public: true,
-      display_name: "Kho",
-      province_code: "",
-      commune_name: "",
-      line: "",
-      opens: "8:00",
-      closes: "",
-      pickup: false,
-    };
-    const bad = await updateProfile(warehouse.unit_id, input);
-    expect(bad.ok ? [] : bad.problem.errors?.map((e) => e.field)).toEqual([
-      "province_code",
-      "commune_name",
-      "line",
-      "opens",
-    ]);
-    const good = await updateProfile(warehouse.unit_id, {
-      ...input,
-      province_code: "79",
-      commune_name: "Phường Thủ Đức",
-      line: "[Địa chỉ mẫu]",
-      opens: "08:00",
-      closes: "17:00",
-    });
-    expect(good.ok && good.data.address?.province_name).toBe("TP. Hồ Chí Minh");
-    expect(good.ok && good.data.hours).toHaveLength(7);
   });
 });
 

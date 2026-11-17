@@ -19,6 +19,7 @@ import {
   parseMediaFilters,
   type UploadLimits,
 } from "@/lib/media";
+import { ownerFilter } from "@/lib/org-server";
 import { MEDIA_PURGE, MEDIA_READ, MEDIA_WRITE } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
 
@@ -317,8 +318,12 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
   );
 }
 
-function loadPage(filters: ReturnType<typeof parseMediaFilters>) {
-  return load((client) => client.GET("/api/v1/media", { params: { query: mediaQuery(filters) } }));
+/** Một trang tệp; nút đang chọn ở góc trên trái thì chỉ tệp của nút đó (`owner_org`). */
+async function loadPage(filters: ReturnType<typeof parseMediaFilters>) {
+  const owner = await ownerFilter();
+  return load((client) =>
+    client.GET("/api/v1/media", { params: { query: { ...mediaQuery(filters), ...owner } } }),
+  );
 }
 
 /** Tệp đang mở và phiên bản (`ETag`) của nó; `null` khi không còn. */

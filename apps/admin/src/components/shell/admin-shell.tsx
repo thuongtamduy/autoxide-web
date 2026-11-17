@@ -22,6 +22,8 @@ import { newsSeen } from "@/help/flags";
 import { myFlags } from "@/help/server";
 import { initialsOf } from "@/lib/initials";
 import { MARKETPLACE_SELL } from "@/lib/market";
+import { ordered, typeLabel } from "@/lib/org";
+import { currentUnit, loadUnits, loadUnitTypes } from "@/lib/org-server";
 import { tenantBlock } from "@/lib/tenant-state";
 import { getCurrentTenant, getMe, getModules } from "@/lib/viewer";
 import {
@@ -41,6 +43,7 @@ import {
 import { sampleDataEnabled } from "@/sample";
 import { shellCounts } from "@/work/server";
 import { OfflineBanner } from "./offline-banner";
+import { OrgPicker, type PickerNode } from "./org-picker";
 import { TenantBlocked } from "./tenant-blocked";
 import "@/components/help/help.css";
 
@@ -75,6 +78,7 @@ export async function AdminShell({
     throw error;
   }
   const [me, modules, current] = loaded;
+  const picker = workspace === "tenant" ? await orgPicker(t, current) : null;
   const viewer: Viewer = {
     allPermissions: me.all_permissions,
     permissions: me.permissions,
@@ -218,10 +222,17 @@ export async function AdminShell({
                 <span className="ell pf-ctx-sub">{context?.sub ?? t("seller.shell.sub")}</span>
               </span>
             </Link>
+          ) : picker ? (
+            <OrgPicker
+              title={picker.title}
+              tenant={picker.tenant}
+              nodes={picker.nodes}
+              current={picker.current}
+            />
           ) : (
             <Link href="/" className="ctx" aria-label={t("shell.home")}>
               {/* Core nhiều khách: tên khách đang làm việc (`GET /kernel/tenant`), như thiết kế. Một khách
-                  thì tên ứng dụng như trước. Bộ chọn nút tổ chức chờ cây tổ chức (bước 34). */}
+                  thì tên ứng dụng như trước. Cây có nhiều nút thì thay bằng bộ chọn nút (`OrgPicker`). */}
               {current?.mode === "multi" ? (
                 <>
                   <span className="tav">{initialsOf(current.name)}</span>
@@ -455,6 +466,38 @@ function ThemeForm({
       ))}
     </form>
   );
+}
+
+/**
+ * Dữ liệu của bộ chọn nút góc trên trái: chỉ khi người xem đọc được cây (`organizations.units.read`)
+ * và cây có hơn một nút. Không thì `null` (khung giữ link về Tổng quan như trước).
+ */
+async function orgPicker(
+  t: Awaited<ReturnType<typeof getTranslations>>,
+  current: Awaited<ReturnType<typeof getCurrentTenant>>,
+): Promise<{
+  title: string;
+  tenant: boolean;
+  nodes: PickerNode[];
+  current: string | null;
+} | null> {
+  const units = await loadUnits();
+  const tree = units ? ordered(units).filter(({ unit }) => unit.status !== "archived") : [];
+  if (tree.length < 2) return null;
+  const types = await loadUnitTypes();
+  const typeName = (code: string) =>
+    typeLabel(types, code, (c) => (t.has(`orgtree.types.${c}`) ? t(`orgtree.types.${c}`) : null));
+  return {
+    title: current?.mode === "multi" ? current.name : t("app.name"),
+    tenant: current?.mode === "multi",
+    nodes: tree.map(({ unit, depth }) => ({
+      id: unit.id,
+      name: unit.name,
+      type: typeName(unit.unit_type),
+      depth,
+    })),
+    current: (await currentUnit())?.id ?? null,
+  };
 }
 
 /** Người đăng nhập, sổ module và khách của request, đọc song song. */

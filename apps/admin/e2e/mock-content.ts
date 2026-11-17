@@ -27,6 +27,10 @@ type MockEntry = Omit<Schemas["EntryResponse"], "version"> & { version: number }
 export const CONTENT_MODULE: ModuleInfo = {
   name: "content",
   internal: false,
+  always_enabled: false,
+  features: [],
+  limits: [],
+  requires: [],
   position: 3,
   permissions: [
     { name: "content.read", description: "Read drafts.", risk: "read" },

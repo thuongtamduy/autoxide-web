@@ -23,6 +23,7 @@ import {
   type MenuItemDraft,
 } from "@/lib/menu-tree";
 import { fromSaved, type SiteMenu, toInput } from "@/lib/menus";
+import { currentUnit } from "@/lib/org-server";
 
 type Result<T> = { ok: true; data: T } | { ok: false; problem: Problem };
 
@@ -124,9 +125,11 @@ export async function newMenu(state: NewMenuState, formData: FormData): Promise<
     // Chép đích và cách trình bày, không chép id (`POST` không nhận): core cấp id mới.
     items = toInput(fromSaved(source.data.data.items), { keepIds: false });
   }
+  // Menu mới thuộc website của nút đang chọn ở góc trên trái; không chọn: website của cả khách.
+  const unit = await currentUnit();
   const result = await send((client) =>
     client.POST("/api/v1/menus", {
-      body: { key: values.key, locale: values.locale, items },
+      body: { key: values.key, locale: values.locale, items, ...(unit ? { org_id: unit.id } : {}) },
     }),
   );
   if (!result.ok) {

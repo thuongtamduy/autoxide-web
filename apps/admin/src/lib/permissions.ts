@@ -30,6 +30,8 @@ export const UNITS_READ = "organizations.units.read";
 export const UNITS_WRITE = "organizations.units.write";
 /** Đổi cài đặt theo nút (vd `auth.support_access`). */
 export const SETTINGS_WRITE = "organizations.settings.write";
+/** Sửa hồ sơ công khai của nút (tên, địa chỉ, giờ mở cửa hiện trên website). */
+export const PROFILE_MANAGE = "organizations.profile.manage";
 /** Xem các lần cấp quyền vào hỗ trợ và lần vào. */
 export const SUPPORT_ACCESS_READ = "auth.support_access.read";
 
