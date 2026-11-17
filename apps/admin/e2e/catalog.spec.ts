@@ -30,7 +30,6 @@ test("sản phẩm: tìm không dấu, tạo bản nháp (SKU trùng báo dướ
 
   // Tìm không dấu.
   await page.getByRole("searchbox", { name: "Search" }).fill("chao gang");
-  await page.getByRole("button", { name: "Filter" }).click();
   await expect(page.getByRole("link", { name: "Cast iron pan", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Round wooden board 30 cm" })).toHaveCount(0);
   await expect(page.getByText("590,000 ₫ – 760,000 ₫")).toBeVisible();

@@ -1901,3 +1901,137 @@
   font-size: 12px;
   color: var(--ink-3);
 }
+
+/* ===== Chuẩn hoá đợt 1 (W-054): bố cục, trạng thái rỗng, nút trên dòng ===== */
+
+/* Bảng, thẻ, hàng số liệu đặt thẳng trong `.blocks` (không bọc `.block`) luôn chiếm cả hàng: trước đây
+   chúng co theo nội dung (bảng còn ~520px, thẻ số liệu xếp dọc trong cột 300px). */
+.ax .blocks > .kpis,
+.ax .blocks > .card,
+.ax .blocks > table,
+.ax .blocks > form,
+.ax .blocks > .chips,
+.ax .blocks > .filters {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.ax .cell2 > .tag,
+.ax .cell2 > .btn,
+.ax .cell2 > a.btn {
+  align-self: flex-start;
+}
+
+/* Trạng thái rỗng: biểu tượng, chữ rõ, đủ khoảng thở (thay một dòng chữ xám). Dùng chung cho mọi
+   `.empty`; chỗ cần nút hành động dùng component `EmptyState`. */
+.ax .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-wrap: balance;
+}
+.ax .empty::before {
+  content: "";
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background-color: var(--hover);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23646B7A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 13h4l1.5 2.5h5L16 13h4'/%3E%3Cpath d='M5.5 6.5 4 13v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5l-1.5-6.5A1 1 0 0 0 17.5 6h-11a1 1 0 0 0-1 .5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px;
+}
+td.empty::before,
+.ax td.empty::before {
+  display: block;
+  margin: 0 auto 10px;
+}
+.ax td.empty {
+  display: table-cell;
+  text-align: center;
+}
+.ax .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 44px 24px;
+  text-align: center;
+}
+.ax .empty-state .es-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.ax .empty-state .es-ic svg {
+  width: 24px;
+  height: 24px;
+}
+.ax .empty-state h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ax .empty-state p {
+  max-width: 460px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  text-wrap: balance;
+}
+.ax .empty-state .es-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Nút trên từng dòng bảng: cùng một hàng, không xếp chồng; nút chính và nút nguy hiểm lặp ở mọi dòng
+   làm loạn thứ bậc, nên trong dòng chúng là nút phụ (màu chỉ hiện khi rê chuột), như Shopify, Stripe. */
+.ax td.rt-acts {
+  white-space: nowrap;
+  vertical-align: top;
+}
+.ax td.rt-acts > * + * {
+  margin-left: 6px;
+}
+.ax td.rt-acts .btn.pri,
+.ax td .btn.sm.pri {
+  background: var(--sheet);
+  border-color: var(--line-2);
+  color: var(--ink);
+}
+.ax td.rt-acts .btn.pri:hover,
+.ax td .btn.sm.pri:hover {
+  background: var(--hover);
+  border-color: var(--line-2);
+}
+.ax td .btn.danger,
+.ax td .btn.danger-solid {
+  background: var(--sheet);
+  border-color: var(--line-2);
+  color: var(--ink-2);
+}
+.ax td .btn.danger:hover,
+.ax td .btn.danger-solid:hover {
+  background: var(--bad-bg);
+  border-color: transparent;
+  color: var(--bad);
+}
+
+/* Ngày giờ trong bảng không gãy dòng ("03:35 17 thg 11, 2026" thành ba dòng) */
+.ax td time,
+.ax td .sub time {
+  white-space: nowrap;
+}

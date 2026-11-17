@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Chips, Forbidden, Pager } from "@/components/engage/common";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { type CommentTarget, TARGET_BADGE, targetHref, targetState } from "@/lib/comments";
@@ -106,6 +107,7 @@ export default async function TargetsPage(props: PageProps<"/marketing/comments/
         />
         {types.length > 1 ? (
           <form method="get" action={BASE} className="filters">
+            <AutoFilter />
             {state ? <input type="hidden" name="state" value={state} /> : null}
             {pending ? <input type="hidden" name="pending" value="1" /> : null}
             <label className="fld">

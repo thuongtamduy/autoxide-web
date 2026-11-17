@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Chips, Forbidden, Pager } from "@/components/engage/common";
 import { ImportDialog } from "@/components/engage/subscriber-forms";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { isForbidden, load } from "@/lib/core";
@@ -96,6 +97,7 @@ export default async function SubscribersPage(
           ]}
         />
         <form method="get" action={BASE} className="filters">
+          <AutoFilter />
           {status ? <input type="hidden" name="status" value={status} /> : null}
           {blocked ? <input type="hidden" name="blocked" value="1" /> : null}
           <label className="fld grow">

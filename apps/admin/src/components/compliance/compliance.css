@@ -216,3 +216,6 @@
     margin-inline-start: 32px;
   }
 }
+.ax .cp-empty {
+  align-items: flex-start;
+}

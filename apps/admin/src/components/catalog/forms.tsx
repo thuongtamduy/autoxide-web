@@ -638,6 +638,7 @@ export function PriceDialog({
               error={state.fields?.code}
             />
             <Field
+              money
               label={t("amount")}
               name="amount"
               mono
@@ -659,6 +660,7 @@ export function PriceDialog({
               error={state.fields?.valid_from}
             />
             <Field
+              money
               label={t("compare")}
               name="compare_at"
               mono

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AllocationDialog } from "@/components/channels/forms";
 import { BlockHead, Cell2, param } from "@/components/growth/blocks";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { CHANNELS_MANAGE } from "@/lib/channels";
 import { formatCount } from "@/lib/format";
@@ -93,6 +94,7 @@ export default async function StockPage(props: PageProps<"/sales/channels/stock"
       <section className="block half" aria-labelledby="preview-h">
         <BlockHead id="preview-h" title={t("stock.previewTitle")} about={t("stock.previewAbout")} />
         <form className="filters" action="/sales/channels/stock">
+          <AutoFilter />
           <div className="fld grow">
             <label className="lab" htmlFor="stock-sku">
               {t("stock.product")}

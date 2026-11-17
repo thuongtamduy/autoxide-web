@@ -4,6 +4,8 @@ import { removeSuppression } from "@/app/(admin)/marketing/newsletter/actions";
 import { ConfirmButton } from "@/components/engage/actions";
 import { Forbidden, Pager } from "@/components/engage/common";
 import { SuppressDialog } from "@/components/engage/subscriber-forms";
+import { AutoFilter } from "@/components/ui/auto-filter";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { isForbidden, load } from "@/lib/core";
@@ -19,6 +21,7 @@ export default async function SuppressionsPage(
   props: PageProps<"/marketing/newsletter/suppressions">,
 ) {
   const t = await getTranslations("engage.newsletter");
+  const e = await getTranslations("emptyStates");
   const params = await props.searchParams;
   const email = one(params, "email");
   const cursor = one(params, "cursor", 500);
@@ -48,6 +51,7 @@ export default async function SuppressionsPage(
         </div>
         <p className="fhint">{t("suppressionsAbout")}</p>
         <form method="get" action={BASE} className="filters">
+          <AutoFilter />
           <label className="fld grow">
             <span className="lab">{t("searchEmail")}</span>
             <input
@@ -72,7 +76,13 @@ export default async function SuppressionsPage(
         </form>
         <div className="card tcard">
           {page.data.length === 0 ? (
-            <p className="empty">{email ? t("noMatch") : t("noSuppressions")}</p>
+            email ? (
+              <p className="empty">{t("noMatch")}</p>
+            ) : (
+              <EmptyState icon="mail" title={t("noSuppressions")}>
+                {e("suppressions.body")}
+              </EmptyState>
+            )
           ) : (
             <Table cards>
               <thead>

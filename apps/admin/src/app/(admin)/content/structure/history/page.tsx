@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { RevisionDiffView } from "@/components/content/revision-diff";
 import { MessagePanel } from "@/components/message-panel";
 import { RestoreRevisionButton } from "@/components/structure/restore-revision";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { abilities, type Revision } from "@/lib/content";
@@ -92,6 +93,7 @@ export default async function HistoryTab(props: PageProps<"/content/structure/hi
         </div>
         <p className="fhint">{t("about")}</p>
         <form className="filters" action="/content/structure/history">
+          <AutoFilter />
           <label className="fld grow">
             <span className="lab">{t("entry")}</span>
             <select className="inp" name="entry" defaultValue={found?.entry.id ?? ""}>

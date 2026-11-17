@@ -5,6 +5,7 @@ import { PRICE_BADGE } from "@/components/catalog/badges";
 import { PriceDialog, PriceListDialog } from "@/components/catalog/forms";
 import { ResolveForm } from "@/components/catalog/price-tools";
 import { ChangeButtons } from "@/components/engage/actions";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { CATALOG_PRICES_WRITE, toVietnamInput } from "@/lib/catalog";
@@ -283,6 +284,7 @@ export default async function PricesPage(props: PageProps<"/catalog/prices">) {
             {t("prices.historyTitle", { name: variant ? variantName(variant) : "—" })}
           </h2>
           <form action="/catalog/prices" className="inline-row cat-pick">
+            <AutoFilter />
             {store ? <input type="hidden" name="store" value={store.id} /> : null}
             <label className="vh" htmlFor="history-variant">
               {t("prices.variant")}

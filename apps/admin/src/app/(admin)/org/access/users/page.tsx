@@ -2,6 +2,7 @@ import type { components } from "@autoxide/sdk";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { Flash } from "@/components/ui/flash";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
@@ -84,6 +85,7 @@ export default async function UsersPage(props: PageProps<"/org/access/users">) {
         </nav>
         <search aria-label={t("access.users.search")}>
           <form method="get" className="searchrow">
+            <AutoFilter />
             {status ? <input type="hidden" name="status" value={status} /> : null}
             <input
               className="inp"

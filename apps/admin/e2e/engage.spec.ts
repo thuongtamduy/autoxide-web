@@ -45,7 +45,6 @@ test("thanh bên có Tiếp thị; bài nộp đổi trạng thái có Hoàn tá
   const chips = page.getByRole("navigation", { name: "Filter submissions" });
   await expect(chips.getByRole("link", { name: /New/ })).toContainText("3");
   await page.getByLabel("Search the answers").fill("chảo");
-  await page.getByRole("button", { name: "Apply" }).click();
   await expect(page).toHaveURL(/q=ch/);
   await expect(rows(page)).toHaveCount(1);
   await page.getByRole("link", { name: "Hồ Gia Bảo" }).click();

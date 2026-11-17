@@ -8,6 +8,7 @@ import { ORDERS_MANAGE, readFilters } from "@/lib/orders";
 import { getOrders, matchingIds } from "@/sample/orders";
 import { ENDPOINTS_45 } from "../shared";
 import "@/components/orders/orders.css";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Phiếu giao của các đơn đã chọn (thao tác hàng loạt "In phiếu giao"): bản xem trước để in bằng trình
 // duyệt. Khi core có, phiếu giao là tệp do job sinh (bước 51) hay phiếu của hãng vận chuyển (bước 44).
@@ -24,6 +25,7 @@ export default async function PrintPage(props: PageProps<"/sales/orders/print">)
       ? await matchingIds(readFilters(params))
       : (typeof params.ids === "string" ? params.ids.split(",") : []).slice(0, 200);
   const { data } = await getOrders(ids.slice(0, 200));
+  const e = await getTranslations("emptyStates");
   return (
     <div className="page cat-page">
       <section className="phead no-print">
@@ -41,7 +43,21 @@ export default async function PrintPage(props: PageProps<"/sales/orders/print">)
           {data.length > 0 ? <PrintButton label={t("print")} /> : null}
         </div>
       </section>
-      {data.length === 0 ? <p className="empty">{t("empty")}</p> : null}
+      {data.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon="file"
+            title={t("empty")}
+            actions={
+              <Link className="btn pri" href="/sales/orders">
+                {e("print.action")}
+              </Link>
+            }
+          >
+            {e("print.body")}
+          </EmptyState>
+        </div>
+      ) : null}
       {data.map((o) => (
         <article key={o.id} className="ord-paper wide ord-slip" aria-label={o.number}>
           <h2>{t("heading", { number: o.number })}</h2>

@@ -12,6 +12,7 @@ import {
 } from "@/app/(admin)/sales/shipping/actions";
 import { SHIPMENT_BADGE } from "@/components/shipping/badges";
 import { SplitDialog } from "@/components/shipping/forms";
+import { AutoFilter } from "@/components/ui/auto-filter";
 import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatCount, formatMoney } from "@/lib/format";
@@ -135,6 +136,7 @@ export default async function ShipmentsPage(props: PageProps<"/sales/shipping">)
         </nav>
         <search aria-label={t("shipments.search")}>
           <form className="filters" action="/sales/shipping">
+            <AutoFilter />
             {status ? <input type="hidden" name="status" value={status} /> : null}
             <div className="fld grow">
               <label className="lab" htmlFor="ship-q">

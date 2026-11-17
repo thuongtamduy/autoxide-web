@@ -237,6 +237,7 @@ function RuleFields({
   return (
     <div className="gr-two">
       <Field
+        money
         label={t("spent")}
         name="spent"
         inputMode="numeric"
@@ -417,6 +418,7 @@ export function LoyaltyRuleDialog() {
             error={state.fields?.earn}
           />
           <Field
+            money
             label={t("value")}
             name="value"
             inputMode="numeric"
@@ -534,6 +536,7 @@ export function ReferralRuleDialog() {
             error={state.fields?.referee}
           />
           <Field
+            money
             label={t("min")}
             name="min"
             inputMode="numeric"
