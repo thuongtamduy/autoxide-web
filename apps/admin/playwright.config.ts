@@ -15,7 +15,9 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: `http://localhost:${APP_PORT}`,
-    trace: "off",
+    // Test hỏng để lại trace (request, lỗi, ảnh từng bước) ở `test-results/`; mở bằng
+    // `pnpm exec playwright show-trace <đường dẫn>`. Cần cho lỗi chỉ thỉnh thoảng mới gặp.
+    trace: "retain-on-failure",
     ...devices["Desktop Chrome"],
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
   },

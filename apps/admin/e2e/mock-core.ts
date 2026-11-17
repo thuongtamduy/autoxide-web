@@ -61,13 +61,7 @@ import {
 } from "./mock-http.ts";
 import { mediaContent, mediaRoutes, resetMedia } from "./mock-media.ts";
 import { bumpMenu, MENUS_MODULE, menusRoutes, publicMenu, resetMenus } from "./mock-menus.ts";
-import {
-  ORG_MODULE,
-  orgPerson,
-  orgRoutes,
-  resetOrg,
-  setRootName,
-} from "./mock-org.ts";
+import { ORG_MODULE, orgPerson, orgRoutes, resetOrg, setRootName } from "./mock-org.ts";
 import { plansRoutes, resetPlans, setBasicFeatures, setInstalledModules } from "./mock-plans.ts";
 import {
   finishLoginCeremony,
