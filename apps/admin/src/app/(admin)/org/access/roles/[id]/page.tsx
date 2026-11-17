@@ -86,6 +86,8 @@ export default async function RolePage(props: PageProps<"/org/access/roles/[id]"
               name: role.name,
               description: role.description,
               permissions: role.permissions,
+              grants: role.grants,
+              requires_mfa: role.requires_mfa,
             }}
             etag={etag}
             editable={manage}

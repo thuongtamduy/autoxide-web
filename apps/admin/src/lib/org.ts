@@ -11,6 +11,12 @@ export type SettingInfo = Schemas["SettingResponse"];
 export type MembershipRow = Schemas["MembershipRowResponse"];
 export type PublicProfile = Schemas["PublicProfileResponse"];
 export type Scope = Schemas["RoleGrant"]["scope"];
+export type Invitation = Schemas["InvitationResponse"];
+export type Delegation = Schemas["DelegationResponse"];
+export type SupportGrant = Schemas["SupportGrantResponse"];
+export type DelegationStatus = "active" | "expired" | "revoked";
+/** Trạng thái hiện của lời mời: ba trạng thái của core, thêm `expired` (đang chờ mà quá hạn). */
+export type InvitationStatus = "pending" | "expired" | "accepted" | "revoked";
 
 export const SCOPES: readonly Scope[] = ["own", "unit", "subtree", "tenant"];
 
@@ -166,4 +172,20 @@ export function typeLabel(
 ): string {
   const own = code === "tenant" ? undefined : types.find((type) => type.code === code)?.name;
   return own || translate(code) || code;
+}
+
+/** Trạng thái hiện của một lời mời: `pending` đã quá `expires_at` là `expired`. */
+export function invitationStatus(invitation: Invitation, now = Date.now()): InvitationStatus {
+  if (invitation.status === "accepted" || invitation.status === "revoked") return invitation.status;
+  return Date.parse(invitation.expires_at) <= now ? "expired" : "pending";
+}
+
+/** Trạng thái của uỷ quyền hay lần cấp quyền vào hỗ trợ: thu hồi, hết hạn, còn hiệu lực. */
+export function delegationStatus(
+  grant: { revoked_at?: string | null; expires_at?: string | null },
+  now = Date.now(),
+): DelegationStatus {
+  if (grant.revoked_at) return "revoked";
+  if (grant.expires_at && Date.parse(grant.expires_at) <= now) return "expired";
+  return "active";
 }

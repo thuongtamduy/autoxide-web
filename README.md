@@ -38,7 +38,12 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
   roles with a permission picker (risky permissions are labelled), first password and two-step
   sign-in reset only where they apply, sign-out everywhere, removing the passkeys of someone who
   lost their device; public profiles of the units (name, address on the official list of
-  administrative units, opening hours, pickup) shown on the website.
+  administrative units, opening hours, pickup) shown on the website; roles with a depth per
+  permission (own records, the unit, the unit and below, the whole customer) and "requires two-step
+  sign-in"; roles of a person at other units; invitations by email (and the page that accepts
+  them), delegation to child customers, and the platform staff's support access (revoke, turn off).
+- **Sign-in with a link by email** and **My account › Profile**: name, preferred language and time
+  zone, and where you work (your units and roles, the customers you can work in).
 - **Organization tree**: units by type, who works at each unit (also through a parent unit), the
   settings in force with the unit they come from, adding a child unit with undo. A unit picker at the
   top left narrows posts, media, forms and menus to one unit (new ones belong to it).
@@ -111,6 +116,10 @@ email changes. Set these variables **on the core** so the links in those mails o
 AUTOXIDE_AUTH_EMAIL_VERIFICATION_URL=https://admin.example.com/verify-email?token={token}
 AUTOXIDE_AUTH_PASSWORD_RESET_URL=https://admin.example.com/reset-password?token={token}
 AUTOXIDE_AUTH_EMAIL_CHANGE_REPORT_URL=https://admin.example.com/not-me?token={token}
+AUTOXIDE_AUTH_INVITATION_URL=https://admin.example.com/invitation?token={token}
+AUTOXIDE_AUTH_LOGIN_LINK_URL=https://admin.example.com/sign-in/link?token={token}
+# Sign-in with a link by email is off unless the core turns it on:
+AUTOXIDE_AUTH_LOGIN_LINK=true
 ```
 
 The core puts the token where `{token}` is. Without them, the mails contain the token and tell the

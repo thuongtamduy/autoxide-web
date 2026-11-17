@@ -373,3 +373,51 @@ export async function deleteAccount(_state: FormState, formData: FormData): Prom
   }
   redirect("/login?deleted=1");
 }
+
+/**
+ * Nhận lời mời bằng tài khoản đang đăng nhập (`POST /auth/invitations/accept` kèm access token):
+ * core cộng role của lời mời vào tài khoản này. Email của lời mời phải trùng email tài khoản
+ * (`auth.invitation_email_mismatch`).
+ */
+export async function acceptInvitationAsMe(
+  state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const token = String(formData.get("token") ?? "");
+  const result = await send((client) =>
+    client.POST("/api/v1/auth/invitations/accept", { body: { token } }),
+  );
+  if (!result.ok) return problemState(result.problem, []);
+  refresh();
+  return { done: nextDone(state) };
+}
+
+/**
+ * Sửa hồ sơ của chính mình (`PATCH /auth/me`): tên hiển thị, ngôn ngữ ưa thích (thư core gửi sau
+ * này theo ngôn ngữ đó), múi giờ. Ô trống ở ngôn ngữ / múi giờ = bỏ ưa thích (`null`).
+ */
+export async function updateProfile(state: FormState, formData: FormData): Promise<FormState> {
+  const values = {
+    name: String(formData.get("name") ?? "").trim(),
+    locale: String(formData.get("locale") ?? ""),
+    time_zone: String(formData.get("time_zone") ?? "").trim(),
+  };
+  if (!values.name) {
+    const t = await getTranslations("access.required");
+    return { fields: { name: t("name") }, values };
+  }
+  const result = await send((client) =>
+    client.PATCH("/api/v1/auth/me", {
+      body: {
+        name: values.name,
+        locale: values.locale || null,
+        time_zone: values.time_zone || null,
+      },
+    }),
+  );
+  if (!result.ok) {
+    return { ...problemState(result.problem, ["name", "locale", "time_zone"]), values };
+  }
+  refresh();
+  return { done: nextDone(state) };
+}

@@ -1,14 +1,14 @@
 "use client";
 
-// Biểu mẫu của các tab dùng dữ liệu mẫu (W-006). Cùng cách làm với phần gọi core thật: Server
-// Action, lỗi theo ô, gom mọi lỗi một lần; chỉ khác là action gọi hàm mẫu thay cho API bước 34.
+// Biểu mẫu của các tab Lời mời, Uỷ quyền, Quyền vào hỗ trợ (bước 34 của core): Server Action,
+// lỗi theo ô, gom mọi lỗi một lần.
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
 import {
   delegateRole,
   inviteStaff,
   saveSupportAccess,
-} from "@/app/(admin)/org/access/sample-actions";
+} from "@/app/(admin)/org/access/team-actions";
 import { Dialog } from "@/components/ui/dialog";
 import {
   CheckField,
@@ -28,14 +28,22 @@ export interface Option {
 }
 
 /** "Mời nhân sự": email, tên, nút, role (role thật của core). */
-export function InviteDialog({ units, roles }: { units: Option[]; roles: Option[] }) {
+export function InviteDialog({
+  units,
+  roles,
+  triggerClass = "btn sm",
+}: {
+  units: Option[];
+  roles: Option[];
+  triggerClass?: string;
+}) {
   const t = useTranslations("access.invitations");
   return (
     <Dialog
       label={t("invite")}
       title={t("inviteTitle")}
       intro={t("inviteIntro")}
-      triggerClass="btn sm"
+      triggerClass={triggerClass}
     >
       {(close) => <InviteForm units={units} roles={roles} close={close} />}
     </Dialog>
@@ -102,7 +110,7 @@ function InviteForm({
 }
 
 /** "Uỷ quyền mới": khách con, role, hạn (không bắt buộc), lý do. */
-export function DelegateDialog({ tenants, roles }: { tenants: Option[]; roles: Option[] }) {
+export function DelegateDialog({ roles }: { roles: Option[] }) {
   const t = useTranslations("access.delegations");
   return (
     <Dialog
@@ -111,20 +119,12 @@ export function DelegateDialog({ tenants, roles }: { tenants: Option[]; roles: O
       intro={t("createIntro")}
       triggerClass="btn sm"
     >
-      {(close) => <DelegateForm tenants={tenants} roles={roles} close={close} />}
+      {(close) => <DelegateForm roles={roles} close={close} />}
     </Dialog>
   );
 }
 
-function DelegateForm({
-  tenants,
-  roles,
-  close,
-}: {
-  tenants: Option[];
-  roles: Option[];
-  close: () => void;
-}) {
+function DelegateForm({ roles, close }: { roles: Option[]; close: () => void }) {
   const t = useTranslations("access.delegations");
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
@@ -136,14 +136,22 @@ function DelegateForm({
   });
   return (
     <form ref={form} action={action} noValidate className="dlg-form">
-      <SelectField
-        label={t("child")}
+      <Field
+        label={t("childId")}
         name="child_tenant_id"
-        options={tenants}
+        autoComplete="off"
+        mono
+        hint={t("childIdHint")}
         defaultValue={state.values?.child_tenant_id}
         error={state.fields?.child_tenant_id}
       />
-      <SelectField label={t("role")} name="role" options={roles} error={state.fields?.role} />
+      <SelectField
+        label={t("role")}
+        name="role_id"
+        options={roles}
+        defaultValue={state.values?.role_id}
+        error={state.fields?.role_id}
+      />
       <Field
         label={t("expires")}
         name="expires_at"
@@ -163,18 +171,6 @@ function DelegateForm({
       <DialogButtons submit={t("submit")} pending={pending} close={close} />
     </form>
   );
-}
-
-export interface ProfileValues {
-  unit_id: string;
-  public: boolean;
-  display_name: string;
-  province_code: string;
-  commune_name: string;
-  line: string;
-  opens: string;
-  closes: string;
-  pickup: boolean;
 }
 
 /** Bật / tắt cho nhân sự nền tảng vào để hỗ trợ (`auth.support_access`). */

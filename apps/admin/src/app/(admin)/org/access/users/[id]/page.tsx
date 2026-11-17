@@ -10,7 +10,7 @@ import {
   RemovePasskeyDialog,
   ResetMailButton,
 } from "@/components/access/user-admin";
-import { RenameForm, RolesForm, StatusControl } from "@/components/access/user-edit";
+import { RenameForm, RolesForm, StatusControl, UnitRolesForm } from "@/components/access/user-edit";
 import { MessagePanel } from "@/components/message-panel";
 import { Icon } from "@/components/shell/icon";
 import { Flash } from "@/components/ui/flash";
@@ -18,6 +18,8 @@ import { Time } from "@/components/ui/time";
 import { allRoles } from "@/lib/access";
 import { getClientConfig } from "@/lib/client-config";
 import { isForbidden, isNotFound, load, loadTagged } from "@/lib/core";
+import { ordered } from "@/lib/org";
+import { loadUnits } from "@/lib/org-server";
 import {
   API_KEYS_MANAGE,
   PASSKEYS_MANAGE,
@@ -85,6 +87,17 @@ export default async function UserPage(props: PageProps<"/org/access/users/[id]"
   // Máy chủ chưa gửi thư thật (chỉ ghi ra tệp): báo trước khi quản trị viên bấm "Gửi thư đặt lại".
   const mailOff = (await getClientConfig())?.mail?.sends === false;
   const roles = assign && readRoles ? await allRoles() : null;
+  // Role ở các nút khác gốc (bước 34): chỉ khi đọc được cây; gốc là phần "Role" ở trên.
+  const units = await loadUnits();
+  const root = units?.find((u) => u.parent_id === null);
+  const unitMemberships =
+    units && root
+      ? (
+          await load((client) =>
+            client.GET("/api/v1/auth/users/{id}/memberships", { params: { path: { id } } }),
+          )
+        ).data.filter((m) => m.org_id !== root.id)
+      : null;
   const who = user.name || user.email;
   const target = { id: user.id, email: user.email, who };
   const disabled = Boolean(user.disabled_at);
@@ -218,6 +231,55 @@ export default async function UserPage(props: PageProps<"/org/access/users/[id]"
             )}
           </div>
         )}
+        {units && unitMemberships ? (
+          <>
+            <h2 id="units-h" className="h2">
+              {t("access.user.units.heading")}
+            </h2>
+            <p className="fhint">{t("access.user.units.about")}</p>
+            {roles ? (
+              <UnitRolesForm
+                id={user.id}
+                units={ordered(units)
+                  .filter(({ unit }) => unit.parent_id !== null && unit.status === "active")
+                  .map(({ unit, depth }) => ({
+                    value: unit.id,
+                    label: `${"— ".repeat(Math.max(depth - 1, 0))}${unit.name}`,
+                  }))}
+                roles={roles.map((role) => ({
+                  id: role.id,
+                  name: role.name,
+                  description: role.description,
+                  all: role.all_permissions,
+                }))}
+                held={unitMemberships.map((m) => ({
+                  org_id: m.org_id,
+                  name: units.find((u) => u.id === m.org_id)?.name ?? m.org_id,
+                  role_ids: m.roles.map((r) => r.id),
+                }))}
+              />
+            ) : (
+              <div className="card list">
+                {unitMemberships.length === 0 ? (
+                  <p className="empty">{t("access.user.units.none")}</p>
+                ) : (
+                  unitMemberships.map((m) => (
+                    <div key={m.org_id} className="item">
+                      <span className="item-main">
+                        <span className="item-title">
+                          {units.find((u) => u.id === m.org_id)?.name ?? m.org_id}
+                        </span>
+                        <span className="item-meta mono">
+                          {m.roles.map((r) => r.name).join(", ")}
+                        </span>
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </>
+        ) : null}
       </section>
 
       {manage ? (

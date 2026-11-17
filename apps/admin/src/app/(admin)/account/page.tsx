@@ -4,16 +4,30 @@ import {
   ChangeEmailDialog,
   ResendVerification,
 } from "@/components/account/email";
+import { ProfileForm } from "@/components/account/profile-form";
 import { Icon } from "@/components/shell/icon";
 import { Time } from "@/components/ui/time";
-import { getMe } from "@/lib/viewer";
+import { load } from "@/lib/core";
+import { loadUnits } from "@/lib/org-server";
+import { getCurrentTenant, getMe } from "@/lib/viewer";
 
-// Tab "Hồ sơ": tên, email và trạng thái xác minh, email đang chờ xác minh sau khi xin đổi (huỷ được).
-// Core chưa có endpoint để người dùng tự đổi tên (`PATCH /me`, bước 34 của core): tên chỉ hiện,
-// quản trị viên đổi được ở màn người dùng.
+// Tab "Hồ sơ": tên, ngôn ngữ và múi giờ ưa thích (`PATCH /auth/me`, bước 34 của core), email và
+// trạng thái xác minh, email đang chờ xác minh sau khi xin đổi (huỷ được), và "Nơi bạn làm việc":
+// các nút tổ chức kèm role ở đó (`GET /auth/me/memberships`), các khách vào được
+// (`GET /auth/me/tenants`: của mình, qua uỷ quyền, qua quyền vào hỗ trợ).
 export default async function ProfilePage() {
   const t = await getTranslations("account.profile");
   const me = await getMe();
+  const [memberships, tenants, units, current] = await Promise.all([
+    load((c) => c.GET("/api/v1/auth/me/memberships")).then((r) => r.data),
+    load((c) => c.GET("/api/v1/auth/me/tenants")).then((r) => r.data),
+    loadUnits(),
+    getCurrentTenant(),
+  ]);
+  const unitName = new Map((units ?? []).map((u) => [u.id, u.name]));
+  // Gợi ý múi giờ: danh sách của máy chủ Node, thêm tên thường dùng ở Việt Nam (ICU gọi nó là
+  // `Asia/Saigon`; core nhận cả hai).
+  const zones = ["Asia/Ho_Chi_Minh", ...Intl.supportedValuesOf("timeZone")];
   const verified = me.email_verified_at ?? null;
   const pending = me.pending_email ?? null;
   return (
@@ -22,19 +36,15 @@ export default async function ProfilePage() {
         <h2 id="profile-h" className="h2">
           {t("title")}
         </h2>
-        <dl className="card kv">
-          <div>
-            <dt>{t("name")}</dt>
-            <dd>{me.name || "—"}</dd>
-            <dd className="fhint">{t("nameHint")}</dd>
-          </div>
-          <div>
-            <dt>{t("since")}</dt>
-            <dd>
-              <Time value={me.created_at} />
-            </dd>
-          </div>
-        </dl>
+        <ProfileForm
+          name={me.name}
+          locale={me.locale ?? ""}
+          timeZone={me.time_zone ?? ""}
+          zones={zones}
+        />
+        <p className="fhint">
+          {t("since")} <Time value={me.created_at} />
+        </p>
       </section>
       <section className="block half" aria-labelledby="email-h">
         <h2 id="email-h" className="h2">
@@ -89,6 +99,52 @@ export default async function ProfilePage() {
             </div>
           ) : null}
         </div>
+      </section>
+      <section className="block" aria-labelledby="where-h">
+        <h2 id="where-h" className="h2">
+          {t("where")}
+        </h2>
+        <p className="fhint">{t("whereHint")}</p>
+        <div className="card list" data-testid="my-units">
+          {memberships.length === 0 ? (
+            <p className="empty">{t("noUnits")}</p>
+          ) : (
+            memberships.map((m) => (
+              <div className="item" key={m.org_id}>
+                <span className="sq-ic">
+                  <Icon name="org" />
+                </span>
+                <span className="item-main">
+                  <span className="item-title ell">
+                    {unitName.get(m.org_id) ??
+                      (m.org_id === current?.id ? (current?.name ?? t("root")) : m.org_id)}
+                  </span>
+                  <span className="item-meta mono">{m.roles.map((r) => r.name).join(", ")}</span>
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+        {tenants.length > 1 ? (
+          <>
+            <h3 className="h2">{t("tenants")}</h3>
+            <div className="card list" data-testid="my-tenants">
+              {tenants.map((tenant) => (
+                <div className="item" key={tenant.id}>
+                  <span className="item-main">
+                    <span className="item-title ell">{tenant.name}</span>
+                    <span className="item-meta mono">{tenant.slug}</span>
+                  </span>
+                  <span className={tenant.access === "direct" ? "badge b-ok" : "badge b-warn"}>
+                    {t(
+                      `access.${tenant.access === "delegation" || tenant.access === "support" ? tenant.access : "direct"}`,
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : null}
       </section>
     </div>
   );

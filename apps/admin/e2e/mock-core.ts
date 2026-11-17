@@ -30,6 +30,7 @@ import { KERNEL, NOTES } from "../src/test/fixtures.ts";
 import {
   ADMIN_ROLE,
   accessRoutes,
+  needsMfa,
   PERMISSION_CATALOG,
   publicRoutes,
   resetAccess,
@@ -76,6 +77,14 @@ import {
   startLoginCeremony,
 } from "./mock-settings.ts";
 import { storefrontRoutes } from "./mock-storefront.ts";
+import {
+  preferencesOf,
+  resetTeam,
+  type TeamDeps,
+  teamPublicRoutes,
+  teamRoutes,
+  teamTokens,
+} from "./mock-team.ts";
 import {
   knownTenant,
   ownClientConfig,
@@ -229,6 +238,62 @@ function endSession(id: string) {
   }
 }
 
+/** Thân `GET /auth/me` của một tài khoản (cũng là câu trả lời của `PATCH /auth/me`). */
+function meOf(account: Account): Me {
+  return {
+    id: account.id,
+    email: account.email,
+    name: account.name,
+    email_verified_at: account.verified ? "2026-11-13T08:00:00Z" : null,
+    all_permissions: account.canReadModules,
+    permissions: [],
+    has_password: account.hasPassword,
+    pending_email: account.pendingEmail,
+    // Như core (D-308): role bắt buộc MFA mà chưa có app xác thực hay passkey.
+    mfa_required: needsMfa(account.roleIds) && !account.mfa && account.passkeys.length === 0,
+    ...preferencesOf(account.id),
+    created_at: "2026-11-12T00:00:00Z",
+  };
+}
+
+/** Đồ dùng chung cho `mock-team.ts`: tạo tài khoản, mở phiên, bước mã. */
+const team: TeamDeps = {
+  accounts: () => accounts,
+  create(email, name, password) {
+    const now = new Date().toISOString();
+    const account: Account = {
+      id: randomUUID(),
+      email,
+      name: name || (email.split("@")[0] ?? email),
+      password: password ?? "",
+      canReadModules: false,
+      mfa: false,
+      recoveryCodes: [],
+      totpPending: false,
+      verified: true,
+      passkeys: [],
+      credentialIds: [],
+      deleted: false,
+      disabledAt: null,
+      roleIds: [],
+      hasPassword: password !== null,
+      lastSignInAt: null,
+      pendingEmail: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    accounts.push(account);
+    return account;
+  },
+  signIn: (account, method) => issue(startSession(account, null, method)),
+  me: meOf,
+  challenge(account) {
+    const token = randomUUID();
+    mfa.set(token, { account, userAgent: null });
+    return { data: { mfa_token: token, expires_in: 300, methods: ["totp"] } };
+  },
+};
+
 function caller(request: IncomingMessage): Session | undefined {
   const token = request.headers.authorization?.replace(/^Bearer /, "");
   const session = token ? access.get(token) : undefined;
@@ -321,10 +386,12 @@ const server = createServer(async (request, response) => {
     resetTenants();
     resetDomains();
     resetOrg(adminId());
+    resetTeam();
     return send(response, 204);
   }
   if (route === "POST /__tenancy") return setTenancy(request, response);
   if (route === "POST /__org/root-name") return setRootName(request, response);
+  if (route === "GET /__team/tokens") return teamTokens(response);
   if (route === "POST /__own-tenant") return setOwnTenant(request, response);
   if (route === "POST /__domains/dns") return setDnsRecord(request, response);
   if (route === "POST /__webhooks/fire") {
@@ -383,6 +450,7 @@ const server = createServer(async (request, response) => {
   if (request.method === "GET" && mediaContent(response, url, caller(request) !== undefined))
     return;
   if (route === "GET /api/v1/content/public/preview") return contentPreview(response, url);
+  if (await teamPublicRoutes(request, response, route, team)) return;
   if (route === "POST /api/v1/auth/login") {
     // Chế độ nhiều khách: đăng nhập phải nêu khách (header hay tên miền), như core (bước 33). Tài
     // khoản giả đều thuộc khách nền tảng (`default`).
@@ -559,26 +627,14 @@ const server = createServer(async (request, response) => {
     );
   }
   if (route === "GET /api/v1/auth/me") {
-    return send(response, 200, {
-      data: {
-        id: account.id,
-        email: account.email,
-        name: account.name,
-        email_verified_at: account.verified ? "2026-11-13T08:00:00Z" : null,
-        all_permissions: account.canReadModules,
-        permissions: [],
-        has_password: account.hasPassword,
-        pending_email: account.pendingEmail,
-        mfa_required: false,
-        created_at: "2026-11-12T00:00:00Z",
-      } satisfies Me,
-    });
+    return send(response, 200, { data: meOf(account) });
   }
   if (route === "GET /api/v1/me/permissions") {
     // Admin có mọi permission: cả sổ; người khác: những gì role của họ cho (ở đây không có).
     const mine = account.canReadModules ? PERMISSION_CATALOG : [];
     return send(response, 200, { data: mine } satisfies Schemas["Data_Vec_MyPermission"]);
   }
+  if (await teamRoutes(request, response, url, route, account, team)) return;
   if (url.pathname.startsWith("/api/v1/auth/me/") || url.pathname === "/api/v1/auth/me") {
     return mine(request, response, url, route, account);
   }

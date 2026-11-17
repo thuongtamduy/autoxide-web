@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import { SCOPES, type Scope } from "@/lib/org";
 import {
   groupPermissions,
   matchesPermission,
@@ -21,8 +22,16 @@ export function PermissionPicker({
   onChange,
   editable,
   error,
+  scopes,
+  onScope,
 }: {
   catalog: readonly PermissionInfo[];
+  /**
+   * Độ sâu đang chọn của permission có phạm vi (chỉ trình sửa role truyền; API key không có độ
+   * sâu). Không có trong map: cả khách. Mỗi ô chọn là `<select name="scope:<permission>">`.
+   */
+  scopes?: ReadonlyMap<string, Scope>;
+  onScope?: (permission: string, scope: Scope) => void;
   /** Tên đang chọn mà sổ không còn (module đã gỡ): vẫn hiện để bỏ chọn được. */
   extra?: readonly string[];
   chosen: ReadonlySet<string>;
@@ -32,6 +41,7 @@ export function PermissionPicker({
 }) {
   const t = useTranslations("access.role");
   const risks = useTranslations("access.risk");
+  const depth = useTranslations("orgtree.scopes");
   const [query, setQuery] = useState("");
   const groups = useMemo(() => groupPermissions(catalog, extra), [catalog, extra]);
 
@@ -127,6 +137,22 @@ export function PermissionPicker({
                     </span>
                     <span className="check-desc">{permission.description || t("unknown")}</span>
                   </span>
+                  {scopes && permission.scoped && chosen.has(permission.name) ? (
+                    <select
+                      className="inp sm perm-scope"
+                      name={`scope:${permission.name}`}
+                      aria-label={t("scopeOf", { permission: permission.name })}
+                      value={scopes.get(permission.name) ?? "tenant"}
+                      onChange={(event) => onScope?.(permission.name, event.target.value as Scope)}
+                      disabled={!editable}
+                    >
+                      {SCOPES.map((scope) => (
+                        <option key={scope} value={scope}>
+                          {depth(scope)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
                 </label>
               ))}
             </fieldset>

@@ -163,6 +163,11 @@ export function LoginForm({
               {t("forgot")}
             </Link>
           )}
+          {mfa ? null : (
+            <Link className="text-sm underline" href="/sign-in/link">
+              {t("linkSignIn")}
+            </Link>
+          )}
           {mfa && (
             <Button
               type="submit"

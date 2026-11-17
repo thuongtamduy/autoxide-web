@@ -1,29 +1,48 @@
 import { getTranslations } from "next-intl/server";
-import { SupportToggle } from "@/components/access/sample-forms";
-import { SampleBadge } from "@/components/sample-badge";
+import { SupportToggle } from "@/components/access/team-forms";
+import { MessagePanel } from "@/components/message-panel";
 import { ConfirmAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
+import { load } from "@/lib/core";
+import { type DelegationStatus, delegationStatus } from "@/lib/org";
+import { rootUnit } from "@/lib/org-server";
 import { SETTINGS_WRITE, SUPPORT_ACCESS_READ } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
-import { type GrantStatus, getSupportAccess, grantStatus } from "@/sample/org";
-import { revokeGrant } from "../sample-actions";
-import { sampleGate } from "../sample-gate";
+import { revokeGrant } from "../team-actions";
 
-const BADGE: Record<GrantStatus, string> = {
+const BADGE: Record<DelegationStatus, string> = {
   active: "badge b-warn",
   expired: "badge b-arch",
   revoked: "badge b-arch",
 };
 
-// Tab "Quyền vào hỗ trợ" (dữ liệu mẫu, chờ `/auth/support-access` của bước 34): nhân sự của nhà
-// vận hành chỉ vào dữ liệu của khách khi được cấp có lý do và có hạn. Mọi lần cấp và lần vào
-// hiện ở đây (Luật Bảo vệ dữ liệu cá nhân 2025: khách là bên kiểm soát dữ liệu).
+// Tab "Quyền vào hỗ trợ" (`/auth/support-access`, bước 34 của core, D-313): nhân sự của nhà vận hành
+// chỉ vào dữ liệu của khách khi được cấp có lý do và có hạn. Mọi lần cấp hiện ở đây; việc đã làm nằm
+// trong nhật ký với `access.kind = support` (Luật Bảo vệ dữ liệu cá nhân 2025: khách là bên kiểm soát
+// dữ liệu). Bật / tắt là cài đặt `auth.support_access` ở nút gốc.
 export default async function SupportPage() {
-  const gate = await sampleGate(SUPPORT_ACCESS_READ);
-  if (gate) return gate;
+  if (!(await can(SUPPORT_ACCESS_READ))) {
+    const errors = await getTranslations("errors");
+    return (
+      <MessagePanel
+        title={errors("forbiddenTitle")}
+        message={errors("forbidden", { permission: SUPPORT_ACCESS_READ })}
+      />
+    );
+  }
   const t = await getTranslations("access.support");
-  const [{ data: access }, write] = await Promise.all([getSupportAccess(), can(SETTINGS_WRITE)]);
+  const root = await rootUnit();
+  const [grants, write, settings] = await Promise.all([
+    load((c) => c.GET("/api/v1/auth/support-access")).then((r) => r.data),
+    can(SETTINGS_WRITE),
+    root
+      ? load((c) =>
+          c.GET("/api/v1/organizations/units/{id}/settings", { params: { path: { id: root.id } } }),
+        ).then((r) => r.data)
+      : Promise.resolve([]),
+  ]);
+  const enabled = settings.find((s) => s.key === "auth.support_access")?.value !== false;
   const now = Date.now();
   return (
     <div className="blocks">
@@ -32,15 +51,11 @@ export default async function SupportPage() {
           <h2 id="allow-h" className="h2">
             {t("allowTitle")}
           </h2>
-          <SampleBadge
-            step="34"
-            endpoint="GET /api/v1/auth/support-access · PUT …/settings/auth.support_access"
-          />
         </div>
-        {write ? (
-          <SupportToggle enabled={access.enabled} />
+        {write && root ? (
+          <SupportToggle enabled={enabled} />
         ) : (
-          <p className="note">{access.enabled ? t("isOn") : t("isOff")}</p>
+          <p className="note">{enabled ? t("isOn") : t("isOff")}</p>
         )}
       </section>
       <section className="block half" aria-labelledby="revoke-h">
@@ -56,82 +71,87 @@ export default async function SupportPage() {
           </h2>
         </div>
         <div className="card tcard">
-          <Table cards>
-            <thead>
-              <tr>
-                <Th>{t("staff")}</Th>
-                <Th>{t("basis")}</Th>
-                <Th>{t("time")}</Th>
-                <Th>{t("state")}</Th>
-                <Th>
-                  <span className="vh">{t("actions")}</span>
-                </Th>
-              </tr>
-            </thead>
-            <tbody>
-              {access.grants.map((grant) => {
-                const status = grantStatus(grant, now);
-                return (
-                  <tr key={grant.id}>
-                    <Td className="rt-title">
-                      <span className="cell2">
-                        <b>{grant.staff.name}</b>
-                        <span className="sub mono">{grant.role.name}</span>
-                      </span>
-                    </Td>
-                    <Td label={t("basis")}>
-                      <span className="cell2">
-                        <span>{t(`basisKind.${grant.basis}`)}</span>
-                        <span className="sub">
-                          {grant.reason}
-                          {grant.legal_reference ? ` · ${grant.legal_reference}` : ""}
+          {grants.length === 0 ? (
+            <p className="empty">{t("empty")}</p>
+          ) : (
+            <Table cards>
+              <thead>
+                <tr>
+                  <Th>{t("staff")}</Th>
+                  <Th>{t("basis")}</Th>
+                  <Th>{t("time")}</Th>
+                  <Th>{t("state")}</Th>
+                  <Th>
+                    <span className="vh">{t("actions")}</span>
+                  </Th>
+                </tr>
+              </thead>
+              <tbody>
+                {grants.map((grant) => {
+                  const status = delegationStatus(grant, now);
+                  const staff = t("staffId", { id: grant.staff_user_id.slice(0, 8) });
+                  return (
+                    <tr key={grant.id}>
+                      <Td className="rt-title">
+                        <span className="cell2">
+                          <b>{staff}</b>
+                          <span className="sub">
+                            {grant.first_used_at ? (
+                              <>
+                                {t("firstUsed")} <Time value={grant.first_used_at} />
+                              </>
+                            ) : (
+                              t("notUsed")
+                            )}
+                          </span>
                         </span>
-                        {grant.visits.length > 0 ? (
-                          <details className="visits">
-                            <summary>{t("visits", { count: grant.visits.length })}</summary>
-                            <ul>
-                              {grant.visits.map((visit) => (
-                                <li key={visit.at}>
-                                  <Time value={visit.at} /> — {visit.text}
-                                </li>
-                              ))}
-                            </ul>
-                          </details>
+                      </Td>
+                      <Td label={t("basis")}>
+                        <span className="cell2">
+                          <span>
+                            {t(
+                              `basisKind.${grant.basis === "legal_request" ? "legal_request" : "support"}`,
+                            )}
+                          </span>
+                          <span className="sub">
+                            {grant.reason}
+                            {grant.legal_reference ? ` · ${grant.legal_reference}` : ""}
+                          </span>
+                        </span>
+                      </Td>
+                      <Td label={t("time")}>
+                        <span className="cell2">
+                          <Time value={grant.starts_at} />
+                          <span className="sub">
+                            {t("until")} <Time value={grant.expires_at} />
+                          </span>
+                        </span>
+                      </Td>
+                      <Td label={t("state")}>
+                        <span className={BADGE[status]}>
+                          <span className="dot" />
+                          {t(`status.${status}`)}
+                        </span>
+                      </Td>
+                      <Td className="rt-acts">
+                        {status === "active" && grant.basis !== "legal_request" ? (
+                          <ConfirmAction
+                            action={revokeGrant}
+                            id={grant.id}
+                            label={t("revoke")}
+                            title={t("revokeTitle", { name: staff })}
+                            points={[t("revokeNow"), t("revokeAudit")]}
+                            submit={t("revokeSubmit")}
+                            done={t("revoked")}
+                          />
                         ) : null}
-                      </span>
-                    </Td>
-                    <Td label={t("time")}>
-                      <span className="cell2">
-                        <Time value={grant.starts_at} />
-                        <span className="sub">
-                          {t("until")} <Time value={grant.expires_at} />
-                        </span>
-                      </span>
-                    </Td>
-                    <Td label={t("state")}>
-                      <span className={BADGE[status]}>
-                        <span className="dot" />
-                        {t(`status.${status}`)}
-                      </span>
-                    </Td>
-                    <Td className="rt-acts">
-                      {status === "active" ? (
-                        <ConfirmAction
-                          action={revokeGrant}
-                          id={grant.id}
-                          label={t("revoke")}
-                          title={t("revokeTitle", { name: grant.staff.name })}
-                          points={[t("revokeNow"), t("revokeAudit")]}
-                          submit={t("revokeSubmit")}
-                          done={t("revoked")}
-                        />
-                      ) : null}
-                    </Td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Table>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          )}
         </div>
       </section>
     </div>

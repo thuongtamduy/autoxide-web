@@ -12,6 +12,11 @@ export interface PermissionInfo {
    * còn (module đã gỡ).
    */
   risk?: string;
+  /**
+   * Cấp được với độ sâu hẹp hơn cả khách (`own`, `unit`, `subtree`) — `scoped` của
+   * `GET /auth/permissions` (bước 34 của core). Không có: chỉ cấp cho cả khách.
+   */
+  scoped?: boolean;
 }
 
 /** Mức rủi ro cần nêu cạnh permission (đọc và ghi thường thì không). */

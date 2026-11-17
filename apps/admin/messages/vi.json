@@ -142,7 +142,8 @@
     "passkeyUnsupported": "Trình duyệt này không dùng được passkey. Hãy đăng nhập bằng mật khẩu.",
     "passkeyCancelled": "Đã huỷ đăng nhập bằng passkey.",
     "passkeyFailed": "Không dùng được passkey. Thử lại, hoặc đăng nhập bằng mật khẩu.",
-    "passkeyExpired": "Yêu cầu passkey đã hết hạn. Thử lại."
+    "passkeyExpired": "Yêu cầu passkey đã hết hạn. Thử lại.",
+    "linkSignIn": "Đăng nhập bằng link qua email"
   },
   "modules": {
     "title": "Module",
@@ -260,7 +261,10 @@
       "none": "Không có nút nào khớp.",
       "close": "Đóng",
       "hint": "Chọn một nút thì chỉ hiện bài, media, form và menu của nút đó; màn đang xem giữ nguyên. Role của bạn quyết định bạn sửa được gì ở đó."
-    }
+    },
+    "mfaTitle": "Hãy bật xác thực hai bước.",
+    "mfaBody": "Một role của bạn bắt buộc điều này: permission của role đó tạm tắt tới khi bạn thêm app xác thực hoặc passkey.",
+    "mfaLink": "Bật ngay"
   },
   "dashboard": {
     "hello": "Chào {name}",
@@ -333,7 +337,24 @@
       "verifiedOn": "Đã xác minh lúc",
       "unverifiedHint": "Mở link trong thư xác minh để xác nhận địa chỉ này.",
       "pending": "Chờ xác minh",
-      "pendingHint": "Địa chỉ mới của bạn: mở link trong thư gửi tới địa chỉ này. Link dùng được tới"
+      "pendingHint": "Địa chỉ mới của bạn: mở link trong thư gửi tới địa chỉ này. Link dùng được tới",
+      "locale": "Ngôn ngữ ưa thích",
+      "localeHint": "Ngôn ngữ của thư máy chủ gửi cho bạn. Ngôn ngữ giao diện đổi bằng nút EN / VI.",
+      "localeNone": "Chưa đặt (theo ngôn ngữ của từng lần gọi)",
+      "timeZone": "Múi giờ",
+      "timeZoneHint": "Ví dụ Asia/Ho_Chi_Minh. Để trống: chưa đặt.",
+      "save": "Lưu hồ sơ",
+      "saved": "Đã lưu hồ sơ.",
+      "where": "Nơi bạn làm việc",
+      "whereHint": "Các nút tổ chức bạn được gán, kèm role ở đó. Role chảy xuống các nút bên dưới theo độ sâu của nó.",
+      "noUnits": "Bạn chưa được gán vào nút nào.",
+      "root": "Cả khách",
+      "tenants": "Các khách bạn làm việc được",
+      "access": {
+        "direct": "Của bạn",
+        "delegation": "Qua uỷ quyền",
+        "support": "Quyền vào hỗ trợ"
+      }
     },
     "email": {
       "resend": "Gửi lại thư",
@@ -488,6 +509,14 @@
       "mismatch": "Đây không phải email của bạn. Hãy gõ đúng {email}.",
       "password": "Mật khẩu hiện tại",
       "submit": "Xoá vĩnh viễn"
+    },
+    "invitation": {
+      "title": "Nhận lời mời",
+      "intro": "Thêm các role của lời mời này vào tài khoản {email}.",
+      "submit": "Nhận lời mời",
+      "done": "Đã nhận lời mời: role mới có hiệu lực từ trang tiếp theo.",
+      "noToken": "Link này không có mã lời mời.",
+      "home": "Về Tổng quan"
     }
   },
   "sample": {
@@ -725,7 +754,22 @@
       "noPassword": "Chưa có mật khẩu (chỉ passkey)",
       "mfaOn": "đã bật xác thực hai bước",
       "mfaOff": "chưa bật xác thực hai bước",
-      "apiKeys": "Xem API key của người này"
+      "apiKeys": "Xem API key của người này",
+      "units": {
+        "heading": "Role ở các nút khác",
+        "about": "Role được gán ở một cửa hàng, kho hay vùng. Role chảy xuống các nút bên dưới theo độ sâu của nó. Role ở trên áp dụng ở gốc (cả khách).",
+        "none": "Chưa được gán ở nút nào khác.",
+        "add": "Thêm nút",
+        "edit": "Sửa",
+        "editAt": "Sửa role ở {unit}",
+        "title": "Role ở một nút",
+        "intro": "Đánh dấu các role người này có ở nút. Bỏ hết để rời nút đó.",
+        "unit": "Nút",
+        "roles": "Role",
+        "hint": "Bạn chỉ gán được role mà bạn có mọi permission ở nút đó; role admin dựng sẵn chỉ dùng ở gốc.",
+        "save": "Lưu role",
+        "saved": "Đã lưu role ở nút."
+      }
     },
     "admin": {
       "title": "Thao tác của quản trị viên",
@@ -836,7 +880,10 @@
         "holders": "Mọi người đang giữ role này mất các permission của nó ở request kế tiếp.",
         "noUndo": "Không hoàn tác được.",
         "submit": "Xoá role"
-      }
+      },
+      "requiresMfa": "Bắt buộc xác thực hai bước",
+      "requiresMfaHint": "Permission của role chỉ có hiệu lực với tài khoản đã bật app xác thực hoặc passkey. Người chưa bật vẫn đăng nhập được và được nhắc bật.",
+      "scopeOf": "Độ sâu của {permission}"
     },
     "invitations": {
       "invite": "Mời nhân sự",
@@ -906,7 +953,13 @@
       "revokeNow": "Phiên đang mở bằng uỷ quyền này mất quyền ở request kế tiếp.",
       "revokeAudit": "Lần thu hồi được ghi ở cả hai khách.",
       "revokeSubmit": "Thu hồi uỷ quyền",
-      "revoked": "Đã thu hồi uỷ quyền."
+      "revoked": "Đã thu hồi uỷ quyền.",
+      "heading": "Uỷ quyền",
+      "incoming": "Nhận từ khách cấp trên",
+      "parent": "Khách cha",
+      "empty": "Chưa có uỷ quyền nào.",
+      "childId": "ID của khách con",
+      "childIdHint": "ID của khách con, do nhà vận hành nền tảng cung cấp. Phải là khách nằm dưới khách của bạn."
     },
     "public": {
       "units": "Nút",
@@ -972,7 +1025,11 @@
       "saved": "Đã lưu; lần cấp mới theo cài đặt này.",
       "allow": "Nhân sự nền tảng được vào khi bạn báo lỗi",
       "allowHint": "Tắt thì chỉ yêu cầu của cơ quan có thẩm quyền (có số văn bản) mới được cấp, và vẫn được ghi ở đây.",
-      "save": "Lưu"
+      "save": "Lưu",
+      "empty": "Chưa có lần cấp quyền vào hỗ trợ nào.",
+      "staffId": "Nhân sự nền tảng {id}",
+      "firstUsed": "Vào lần đầu",
+      "notUsed": "Chưa vào"
     },
     "risk": {
       "destructive": "Xoá",
@@ -1044,6 +1101,34 @@
         "used": "Link này đã được dùng rồi: tài khoản đã bị khoá trước người đã đổi email. Hãy tìm trong hộp thư cũ thư đặt mật khẩu mới.",
         "unknown": "Link không hợp lệ. Nếu vẫn không vào được tài khoản, hãy nhờ quản trị viên."
       }
+    },
+    "invitation": {
+      "title": "Nhận lời mời",
+      "description": "Tạo tài khoản để bắt đầu làm việc. Sau này bạn đăng nhập bằng mật khẩu, link đăng nhập hoặc passkey.",
+      "noToken": "Link này không có mã lời mời. Hãy mở lại link trong thư mời.",
+      "name": "Tên của bạn",
+      "nameHint": "Để trống: dùng tên trong lời mời.",
+      "password": "Mật khẩu (không bắt buộc)",
+      "passwordHint": "12 đến 128 ký tự. Để trống: sau này đăng nhập bằng link hoặc thêm passkey.",
+      "submit": "Nhận lời mời và tạo tài khoản",
+      "doneTitle": "Đã nhận lời mời",
+      "done": "Giờ bạn có thể đăng nhập.",
+      "haveAccount": "Đã có tài khoản với email này?",
+      "signInFirst": "Đăng nhập rồi nhận"
+    },
+    "link": {
+      "title": "Đăng nhập bằng link",
+      "description": "Chúng tôi gửi tới email của bạn một link đăng nhập dùng một lần, không cần mật khẩu. Xác thực hai bước vẫn áp dụng.",
+      "email": "Email",
+      "required": "Nhập địa chỉ email.",
+      "submit": "Gửi link cho tôi",
+      "back": "Về trang đăng nhập",
+      "sentTitle": "Hãy xem hộp thư",
+      "sent": "Nếu {email} có tài khoản, link đăng nhập đang được gửi tới. Link dùng một lần, trong vài phút.",
+      "confirmTitle": "Đăng nhập",
+      "confirmDescription": "Bấm nút để đăng nhập bằng link trong thư.",
+      "confirm": "Đăng nhập",
+      "again": "Xin link mới"
     }
   },
   "settings": {
@@ -3632,7 +3717,8 @@
       "depth": "Độ sâu",
       "from": "Gán ở",
       "inherited": "Từ {unit}",
-      "direct": "Trực tiếp ở nút này"
+      "direct": "Trực tiếp ở nút này",
+      "invited": "Đã mời · chờ nhận"
     },
     "scopes": {
       "own": "Của mình",

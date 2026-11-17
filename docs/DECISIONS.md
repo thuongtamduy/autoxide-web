@@ -1882,3 +1882,38 @@ Lý do: core đã có API (D-303 – D-307, D-314, D-315); không giữ mẫu ch
 
 Đã cân nhắc: nút chọn ở tham số URL — mất khi sang màn khác, thiết kế muốn "đổi nút vẫn giữ màn đang xem"; danh sách
 mọi hồ sơ công khai bằng một lời gọi mỗi nút — `public/stores` đã cho biết nút nào công khai.
+
+## W-046 · Nối bước 34 của core, đợt 2: role theo độ sâu, lời mời, đăng nhập bằng link, uỷ quyền, quyền vào hỗ trợ, hồ sơ — 2026-11-17 — agent quyết
+
+Quyết định:
+
+- **Role:** permission có `scoped` (sổ `GET /auth/permissions`) có ô độ sâu cạnh ô chọn (`own`, `unit`, `subtree`,
+  `tenant`). Lưu: độ sâu khác "cả khách" đi vào `grants`, còn lại vào `permissions` như trước. Cờ "Bắt buộc xác thực
+  hai bước" (`requires_mfa`). Role `admin` dựng sẵn vẫn chỉ xem (core cho đổi `requires_mfa` của nó — chưa làm, ít
+  dùng). `GET /auth/me` có `mfa_required` thì khung hiện dải nhắc bật MFA, dẫn tới Bảo mật.
+- **Lời mời** (`/org/access/invitations`, nút "Mời" ở màn Cây tổ chức) thay dữ liệu mẫu. Core có ba trạng thái;
+  "hết hạn" = đang chờ mà quá `expires_at`, tính ở giao diện. Trang công khai `/invitation?token=` (biến
+  `AUTOXIDE_AUTH_INVITATION_URL` của core) tạo tài khoản mới — mật khẩu không bắt buộc — và đăng nhập luôn bằng token
+  core trả. Email đã có tài khoản (`auth.invitation_sign_in_required`): đăng nhập rồi nhận ở `/account/invitation`
+  (cần phiên để core cộng role vào tài khoản đó). Token chỉ dùng khi bấm nút, không dùng lúc mở trang.
+- **Đăng nhập bằng link:** link "Đăng nhập bằng link qua email" ở trang đăng nhập → `/sign-in/link` (xin link) và
+  `/sign-in/link?token=` (biến `AUTOXIDE_AUTH_LOGIN_LINK_URL`; bấm nút mới dùng token). Tài khoản bật MFA: core trả 202
+  kèm `mfa_token` → cookie bước mã, sang trang đăng nhập ở bước nhập mã. Chưa dùng `bind_device`. Link luôn hiện vì
+  cấu hình công khai của core chưa nói tính năng có bật không; tắt thì core báo `auth.login_link_disabled`.
+- **Uỷ quyền:** hai bảng (đã cấp cho khách con, nhận từ khách cha), tạo và thu hồi. Core chưa có danh sách khách con
+  cho khách cha: khách con hiện và nhập bằng ID.
+- **Quyền vào hỗ trợ (phía khách):** danh sách lần cấp (`/auth/support-access`), thu hồi (trừ lần cấp theo yêu cầu cơ
+  quan), bật / tắt là cài đặt `auth.support_access` ở nút gốc. Nhân sự nền tảng hiện bằng mã (khách không đọc được tài
+  khoản của khách nền tảng). Màn "Vào dữ liệu khách" của mặt điều khiển nền tảng vẫn là mẫu (gắn với các màn nền tảng
+  mẫu khác) — làm cùng đợt gói và thuê bao.
+- **Tài khoản:** sửa tên, ngôn ngữ ưa thích (thư core gửi), múi giờ (`PATCH /auth/me`); "Nơi bạn làm việc".
+- **Role ở các nút khác gốc** ở trang người dùng: đọc `GET /users/{id}/memberships`, sửa một nút thì gửi lại cả danh
+  sách (`PUT` thay toàn bộ). Phần "Role" cũ vẫn là role ở gốc (`PUT /users/{id}/roles`).
+- Bỏ dữ liệu mẫu và action mẫu của ba tab; `sample/org.ts` chỉ còn cây mẫu cho màn thương mại và quyền vào hỗ trợ cho
+  màn nền tảng mẫu.
+
+Lý do: core đã có API (D-304, D-308, D-310 – D-313). Đã chạy thử với core thật (thư ghi ra tệp, link trong thư mở được
+trang của giao diện).
+
+Đã cân nhắc: nhận lời mời của người đã có tài khoản ngay ở trang công khai bằng cách hỏi mật khẩu — trùng việc của trang
+đăng nhập (MFA, passkey); đưa qua bước đăng nhập là một cách cho mọi kiểu tài khoản.

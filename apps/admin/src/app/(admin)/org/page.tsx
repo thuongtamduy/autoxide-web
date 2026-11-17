@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { InviteDialog } from "@/components/access/team-forms";
 import { TipHeading } from "@/components/help/info-tip";
 import { MessagePanel } from "@/components/message-panel";
 import { InlineAction } from "@/components/ui/confirm";
@@ -13,6 +14,7 @@ import { initialsOf } from "@/lib/initials";
 import {
   chainOf,
   groupMemberships,
+  invitationStatus,
   memberCounts,
   ordered,
   SCOPES,
@@ -23,6 +25,7 @@ import {
 } from "@/lib/org";
 import { loadMemberships, loadUnits, loadUnitTypes, loadUser } from "@/lib/org-server";
 import {
+  INVITATIONS_MANAGE,
   ROLES_READ,
   SETTINGS_WRITE,
   UNITS_MANAGE,
@@ -84,7 +87,19 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
   const members = groupMemberships(rows);
   const counts = memberCounts(allRows);
   const roles = readRoles ? await allRoles() : [];
+  // Lời mời đang chờ vào nút này (`auth.invitations.manage`): hiện cùng bảng người ở nút.
+  const invite = await can(INVITATIONS_MANAGE);
+  const waiting = invite
+    ? (
+        await load((c) =>
+          c.GET("/api/v1/auth/invitations", {
+            params: { query: { status: "pending", limit: 200 } },
+          }),
+        )
+      ).data.filter((i) => i.org_id === node.id && invitationStatus(i) === "pending")
+    : [];
   const scopeOf = new Map(roles.map((r) => [r.id, widestScope(r)]));
+  const roleNames = new Map(roles.map((r) => [r.id, r.name]));
   // Tên và email của người ở nút (`auth.users.read`); không có quyền thì hiện mã người dùng.
   const people = new Map(
     users
@@ -200,16 +215,22 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                 </h2>
                 <span className="badge b-arch">{typeName(node.unit_type)}</span>
                 {node.code ? <span className="mono muted">{node.code}</span> : null}
-                {manage && node.status === "pending" ? (
-                  <div className="eg-acts ot-acts">
+                <div className="eg-acts ot-acts">
+                  {invite && readRoles && node.status === "active" ? (
+                    <InviteDialog
+                      units={[{ value: node.id, label: node.name }]}
+                      roles={roles.map((role) => ({ value: role.id, label: role.name }))}
+                    />
+                  ) : null}
+                  {manage && node.status === "pending" ? (
                     <InlineAction
                       action={approveUnit}
                       id={node.id}
                       label={t("approve")}
                       done={t("approved")}
                     />
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
               {node.status === "pending" ? <p className="note warn">{t("pendingNote")}</p> : null}
               {node.status === "suspended" ? (
@@ -222,11 +243,11 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                 <h2 id="ot-members-h" className="h2">
                   {t("members.title")}
                 </h2>
-                <span className="cnt">{members.length}</span>
+                <span className="cnt">{members.length + waiting.length}</span>
               </div>
               <p className="fhint">{t("members.hint")}</p>
               <div className="card tcard">
-                {members.length === 0 ? (
+                {members.length + waiting.length === 0 ? (
                   <p className="empty">{t("members.empty")}</p>
                 ) : (
                   <Table cards>
@@ -296,6 +317,29 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                           </tr>
                         );
                       })}
+                      {waiting.map((i) => (
+                        <tr key={i.id}>
+                          <Td className="rt-title">
+                            <span className="ot-person">
+                              <span className="avatar sm" aria-hidden="true">
+                                {initialsOf(i.name || i.email)}
+                              </span>
+                              <span className="cell2">
+                                <b className="mono ell">{i.email}</b>
+                              </span>
+                            </span>
+                          </Td>
+                          <Td label={t("members.role")}>
+                            <span className="mono">
+                              {i.role_ids.map((id) => roleNames.get(id) ?? id).join(", ")}
+                            </span>
+                          </Td>
+                          <Td label={t("members.depth")}>—</Td>
+                          <Td label={t("members.from")}>
+                            <span className="badge b-warn">{t("members.invited")}</span>
+                          </Td>
+                        </tr>
+                      ))}
                     </tbody>
                   </Table>
                 )}
