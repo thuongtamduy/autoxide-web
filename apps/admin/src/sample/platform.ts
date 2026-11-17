@@ -718,6 +718,49 @@ export async function getOpsStatus(): Promise<{ data: OpsStatus }> {
   return { data: { databases, top_tenants: top } };
 }
 
+/** Một ảnh chụp tồn đọng theo giờ (đề xuất `GET /api/v1/kernel/ops/backlog/history?hours=24`). */
+export interface OpsHourly {
+  /** Đầu giờ, UTC. */
+  at: string;
+  jobs_pending: number;
+  jobs_dead: number;
+}
+
+// Hình dạng 24 giờ của bộ mẫu, tính theo phần của số hiện tại (giờ cuối = 1): tồn đọng thường ở mức
+// một phần ba, dâng lên từ 6 giờ trước khi job `media.webp` ở pool-2 chạy chậm; dead-letter đứng ở
+// 6 rồi 8, giờ cuối thêm 9 (khớp cảnh báo "failed 9 times in the last hour").
+const PENDING_SHAPE = [
+  0.31, 0.29, 0.27, 0.26, 0.26, 0.28, 0.33, 0.38, 0.41, 0.4, 0.37, 0.35, 0.34, 0.36, 0.39, 0.42,
+  0.44, 0.47, 0.55, 0.63, 0.72, 0.81, 0.9, 1,
+];
+const DEAD_BEFORE = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8];
+
+/**
+ * Đề xuất mới: GET /api/v1/kernel/ops/backlog/history?hours=24 (số job chờ và dead-letter của mọi
+ * database, mỗi giờ một điểm, giờ cuối là số hiện tại). Bộ mẫu dựng từ số hiện tại của `getOpsStatus`.
+ */
+export async function getOpsHistory(now = Date.now()): Promise<{ data: OpsHourly[] }> {
+  const { data } = await getOpsStatus();
+  const rows = data.databases.flatMap((db) => db.backlog);
+  const pending = rows.reduce((sum, r) => sum + r.jobs_pending, 0);
+  const dead = rows.reduce((sum, r) => sum + r.jobs_dead, 0);
+  const hour = Math.floor(now / HOUR) * HOUR;
+  return {
+    data: PENDING_SHAPE.map((share, i) => ({
+      at: new Date(hour - (PENDING_SHAPE.length - 1 - i) * HOUR).toISOString(),
+      jobs_pending: Math.round(pending * share),
+      jobs_dead: Math.min(dead, DEAD_BEFORE[i] ?? dead),
+    })),
+  };
+}
+
+/** Số job mới rơi vào dead-letter mỗi giờ: hiệu của hai giờ liền nhau (không âm; giờ đầu là 0). */
+export function newDeadPerHour(history: readonly Pick<OpsHourly, "jobs_dead">[]): number[] {
+  return history.map((h, i) =>
+    i === 0 ? 0 : Math.max(0, h.jobs_dead - (history[i - 1]?.jobs_dead ?? 0)),
+  );
+}
+
 /** Thay bằng GET /api/v1/kernel/ops/backups?status= (bước 39) khi core có. Mới nhất trước. */
 export async function listBackups(
   query: { status?: BackupRecord["status"]; limit?: number; cursor?: string } = {},

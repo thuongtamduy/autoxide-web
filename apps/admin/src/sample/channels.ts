@@ -14,6 +14,7 @@
 // Khoá kết nối (token) không bao giờ được lưu ở đây — chỉ thời điểm đặt khoá, như kho secret theo khách
 // của core (không đọc lại được). SĐT người mua do kênh che một phần. Tiền là `Money`; giờ lưu UTC.
 import type { Problem } from "@autoxide/sdk";
+import { dayRange, sumByDayAndKey } from "@/lib/chart";
 import { type Money, pricesAt, type Ref, variantByCode } from "./catalog";
 import {
   ACCOUNT_SEEDS,
@@ -1634,6 +1635,46 @@ export async function channelReport(
     rows.push(group(a.id, a.kind, a.id, a.name, list));
   }
   return { rows, marketplace_orders: inRange.filter((o) => o.channel === "marketplace").length };
+}
+
+/** Kênh có đường riêng trên biểu đồ doanh thu theo ngày, thứ tự cố định (màu theo thứ tự này). */
+export const DAILY_CHANNELS = ["web", "pos", "shopee", "tiktok_shop"] as const;
+export type DailyChannel = (typeof DAILY_CHANNELS)[number];
+/** Ô màu cố định của từng kênh (theo kênh, không theo hạng): đổi kỳ không đổi màu. */
+export const CHANNEL_COLORS: Record<DailyChannel, 1 | 2 | 3 | 4> = {
+  web: 1,
+  pos: 2,
+  shopee: 3,
+  tiktok_shop: 4,
+};
+
+/**
+ * Doanh thu theo ngày đặt và theo kênh, cùng cách tính với bảng "Theo kênh" (đã trừ đơn huỷ và tiền
+ * hoàn; đơn của người bán trên sàn không tính). Hàm thuần để test.
+ */
+export function dailyChannelRevenue(
+  orders: readonly Pick<Order, "placed_at" | "channel" | "status" | "total" | "refunded">[],
+  days: readonly string[],
+): Map<DailyChannel, number[]> {
+  const keys: readonly string[] = DAILY_CHANNELS;
+  const points = orders
+    .filter((o) => o.status !== "cancelled" && keys.includes(o.channel))
+    .map((o) => ({
+      day: vietnamDay(Date.parse(o.placed_at)),
+      key: o.channel,
+      value: num(o.total) - num(o.refunded),
+    }));
+  return sumByDayAndKey(points, days, DAILY_CHANNELS) as Map<DailyChannel, number[]>;
+}
+
+/** Thay bằng GET /api/v1/orders/reports/daily?group=channel (bước 45 + 48) khi core có. */
+export async function channelDaily(
+  from: string,
+  to: string,
+): Promise<{ days: string[]; series: Map<DailyChannel, number[]> }> {
+  const { orders } = await ordersState();
+  const days = dayRange(from, to);
+  return { days, series: dailyChannelRevenue(orders, days) };
 }
 
 /** Ngày mặc định của báo cáo: 30 ngày gần nhất (giờ Việt Nam). */

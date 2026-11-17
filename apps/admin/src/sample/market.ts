@@ -1464,6 +1464,43 @@ export async function sellerPerformance(orgId: string): Promise<{ data: Performa
   };
 }
 
+/** Một điểm của xu hướng chỉ số: chỉ số 90 ngày tính tới ngày `day` (giờ Việt Nam). */
+export interface SellerMetricPoint {
+  day: string;
+  on_time_bp: number;
+  seller_cancel_bp: number;
+}
+
+// Hình dạng 13 tuần của bộ mẫu, lệch so với số hiện tại (basis point, tuần cuối = 0): giao đúng hạn
+// nhích dần lên, huỷ do người bán giảm dần — người bán đang cải thiện sau đợt điểm vi phạm.
+const ON_TIME_SHAPE = [-130, -110, -120, -90, -80, -70, -60, -40, -50, -30, -20, -10, 0];
+const CANCEL_SHAPE = [70, 65, 75, 55, 50, 45, 40, 30, 35, 20, 10, 5, 0];
+
+/**
+ * Đề xuất mới: GET /api/v1/marketplace/sellers/{id}/metrics/history?days=90 (bước 46; chỉ số 90 ngày
+ * cuốn chiếu, mỗi tuần một điểm, điểm cuối là số hiện tại). Bộ mẫu dựng từ số hiện tại của người bán;
+ * chưa có số hiện tại thì không có xu hướng.
+ */
+export async function sellerMetricHistory(
+  orgId: string,
+  now = Date.now(),
+): Promise<{ data: SellerMetricPoint[] }> {
+  const s = await store();
+  const current = s.metrics.get(orgId);
+  if (!current) return { data: [] };
+  const clamp = (bp: number) => Math.max(0, Math.min(10_000, bp));
+  const day = 86_400_000;
+  return {
+    data: ON_TIME_SHAPE.map((onTime, i) => ({
+      day: new Date(now + 7 * 3_600_000 - (ON_TIME_SHAPE.length - 1 - i) * 7 * day)
+        .toISOString()
+        .slice(0, 10),
+      on_time_bp: clamp(current.on_time_bp + onTime),
+      seller_cancel_bp: clamp(current.seller_cancel_bp + (CANCEL_SHAPE[i] ?? 0)),
+    })),
+  };
+}
+
 /**
  * Thay bằng POST /api/v1/marketplace/penalties (bước 46, `marketplace.sellers.manage`) khi core có. Hạn
  * điểm 90 ngày; tạm khoá theo ngày đổi trạng thái người bán.

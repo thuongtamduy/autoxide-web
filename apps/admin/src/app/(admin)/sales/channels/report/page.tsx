@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Chips } from "@/components/engage/common";
 import {
   BlockHead,
   Cell2,
@@ -10,23 +11,36 @@ import {
   OpenLink,
   param,
 } from "@/components/growth/blocks";
+import { SampleBadge } from "@/components/sample-badge";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { TimeSeriesChart } from "@/components/ui/charts";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatDay } from "@/lib/catalog";
+import { dayPoints, presetRange } from "@/lib/chart";
 import { formatCount, formatMoney } from "@/lib/format";
 import { can } from "@/lib/viewer";
-import { channelReport, defaultReportRange, settlementSummary } from "@/sample/channels";
+import {
+  CHANNEL_COLORS,
+  channelDaily,
+  channelReport,
+  DAILY_CHANNELS,
+  defaultReportRange,
+  settlementSummary,
+} from "@/sample/channels";
 import { CHANNEL_TABS } from "../shared";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** Mốc chọn nhanh của kỳ báo cáo (ngày, kết thúc hôm nay). */
+const PRESETS = [7, 30, 90] as const;
 
 // Tab "Báo cáo": doanh thu, số đơn, tỉ lệ huỷ hoặc trả theo kênh, tính theo ngày đặt; phí kênh và thực nhận
 // lấy từ bảng kê có kỳ nằm trong khoảng đã chọn. Cần `channels.read` và `orders.reports.read`. Đơn của
 // người bán trên sàn là doanh thu của người bán, xem ở phân hệ Sàn.
 export default async function ReportPage(props: PageProps<"/sales/channels/report">) {
   if (!(await can(CHANNEL_TABS.report))) notFound();
-  const [t, locale, params] = await Promise.all([
+  const [t, tc, locale, params] = await Promise.all([
     getTranslations("channels"),
+    getTranslations("charts"),
     getLocale(),
     props.searchParams,
   ]);
@@ -36,7 +50,11 @@ export default async function ReportPage(props: PageProps<"/sales/channels/repor
   // Ngày dạng YYYY-MM-DD so được như chuỗi; ngày cuối không trước ngày đầu.
   const to = [toRaw, from].sort().at(-1) ?? from;
   const open = param(params, "open");
-  const [report, summary] = await Promise.all([channelReport(from, to), settlementSummary()]);
+  const [report, summary, daily] = await Promise.all([
+    channelReport(from, to),
+    settlementSummary(),
+    channelDaily(from, to),
+  ]);
   const money = (amount: string | number) => formatMoney(amount, "VND", locale);
   const total = report.rows.reduce((s, r) => s + Number(r.revenue.amount), 0);
   const orders = report.rows.reduce((s, r) => s + r.orders, 0);
@@ -51,6 +69,21 @@ export default async function ReportPage(props: PageProps<"/sales/channels/repor
   const base = { from, to };
   const label = (r: (typeof report.rows)[number]) =>
     r.account_id ? t(`kinds.${r.channel}`) : t(`report.own.${r.channel}`);
+  const presets = PRESETS.map((days) => ({ days, ...presetRange(fallback.to, days) }));
+  // Kênh không có doanh thu trong kỳ thì không vẽ đường; màu theo kênh nên kênh còn lại giữ màu.
+  const lines = DAILY_CHANNELS.flatMap((channel) => {
+    const values = daily.series.get(channel) ?? [];
+    if (!values.some((v) => v !== 0)) return [];
+    const own = channel === "web" || channel === "pos";
+    return [
+      {
+        id: channel,
+        label: own ? t(`report.own.${channel}`) : t(`kinds.${channel}`),
+        values,
+        color: CHANNEL_COLORS[channel],
+      },
+    ];
+  });
   return (
     <div className="blocks">
       <form className="filters" action="/sales/channels/report" aria-label={t("report.period")}>
@@ -73,6 +106,14 @@ export default async function ReportPage(props: PageProps<"/sales/channels/repor
           </button>
         </div>
       </form>
+      <Chips
+        label={tc("channels.presets")}
+        chips={presets.map((p) => ({
+          href: hrefWith("/sales/channels/report", { from: p.from, to: p.to }, {}),
+          label: tc("channels.days", { days: p.days }),
+          on: p.from === from && p.to === to,
+        }))}
+      />
       <Kpis
         label={t("report.kpis")}
         items={[
@@ -98,6 +139,35 @@ export default async function ReportPage(props: PageProps<"/sales/channels/repor
           },
         ]}
       />
+      <section className="block" aria-labelledby="daily-h">
+        <div className="block-head">
+          <h2 id="daily-h" className="h2">
+            {tc("channels.title")}
+          </h2>
+          <SampleBadge step="45" endpoint="GET /api/v1/orders/reports/daily?group=channel" />
+        </div>
+        <div className="card padded">
+          {lines.length === 0 ? (
+            <p className="empty">{tc("channels.empty")}</p>
+          ) : (
+            <TimeSeriesChart
+              label={tc("channels.title")}
+              summary={tc("channels.summary", { count: lines.length, total: money(total) })}
+              x={dayPoints(daily.days, locale)}
+              series={lines}
+              unit="money"
+              locale={locale}
+              height={240}
+              text={{
+                data: tc("viewData"),
+                x: tc("day"),
+                hint: tc("hintDays", { title: tc("channels.title") }),
+              }}
+            />
+          )}
+        </div>
+        <p className="fhint">{tc("channels.about")}</p>
+      </section>
       <section className="block" aria-labelledby="report-h">
         <BlockHead id="report-h" title={t("report.title")} about={t("report.about")} />
         <div className="card tcard">
