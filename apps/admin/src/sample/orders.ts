@@ -32,6 +32,7 @@ import {
   UNDELIVERED_STATUSES,
 } from "@/lib/orders";
 import { parseCartLines } from "@/lib/promotions";
+import { type SortDir, sortRows } from "@/lib/table";
 import {
   type Money,
   ORG,
@@ -2307,15 +2308,29 @@ function matches(o: Order, f: OrderFilters): boolean {
 
 // Thay bằng GET /api/v1/orders?status=&payment_status=&org_id=&channel=&from=&number= (bước 45) khi
 // core có. `flow` (dòng tiền) và `q` (tìm theo mã, người mua) là dự kiến. Mới nhất trước.
+export const ORDER_SORTS = ["placed", "total"] as const;
+export type OrderSort = (typeof ORDER_SORTS)[number];
+
+// Dự kiến `?sort=placed|total&order=asc|desc` (bước 45); mặc định mới đặt trước.
 export async function listOrders(
   filters: OrderFilters = NO_FILTERS,
-  { limit = 25, cursor = null }: { limit?: number; cursor?: string | null } = {},
+  {
+    limit = 25,
+    cursor = null,
+    sort,
+  }: { limit?: number; cursor?: string | null; sort?: { field: OrderSort; dir: SortDir } } = {},
 ): Promise<SamplePage<Order>> {
   const s = await store();
-  return samplePage(
-    s.orders.filter((o) => matches(o, filters)),
-    { limit, cursor },
-  );
+  const found = s.orders.filter((o) => matches(o, filters));
+  const sorted =
+    !sort || (sort.field === "placed" && sort.dir === "desc")
+      ? found
+      : sortRows(
+          found,
+          (o) => (sort.field === "total" ? Number(o.total.amount) : o.placed_at),
+          sort.dir,
+        );
+  return samplePage(sorted, { limit, cursor });
 }
 
 // Dự kiến: số đơn khớp bộ lọc (`GET /api/v1/orders?count=true`), cho số đếm của view.

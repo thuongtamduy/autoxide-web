@@ -3730,7 +3730,10 @@
       "asSentAbout": "Built by the server exactly as it sends it, foot included. Links carry a placeholder instead of each reader's own.",
       "previewUnavailable": "The server cannot build the mail yet:",
       "textVersion": "Text version",
-      "blockedFilter": "Blocked"
+      "blockedFilter": "Blocked",
+      "openSubscriber": "Open",
+      "bulkBlockTitle": "Block the selected subscribers?",
+      "bulkDeleteTitle": "Delete the selected subscribers for good?"
     },
     "comments": {
       "crumb": "Marketing · module comments",
@@ -3784,7 +3787,8 @@
         "until": "Until",
         "reportReason": "Reason",
         "note": "Note",
-        "when": "When"
+        "when": "When",
+        "sent": "Sent"
       },
       "noText": "(no text)",
       "noName": "(no name)",
@@ -3996,7 +4000,9 @@
       "filterTargets": "Filter posts by state",
       "withPending": "Waiting for approval",
       "targetUrl": "Address",
-      "targetNotPublic": "Not public now (title and address hidden)"
+      "targetNotPublic": "Not public now (title and address hidden)",
+      "bulkPurgeTitle": "Delete the selected comments for good?",
+      "bulkPurgeThreads": "A comment that starts a thread is removed with all its replies."
     },
     "data": {
       "title": "Data by email",
@@ -5917,8 +5923,8 @@
       "backorder": "sells when out",
       "noPrice": "No price yet",
       "blockedBadge": "{count, plural, one {# thing missing} other {# things missing}}",
-      "foot": "Showing {shown} of {total} products.",
-      "next": "Next page"
+      "edit": "Open and edit",
+      "actions": "Actions"
     },
     "ai": {
       "title": "AI drafts waiting for review",
@@ -6526,6 +6532,11 @@
       "catalog_import_too_many_rows": "More than {value} rows.",
       "missing_column": "The header has no “{value}” column.",
       "reference_reused": "Used before with different content; choose another reference."
+    },
+    "bulk": {
+      "publish": "Put on sale",
+      "unpublish": "Stop selling",
+      "export": "Export CSV"
     }
   },
   "inventory": {
@@ -7992,7 +8003,8 @@
       "usable": "Usable",
       "not_started": "Not started",
       "exhausted": "Used up",
-      "expired": "Expired"
+      "expired": "Expired",
+      "disabled": "Disabled"
     },
     "programs": {
       "kpis": "Program summary",
@@ -8335,9 +8347,21 @@
       "matching": "Matching",
       "matchingText": "Case-insensitive, spaces removed",
       "listedPrice": "With a code to type, the listed price stays; the website only adds a price line for the code and does not strike the price.",
-      "more": "More codes",
       "holdStrong": "Uses are held like stock.",
-      "holdText": "Placing an order holds one use; payment confirms it, cancellation or an expired payment releases it. Many buyers using a code at once never go over the limit."
+      "holdText": "Placing an order holds one use; payment confirms it, cancellation or an expired payment releases it. Many buyers using a code at once never go over the limit.",
+      "actions": "Actions",
+      "view": "View details",
+      "hide": "Hide details",
+      "copy": "Copy codes",
+      "copyOne": "Copy code",
+      "copied": "Code copied",
+      "exportSelected": "Export CSV",
+      "disable": "Disable",
+      "disableTitle": "Disable {code}?",
+      "bulkDisableTitle": "Disable the selected codes?",
+      "disableKeep": "Buyers can no longer use the code; orders that already used it keep their discount.",
+      "disableNoUndo": "A disabled code cannot be turned back on; create a new code instead.",
+      "disabled": "Code disabled."
     },
     "generate": {
       "title": "Generate a batch of codes",
@@ -8422,7 +8446,8 @@
       "promotions_invalid_transition": "The program cannot move to that status.",
       "promotions_invalid_window": "The end must be after the start and still in the future.",
       "promotions_reference_price_missing": "No price just before the promotion ({detail}); the cap cannot be checked, so it is not switched on.",
-      "promotions_targets_missing": "The program has no targets yet (variants, gift)."
+      "promotions_targets_missing": "The program has no targets yet (variants, gift).",
+      "promotions_code_not_found": "This code no longer exists."
     },
     "fields": {
       "required": "Fill in this field.",
@@ -10019,29 +10044,18 @@
       "applied": "Filtering:",
       "removeFilter": "Remove filter {name}",
       "clear": "Clear filters",
-      "count": "Showing {shown} of {total} matching orders",
-      "sorted": "newest first",
       "empty": "No orders match these filters.",
       "number": "Order",
       "buyer": "Buyer",
       "total": "Total",
-      "more": "Next page",
       "fromChip": "From {day}",
       "viewsNote": "Saved views and the plain-language filter wait for the core's view and AI filter APIs."
     },
     "bulk": {
-      "page": "Select every order on this page",
-      "one": "Select order {number}",
-      "label": "Bulk actions",
-      "selected": "{count, plural, one {# order} other {# orders}} selected on this page",
-      "allSelected": "All {count} matching orders selected",
-      "selectAll": "Select all {count} matching orders",
       "accept": "Accept",
       "print": "Print delivery slips",
-      "clear": "Clear selection",
       "noneAwaiting": "None of the selected orders is awaiting acceptance",
       "accepted": "Accepted {count, plural, one {# order} other {# orders}}; {skipped} in another status skipped",
-      "undo": "Undo",
       "undone": "Back to awaiting acceptance: {count}"
     },
     "ask": {
@@ -11216,7 +11230,9 @@
       "activity": "Notes and points",
       "noteAccount": "Phone and email are partly hidden on screen. Total spent counts only completed orders (past the return window) minus refunds; orders still in delivery are not counted.",
       "notePhone": "Profile keyed by phone number (HMAC per customer, not comparable across customers). Staff registering at the counter do not tie it to any account until the number’s owner verifies it.",
-      "legal": "Profiles, groups and purchase history are personal data processing: purpose and basis are recorded in the Compliance register; customers can see and delete their data (Law 91/2025 on personal data protection, Decree 356/2025 — check the original text)."
+      "legal": "Profiles, groups and purchase history are personal data processing: purpose and basis are recorded in the Compliance register; customers can see and delete their data (Law 91/2025 on personal data protection, Decree 356/2025 — check the original text).",
+      "openDetail": "Open details",
+      "actions": "Actions"
     },
     "add": {
       "button": "Add customer at counter",
@@ -11290,7 +11306,6 @@
       "lockedAt": "Locked at",
       "lockReason": "Reason",
       "noPassword": "An account without a verified phone can still buy, but cannot be linked to a phone-number profile.",
-      "shown": "Showing {shown} of {total} accounts.",
       "signupTitle": "Buyer registration",
       "signupOn": "Buyers can register themselves.",
       "signupOff": "Self-registration is off.",
@@ -11310,7 +11325,10 @@
       "phoneNotVerified": "Phone not verified",
       "empty": "No accounts match.",
       "emptySearch": "No account matches “{q}”.",
-      "clearSearch": "Clear search"
+      "clearSearch": "Clear search",
+      "bulkLockTitle": "Lock the selected accounts?",
+      "bulkLockSessions": "Every session of each person is revoked; they cannot sign in until unlocked.",
+      "bulkLockUndo": "You can unlock them later; nothing else about the accounts changes."
     },
     "segments": {
       "title": "Groups",
@@ -11628,6 +11646,12 @@
       "customers_block_until_past": "Choose a date in the future.",
       "customers_block_too_long": "At most one year.",
       "customers_already_blocked": "This number is already blocked."
+    },
+    "bulk": {
+      "addToGroup": "Add to group",
+      "group": "Manual group",
+      "addTag": "Add tag",
+      "tag": "Tag"
     }
   },
   "channels": {
@@ -12994,5 +13018,37 @@
     "support": {
       "body": "When a customer lets the support team access their data, the grant shows here with who received it and until when."
     }
+  },
+  "table": {
+    "selectPage": "Select every row on this page",
+    "selectRow": "Select {name}",
+    "selected": "{count} selected",
+    "allSelected": "All {count} matching rows selected",
+    "selectAllMatching": "Select all {count} matching rows",
+    "clear": "Clear selection",
+    "working": "Working…",
+    "done": "Done {done}/{total}",
+    "doneErrors": "Done {done}/{total}, {count, plural, one {# error} other {# errors}}",
+    "failed": "Not done:",
+    "moreErrors": "…and {count} more",
+    "affects": "Applies to {count, plural, one {# row} other {# rows}}.",
+    "required": "Fill in this field.",
+    "copied": "Copied {count}",
+    "copyFailed": "Could not copy: the browser blocked the clipboard.",
+    "undo": "Undo",
+    "more": "More actions",
+    "moreFor": "More actions for {name}",
+    "sortHint": "Click to sort by this column",
+    "sortedAsc": "Sorted ascending; click for descending",
+    "sortedDesc": "Sorted descending; click for ascending",
+    "pages": "Pages",
+    "range": "{from}–{to} of {total}",
+    "rangeEmpty": "No rows",
+    "prev": "Previous",
+    "next": "Next",
+    "first": "First page",
+    "nextPage": "Next page",
+    "perPage": "Rows per page",
+    "show": "Show"
   }
 }

@@ -3,6 +3,7 @@
 // Server Action của màn "Khuyến mại" (module `promotions` của core chưa có, bước 43): gọi hàm mẫu của
 // `src/sample/promotions.ts` thay cho API (W-006, W-015), cùng cách trả lỗi như phần gọi core thật —
 // lỗi theo ô, gom mọi lỗi một lần, mã lỗi `promotions.*`. Khi có API chỉ thay lời gọi hàm mẫu.
+import { refresh } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   commerceGuard,
@@ -20,12 +21,14 @@ import {
   PROMOTIONS_READ,
   PROMOTIONS_WRITE,
 } from "@/lib/promotions";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   activatePromotion,
   type CartView,
   changePromotion,
   createPromotion,
+  disableCode,
   evaluateCart,
   extendPromotion,
   generateCodes,
@@ -33,6 +36,26 @@ import {
   setFlashPrice,
   setPromotionRunning,
 } from "@/sample/promotions";
+
+/** Vô hiệu một mã (hộp xác nhận trong menu "⋯" của dòng). */
+export async function disableCodeAction(state: FormState, formData: FormData): Promise<FormState> {
+  const blocked = await guard(PROMOTIONS_CODES_MANAGE);
+  if (blocked) return blocked;
+  return finishCommerce("promotions", state, await disableCode(idOf(formData)), []);
+}
+
+/** Vô hiệu nhiều mã: hàm mẫu (và core) chỉ có lệnh từng mã, lặp và gom lỗi. */
+export async function bulkDisableCodesAction(input: BulkInput): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const blocked = await guard(PROMOTIONS_CODES_MANAGE);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const result = await eachId(ids, async (id) => {
+    const outcome = await disableCode(id);
+    return outcome.ok ? null : (await translateCommerce(outcome.problem, "promotions")).detail;
+  });
+  refresh();
+  return result;
+}
 
 function idOf(formData: FormData): string {
   return String(formData.get("id") ?? "");

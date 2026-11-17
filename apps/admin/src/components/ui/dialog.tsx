@@ -1,8 +1,24 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Fragment, type ReactNode, useId, useRef, useState } from "react";
+import {
+  createContext,
+  Fragment,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { Icon } from "@/components/shell/icon";
+
+/**
+ * Hộp thoại do nơi khác mở (mục của menu "⋯" trên dòng): `Dialog` nằm trong context này thì ẩn nút
+ * mở, tự mở khi gắn và báo `onClose` khi đóng. Menu đã đóng (popover ẩn) mà hộp thoại vẫn hiện, vì
+ * nó được dựng ngoài popover.
+ */
+export const DialogHostContext = createContext<{ onClose: () => void } | null>(null);
 
 /**
  * Nút mở một hộp thoại (`<dialog>` của HTML: Esc để đóng, giữ con trỏ bên trong). Nội dung
@@ -32,6 +48,16 @@ export function Dialog({
   const [round, setRound] = useState(0);
   const titleId = useId();
   const close = () => ref.current?.close();
+  const host = useContext(DialogHostContext);
+  useEffect(() => {
+    if (!host) return;
+    setRound((n) => n + 1);
+    const dialog = ref.current;
+    if (dialog && !dialog.open) {
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else dialog.setAttribute("open", "");
+    }
+  }, [host]);
   return (
     <>
       <button
@@ -39,7 +65,7 @@ export function Dialog({
         className={triggerClass}
         aria-haspopup="dialog"
         aria-label={ariaLabel}
-        hidden={hideTrigger}
+        hidden={hideTrigger || host !== null}
         onClick={() => {
           setRound((n) => n + 1);
           ref.current?.showModal();
@@ -47,7 +73,7 @@ export function Dialog({
       >
         {label}
       </button>
-      <dialog ref={ref} className="axdlg" aria-labelledby={titleId}>
+      <dialog ref={ref} className="axdlg" aria-labelledby={titleId} onClose={host?.onClose}>
         <div className="dlg-head">
           <h2 id={titleId} className="h2">
             {title}

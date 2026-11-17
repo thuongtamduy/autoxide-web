@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { lockAction } from "@/app/(admin)/customers/actions";
+import { bulkLockAction, bulkUnlockAction, lockAction } from "@/app/(admin)/customers/actions";
 import { RegistrationForm } from "@/components/customers/forms";
 import { ChangeButtons } from "@/components/engage/actions";
 import { Chips } from "@/components/engage/common";
@@ -16,12 +16,21 @@ import {
 import { SampleBadge } from "@/components/sample-badge";
 import { Icon } from "@/components/shell/icon";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
+import { Pager } from "@/components/ui/pager";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { AUTH_CUSTOMERS_MANAGE, maskEmail, maskPhone } from "@/lib/customers";
 import { formatCount } from "@/lib/format";
+import { readPage, readSort, slicePage } from "@/lib/table";
 import { can } from "@/lib/viewer";
-import { type AccountChip, listBuyerAccounts, registrationOpen } from "@/sample/customers";
+import {
+  ACCOUNT_SORTS,
+  type AccountChip,
+  listBuyerAccounts,
+  registrationOpen,
+} from "@/sample/customers";
 import { CUSTOMER_TABS, ENDPOINTS_34 } from "../shared";
 
 const CHIPS: readonly AccountChip[] = ["active", "locked", "unverified"];
@@ -29,7 +38,8 @@ const CHIPS: readonly AccountChip[] = ["active", "locked", "unverified"];
 // Tab "Tài khoản người mua" (bước 34, module `auth`): người mua là tài khoản riêng của khách hàng, không
 // có permission; nhân viên cần `auth.customers.read` để xem, `auth.customers.manage` để khoá / mở. Khoá thu
 // hồi mọi phiên của người đó; đảo được (Hoàn tác). Bấm một dòng mở chi tiết; nút khoá chỉ hiện khi rê
-// chuột lên dòng (máy có chuột), vì 25 nút giống nhau làm rối bảng.
+// chuột lên dòng (máy có chuột), vì 25 nút giống nhau làm rối bảng. Chọn nhiều để khoá / mở khoá cùng
+// lúc; sắp theo tên, lần đăng nhập, ngày đăng ký; phân trang có tổng.
 export default async function AccountsPage(props: PageProps<"/customers/accounts">) {
   if (!(await can(CUSTOMER_TABS.accounts))) notFound();
   const [t, locale, params] = await Promise.all([
@@ -40,15 +50,28 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
   const chip = CHIPS.find((c) => c === param(params, "chip")) ?? null;
   const open = param(params, "open");
   const q = param(params, "q").slice(0, 60);
+  const sort = readSort(params, ACCOUNT_SORTS, { field: "login", dir: "desc" });
+  const paging = readPage(params);
   const [all, rows, open_, manage] = await Promise.all([
     listBuyerAccounts(),
-    listBuyerAccounts(chip, q),
+    listBuyerAccounts(chip, q, sort),
     registrationOpen(),
     can(AUTH_CUSTOMERS_MANAGE),
   ]);
   const unverified = all.data.filter((a) => !a.phone_verified).length;
-  const shown = rows.data.slice(0, chip || q ? 100 : 25);
-  const base = { q, chip: chip ?? "" };
+  const page = slicePage(rows.data, paging.page, paging.per);
+  const shown = page.data;
+  const keep = {
+    q,
+    chip: chip ?? "",
+    ...(param(params, "sort") ? { sort: sort.field, dir: sort.dir } : {}),
+  };
+  const base = {
+    ...keep,
+    ...(paging.page > 1 ? { page: String(paging.page) } : {}),
+    ...(paging.per !== 25 ? { per: String(paging.per) } : {}),
+  };
+  const cols = manage ? 7 : 6;
   return (
     <div className="blocks">
       <section className="block" aria-labelledby="accounts-h">
@@ -99,154 +122,195 @@ export default async function AccountsPage(props: PageProps<"/customers/accounts
           ]}
         />
         <div className="card tcard">
-          <Table cards className="cu-accounts">
-            <thead>
-              <tr>
-                <Th>{t("accounts.account")}</Th>
-                <Th>{t("accounts.site")}</Th>
-                <Th>{t("accounts.verification")}</Th>
-                <Th>{t("accounts.lastLogin")}</Th>
-                <Th>{t("accounts.state")}</Th>
-                <Th>
-                  <span className="vh">{t("accounts.actions")}</span>
-                </Th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.length === 0 ? (
+          <BulkTable
+            ids={shown.map((a) => a.id)}
+            actions={
+              manage
+                ? [
+                    {
+                      key: "lock",
+                      label: t("accounts.lock"),
+                      tone: "danger",
+                      run: bulkLockAction,
+                      confirm: {
+                        title: t("accounts.bulkLockTitle"),
+                        points: [t("accounts.bulkLockSessions"), t("accounts.bulkLockUndo")],
+                        submit: t("accounts.lock"),
+                      },
+                    },
+                    { key: "unlock", label: t("accounts.unlock"), run: bulkUnlockAction },
+                  ]
+                : []
+            }
+          >
+            <Table cards className="cu-accounts">
+              <thead>
                 <tr>
-                  <Td colSpan={6} className="empty">
-                    {q ? t("accounts.emptySearch", { q }) : t("accounts.empty")}
-                  </Td>
+                  {manage ? <SelectAllTh /> : null}
+                  <SortTh field="name" sort={sort} base="/customers/accounts" keep={keep}>
+                    {t("accounts.account")}
+                  </SortTh>
+                  <Th>{t("accounts.site")}</Th>
+                  <Th>{t("accounts.verification")}</Th>
+                  <SortTh
+                    field="login"
+                    sort={sort}
+                    base="/customers/accounts"
+                    keep={keep}
+                    first="desc"
+                  >
+                    {t("accounts.lastLogin")}
+                  </SortTh>
+                  <Th>{t("accounts.state")}</Th>
+                  <Th>
+                    <span className="vh">{t("accounts.actions")}</span>
+                  </Th>
                 </tr>
-              ) : null}
-              {shown.map((a) => {
-                const isOpen = open === a.id;
-                return [
-                  <tr key={a.id} data-current={isOpen ? "" : undefined}>
-                    <Td className="rt-title">
-                      <span className="cell2">
-                        <OpenLink
-                          open={isOpen}
-                          href={hrefWith(
-                            "/customers/accounts",
-                            base,
-                            { open: a.id },
-                            "#accounts-h",
-                          )}
-                          closeHref={hrefWith("/customers/accounts", base, {})}
-                        >
-                          {a.name}
-                        </OpenLink>
-                        <span className="sub gr-mask">{maskEmail(a.email)}</span>
-                      </span>
+              </thead>
+              <tbody>
+                {shown.length === 0 ? (
+                  <tr>
+                    <Td colSpan={cols} className="empty">
+                      {q ? t("accounts.emptySearch", { q }) : t("accounts.empty")}
                     </Td>
-                    <Td label={t("accounts.site")}>{a.registered_on}</Td>
-                    <Td label={t("accounts.verification")}>
-                      <span className="cu-verify">
-                        <Verified
-                          on={a.email_verified}
-                          icon="mail"
-                          label={
-                            a.email_verified
-                              ? t("accounts.emailVerified")
-                              : t("accounts.emailNotVerified")
-                          }
-                        />
-                        <Verified
-                          on={a.phone_verified}
-                          icon="phone"
-                          label={
-                            a.phone_verified
-                              ? t("accounts.phoneVerified")
-                              : t("accounts.phoneNotVerified")
-                          }
-                        />
-                      </span>
-                    </Td>
-                    <Td label={t("accounts.lastLogin")}>
-                      {a.last_login_at ? <Time value={a.last_login_at} /> : "—"}
-                    </Td>
-                    <Td label={t("accounts.state")}>
-                      <Status tone={a.status === "active" ? "b-ok" : "b-bad"}>
-                        {t(`accounts.chips.${a.status}`)}
-                      </Status>
-                    </Td>
-                    <Td className="rt-acts">
-                      {manage ? (
-                        <span className={a.status === "active" ? "cu-reveal" : undefined}>
-                          <ChangeButtons
-                            action={lockAction}
-                            id={a.id}
-                            expect={a.updated_at}
-                            moves={
-                              a.status === "active"
-                                ? [
-                                    {
-                                      value: "locked",
-                                      label: t("accounts.lock"),
-                                      done: t("accounts.locked"),
-                                      tone: "danger",
-                                    },
-                                  ]
-                                : [
-                                    {
-                                      value: "active",
-                                      label: t("accounts.unlock"),
-                                      done: t("accounts.unlocked"),
-                                      tone: "pri",
-                                    },
-                                  ]
+                  </tr>
+                ) : null}
+                {shown.map((a) => {
+                  const isOpen = open === a.id;
+                  return [
+                    <tr key={a.id} data-current={isOpen ? "" : undefined}>
+                      {manage ? <SelectTd id={a.id} name={a.name} /> : null}
+                      <Td className="rt-title">
+                        <span className="cell2">
+                          <OpenLink
+                            open={isOpen}
+                            href={hrefWith(
+                              "/customers/accounts",
+                              base,
+                              { open: a.id },
+                              "#accounts-h",
+                            )}
+                            closeHref={hrefWith("/customers/accounts", base, {})}
+                          >
+                            {a.name}
+                          </OpenLink>
+                          <span className="sub gr-mask">{maskEmail(a.email)}</span>
+                        </span>
+                      </Td>
+                      <Td label={t("accounts.site")}>{a.registered_on}</Td>
+                      <Td label={t("accounts.verification")}>
+                        <span className="cu-verify">
+                          <Verified
+                            on={a.email_verified}
+                            icon="mail"
+                            label={
+                              a.email_verified
+                                ? t("accounts.emailVerified")
+                                : t("accounts.emailNotVerified")
                             }
-                            undo={{ label: t("undo"), done: t("undone") }}
+                          />
+                          <Verified
+                            on={a.phone_verified}
+                            icon="phone"
+                            label={
+                              a.phone_verified
+                                ? t("accounts.phoneVerified")
+                                : t("accounts.phoneNotVerified")
+                            }
                           />
                         </span>
-                      ) : null}
-                    </Td>
-                  </tr>,
-                  isOpen ? (
-                    <DetailRow key={`${a.id}-open`} cols={6}>
-                      <h3 className="h2">{a.name}</h3>
-                      <KV
-                        items={[
-                          [t("accounts.registered"), <Time key="r" value={a.registered_at} date />],
-                          [
-                            t("accounts.email"),
-                            <span key="e" className="gr-mask">
-                              {maskEmail(a.email)}
-                            </span>,
-                          ],
-                          [
-                            t("accounts.phone"),
-                            <span key="p" className="gr-mask">
-                              {maskPhone(a.phone)}
-                            </span>,
-                          ],
-                          [
-                            t("accounts.phoneVerify"),
-                            a.phone_verified
-                              ? t("accounts.verified")
-                              : t("accounts.notVerifiedEffect"),
-                          ],
-                          a.locked_by ? [t("accounts.lockedBy"), a.locked_by.name] : null,
-                          a.locked_at
-                            ? [t("accounts.lockedAt"), <Time key="la" value={a.locked_at} />]
-                            : null,
-                          a.lock_reason ? [t("accounts.lockReason"), a.lock_reason] : null,
-                        ]}
-                      />
-                      <p className="fhint">{t("accounts.noPassword")}</p>
-                    </DetailRow>
-                  ) : null,
-                ];
-              })}
-            </tbody>
-          </Table>
+                      </Td>
+                      <Td label={t("accounts.lastLogin")}>
+                        {a.last_login_at ? <Time value={a.last_login_at} /> : "—"}
+                      </Td>
+                      <Td label={t("accounts.state")}>
+                        <Status tone={a.status === "active" ? "b-ok" : "b-bad"}>
+                          {t(`accounts.chips.${a.status}`)}
+                        </Status>
+                      </Td>
+                      <Td className="rt-acts">
+                        {manage ? (
+                          <span className={a.status === "active" ? "cu-reveal" : undefined}>
+                            <ChangeButtons
+                              action={lockAction}
+                              id={a.id}
+                              expect={a.updated_at}
+                              moves={
+                                a.status === "active"
+                                  ? [
+                                      {
+                                        value: "locked",
+                                        label: t("accounts.lock"),
+                                        done: t("accounts.locked"),
+                                        tone: "danger",
+                                      },
+                                    ]
+                                  : [
+                                      {
+                                        value: "active",
+                                        label: t("accounts.unlock"),
+                                        done: t("accounts.unlocked"),
+                                        tone: "pri",
+                                      },
+                                    ]
+                              }
+                              undo={{ label: t("undo"), done: t("undone") }}
+                            />
+                          </span>
+                        ) : null}
+                      </Td>
+                    </tr>,
+                    isOpen ? (
+                      <DetailRow key={`${a.id}-open`} cols={cols}>
+                        <h3 className="h2">{a.name}</h3>
+                        <KV
+                          items={[
+                            [
+                              t("accounts.registered"),
+                              <Time key="r" value={a.registered_at} date />,
+                            ],
+                            [
+                              t("accounts.email"),
+                              <span key="e" className="gr-mask">
+                                {maskEmail(a.email)}
+                              </span>,
+                            ],
+                            [
+                              t("accounts.phone"),
+                              <span key="p" className="gr-mask">
+                                {maskPhone(a.phone)}
+                              </span>,
+                            ],
+                            [
+                              t("accounts.phoneVerify"),
+                              a.phone_verified
+                                ? t("accounts.verified")
+                                : t("accounts.notVerifiedEffect"),
+                            ],
+                            a.locked_by ? [t("accounts.lockedBy"), a.locked_by.name] : null,
+                            a.locked_at
+                              ? [t("accounts.lockedAt"), <Time key="la" value={a.locked_at} />]
+                              : null,
+                            a.lock_reason ? [t("accounts.lockReason"), a.lock_reason] : null,
+                          ]}
+                        />
+                        <p className="fhint">{t("accounts.noPassword")}</p>
+                      </DetailRow>
+                    ) : null,
+                  ];
+                })}
+              </tbody>
+            </Table>
+          </BulkTable>
         </div>
+        <Pager
+          total={page.total}
+          page={page.page}
+          per={paging.per}
+          base="/customers/accounts"
+          keep={keep}
+        />
         <div className="cu-foot">
-          <p className="fhint">
-            {t("accounts.shown", { shown: shown.length, total: rows.data.length })}
-          </p>
           {unverified > 0 ? (
             <p className="fhint">
               {t("accounts.unverifiedCount", { n: formatCount(unverified, locale) })}{" "}

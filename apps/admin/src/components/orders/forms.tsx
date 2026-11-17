@@ -19,8 +19,6 @@ import {
   type AskState,
   approveProposalAction,
   askAction,
-  type BulkState,
-  bulkAcceptAction,
   countAction,
   manualPaymentAction,
   noteAction,
@@ -28,7 +26,6 @@ import {
   refundAction,
   rejectReturnAction,
   saveViewAction,
-  undoBulkAction,
 } from "@/app/(admin)/sales/orders/actions";
 import {
   closeShiftAction,
@@ -374,123 +371,6 @@ export function SaveViewDialog({ query }: { query: string }) {
         </>
       )}
     </ActionDialog>
-  );
-}
-
-/**
- * Bảng đơn có ô chọn: đếm ô đã chọn, hiện thanh thao tác hàng loạt (xác nhận có Hoàn tác, in phiếu giao,
- * chọn cả mọi đơn khớp bộ lọc). Bảng do máy chủ dựng; ở đây chỉ nghe sự kiện đổi của ô chọn.
- */
-export function BulkForm({
-  query,
-  matching,
-  children,
-}: {
-  query: string;
-  matching: number;
-  children: ReactNode;
-}) {
-  const t = useTranslations("orders.bulk");
-  const toast = useToast();
-  const router = useRouter();
-  const form = useRef<HTMLFormElement>(null);
-  const [count, setCount] = useState(0);
-  const [pageAll, setPageAll] = useState(false);
-  const [all, setAll] = useState(false);
-  const [pending, start] = useTransition();
-  const boxes = () => [
-    ...(form.current?.querySelectorAll<HTMLInputElement>("input[name=ids]") ?? []),
-  ];
-  const sync = () => {
-    const list = boxes();
-    for (const box of list) {
-      const row = box.closest("tr");
-      if (row) row.toggleAttribute("data-checked", box.checked);
-    }
-    const n = list.filter((b) => b.checked).length;
-    setCount(n);
-    setPageAll(n > 0 && n === list.length);
-    if (n < list.length) setAll(false);
-    const head = form.current?.querySelector<HTMLInputElement>("input[data-all]");
-    if (head) {
-      head.checked = n > 0 && n === list.length;
-      head.indeterminate = n > 0 && n < list.length;
-    }
-  };
-  const clear = () => {
-    for (const b of boxes()) b.checked = false;
-    setAll(false);
-    sync();
-  };
-  const ids = () =>
-    boxes()
-      .filter((b) => b.checked)
-      .map((b) => b.value);
-  const accept = () =>
-    start(async () => {
-      const data = new FormData();
-      if (all) {
-        data.set("all", "1");
-        data.set("query", query);
-      } else for (const id of ids()) data.append("ids", id);
-      const out: BulkState = await bulkAcceptAction({}, data);
-      if (out.error) {
-        toast(out.error);
-        return;
-      }
-      const changed = out.changed ?? [];
-      clear();
-      if (changed.length === 0) {
-        toast(t("noneAwaiting"));
-        return;
-      }
-      toast(t("accepted", { count: changed.length, skipped: out.skipped ?? 0 }), {
-        label: t("undo"),
-        run: async () => {
-          const n = await undoBulkAction(changed);
-          toast(t("undone", { count: n }));
-        },
-      });
-    });
-  const print = () => {
-    const target = all
-      ? `/sales/orders/print?${query}${query ? "&" : ""}all=1`
-      : `/sales/orders/print?ids=${ids().join(",")}`;
-    router.push(target);
-  };
-  return (
-    <form
-      ref={form}
-      onChange={(e) => {
-        const target = e.target as unknown as HTMLInputElement;
-        if (target.dataset.all !== undefined) {
-          for (const b of boxes()) b.checked = target.checked;
-        }
-        sync();
-      }}
-      onSubmit={(e) => e.preventDefault()}
-    >
-      {children}
-      {count > 0 ? (
-        <section className="ord-bulk" aria-label={t("label")}>
-          <span>{all ? t("allSelected", { count: matching }) : t("selected", { count })}</span>
-          {pageAll && !all && matching > count ? (
-            <button type="button" className="linkish" onClick={() => setAll(true)}>
-              {t("selectAll", { count: matching })}
-            </button>
-          ) : null}
-          <button type="button" className="btn sm pri" disabled={pending} onClick={accept}>
-            {t("accept")}
-          </button>
-          <button type="button" className="btn sm" onClick={print}>
-            {t("print")}
-          </button>
-          <button type="button" className="linkish" onClick={clear}>
-            {t("clear")}
-          </button>
-        </section>
-      ) : null}
-    </form>
   );
 }
 
