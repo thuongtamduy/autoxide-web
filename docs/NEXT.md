@@ -60,9 +60,11 @@ Core phát triển trên `main` của nó, không chờ bản phát hành (W-025
   `GET /auth/me/tenants`, gửi `Autoxide-Tenant` với mọi lời gọi khi vào khách qua uỷ quyền / hỗ trợ); xác nhận lại danh
   tính (`/auth/me/reauth`) cho lệnh nhạy cảm của tài khoản chỉ có passkey; người mua tách khỏi nhân sự
   (`/auth/customers`); đổi `requires_mfa` của role `admin`.
-- **API mới của core chưa dùng** (D-331 – D-333): số người mỗi nút một lời gọi (`GET /auth/memberships/counts`), dạng
+- **API mới của core chưa dùng** (D-331 – D-334): số người mỗi nút một lời gọi (`GET /auth/memberships/counts`), dạng
   giá trị của cài đặt theo nút (`schema` → ô đúng kiểu), hồ sơ của website đang được gọi
   (`GET /organizations/public/site`), `auth` trong `GET /kernel/client-config` (ẩn "đăng nhập bằng link" khi tắt).
+  D-334: migrate placement bằng API có chạy thử (`POST /kernel/placements/migrations`, thay phần mẫu ở Đội database),
+  số người giữ mỗi role (`GET /auth/roles/counts`), `reason` khi tạm khoá khách (`PATCH /kernel/tenants/{id}`).
 - Khách tự xuất dữ liệu của mình (`POST /kernel/tenants/{id}/exports` với `kernel.data.export`) ở Cài đặt.
 - Website: ô địa chỉ khi đặt hàng dùng danh mục hành chính công khai của core (`GET /address/provinces`,
   `…/communes`) thay `src/sample/address.ts`; danh sách cửa hàng (`/organizations/public/stores`) thay phần mẫu khi
