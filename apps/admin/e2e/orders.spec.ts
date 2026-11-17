@@ -106,8 +106,9 @@ test("đổi trả, bán tại quầy, giỏ bỏ dở; cửa hàng: bàn giao c
   page,
 }) => {
   await signIn(page, "/sales/orders/returns");
-  await page.getByRole("link", { name: "TH-2611-0022" }).click();
-  await page.getByRole("button", { name: "Reject with reason" }).click();
+  // Bước kế tiếp hiện trên dòng, các bước còn lại (từ chối) trong "⋯".
+  await page.getByRole("button", { name: "More actions for TH-2611-0022" }).click();
+  await page.getByRole("menuitem", { name: "Reject with reason" }).click();
   await dialog(page).getByRole("button", { name: "Reject" }).click();
   await expect(dialog(page).getByText("Fill in this field.")).toBeVisible();
   await dialog(page).getByRole("button", { name: "Cancel" }).click();
@@ -140,8 +141,11 @@ test("đổi trả, bán tại quầy, giỏ bỏ dở; cửa hàng: bàn giao c
   // Cửa hàng: mã nhận sai báo dưới ô; nhân viên không thấy mã.
   await page.goto("/sales/stores");
   await expect(page.getByRole("heading", { level: 1, name: "Store operations" })).toBeVisible();
-  await page.getByRole("link", { name: "BM-2611-0406" }).click();
-  await page.getByRole("button", { name: "Hand over" }).click();
+  await page
+    .getByRole("row", { name: /BM-2611-0406/ })
+    .first()
+    .getByRole("button", { name: "Hand over" })
+    .click();
   await dialog(page).getByLabel("6-digit pickup code").fill("123456");
   await dialog(page).getByRole("button", { name: "Hand over" }).click();
   await expect(
@@ -150,8 +154,11 @@ test("đổi trả, bán tại quầy, giỏ bỏ dở; cửa hàng: bàn giao c
   await dialog(page).getByRole("button", { name: "Cancel" }).click();
 
   await page.goto("/sales/stores/shifts?chip=open");
-  await page.getByRole("link", { name: "CN Cầu Giấy · Quầy 1" }).click();
-  await page.getByRole("button", { name: "Close shift" }).click();
+  await page
+    .getByRole("row", { name: /CN Cầu Giấy · Quầy 1/ })
+    .first()
+    .getByRole("button", { name: "Close shift" })
+    .click();
   await dialog(page).getByLabel("Cash counted (đồng)").fill("1");
   await dialog(page).getByRole("button", { name: "Close shift" }).click();
   await expect(dialog(page).getByText(/The count differs by -1499999 đồng/)).toBeVisible();
@@ -159,8 +166,12 @@ test("đổi trả, bán tại quầy, giỏ bỏ dở; cửa hàng: bàn giao c
 
   // Đánh giá: ẩn cần lý do trong danh sách và ghi chú.
   await page.goto("/sales/stores/reviews?chip=low");
-  await page.getByRole("link", { name: /Chảo gang/ }).click();
-  await page.getByRole("button", { name: "Hide with reason" }).click();
+  await page
+    .getByRole("row", { name: /Chảo gang/ })
+    .first()
+    .getByRole("button", { name: /^More actions for / })
+    .click();
+  await page.getByRole("menuitem", { name: "Hide with reason" }).click();
   await dialog(page).getByRole("button", { name: "Hide" }).click();
   await expect(dialog(page).getByText("Fill in this field.")).toBeVisible();
 });

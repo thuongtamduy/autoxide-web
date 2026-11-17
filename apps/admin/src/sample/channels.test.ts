@@ -3,6 +3,8 @@ import { resetSampleCatalog, VARIANT_ID } from "./catalog";
 import { ACCOUNT_ID, channelPrice } from "./channel-accounts";
 import {
   connectAccount,
+  INBOUND_OPEN,
+  inboundMatches,
   listAllocations,
   listInbound,
   listSettlements,
@@ -226,5 +228,19 @@ describe("đối soát", () => {
     expect(Number(after.collected.amount) - Number(after.posted.amount)).toBe(
       Number(after.receivable.amount),
     );
+  });
+});
+
+describe("bộ lọc đơn từ kênh", () => {
+  it("'Cần xử lý' chỉ giữ đơn chờ người xử lý; 'all' giữ cả đơn đã nhập", async () => {
+    const { data } = await listInbound();
+    const open = data.filter((r) => inboundMatches(r, "open"));
+    expect(open.length).toBeGreaterThan(0);
+    expect(open.every((r) => INBOUND_OPEN.includes(r.status))).toBe(true);
+    expect(data.some((r) => r.status === "imported" && !inboundMatches(r, "open"))).toBe(true);
+    expect(data.filter((r) => inboundMatches(r, "all"))).toHaveLength(data.length);
+    expect(
+      data.filter((r) => inboundMatches(r, "failed")).every((r) => r.status === "failed"),
+    ).toBe(true);
   });
 });

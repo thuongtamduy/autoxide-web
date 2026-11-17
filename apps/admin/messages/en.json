@@ -8667,8 +8667,9 @@
       "state": "Status",
       "noTracking": "no tracking number yet",
       "noCarrier": "no carrier",
-      "more": "More shipments",
-      "etaRange": "{from} – {to}"
+      "etaRange": "{from} – {to}",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details"
     },
     "detail": {
       "title": "Shipment · {order}",
@@ -8731,7 +8732,9 @@
       "cancelLocal": "Not sent to a carrier yet; it is only cancelled here.",
       "cancelOrder": "The order goes back to “Preparing” to create another shipment.",
       "cancelSubmit": "Cancel shipment",
-      "cancelled": "Shipment cancelled"
+      "cancelled": "Shipment cancelled",
+      "bulkBookTitle": "Book the selected shipments with their carriers?",
+      "bulkBookOnly": "Only shipments waiting to be booked are sent; the others are listed as not done."
     },
     "manual": {
       "button": "New manual shipment",
@@ -8975,7 +8978,8 @@
       "hold": "Held",
       "hours": "{count} h",
       "holdDays": "{count} days",
-      "pickupFoot": "The Thủ Đức warehouse is not a pickup point."
+      "pickupFoot": "The Thủ Đức warehouse is not a pickup point.",
+      "viewTable": "Show rate table"
     },
     "cod": {
       "kpis": "COD summary",
@@ -9019,7 +9023,12 @@
       "trackLedger": "If the carrier confirms delivery, the shipment becomes “Delivered”, the ledger records the receivable and the line matches by itself.",
       "trackFinal": "Ledger entries cannot be deleted; mistakes are fixed with an adjusting entry.",
       "trackSubmit": "Ask and match",
-      "tracked": "Asked the carrier and updated"
+      "tracked": "Asked the carrier and updated",
+      "bulkTrackSkip": "Only lines the carrier reports as not delivered can be asked again.",
+      "bulkTrackTitle": "Ask the carriers about the selected lines?",
+      "bulkTrackOnly": "Only lines the carrier reports as not delivered are asked; the others are listed as not done.",
+      "bulkResolveTitle": "Close the selected mismatches with one reason?",
+      "bulkResolveFinal": "The reason and your name are stored on every line. Closed lines cannot be reopened."
     },
     "statementStatus": {
       "imported": "Imported, not matched",
@@ -9073,7 +9082,12 @@
       "turnedOff": "Turned off; shipments on the way still receive updates",
       "turnOn": "Turn carrier on",
       "turnedOn": "Carrier turned on",
-      "foot": "Carrier names are examples. A real carrier connector is a separate module, built once there is a carrier test account."
+      "foot": "Carrier names are examples. A real carrier connector is a separate module, built once there is a carrier test account.",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "testTitle": "Check the connection to {name}?",
+      "testAsk": "Sends a test request to the carrier with the stored key.",
+      "testNoOrder": "No shipment is created and nothing is charged."
     },
     "capabilities": {
       "multi_parcel": "multiple parcels",
@@ -10456,7 +10470,13 @@
       "refundBody": "Refunds exactly the lines received. A reversing entry and an adjustment invoice are recorded.",
       "refunded": "Refund sent; adjustment invoice issued",
       "close": "Close",
-      "closed": "Return closed"
+      "closed": "Return closed",
+      "actions": "Actions",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "openOrder": "Open order",
+      "bulkApproveTitle": "Approve the selected return requests?",
+      "bulkApproveOnly": "Only requests waiting for an answer are approved; the others are listed as not done."
     },
     "pos": {
       "button": "Counter sale",
@@ -10705,7 +10725,13 @@
       "codeHint": "Never written down or shown to staff.",
       "proxyName": "Name of the person collecting",
       "proxyHint": "Only when someone collects on the buyer's behalf.",
-      "noProxy": "No one else is named on this order."
+      "noProxy": "No one else is named on this order.",
+      "actions": "Actions",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "resendTitle": "Resend the pickup code for {number}?",
+      "resendOld": "The buyer gets a new code; the old one stops working.",
+      "bulkResendTitle": "Resend the pickup code for the selected orders?"
     },
     "shifts": {
       "kpis": "Shifts at a glance",
@@ -10718,11 +10744,12 @@
       "title": "Shifts",
       "about": "Each register has one open shift. Opening records the starting cash; closing counts the drawer. Expected cash comes from the counter orders in the shift; any difference needs a reason.",
       "filter": "Filter shifts",
-      "recent": "Recent",
       "chips": {
         "open": "Open",
         "closed": "Closed",
-        "diff": "With a difference"
+        "diff": "With a difference",
+        "attention": "Needs a look",
+        "all": "All"
       },
       "shift": "Shift",
       "by": "Opened by",
@@ -10754,7 +10781,11 @@
       "closed": "Shift closed; the report goes to the store manager",
       "counted": "Cash counted (đồng)",
       "reason": "Reason for the difference",
-      "reasonHint": "Required when the count differs from the expected amount."
+      "reasonHint": "Required when the count differs from the expected amount.",
+      "empty": "No shifts match.",
+      "actions": "Actions",
+      "openDetail": "Show cash details",
+      "hideDetail": "Hide cash details"
     },
     "returns": {
       "about": "Returns brought to a store. Receive the goods (or record a walk-in return), note their condition, then refund — cash comes out of the open shift — or exchange.",
@@ -10849,7 +10880,12 @@
       },
       "statsTitle": "Star ratings",
       "statsHead": "{product} · {mean} ★ from {total} reviews",
-      "starLabel": "{n} stars"
+      "starLabel": "{n} stars",
+      "actions": "Actions",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "publishTitle": "Show the review of {product} again?",
+      "publishPoint": "The review appears publicly again and the writer is told."
     }
   },
   "work": {
@@ -11840,7 +11876,9 @@
       "disconnect2": "No more stock, prices or orders sync with this account.",
       "disconnect3": "Order and reconciliation history is kept. This cannot be undone: reconnecting needs a new key.",
       "disconnectSubmit": "Disconnect",
-      "disconnected": "Disconnected; the key was deleted."
+      "disconnected": "Disconnected; the key was deleted.",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details"
     },
     "connectors": {
       "title": "Installed connectors",
@@ -12002,7 +12040,8 @@
       "previewFoot": "{name}: {available} available in the linked warehouses (order holds already deducted), {reserved} reserved for channels; the website can sell {website}. Pushed quantities are never negative.",
       "warnTitle": "Autoxide does not oversell, but channels lag.",
       "warnText": "Every web, counter and channel order holds stock, so stock never goes negative. If two channels sell the last unit within the few seconds before sync, the later imported order becomes “Oversold”. Use a buffer or reserve fast sellers to reduce this.",
-      "debounce": "Changes within 5 seconds are pushed once; full check every 6 hours"
+      "debounce": "Changes within 5 seconds are pushed once; full check every 6 hours",
+      "openAccount": "Open channel account"
     },
     "inboundState": {
       "received": "Received",
@@ -12076,7 +12115,12 @@
       "cancelWarn": "This cannot be undone: the order is cancelled in Autoxide and on the channel, and the channel may penalise the shop.",
       "cancelSubmit": "Cancel on channel",
       "cancelled": "Cancel queued on the channel; the order was cancelled.",
-      "foot": "Buyer phone numbers are partly hidden by channels: used only for delivery, never for COD-fraud checks, not counted in COD statistics."
+      "foot": "Buyer phone numbers are partly hidden by channels: used only for delivery, never for COD-fraud checks, not counted in COD statistics.",
+      "all": "All",
+      "empty": "No orders from channels match.",
+      "openDetail": "Show details",
+      "hideDetail": "Hide details",
+      "openOrder": "Open order"
     },
     "map": {
       "button": "Link {sku}",
@@ -12172,7 +12216,15 @@
       "credit": "Credit",
       "owedTitle": "Owed per account",
       "owedAbout": "Money collected by channels for imported orders, minus statement lines already posted.",
-      "owedTotal": "Total receivable"
+      "owedTotal": "Total receivable",
+      "bulkPostTitle": "Post the selected statements to the ledger?",
+      "bulkPostOnly": "Only statements with every line matched are posted; the others are listed as not done.",
+      "openDetail": "Show statement",
+      "hideDetail": "Hide statement",
+      "openOrder": "Open order",
+      "noMismatch": "No open mismatches.",
+      "bulkResolveTitle": "Close the selected mismatches with one note?",
+      "bulkResolveFinal": "The note and your name are saved on every line. This cannot be undone."
     },
     "line": {
       "button": "Mark resolved",

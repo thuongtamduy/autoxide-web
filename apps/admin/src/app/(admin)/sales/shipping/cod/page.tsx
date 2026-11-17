@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { commerceGate } from "@/app/(admin)/catalog/gate";
-import { trackAction } from "@/app/(admin)/sales/shipping/actions";
+import {
+  bulkResolveDiscrepancyAction,
+  bulkTrackDiscrepancyAction,
+  trackAction,
+} from "@/app/(admin)/sales/shipping/actions";
 import { DISCREPANCY_BADGE, MATCH_BADGE, STATEMENT_BADGE } from "@/components/shipping/badges";
 import { ImportDialog, ResolveDialog } from "@/components/shipping/forms";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { ConfirmAction } from "@/components/ui/confirm";
+import { RowMenu } from "@/components/ui/row-menu";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatDay } from "@/lib/catalog";
 import { formatCount, formatMoney } from "@/lib/format";
@@ -22,12 +28,15 @@ const STATEMENT_FILTERS: StatementStatus[] = ["has_mismatch", "reconciled"];
 
 // Tab "Đối soát COD": hãng thu tiền khi giao rồi chuyển theo bảng kê. Nhập bảng kê để khớp với vận đơn
 // đã giao; dòng không khớp vào danh sách lệch. Hệ thống chỉ ghi nghĩa vụ trong sổ cái, không nhận hay
-// giữ tiền (D-187 của core).
+// giữ tiền (D-187 của core). Dòng lệch: một nút trên dòng (hỏi lại hãng khi hãng báo chưa giao, còn lại
+// đánh dấu đã xử lý), nút kia trong "⋯"; chọn nhiều để hỏi lại hãng hay đóng cùng một lý do (lặp lệnh
+// từng dòng, gom lỗi).
 export default async function CodPage(props: PageProps<"/sales/shipping/cod">) {
   const gate = await commerceGate(TAB_PERMISSIONS.cod);
   if (gate) return gate;
-  const [t, locale, params] = await Promise.all([
+  const [t, tt, locale, params] = await Promise.all([
     getTranslations("shipping"),
+    getTranslations("table"),
     getLocale(),
     props.searchParams,
   ]);
@@ -230,90 +239,129 @@ export default async function CodPage(props: PageProps<"/sales/shipping/cod">) {
           {lines.length === 0 ? (
             <p className="empty">{t("cod.noMismatch")}</p>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("cod.tracking")}</Th>
-                  <Th>{t("cod.kind")}</Th>
-                  <Th className="text-right">{t("cod.reported")}</Th>
-                  <Th className="text-right">{t("cod.expected")}</Th>
-                  <Th>{t("cod.state")}</Th>
-                  <Th>
-                    <span className="vh">{t("rates.actions")}</span>
-                  </Th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((d) => (
-                  <tr key={d.id}>
-                    <Td className="rt-title">
-                      <span className="cell2">
-                        <span className="mono">{d.tracking_number}</span>
-                        <span className="sub">
-                          {d.order_number ?? t("cod.unknownOrder")}
-                          {d.statement_reference ? ` · ${d.statement_reference}` : ""}
-                        </span>
-                      </span>
-                    </Td>
-                    <Td label={t("cod.kind")}>
-                      <span className="cell2">
-                        <span>{t(`discrepancyKind.${d.kind}`)}</span>
-                        {d.status === "resolved" ? (
-                          <span className="sub">
-                            {t.has(`resolution.${d.resolution_note}`)
-                              ? t(`resolution.${d.resolution_note}`)
-                              : d.resolution_note}
-                            {d.resolved_by ? ` · ${d.resolved_by.name}` : ""}
-                          </span>
-                        ) : (
-                          <span className="sub">
-                            {t("cod.reportedLine", {
-                              cod: money(d.reported.amount),
-                              fee: money(d.reported_fee.amount),
-                            })}
-                          </span>
-                        )}
-                      </span>
-                    </Td>
-                    <Td label={t("cod.reported")} className="text-right num">
-                      {money(String(Number(d.reported.amount) - Number(d.reported_fee.amount)))}
-                    </Td>
-                    <Td label={t("cod.expected")} className="text-right num">
-                      {money(d.expected.amount)}
-                    </Td>
-                    <Td label={t("cod.state")}>
-                      <span className={DISCREPANCY_BADGE[d.status]}>
-                        <span className="dot" />
-                        {t(`discrepancyStatus.${d.status}`)}
-                      </span>
-                    </Td>
-                    <Td className="rt-acts">
-                      {d.status === "open" ? (
-                        <span className="row-acts">
-                          {d.shipment_id && d.kind === "not_delivered" ? (
-                            <ConfirmAction
-                              action={trackAction}
-                              id={d.shipment_id}
-                              label={t("cod.trackMatch")}
-                              title={t("cod.trackTitle", { tracking: d.tracking_number })}
-                              points={[
-                                t("cod.trackAsk"),
-                                t("cod.trackLedger"),
-                                t("cod.trackFinal"),
-                              ]}
-                              submit={t("cod.trackSubmit")}
-                              done={t("cod.tracked")}
-                              danger={false}
-                            />
-                          ) : null}
-                          <ResolveDialog id={d.id} tracking={d.tracking_number} />
-                        </span>
-                      ) : null}
-                    </Td>
+            <BulkTable
+              ids={lines.map((d) => d.id)}
+              actions={
+                show === "open"
+                  ? [
+                      {
+                        key: "track",
+                        label: t("cod.trackMatch"),
+                        run: bulkTrackDiscrepancyAction,
+                        confirm: {
+                          title: t("cod.bulkTrackTitle"),
+                          points: [t("cod.bulkTrackOnly"), t("cod.trackLedger")],
+                          submit: t("cod.trackSubmit"),
+                        },
+                      },
+                      {
+                        key: "resolve",
+                        label: t("resolve.button"),
+                        run: bulkResolveDiscrepancyAction,
+                        confirm: {
+                          title: t("cod.bulkResolveTitle"),
+                          points: [t("cod.bulkResolveFinal")],
+                          submit: t("resolve.submit"),
+                        },
+                        field: { label: t("resolve.note") },
+                      },
+                    ]
+                  : []
+              }
+            >
+              <Table cards>
+                <thead>
+                  <tr>
+                    {show === "open" ? <SelectAllTh /> : null}
+                    <Th>{t("cod.tracking")}</Th>
+                    <Th>{t("cod.kind")}</Th>
+                    <Th className="text-right">{t("cod.reported")}</Th>
+                    <Th className="text-right">{t("cod.expected")}</Th>
+                    <Th>{t("cod.state")}</Th>
+                    <Th>
+                      <span className="vh">{t("rates.actions")}</span>
+                    </Th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {lines.map((d) => {
+                    const track =
+                      d.shipment_id && d.kind === "not_delivered" ? (
+                        <ConfirmAction
+                          action={trackAction}
+                          id={d.shipment_id}
+                          label={t("cod.trackMatch")}
+                          title={t("cod.trackTitle", { tracking: d.tracking_number })}
+                          points={[t("cod.trackAsk"), t("cod.trackLedger"), t("cod.trackFinal")]}
+                          submit={t("cod.trackSubmit")}
+                          done={t("cod.tracked")}
+                          danger={false}
+                        />
+                      ) : null;
+                    const resolve = <ResolveDialog id={d.id} tracking={d.tracking_number} />;
+                    return (
+                      <tr key={d.id}>
+                        {show === "open" ? <SelectTd id={d.id} name={d.tracking_number} /> : null}
+                        <Td className="rt-title">
+                          <span className="cell2">
+                            <span className="mono">{d.tracking_number}</span>
+                            <span className="sub">
+                              {d.order_number ?? t("cod.unknownOrder")}
+                              {d.statement_reference ? ` · ${d.statement_reference}` : ""}
+                            </span>
+                          </span>
+                        </Td>
+                        <Td label={t("cod.kind")}>
+                          <span className="cell2">
+                            <span>{t(`discrepancyKind.${d.kind}`)}</span>
+                            {d.status === "resolved" ? (
+                              <span className="sub">
+                                {t.has(`resolution.${d.resolution_note}`)
+                                  ? t(`resolution.${d.resolution_note}`)
+                                  : d.resolution_note}
+                                {d.resolved_by ? ` · ${d.resolved_by.name}` : ""}
+                              </span>
+                            ) : (
+                              <span className="sub">
+                                {t("cod.reportedLine", {
+                                  cod: money(d.reported.amount),
+                                  fee: money(d.reported_fee.amount),
+                                })}
+                              </span>
+                            )}
+                          </span>
+                        </Td>
+                        <Td label={t("cod.reported")} className="text-right num">
+                          {money(String(Number(d.reported.amount) - Number(d.reported_fee.amount)))}
+                        </Td>
+                        <Td label={t("cod.expected")} className="text-right num">
+                          {money(d.expected.amount)}
+                        </Td>
+                        <Td label={t("cod.state")}>
+                          <span className={DISCREPANCY_BADGE[d.status]}>
+                            <span className="dot" />
+                            {t(`discrepancyStatus.${d.status}`)}
+                          </span>
+                        </Td>
+                        <Td className="rt-acts">
+                          {d.status === "open" ? (
+                            <span className="row-acts">
+                              {track ?? resolve}
+                              {track ? (
+                                <RowMenu
+                                  label={tt("moreFor", { name: d.tracking_number })}
+                                  items={[{ label: t("resolve.button"), dialog: resolve }]}
+                                />
+                              ) : null}
+                            </span>
+                          ) : null}
+                        </Td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
       </section>

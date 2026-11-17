@@ -14,6 +14,8 @@ import {
   openShiftAt,
   posCatalog,
   resetSampleStores,
+  shiftLagging,
+  shiftMatches,
 } from "./stores";
 
 beforeEach(() => {
@@ -134,5 +136,34 @@ describe("đánh giá", () => {
   it("điểm trung bình một chữ số lẻ", () => {
     expect(average([5, 7, 10, 27, 79])).toEqual({ total: 128, mean: 4.3 });
     expect(average([0, 0, 0, 0, 0])).toEqual({ total: 0, mean: 0 });
+  });
+});
+
+describe("bảng ca: bộ lọc mặc định và sắp", () => {
+  it("mặc định giữ ca đang mở và ca lệch; 'all' giữ mọi ca", async () => {
+    const { data } = await listShifts();
+    const attention = data.filter((x) => shiftMatches(x, "attention"));
+    expect(attention.length).toBeGreaterThan(0);
+    for (const x of attention) expect(x.status === "open" || shiftLagging(x)).toBe(true);
+    for (const x of data.filter((y) => !shiftMatches(y, "attention"))) {
+      expect(x.status === "closed" && !shiftLagging(x)).toBe(true);
+    }
+    expect(data.filter((x) => shiftMatches(x, "all"))).toHaveLength(data.length);
+    const even = { status: "closed" as const, difference: { amount: "0", currency: "VND" } };
+    expect(shiftMatches(even, "diff")).toBe(false);
+    expect(shiftMatches(even, "closed")).toBe(true);
+  });
+
+  it("sắp theo số lệch: ca chưa có số lệch luôn ở cuối; sắp theo giờ mở ca", async () => {
+    const { data } = await listShifts({ field: "difference", dir: "asc" });
+    const values = data.map((x) => (x.difference ? Number(x.difference.amount) : null));
+    const known = values.filter((v): v is number => v !== null);
+    expect(known).toEqual([...known].sort((a, b) => a - b));
+    const firstNull = values.indexOf(null);
+    if (firstNull >= 0) expect(values.slice(firstNull).every((v) => v === null)).toBe(true);
+    const opened = (await listShifts({ field: "opened", dir: "desc" })).data.map((x) =>
+      Date.parse(x.opened_at),
+    );
+    expect(opened).toEqual([...opened].sort((a, b) => b - a));
   });
 });

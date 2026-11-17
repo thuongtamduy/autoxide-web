@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import {
   bookAction,
+  bulkBookAction,
+  bulkTrackAction,
   cancelShipmentAction,
   handOverAction,
   receiveReturnAction,
@@ -13,7 +16,10 @@ import {
 import { SHIPMENT_BADGE } from "@/components/shipping/badges";
 import { SplitDialog } from "@/components/shipping/forms";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
+import { Pager } from "@/components/ui/pager";
+import { RowMenu } from "@/components/ui/row-menu";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatCount, formatMoney } from "@/lib/format";
 import { vnDateTime } from "@/lib/promotions";
@@ -43,7 +49,9 @@ const MOVING: ShipmentStatus[] = ["picked_up", "in_transit", "out_for_delivery"]
 
 // Tab "Vận đơn": đơn cần giao tạo vận đơn ở trạng thái chờ đặt hãng; nhân viên kiểm hàng rồi đặt
 // hãng; trạng thái sau đó do hãng báo về. Một đơn có thể có nhiều kiện hoặc nhiều vận đơn khi giao một
-// phần. Mở một dòng để xem kiện, món, lịch sử và thao tác.
+// phần. Mở một dòng để xem kiện, món, lịch sử. Dòng hiện một nút cho bước kế tiếp, còn lại trong "⋯";
+// chọn nhiều để đặt hãng hay hỏi lại hành trình (lặp lệnh từng vận đơn, gom lỗi). Chưa có hàm in nhãn
+// vận đơn (bước 44 của core chưa có endpoint nhãn) nên không có nút in. Phân trang theo con trỏ.
 export default async function ShipmentsPage(props: PageProps<"/sales/shipping">) {
   if (!(await can(TAB_PERMISSIONS.shipments))) {
     // Người chỉ có quyền một tab khác (vd đối soát COD) vào thẳng tab đó.
@@ -52,8 +60,9 @@ export default async function ShipmentsPage(props: PageProps<"/sales/shipping">)
       if (await can(TAB_PERMISSIONS[tab])) redirect(`/sales/shipping/${tab}`);
     }
   }
-  const [t, locale, params] = await Promise.all([
+  const [t, tt, locale, params] = await Promise.all([
     getTranslations("shipping"),
+    getTranslations("table"),
     getLocale(),
     props.searchParams,
   ]);
@@ -61,20 +70,22 @@ export default async function ShipmentsPage(props: PageProps<"/sales/shipping">)
   const status = FILTERS.find((s) => s === one("status"));
   const q = one("q").slice(0, 40);
   const open = one("open");
+  const cursor = one("cursor");
   const [page, counts, detail, manage] = await Promise.all([
-    listShipments({ ...(status ? { status } : {}), q, locale, cursor: one("cursor") || null }),
+    listShipments({ ...(status ? { status } : {}), q, locale, cursor: cursor || null }),
     shipmentCounts(),
     open ? getShipment(open, locale) : Promise.resolve(null),
     can(SHIPPING_SHIPMENTS_MANAGE),
   ]);
   const href = (change: Record<string, string | null>) => {
     const next = new URLSearchParams();
-    const merged = { status: status ?? "", q, ...change };
+    const merged = { status: status ?? "", q, cursor, ...change };
     for (const [key, value] of Object.entries(merged)) if (value) next.set(key, value);
     const query = next.toString();
     return query ? `/sales/shipping?${query}` : "/sales/shipping";
   };
   const n = (s: ShipmentStatus) => counts[s] ?? 0;
+  const steps = (x: ShipmentRow) => (manage ? shipmentSteps(x, t) : []);
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
   return (
     <div className="blocks">
@@ -163,91 +174,145 @@ export default async function ShipmentsPage(props: PageProps<"/sales/shipping">)
           {page.data.length === 0 ? (
             <p className="empty">{t("shipments.empty")}</p>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("shipments.order")}</Th>
-                  <Th>{t("shipments.carrier")}</Th>
-                  <Th>{t("shipments.route")}</Th>
-                  <Th>{t("shipments.eta")}</Th>
-                  <Th className="text-right">{t("shipments.cod")}</Th>
-                  <Th>{t("shipments.state")}</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {page.data.map((x) => {
-                  const isOpen = open === x.id && detail !== null;
-                  return [
-                    <tr key={x.id} data-current={isOpen ? "" : undefined}>
-                      <Td className="rt-title">
-                        <span className="cell2">
-                          <Link
-                            className="open mono"
-                            href={
-                              isOpen ? href({ open: null }) : `${href({ open: x.id })}#shipments-h`
-                            }
-                            scroll={false}
-                            aria-expanded={isOpen}
-                          >
-                            {x.order_number}
-                          </Link>
-                          <span className={x.tracking_numbers.length ? "sub mono" : "sub"}>
-                            {x.tracking_numbers.join(", ") ||
-                              (x.carrier_code
-                                ? t("shipments.noTracking")
-                                : t("shipments.noCarrier"))}
+            <BulkTable
+              ids={page.data.map((x) => x.id)}
+              actions={
+                manage
+                  ? [
+                      {
+                        key: "book",
+                        label: t("actions.book"),
+                        tone: "pri",
+                        run: bulkBookAction,
+                        confirm: {
+                          title: t("actions.bulkBookTitle"),
+                          points: [t("actions.bulkBookOnly"), t("actions.bookFee")],
+                          submit: t("actions.bookSubmit"),
+                        },
+                      },
+                      { key: "track", label: t("actions.track"), run: bulkTrackAction },
+                    ]
+                  : []
+              }
+            >
+              <Table cards>
+                <thead>
+                  <tr>
+                    {manage ? <SelectAllTh /> : null}
+                    <Th>{t("shipments.order")}</Th>
+                    <Th>{t("shipments.carrier")}</Th>
+                    <Th>{t("shipments.route")}</Th>
+                    <Th>{t("shipments.eta")}</Th>
+                    <Th className="text-right">{t("shipments.cod")}</Th>
+                    <Th>{t("shipments.state")}</Th>
+                    <Th>
+                      <span className="vh">{t("rates.actions")}</span>
+                    </Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {page.data.map((x) => {
+                    const isOpen = open === x.id && detail !== null;
+                    const own = steps(x);
+                    return [
+                      <tr key={x.id} data-current={isOpen ? "" : undefined}>
+                        {manage ? <SelectTd id={x.id} name={x.order_number} /> : null}
+                        <Td className="rt-title">
+                          <span className="cell2">
+                            <Link
+                              className="open mono"
+                              href={
+                                isOpen
+                                  ? href({ open: null })
+                                  : `${href({ open: x.id })}#shipments-h`
+                              }
+                              scroll={false}
+                              aria-expanded={isOpen}
+                            >
+                              {x.order_number}
+                            </Link>
+                            <span className={x.tracking_numbers.length ? "sub mono" : "sub"}>
+                              {x.tracking_numbers.join(", ") ||
+                                (x.carrier_code
+                                  ? t("shipments.noTracking")
+                                  : t("shipments.noCarrier"))}
+                            </span>
                           </span>
-                        </span>
-                      </Td>
-                      <Td label={t("shipments.carrier")}>
-                        <span className="cell2">
-                          <span>{x.carrier_name ?? x.method_name}</span>
-                          <span className="sub">
-                            {x.carrier_name ? x.method_name : x.origin_name}
+                        </Td>
+                        <Td label={t("shipments.carrier")}>
+                          <span className="cell2">
+                            <span>{x.carrier_name ?? x.method_name}</span>
+                            <span className="sub">
+                              {x.carrier_name ? x.method_name : x.origin_name}
+                            </span>
                           </span>
-                        </span>
-                      </Td>
-                      <Td label={t("shipments.route")}>
-                        <span className="cell2">
-                          <span>{x.origin_name}</span>
-                          <span className="sub">
-                            → {x.address.commune_name}, {x.address.province_name}
+                        </Td>
+                        <Td label={t("shipments.route")}>
+                          <span className="cell2">
+                            <span>{x.origin_name}</span>
+                            <span className="sub">
+                              → {x.address.commune_name}, {x.address.province_name}
+                            </span>
                           </span>
-                        </span>
-                      </Td>
-                      <Td label={t("shipments.eta")}>
-                        <EtaRange from={x.eta_from} to={x.eta_to} locale={locale} />
-                      </Td>
-                      <Td label={t("shipments.cod")} className="text-right num">
-                        {x.cod ? formatMoney(x.cod.amount, x.cod.currency, locale) : "—"}
-                      </Td>
-                      <Td label={t("shipments.state")}>
-                        <span className={SHIPMENT_BADGE[x.status]}>
-                          <span className="dot" />
-                          {t(`status.${x.status}`)}
-                        </span>
-                      </Td>
-                    </tr>,
-                    isOpen && detail ? (
-                      <tr key={`${x.id}-open`} className="cat-detail-row">
-                        <td colSpan={6}>
-                          <Detail x={detail.data} locale={locale} manage={manage} />
-                        </td>
-                      </tr>
-                    ) : null,
-                  ];
-                })}
-              </tbody>
-            </Table>
+                        </Td>
+                        <Td label={t("shipments.eta")}>
+                          <EtaRange from={x.eta_from} to={x.eta_to} locale={locale} />
+                        </Td>
+                        <Td label={t("shipments.cod")} className="text-right num">
+                          {x.cod ? formatMoney(x.cod.amount, x.cod.currency, locale) : "—"}
+                        </Td>
+                        <Td label={t("shipments.state")}>
+                          <span className={SHIPMENT_BADGE[x.status]}>
+                            <span className="dot" />
+                            {t(`status.${x.status}`)}
+                          </span>
+                        </Td>
+                        <Td className="rt-acts">
+                          <span className="row-acts">
+                            {own[0]?.node ?? null}
+                            <RowMenu
+                              label={tt("moreFor", { name: x.order_number })}
+                              items={[
+                                {
+                                  label: isOpen
+                                    ? t("shipments.hideDetail")
+                                    : t("shipments.openDetail"),
+                                  href: isOpen
+                                    ? href({ open: null })
+                                    : `${href({ open: x.id })}#shipments-h`,
+                                },
+                                ...own.slice(1).map((step) => ({
+                                  label: step.label,
+                                  dialog: step.node,
+                                  ...(step.danger ? { danger: true } : {}),
+                                })),
+                              ]}
+                            />
+                          </span>
+                        </Td>
+                      </tr>,
+                      isOpen && detail ? (
+                        <tr key={`${x.id}-open`} className="cat-detail-row">
+                          <td colSpan={manage ? 8 : 7}>
+                            <Detail x={detail.data} locale={locale} />
+                          </td>
+                        </tr>
+                      ) : null,
+                    ];
+                  })}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
-        {page.pagination.next_cursor ? (
-          <p>
-            <Link className="btn" href={href({ cursor: page.pagination.next_cursor, open: null })}>
-              {t("shipments.more")}
-            </Link>
-          </p>
-        ) : null}
+        <Pager
+          first={cursor ? href({ cursor: null, open: null }) : null}
+          next={
+            page.pagination.next_cursor
+              ? href({ cursor: page.pagination.next_cursor, open: null })
+              : null
+          }
+        />
       </section>
     </div>
   );
@@ -275,7 +340,7 @@ async function EtaRange({
   return <span>{from === to ? day(from) : t("etaRange", { from: day(from), to: day(to) })}</span>;
 }
 
-async function Detail({ x, locale, manage }: { x: ShipmentRow; locale: string; manage: boolean }) {
+async function Detail({ x, locale }: { x: ShipmentRow; locale: string }) {
   const t = await getTranslations("shipping");
   const money = (amount: string) => formatMoney(amount, "VND", locale);
   const fields: [string, string][] = [
@@ -370,105 +435,147 @@ async function Detail({ x, locale, manage }: { x: ShipmentRow; locale: string; m
         </>
       ) : null}
       {t.has(`notes.${x.status}`) ? <p className="fhint">{t(`notes.${x.status}`)}</p> : null}
-      {manage ? <Actions x={x} /> : null}
     </div>
   );
 }
 
-async function Actions({ x }: { x: ShipmentRow }) {
-  const t = await getTranslations("shipping.actions");
-  return (
-    <span className="row-acts">
-      {x.status === "pending" && x.carrier_code ? (
+type Translate = Awaited<ReturnType<typeof getTranslations<"shipping">>>;
+
+/**
+ * Các bước làm được trên một vận đơn, theo thứ tự xử lý: bước đầu hiện trên dòng, còn lại vào "⋯".
+ * Mọi bước mở hộp xác nhận, trừ "Hỏi lại hành trình" (luôn đứng một mình, nên luôn là nút trên dòng).
+ */
+function shipmentSteps(
+  x: ShipmentRow,
+  t: Translate,
+): { label: string; node: ReactNode; danger?: boolean }[] {
+  const out: { label: string; node: ReactNode; danger?: boolean }[] = [];
+  if (x.status === "pending" && x.carrier_code) {
+    out.push({
+      label: t("actions.book"),
+      node: (
         <ConfirmAction
           action={bookAction}
           id={x.id}
-          label={t("book")}
-          title={t("bookTitle", { order: x.order_number })}
+          label={t("actions.book")}
+          title={t("actions.bookTitle", { order: x.order_number })}
           points={[
-            t("bookCarrier", { carrier: x.carrier_name ?? "" }),
-            t("bookFee"),
-            t("bookCancel"),
+            t("actions.bookCarrier", { carrier: x.carrier_name ?? "" }),
+            t("actions.bookFee"),
+            t("actions.bookCancel"),
           ]}
-          submit={t("bookSubmit")}
-          done={t("booked")}
+          submit={t("actions.bookSubmit")}
+          done={t("actions.booked")}
           danger={false}
         />
-      ) : null}
-      {x.status === "pending" ? <SplitDialog id={x.id} order={x.order_number} /> : null}
-      {MOVING.includes(x.status) ? (
+      ),
+    });
+  }
+  if (x.status === "pending") {
+    out.push({ label: t("split.button"), node: <SplitDialog id={x.id} order={x.order_number} /> });
+  }
+  if (MOVING.includes(x.status)) {
+    out.push({
+      label: t("actions.track"),
+      node: (
         <InlineAction
           action={trackAction}
           id={x.id}
-          label={t("track")}
-          ariaLabel={`${t("track")} ${x.order_number}`}
-          done={t("tracked")}
+          label={t("actions.track")}
+          ariaLabel={`${t("actions.track")} ${x.order_number}`}
+          done={t("actions.tracked")}
         />
-      ) : null}
-      {x.status === "delivery_failed" ? (
-        <>
-          <ConfirmAction
-            action={redeliverAction}
-            id={x.id}
-            label={t("redeliver")}
-            title={t("redeliverTitle", { order: x.order_number })}
-            points={[
-              t("redeliverCarrier"),
-              t("redeliverAttempts", { n: x.attempts, max: x.max_attempts }),
-            ]}
-            submit={t("redeliverSubmit")}
-            done={t("redelivered")}
-            danger={false}
-          />
-          <ConfirmAction
-            action={returnAction}
-            id={x.id}
-            label={t("return")}
-            title={t("returnTitle", { order: x.order_number })}
-            points={[t("returnCarrier"), t("returnOrder"), t("returnFee")]}
-            submit={t("returnSubmit")}
-            done={t("returned")}
-          />
-        </>
-      ) : null}
-      {x.status === "returning" ? (
+      ),
+    });
+  }
+  if (x.status === "delivery_failed") {
+    out.push({
+      label: t("actions.redeliver"),
+      node: (
+        <ConfirmAction
+          action={redeliverAction}
+          id={x.id}
+          label={t("actions.redeliver")}
+          title={t("actions.redeliverTitle", { order: x.order_number })}
+          points={[
+            t("actions.redeliverCarrier"),
+            t("actions.redeliverAttempts", { n: x.attempts, max: x.max_attempts }),
+          ]}
+          submit={t("actions.redeliverSubmit")}
+          done={t("actions.redelivered")}
+          danger={false}
+        />
+      ),
+    });
+    out.push({
+      label: t("actions.return"),
+      danger: true,
+      node: (
+        <ConfirmAction
+          action={returnAction}
+          id={x.id}
+          label={t("actions.return")}
+          title={t("actions.returnTitle", { order: x.order_number })}
+          points={[t("actions.returnCarrier"), t("actions.returnOrder"), t("actions.returnFee")]}
+          submit={t("actions.returnSubmit")}
+          done={t("actions.returned")}
+        />
+      ),
+    });
+  }
+  if (x.status === "returning") {
+    out.push({
+      label: t("actions.receive"),
+      node: (
         <ConfirmAction
           action={receiveReturnAction}
           id={x.id}
-          label={t("receive")}
-          title={t("receiveTitle", { order: x.order_number })}
-          points={[t("receiveStock", { origin: x.origin_name }), t("receiveOrder")]}
-          submit={t("receiveSubmit")}
-          done={t("received")}
+          label={t("actions.receive")}
+          title={t("actions.receiveTitle", { order: x.order_number })}
+          points={[t("actions.receiveStock", { origin: x.origin_name }), t("actions.receiveOrder")]}
+          submit={t("actions.receiveSubmit")}
+          done={t("actions.received")}
           danger={false}
         />
-      ) : null}
-      {x.status === "ready_for_pickup" ? (
+      ),
+    });
+  }
+  if (x.status === "ready_for_pickup") {
+    out.push({
+      label: t("actions.handOver"),
+      node: (
         <ConfirmAction
           action={handOverAction}
           id={x.id}
-          label={t("handOver")}
-          title={t("handOverTitle", { order: x.order_number })}
-          points={[t("handOverCode"), t("handOverFinal")]}
-          submit={t("handOverSubmit")}
-          done={t("handedOver")}
+          label={t("actions.handOver")}
+          title={t("actions.handOverTitle", { order: x.order_number })}
+          points={[t("actions.handOverCode"), t("actions.handOverFinal")]}
+          submit={t("actions.handOverSubmit")}
+          done={t("actions.handedOver")}
           danger={false}
         />
-      ) : null}
-      {["pending", "booking", "ready_to_ship", "ready_for_pickup"].includes(x.status) ? (
+      ),
+    });
+  }
+  if (["pending", "booking", "ready_to_ship", "ready_for_pickup"].includes(x.status)) {
+    out.push({
+      label: t("actions.cancel"),
+      danger: true,
+      node: (
         <ConfirmAction
           action={cancelShipmentAction}
           id={x.id}
-          label={t("cancel")}
-          title={t("cancelTitle", { order: x.order_number })}
+          label={t("actions.cancel")}
+          title={t("actions.cancelTitle", { order: x.order_number })}
           points={[
-            x.status === "ready_to_ship" ? t("cancelCarrier") : t("cancelLocal"),
-            t("cancelOrder"),
+            x.status === "ready_to_ship" ? t("actions.cancelCarrier") : t("actions.cancelLocal"),
+            t("actions.cancelOrder"),
           ]}
-          submit={t("cancelSubmit")}
-          done={t("cancelled")}
+          submit={t("actions.cancelSubmit")}
+          done={t("actions.cancelled")}
         />
-      ) : null}
-    </span>
-  );
+      ),
+    });
+  }
+  return out;
 }

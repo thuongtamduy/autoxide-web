@@ -164,10 +164,9 @@ test("kênh bán: tạm dừng có Hoàn tác, khoá sai báo dưới ô, gắn 
   }
   await page
     .getByRole("row", { name: /Matched/ })
-    .getByRole("link")
     .first()
+    .getByRole("button", { name: "Post to ledger" })
     .click();
-  await page.getByRole("button", { name: "Post to ledger" }).click();
   await expect(dialog(page)).toContainText("This cannot be undone");
   await expect(dialog(page).getByRole("button", { name: "Cancel" })).toBeFocused();
   await dialog(page).getByRole("button", { name: "Post", exact: true }).click();
