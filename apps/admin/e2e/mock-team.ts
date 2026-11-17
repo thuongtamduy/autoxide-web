@@ -523,19 +523,20 @@ async function platformGrantRoutes(
     problem(response, 403, "permission_denied", "Missing permission `auth.support.grant`.");
     return true;
   }
-  const one = /^\/api\/v1\/auth\/support-grants\/([^/]+)$/.exec(url.pathname);
   const tenant = url.searchParams.get("tenant_id");
+  if (url.pathname === "/api/v1/auth/support-grants/allowed" && method === "GET") {
+    // Như core (D-335): cài đặt `auth.support_access` của khách; core giả: mọi khách bật.
+    send(response, 200, { data: { tenant_id: tenant ?? "", support_access: true } });
+    return true;
+  }
+  const one = /^\/api\/v1\/auth\/support-grants\/([^/]+)$/.exec(url.pathname);
   if (!one && method === "GET") {
-    if (!tenant) {
-      problem(response, 422, "validation_failed", "The request has invalid fields.", [
-        { field: "tenant_id", code: "required", detail: "is required" },
-      ]);
-      return true;
-    }
+    // `tenant_id` tuỳ chọn (D-335): bỏ thì 200 lần cấp mới nhất của mọi khách.
     send(response, 200, {
       data: platformGrants
-        .filter((g) => g.tenant_id === tenant)
-        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+        .filter((g) => !tenant || g.tenant_id === tenant)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, 200),
     });
     return true;
   }

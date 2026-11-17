@@ -8,13 +8,6 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { grantState, type SupportGrant } from "@/lib/support";
 
-/**
- * Thời hạn chọn được khi cấp quyền vào. 8 giờ là mặc định của core
- * (`AUTOXIDE_AUTH_SUPPORT_ACCESS_MAX_HOURS`); bản cài đặt trần thấp hơn thì core từ chối
- * `auth.support_duration_exceeded` và câu báo hiện ở ô thời hạn.
- */
-export const SUPPORT_HOURS = [1, 4, 8] as const;
-
 type Option = { value: string; label: string };
 
 /** Nút và hộp "Cấp quyền vào": chọn khách (hay khách cố định), nhân sự, role, căn cứ, thời hạn, lý do. */
@@ -22,8 +15,14 @@ export async function SupportGrantDialog({
   tenants,
   staff,
   roles,
+  hours,
   triggerClass = "btn",
+  allowed = true,
 }: {
+  /** Thời hạn chọn được (giờ), trần theo cấu hình của bản cài (`supportHours`). */
+  hours: readonly number[];
+  /** Khách cho vào hỗ trợ không; tắt thì căn cứ mặc định là yêu cầu của cơ quan có thẩm quyền. */
+  allowed?: boolean;
   /** Khách chọn được; một khách thì ô chọn ẩn đi. */
   tenants: readonly Option[];
   staff: readonly Option[];
@@ -39,7 +38,7 @@ export async function SupportGrantDialog({
       label={t("grant")}
       triggerClass={triggerClass}
       title={only ? t("grantTitleFor", { tenant: only.label }) : t("grantTitle")}
-      intro={t("grantIntro", { max: Math.max(...SUPPORT_HOURS) })}
+      intro={t("grantIntro", { max: Math.max(...hours) })}
       points={[t("grantSeen"), t("grantReadOnly"), t("grantOff")]}
       submit={t("submit")}
       done={t("granted")}
@@ -53,6 +52,7 @@ export async function SupportGrantDialog({
           kind: "select",
           name: "basis",
           label: t("basis"),
+          defaultValue: allowed ? "support" : "legal_request",
           options: [
             { value: "support", label: tp("basis.support") },
             { value: "legal_request", label: tp("basis.legal_request") },
@@ -63,7 +63,7 @@ export async function SupportGrantDialog({
           name: "hours",
           label: t("hours"),
           defaultValue: "1",
-          options: SUPPORT_HOURS.map((h) => ({
+          options: hours.map((h) => ({
             value: String(h),
             label: t("hoursOption", { count: h }),
           })),

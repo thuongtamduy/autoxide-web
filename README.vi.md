@@ -41,7 +41,10 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 - **Cài đặt › Gói và thuê bao**: gói đang dùng, mức dùng từng hạn mức, kỳ thanh toán, đổi gói (gói lớn
   hơn có hiệu lực ngay, nhỏ hơn chờ hết kỳ), huỷ và tiếp tục gia hạn. **Nền tảng › Gói và giá**: gói với
   module, tính năng, hạn mức và giá, bán, gói mặc định, ngừng bán; ghi đè theo khách (có Hoàn tác);
-  thuê bao của mọi khách (đổi gói, huỷ, khoá hẳn). Tổng quan hiện gói của bạn và hạn mức gần chạm nhất;
+  thuê bao của mọi khách (đổi gói, huỷ, khoá hẳn); hồ sơ xuất hoá đơn; kỳ thanh toán của từng khách, có
+  "đánh dấu đã thu" cho chuyển khoản kiểm bằng tay. **Nền tảng › Cấp phát**: tạo khách trên một gói một lần
+  (khách, gói, dữ liệu mẫu, lời mời quản trị viên đầu tiên), chạy lại lượt hỏng. Khách đã tạm khoá có thể
+  xoá hẳn (chứng từ kế toán vẫn được giữ). Tổng quan hiện gói của bạn và hạn mức gần chạm nhất;
   việc gói chưa có (tạo API key, gợi ý AI cho bài viết) bị khoá kèm nhãn "Cần gói cao hơn", và phân hệ
   ngoài gói không hiện trên thanh bên.
 - **Chuyển khách đang làm việc**: người được làm việc ở khách khác (qua uỷ quyền của khách cha, hay quyền
@@ -72,7 +75,7 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 sau: Bán hàng (đơn hàng, đổi trả, bán tại quầy, vận chuyển và COD, cửa hàng, kênh bán), Sản phẩm
 (danh mục, giá, nhóm thuế, tồn kho), Tiếp thị (khuyến mại, tiếp thị liên kết), Khách hàng, Sàn và
 Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Tuân thủ và phần còn lại
-của Mặt điều khiển nền tảng (cấp phát, sức khoẻ). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
+của Mặt điều khiển nền tảng (sức khoẻ). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
 liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật, trừ production); thay đổi ở đó nằm
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).

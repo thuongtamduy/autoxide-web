@@ -1383,8 +1383,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the support access grants for a tenant (platform).
-         * @description Requires `auth.support.grant`, in the platform tenant.
+         * List the support access grants (platform).
+         * @description Requires `auth.support.grant`, in the platform tenant. With `tenant_id`, every grant for that
+         *     tenant; without it, the newest 200 grants for any tenant.
          */
         get: operations["auth_list_support_grants"];
         put?: never;
@@ -1396,6 +1397,27 @@ export interface paths {
          *     every change made, in its audit log.
          */
         post: operations["auth_grant_support_access"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/support-grants/allowed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tell whether a tenant lets platform staff in for support (platform).
+         * @description Requires `auth.support.grant`, in the platform tenant. Read it before granting: a tenant that
+         *     turned the setting `auth.support_access` off accepts only `legal_request` grants.
+         */
+        get: operations["auth_get_support_allowed"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3832,6 +3854,31 @@ export interface paths {
         patch: operations["kernel_update_tenant"];
         trace?: never;
     };
+    "/api/v1/kernel/tenants/{id}/erase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a tenant and its data for good.
+         * @description Requires `kernel.tenants.delete` and an account of the platform tenant. Cannot be undone. The
+         *     tenant must be suspended first (`PATCH /tenants/{id}` with `status: suspended`); export its data
+         *     before if it is wanted (`POST /tenants/{id}/exports`). Every row of the tenant in its database
+         *     and every file of it is deleted, except the tables modules must keep (accounting records); its
+         *     domains are released. The tenant stays listed with status `deleted`, and every request to it
+         *     answers `404 tenant_not_found`.
+         */
+        post: operations["kernel_erase_tenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/kernel/tenants/{id}/exports": {
         parameters: {
             query?: never;
@@ -5462,6 +5509,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/billing-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get your tenant's billing profile.
+         * @description Requires `plans.billing.read`.
+         */
+        get: operations["plans_get_billing_profile"];
+        /**
+         * Set your tenant's billing profile.
+         * @description Requires `plans.billing.manage`. The body replaces the whole profile. Invoices of the platform
+         *     name this buyer; billing reminders go to `email` unless the subscription has its own
+         *     `billing_email`.
+         */
+        put: operations["plans_set_billing_profile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/catalog": {
         parameters: {
             query?: never;
@@ -5495,6 +5568,27 @@ export interface paths {
          *     read-only. User interfaces use it to hide what the plan does not include.
          */
         get: operations["plans_get_entitlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the overrides of every tenant.
+         * @description Platform staff with `plans.subscriptions.read`. To list one tenant's, filter by `tenant_id` or
+         *     use `GET /tenants/{tenant_id}/overrides`.
+         */
+        get: operations["plans_list_all_overrides"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5615,6 +5709,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/provisionings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List tenant provisionings.
+         * @description Platform staff with `plans.subscriptions.read`.
+         */
+        get: operations["plans_list_provisionings"];
+        put?: never;
+        /**
+         * Create a tenant on a plan.
+         * @description Platform staff with `plans.provision`. Runs in the background: creates the tenant, puts it on the
+         *     plan, adds the sample data of the modules the plan turns on (when asked) and invites the
+         *     administrator by email with the role `admin`. Follow it with `GET /provisionings/{id}`
+         *     (`plans.subscriptions.read`). A plan that
+         *     requires identity checks cannot be provisioned yet (`plans.kyc_required`).
+         */
+        post: operations["plans_create_provisioning"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/provisionings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a tenant provisioning.
+         * @description Platform staff with `plans.subscriptions.read`.
+         */
+        get: operations["plans_get_provisioning"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/provisionings/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a failed tenant provisioning again.
+         * @description Platform staff with `plans.provision`. It goes on from the last step done.
+         */
+        post: operations["plans_retry_provisioning"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/subscription": {
         parameters: {
             query?: never;
@@ -5712,6 +5874,68 @@ export interface paths {
          * @description Platform staff with `plans.subscriptions.read`.
          */
         get: operations["plans_list_subscriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/tenants/{tenant_id}/billing-periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a tenant's billing periods.
+         * @description Platform staff with `plans.subscriptions.read`. Newest first, at most 200. Record a payment
+         *     checked by hand with `POST /billing-periods/{id}/mark-paid`.
+         */
+        get: operations["plans_list_tenant_billing_periods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/tenants/{tenant_id}/billing-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a tenant's billing profile.
+         * @description Platform staff with `plans.subscriptions.read`.
+         */
+        get: operations["plans_get_tenant_billing_profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/tenants/{tenant_id}/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get what a tenant may use now.
+         * @description Platform staff with `plans.subscriptions.read`. The same as the tenant sees with
+         *     `GET /entitlements`: modules, features, limits with their use, and whether its data is read-only.
+         */
+        get: operations["plans_get_tenant_entitlements"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6459,6 +6683,47 @@ export interface components {
             /** Format: uuid */
             tenant_id: string;
         };
+        /** @description The whole billing profile; it replaces the one there is. */
+        BillingProfileRequest: {
+            address?: components["schemas"]["AddressInput"] | null;
+            /**
+             * @description Where invoices and billing reminders go.
+             * @example billing@example.com
+             */
+            email: string;
+            /**
+             * @description Legal name, 1 to 200 characters.
+             * @example Cong ty TNHH Vi Du
+             */
+            legal_name: string;
+            /** @description Up to 20 characters. */
+            phone?: string | null;
+            /**
+             * @description Tax code: 10 digits, or 10 digits, `-` and 3 digits; leave out for a person without one.
+             * @example 0101234567
+             */
+            tax_code?: string | null;
+        };
+        /** @description Who the platform invoices: your tenant's legal details. */
+        BillingProfileResponse: {
+            address?: components["schemas"]["Address"] | null;
+            /** @description Where invoices and billing reminders go. */
+            email: string;
+            /** @description Legal name of the business or person invoiced. */
+            legal_name: string;
+            phone?: string | null;
+            /** @description Tax code (Vietnam: 10 digits, or 10 digits, a dash and 3 digits for a branch). */
+            tax_code?: string | null;
+            /** Format: uuid */
+            tenant_id: string;
+            /** Format: date-time */
+            updated_at: string;
+            /**
+             * Format: uuid
+             * @description User who last changed it.
+             */
+            updated_by?: string | null;
+        };
         /**
          * @description A mark of a `text` node: `bold`, `italic`, `underline`, `strike`, `code`, or `link`
          *     (`attrs.href`: `http://`, `https://`, `mailto:` or a path starting with `/`).
@@ -6678,6 +6943,13 @@ export interface components {
                  *     show "create an account".
                  */
                 self_registration: boolean;
+                /**
+                 * Format: int32
+                 * @description Longest support access to a tenant that platform staff can be granted, in hours
+                 *     (`AUTOXIDE_AUTH_SUPPORT_ACCESS_MAX_HOURS`; `hours` of `POST /api/v1/auth/support-grants`).
+                 * @example 72
+                 */
+                support_access_max_hours: number;
             };
             /** @description Content settings an interface needs. */
             content: {
@@ -7467,8 +7739,11 @@ export interface components {
             name: string;
             /** @description Whether this is the platform tenant (the operator's own). */
             platform: boolean;
-            /** @description Read-only: data can be read but every change is refused with `403 tenant_read_only`. */
-            read_only?: boolean;
+            /**
+             * @description Read-only: data can be read but every change is refused with `403 tenant_read_only`.
+             *     Always present.
+             */
+            read_only: boolean;
             slug: string;
             status: string;
         };
@@ -7735,6 +8010,29 @@ export interface components {
                 status: string;
                 /** Format: uuid */
                 tenant_id: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_BillingProfileResponse: {
+            /** @description Who the platform invoices: your tenant's legal details. */
+            data: {
+                address?: components["schemas"]["Address"] | null;
+                /** @description Where invoices and billing reminders go. */
+                email: string;
+                /** @description Legal name of the business or person invoiced. */
+                legal_name: string;
+                phone?: string | null;
+                /** @description Tax code (Vietnam: 10 digits, or 10 digits, a dash and 3 digits for a branch). */
+                tax_code?: string | null;
+                /** Format: uuid */
+                tenant_id: string;
+                /** Format: date-time */
+                updated_at: string;
+                /**
+                 * Format: uuid
+                 * @description User who last changed it.
+                 */
+                updated_by?: string | null;
             };
         };
         /** @description Envelope of a single result. */
@@ -8124,8 +8422,11 @@ export interface components {
                 name: string;
                 /** @description Whether this is the platform tenant (the operator's own). */
                 platform: boolean;
-                /** @description Read-only: data can be read but every change is refused with `403 tenant_read_only`. */
-                read_only?: boolean;
+                /**
+                 * @description Read-only: data can be read but every change is refused with `403 tenant_read_only`.
+                 *     Always present.
+                 */
+                read_only: boolean;
                 slug: string;
                 status: string;
             };
@@ -8775,6 +9076,13 @@ export interface components {
             /** @description The signed-in user and what they may do. */
             data: {
                 /**
+                 * @description How you are in that tenant: `direct` (your own tenant), `delegation` (a parent tenant's
+                 *     delegation, `GET /api/v1/auth/me/tenants`) or `support` (platform staff with a support
+                 *     grant).
+                 * @example direct
+                 */
+                access: string;
+                /**
                  * @description `true` when a role grants every permission (the `admin` role); `permissions`
                  *     is then empty.
                  */
@@ -8797,6 +9105,12 @@ export interface components {
                  *     password through `POST /api/v1/auth/password-reset`.
                  */
                 has_password: boolean;
+                /**
+                 * Format: uuid
+                 * @description With `delegation` or `support`: the tenant your account belongs to (the profile fields
+                 *     above are of that account); `null` when `direct`.
+                 */
+                home_tenant_id?: string | null;
                 /** Format: uuid */
                 id: string;
                 /**
@@ -8824,6 +9138,11 @@ export interface components {
                  *     ]
                  */
                 permissions: string[];
+                /**
+                 * Format: uuid
+                 * @description The tenant of this request. `permissions` and `all_permissions` are what you may do here.
+                 */
+                tenant_id: string;
                 /**
                  * @description Preferred IANA time zone; `null`: not set.
                  * @example Asia/Ho_Chi_Minh
@@ -9186,6 +9505,11 @@ export interface components {
                  */
                 max_value?: number | null;
                 reason: string;
+                /**
+                 * Format: uuid
+                 * @description The tenant it applies to.
+                 */
+                tenant_id: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -9292,6 +9616,12 @@ export interface components {
                 /** @description `draft`, `active` (sold) or `retired` (no longer sold; tenants on it keep it). */
                 status: string;
                 /**
+                 * Format: int64
+                 * @description Tenants on the plan now (subscriptions not canceled, as base plan or add-on). Only for
+                 *     platform staff: `null` in the public catalog.
+                 */
+                subscriber_count?: number | null;
+                /**
                  * Format: int32
                  * @description Days a suspended (read-only) subscription waits before it is canceled.
                  */
@@ -9326,8 +9656,12 @@ export interface components {
                 grace_ends_at?: string | null;
                 /** Format: uuid */
                 id: string;
+                /** @description Code of the plan (also when it is no longer sold). */
+                plan_code?: string | null;
                 /** Format: uuid */
                 plan_id: string;
+                /** @description Name of the plan (also when it is no longer sold). */
+                plan_name?: string | null;
                 /** Format: uuid */
                 price_id?: string | null;
                 /**
@@ -9457,6 +9791,54 @@ export interface components {
                 expires_at: string;
                 /** @description Give it to `GET /api/v1/content/public/preview?token=…`. */
                 token: string;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_ProvisioningResponse: {
+            /** @description A request to create a tenant on a plan, and how far it went. */
+            data: {
+                admin_email: string;
+                admin_name?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                error?: string | null;
+                /** @description Code of the error that stopped it, when `failed`. */
+                error_code?: string | null;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                parent_tenant_id?: string | null;
+                /** @description Name of the placement; `null`: `main`. */
+                placement?: string | null;
+                /** Format: uuid */
+                plan_id: string;
+                /** Format: uuid */
+                price_id?: string | null;
+                /** Format: uuid */
+                requested_by?: string | null;
+                sample_data: boolean;
+                slug: string;
+                /**
+                 * @description `pending`, `running`, `failed` (see `error`; fix it, then `POST …/retry`) or `done`.
+                 * @example done
+                 */
+                status: string;
+                /**
+                 * @description The last step done: `created`, `tenant_created`, `subscribed`, `seeded`, `invited`, `done`.
+                 * @example subscribed
+                 */
+                step: string;
+                /** @description Every step done, oldest first. */
+                steps: components["schemas"]["ProvisioningStep"][];
+                /**
+                 * Format: uuid
+                 * @description The new tenant, once created.
+                 */
+                tenant_id?: string | null;
+                tenant_name: string;
+                trial: boolean;
+                /** Format: date-time */
+                updated_at: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -10012,6 +10394,19 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_SupportAllowedResponse: {
+            /** @description Whether a tenant lets platform staff in for support. */
+            data: {
+                /**
+                 * @description The tenant's setting `auth.support_access`: `false` means only a `legal_request` grant can
+                 *     be made (a `support` one is refused with `auth.support_access_disabled`).
+                 */
+                support_access: boolean;
+                /** Format: uuid */
+                tenant_id: string;
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_SupportGrantResponse: {
             /** @description A time-limited access of platform staff to a tenant's data. */
             data: {
@@ -10127,9 +10522,9 @@ export interface components {
                 placement: string;
                 /**
                  * @description Read-only: its data can be read (and its users can sign in and export), but every change
-                 *     is refused with `403 tenant_read_only`. Independent of `status`.
+                 *     is refused with `403 tenant_read_only`. Independent of `status`. Always present.
                  */
-                read_only?: boolean;
+                read_only: boolean;
                 /**
                  * @description Short name: lower-case letters, digits and `-`; unique on the platform.
                  * @example acme
@@ -10137,7 +10532,8 @@ export interface components {
                 slug: string;
                 /**
                  * @description `provisioning`, `active`, `suspended` (every request is refused with
-                 *     `403 tenant_suspended`), `maintenance` or `moving`.
+                 *     `403 tenant_suspended`), `maintenance`, `moving` or `deleted` (its data was deleted; every
+                 *     request answers `404 tenant_not_found`).
                  * @example active
                  */
                 status: string;
@@ -10193,6 +10589,29 @@ export interface components {
                 updated_at: string;
                 /** Format: date-time */
                 verified_at?: string | null;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TenantErasure: {
+            /** @description What deleting a tenant removed. */
+            data: {
+                /**
+                 * Format: int64
+                 * @description Files deleted.
+                 */
+                files: number;
+                /** @description Tables kept, as modules require (accounting records must be kept for years). */
+                retained_tables: string[];
+                /**
+                 * Format: int64
+                 * @description Total rows deleted.
+                 */
+                rows: number;
+                slug: string;
+                /** @description Rows deleted, per table (tables with none are left out). */
+                tables: components["schemas"]["TenantTableRows"][];
+                /** Format: uuid */
+                tenant_id: string;
             };
         };
         /** @description Envelope of a single result. */
@@ -11014,6 +11433,11 @@ export interface components {
                  */
                 max_value?: number | null;
                 reason: string;
+                /**
+                 * Format: uuid
+                 * @description The tenant it applies to.
+                 */
+                tenant_id: string;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -11109,6 +11533,12 @@ export interface components {
                 sample_data: boolean;
                 /** @description `draft`, `active` (sold) or `retired` (no longer sold; tenants on it keep it). */
                 status: string;
+                /**
+                 * Format: int64
+                 * @description Tenants on the plan now (subscriptions not canceled, as base plan or add-on). Only for
+                 *     platform staff: `null` in the public catalog.
+                 */
+                subscriber_count?: number | null;
                 /**
                  * Format: int32
                  * @description Days a suspended (read-only) subscription waits before it is canceled.
@@ -11980,6 +12410,16 @@ export interface components {
             /** @description In order; the first category is the main one. At most 50. */
             term_ids: string[];
         };
+        /** @description Delete a tenant for good. */
+        EraseRequest: {
+            /**
+             * @description The tenant's slug again, to confirm.
+             * @example acme
+             */
+            confirm: string;
+            /** @description Why, 1 to 500 characters (kept in the audit log of the platform). */
+            reason: string;
+        };
         /** @description Result of erasing an email address. */
         ErasedResponse: {
             /**
@@ -12568,6 +13008,13 @@ export interface components {
         /** @description The signed-in user and what they may do. */
         MeResponse: {
             /**
+             * @description How you are in that tenant: `direct` (your own tenant), `delegation` (a parent tenant's
+             *     delegation, `GET /api/v1/auth/me/tenants`) or `support` (platform staff with a support
+             *     grant).
+             * @example direct
+             */
+            access: string;
+            /**
              * @description `true` when a role grants every permission (the `admin` role); `permissions`
              *     is then empty.
              */
@@ -12590,6 +13037,12 @@ export interface components {
              *     password through `POST /api/v1/auth/password-reset`.
              */
             has_password: boolean;
+            /**
+             * Format: uuid
+             * @description With `delegation` or `support`: the tenant your account belongs to (the profile fields
+             *     above are of that account); `null` when `direct`.
+             */
+            home_tenant_id?: string | null;
             /** Format: uuid */
             id: string;
             /**
@@ -12617,6 +13070,11 @@ export interface components {
              *     ]
              */
             permissions: string[];
+            /**
+             * Format: uuid
+             * @description The tenant of this request. `permissions` and `all_permissions` are what you may do here.
+             */
+            tenant_id: string;
             /**
              * @description Preferred IANA time zone; `null`: not set.
              * @example Asia/Ho_Chi_Minh
@@ -13370,6 +13828,11 @@ export interface components {
              */
             max_value?: number | null;
             reason: string;
+            /**
+             * Format: uuid
+             * @description The tenant it applies to.
+             */
+            tenant_id: string;
         };
         /** @description One page of a list. */
         Page_AdministrativeUnit: {
@@ -14347,6 +14810,43 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_OverrideResponse: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                /** Format: date-time */
+                created_at: string;
+                /**
+                 * Format: uuid
+                 * @description User who set it.
+                 */
+                created_by?: string | null;
+                /** @description With `module` / `feature`. */
+                enabled?: boolean | null;
+                /**
+                 * Format: date-time
+                 * @description The override no longer applies from this time.
+                 */
+                expires_at?: string | null;
+                /** Format: uuid */
+                id: string;
+                key: string;
+                /** @description `module`, `feature` or `limit`. */
+                kind: string;
+                /**
+                 * Format: int64
+                 * @description With `limit`: the new maximum; `null` is unlimited.
+                 */
+                max_value?: number | null;
+                reason: string;
+                /**
+                 * Format: uuid
+                 * @description The tenant it applies to.
+                 */
+                tenant_id: string;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_PasskeyResponse: {
             /** @description The items of this page, in the requested order. */
             data: {
@@ -14432,6 +14932,12 @@ export interface components {
                 /** @description `draft`, `active` (sold) or `retired` (no longer sold; tenants on it keep it). */
                 status: string;
                 /**
+                 * Format: int64
+                 * @description Tenants on the plan now (subscriptions not canceled, as base plan or add-on). Only for
+                 *     platform staff: `null` in the public catalog.
+                 */
+                subscriber_count?: number | null;
+                /**
                  * Format: int32
                  * @description Days a suspended (read-only) subscription waits before it is canceled.
                  */
@@ -14467,8 +14973,12 @@ export interface components {
                 grace_ends_at?: string | null;
                 /** Format: uuid */
                 id: string;
+                /** @description Code of the plan (also when it is no longer sold). */
+                plan_code?: string | null;
                 /** Format: uuid */
                 plan_id: string;
+                /** @description Name of the plan (also when it is no longer sold). */
+                plan_name?: string | null;
                 /** Format: uuid */
                 price_id?: string | null;
                 /**
@@ -14492,6 +15002,55 @@ export interface components {
                 trial_ends_at?: string | null;
                 /** @description The tenant already had its free trial. */
                 trial_used: boolean;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
+        Page_ProvisioningResponse: {
+            /** @description The items of this page, in the requested order. */
+            data: {
+                admin_email: string;
+                admin_name?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                error?: string | null;
+                /** @description Code of the error that stopped it, when `failed`. */
+                error_code?: string | null;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                parent_tenant_id?: string | null;
+                /** @description Name of the placement; `null`: `main`. */
+                placement?: string | null;
+                /** Format: uuid */
+                plan_id: string;
+                /** Format: uuid */
+                price_id?: string | null;
+                /** Format: uuid */
+                requested_by?: string | null;
+                sample_data: boolean;
+                slug: string;
+                /**
+                 * @description `pending`, `running`, `failed` (see `error`; fix it, then `POST …/retry`) or `done`.
+                 * @example done
+                 */
+                status: string;
+                /**
+                 * @description The last step done: `created`, `tenant_created`, `subscribed`, `seeded`, `invited`, `done`.
+                 * @example subscribed
+                 */
+                step: string;
+                /** @description Every step done, oldest first. */
+                steps: components["schemas"]["ProvisioningStep"][];
+                /**
+                 * Format: uuid
+                 * @description The new tenant, once created.
+                 */
+                tenant_id?: string | null;
+                tenant_name: string;
+                trial: boolean;
                 /** Format: date-time */
                 updated_at: string;
             }[];
@@ -15051,9 +15610,9 @@ export interface components {
                 placement: string;
                 /**
                  * @description Read-only: its data can be read (and its users can sign in and export), but every change
-                 *     is refused with `403 tenant_read_only`. Independent of `status`.
+                 *     is refused with `403 tenant_read_only`. Independent of `status`. Always present.
                  */
-                read_only?: boolean;
+                read_only: boolean;
                 /**
                  * @description Short name: lower-case letters, digits and `-`; unique on the platform.
                  * @example acme
@@ -15061,7 +15620,8 @@ export interface components {
                 slug: string;
                 /**
                  * @description `provisioning`, `active`, `suspended` (every request is refused with
-                 *     `403 tenant_suspended`), `maintenance` or `moving`.
+                 *     `403 tenant_suspended`), `maintenance`, `moving` or `deleted` (its data was deleted; every
+                 *     request answers `404 tenant_not_found`).
                  * @example active
                  */
                 status: string;
@@ -15560,6 +16120,12 @@ export interface components {
             /** @description `draft`, `active` (sold) or `retired` (no longer sold; tenants on it keep it). */
             status: string;
             /**
+             * Format: int64
+             * @description Tenants on the plan now (subscriptions not canceled, as base plan or add-on). Only for
+             *     platform staff: `null` in the public catalog.
+             */
+            subscriber_count?: number | null;
+            /**
              * Format: int32
              * @description Days a suspended (read-only) subscription waits before it is canceled.
              */
@@ -15591,8 +16157,12 @@ export interface components {
             grace_ends_at?: string | null;
             /** Format: uuid */
             id: string;
+            /** @description Code of the plan (also when it is no longer sold). */
+            plan_code?: string | null;
             /** Format: uuid */
             plan_id: string;
+            /** @description Name of the plan (also when it is no longer sold). */
+            plan_name?: string | null;
             /** Format: uuid */
             price_id?: string | null;
             /**
@@ -15853,6 +16423,102 @@ export interface components {
              *     moderators; no two users share a name.
              */
             display_name: string;
+        };
+        /** @description Create a tenant on a plan. */
+        ProvisioningRequest: {
+            /**
+             * @description Who administers the new tenant: invited by email with the role `admin`.
+             * @example owner@example.com
+             */
+            admin_email: string;
+            /** @description Their name, up to 200 characters. */
+            admin_name?: string | null;
+            /**
+             * @description Name of the new tenant, 1 to 200 characters.
+             * @example Acme Ltd
+             */
+            name: string;
+            /**
+             * Format: uuid
+             * @description Parent tenant, for chains.
+             */
+            parent_id?: string | null;
+            /**
+             * @description Name of the placement for its data, of the plan's kind; default `main` for a `shared` plan.
+             *     Required for a `dedicated` plan.
+             */
+            placement?: string | null;
+            /**
+             * Format: uuid
+             * @description An active base plan.
+             */
+            plan_id: string;
+            /**
+             * Format: uuid
+             * @description An active recurring price of that plan.
+             */
+            price_id?: string | null;
+            /** @description Add the sample data of the modules the plan turns on; default: the plan's `sample_data`. */
+            sample_data?: boolean | null;
+            /**
+             * @description Short name of the new tenant: 1 to 63 lower-case letters, digits and `-`.
+             * @example acme
+             */
+            slug: string;
+            /** @description Start with the plan's free trial; default `true`. */
+            trial?: boolean;
+        };
+        /** @description A request to create a tenant on a plan, and how far it went. */
+        ProvisioningResponse: {
+            admin_email: string;
+            admin_name?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            error?: string | null;
+            /** @description Code of the error that stopped it, when `failed`. */
+            error_code?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            parent_tenant_id?: string | null;
+            /** @description Name of the placement; `null`: `main`. */
+            placement?: string | null;
+            /** Format: uuid */
+            plan_id: string;
+            /** Format: uuid */
+            price_id?: string | null;
+            /** Format: uuid */
+            requested_by?: string | null;
+            sample_data: boolean;
+            slug: string;
+            /**
+             * @description `pending`, `running`, `failed` (see `error`; fix it, then `POST …/retry`) or `done`.
+             * @example done
+             */
+            status: string;
+            /**
+             * @description The last step done: `created`, `tenant_created`, `subscribed`, `seeded`, `invited`, `done`.
+             * @example subscribed
+             */
+            step: string;
+            /** @description Every step done, oldest first. */
+            steps: components["schemas"]["ProvisioningStep"][];
+            /**
+             * Format: uuid
+             * @description The new tenant, once created.
+             */
+            tenant_id?: string | null;
+            tenant_name: string;
+            trial: boolean;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description One step a provisioning went through. */
+        ProvisioningStep: {
+            /** Format: date-time */
+            at: string;
+            /** @description `created`, `tenant_created`, `subscribed`, `seeded`, `invited` or `done`. */
+            step: string;
         };
         /** @description An author of an entry. */
         PublicAuthor: {
@@ -17195,6 +17861,16 @@ export interface components {
          * @enum {string}
          */
         SubscriptionStatus: "unconfirmed" | "confirmed" | "unsubscribed";
+        /** @description Whether a tenant lets platform staff in for support. */
+        SupportAllowedResponse: {
+            /**
+             * @description The tenant's setting `auth.support_access`: `false` means only a `legal_request` grant can
+             *     be made (a `support` one is refused with `auth.support_access_disabled`).
+             */
+            support_access: boolean;
+            /** Format: uuid */
+            tenant_id: string;
+        };
         /** @description A new support access grant. */
         SupportGrantRequest: {
             /**
@@ -17356,9 +18032,9 @@ export interface components {
             placement: string;
             /**
              * @description Read-only: its data can be read (and its users can sign in and export), but every change
-             *     is refused with `403 tenant_read_only`. Independent of `status`.
+             *     is refused with `403 tenant_read_only`. Independent of `status`. Always present.
              */
-            read_only?: boolean;
+            read_only: boolean;
             /**
              * @description Short name: lower-case letters, digits and `-`; unique on the platform.
              * @example acme
@@ -17366,7 +18042,8 @@ export interface components {
             slug: string;
             /**
              * @description `provisioning`, `active`, `suspended` (every request is refused with
-             *     `403 tenant_suspended`), `maintenance` or `moving`.
+             *     `403 tenant_suspended`), `maintenance`, `moving` or `deleted` (its data was deleted; every
+             *     request answers `404 tenant_not_found`).
              * @example active
              */
             status: string;
@@ -17468,19 +18145,45 @@ export interface components {
              */
             value: string;
         };
-        /** @description Related records of a tenant, asked for with `expand`. */
+        /** @description What deleting a tenant removed. */
+        TenantErasure: {
+            /**
+             * Format: int64
+             * @description Files deleted.
+             */
+            files: number;
+            /** @description Tables kept, as modules require (accounting records must be kept for years). */
+            retained_tables: string[];
+            /**
+             * Format: int64
+             * @description Total rows deleted.
+             */
+            rows: number;
+            slug: string;
+            /** @description Rows deleted, per table (tables with none are left out). */
+            tables: components["schemas"]["TenantTableRows"][];
+            /** Format: uuid */
+            tenant_id: string;
+        };
+        /**
+         * @description Related records of a tenant, asked for with `expand`. All three fields are always present
+         *     (`null` when not asked for or when there is nothing).
+         */
         TenantExpanded: {
-            placement?: components["schemas"]["Placement"] | null;
+            placement: components["schemas"]["Placement"] | null;
             /**
-             * @description The tenant's subscription (`expand=subscription`). Always `null` for now: subscriptions
-             *     come with the plans module (step 35); without it no tenant has one.
+             * @description The tenant's subscription (`expand=subscription`), shaped like `GET
+             *     /api/v1/plans/tenants/{tenant_id}/subscription` (`PlanSubscription`, with the plan's code
+             *     and name, without add-ons). `null` when not asked for, when the tenant has no subscription,
+             *     or without the plans module.
              */
-            subscription?: Record<string, never> | null;
+            subscription: Record<string, never> | null;
             /**
-             * @description The tenant's use of its plan's limits (`expand=usage`). Always `null` for now, like
-             *     `subscription`.
+             * @description The tenant's use of every limit (`expand=usage`), shaped like `GET
+             *     /api/v1/plans/tenants/{tenant_id}/usage` (a list of `LimitUse`). `null` when not asked for
+             *     or without the plans module.
              */
-            usage?: Record<string, never> | null;
+            usage: Record<string, never>[] | null;
         };
         /** @description An export of all the data of a tenant. */
         TenantExport: {
@@ -18700,15 +19403,6 @@ export interface operations {
                     "application/json": components["schemas"]["Page_AuditEntryResponse"];
                 };
             };
-            /** @description A filter has the wrong type, e.g. `actor_user_id` is not a UUID. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
             401: {
                 headers: {
@@ -18727,7 +19421,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A paging parameter is invalid; see `errors`. */
+            /** @description A filter or paging parameter is invalid, e.g. `actor_user_id` is not a UUID; code `validation_failed`, every problem in `errors`. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -18848,15 +19542,6 @@ export interface operations {
                     "application/json": components["schemas"]["Page_ManagedApiKeyResponse"];
                 };
             };
-            /** @description `user_id` is not a UUID. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
             401: {
                 headers: {
@@ -18875,7 +19560,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A paging parameter is invalid; see `errors`. */
+            /** @description A filter or paging parameter is invalid, e.g. `user_id` is not a UUID; code `validation_failed`, every problem in `errors`. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -20573,7 +21258,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The user the access token belongs to, with the permissions of their roles. */
+            /** @description The user the access token belongs to, with the permissions of their roles in the tenant of the request — also in a tenant entered through a delegation or a support grant (`access`, `home_tenant_id`). */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -21009,7 +21694,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description One entry per unit, sorted by unit id. */
+            /** @description One entry per unit, sorted by unit id. Empty in a tenant entered through a delegation or a support grant: what you may do there is in `GET /api/v1/auth/me`. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -22130,15 +22815,6 @@ export interface operations {
                     "application/json": components["schemas"]["Page_MembershipRowResponse"];
                 };
             };
-            /** @description A filter has the wrong type, e.g. `org_id` is not a UUID. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
             401: {
                 headers: {
@@ -22157,7 +22833,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A paging parameter is invalid; see `errors`. */
+            /** @description A filter or paging parameter is invalid, e.g. `org_id` is not a UUID; code `validation_failed`, every problem in `errors`. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -23051,9 +23727,9 @@ export interface operations {
     };
     auth_list_support_grants: {
         parameters: {
-            query: {
-                /** @description The tenant the grants are for. */
-                tenant_id: string;
+            query?: {
+                /** @description Only the grants for this tenant; leave out for every tenant (the newest 200). */
+                tenant_id?: string;
             };
             header?: {
                 /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
@@ -23082,7 +23758,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Missing permission `auth.support.grant`; code `permission_denied`. */
+            /** @description Missing permission (`permission_denied`), or not called in the platform tenant (`auth.support_platform_only`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -23169,6 +23845,68 @@ export interface operations {
             };
         };
     };
+    auth_get_support_allowed: {
+        parameters: {
+            query: {
+                /** @description The tenant the grants are for. */
+                tenant_id: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant's choice. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_SupportAllowedResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission (`permission_denied`), or not called in the platform tenant (`auth.support_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     auth_revoke_support_grant: {
         parameters: {
             query: {
@@ -23207,7 +23945,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Missing permission `auth.support.grant`; code `permission_denied`. */
+            /** @description Missing permission (`permission_denied`), or not called in the platform tenant (`auth.support_platform_only`). */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -31510,15 +32248,6 @@ export interface operations {
                     "text/csv": string;
                 };
             };
-            /** @description `expires` or `signature` is missing or not well formed. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
             /** @description The link is wrong or has expired; code `forms.export_link_invalid`. Get a new one from `GET /api/v1/forms/exports/{export_id}`. The tenant's plan does not include this module (`module_not_enabled`). */
             403: {
                 headers: {
@@ -31530,6 +32259,15 @@ export interface operations {
             };
             /** @description The export or its file was deleted; code `forms.export_not_found`. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `expires` or `signature` is missing or not well formed; code `validation_failed`, the field in `errors`. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32704,8 +33442,8 @@ export interface operations {
                     "application/json": components["schemas"]["Data_AllowedTenantDomain"];
                 };
             };
-            /** @description The `domain` parameter is missing; code `bad_request`. */
-            400: {
+            /** @description Not a verified domain of an active tenant; code `tenant_domain_not_found`. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32713,8 +33451,8 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Not a verified domain of an active tenant; code `tenant_domain_not_found`. */
-            404: {
+            /** @description The `domain` parameter is missing; code `validation_failed`, the field in `errors`. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33869,7 +34607,7 @@ export interface operations {
                 "Idempotency-Key"?: string;
             };
             path: {
-                /** @description Id of the tenant. */
+                /** @description Id or slug of the tenant. */
                 id: string;
             };
             cookie?: never;
@@ -33927,7 +34665,93 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A value is invalid; see `errors`. */
+            /** @description A value is invalid; every problem is listed in `errors` (code `validation_failed`). Making the platform tenant read-only or suspending it is refused this way, on the field `read_only` or `status`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    kernel_erase_tenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id or slug of the tenant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EraseRequest"];
+            };
+        };
+        responses: {
+            /** @description Deleted; what was removed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TenantErasure"];
+                };
+            };
+            /** @description Not signed in; code `unauthorized` or the code of the authentication module. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `kernel.tenants.delete` (`permission_denied`), or not an account of the platform tenant (`tenant_platform_only`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant, or already deleted; code `tenant_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The tenant is not suspended; code `tenant_not_suspended`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `confirm` is not the tenant's slug, `reason` is missing or too long, or the tenant is the platform; every problem in `errors`. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -40541,15 +41365,6 @@ export interface operations {
                     "application/json": components["schemas"]["Page_UnitResponse"];
                 };
             };
-            /** @description A filter has the wrong type, e.g. `parent_id` is not a UUID. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
             401: {
                 headers: {
@@ -40568,7 +41383,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A parameter is invalid; see `errors`. */
+            /** @description A filter or paging parameter is invalid, e.g. `parent_id` is not a UUID; code `validation_failed`, every problem in `errors`. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -41678,6 +42493,130 @@ export interface operations {
             };
         };
     };
+    plans_get_billing_profile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The billing profile. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_BillingProfileResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `plans.billing.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description None set yet; code `plans.billing_profile_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    plans_set_billing_profile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillingProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description The billing profile after the change. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_BillingProfileResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `plans.billing.manage`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; every problem is listed in `errors` (an unknown province or commune is under `address.`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     plans_plans_catalog: {
         parameters: {
             query?: never;
@@ -41733,6 +42672,80 @@ export interface operations {
             };
             /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    plans_list_all_overrides: {
+        parameters: {
+            query?: {
+                /** @description Only the overrides of this tenant. */
+                tenant_id?: string;
+                /** @description Only `module`, `feature` or `limit` overrides. */
+                kind?: string;
+                /** @description Only overrides of this module, feature or limit key. */
+                key?: string;
+                /** @description `true`: only overrides that still apply; `false`: only expired ones. */
+                active?: boolean;
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of overrides, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_OverrideResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `plans.subscriptions.read` (`permission_denied`). */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -42263,6 +43276,303 @@ export interface operations {
             };
         };
     };
+    plans_list_provisionings: {
+        parameters: {
+            query?: {
+                /** @description Only provisionings in this state: `pending`, `running`, `failed` or `done`. */
+                status?: string;
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of provisionings, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ProvisioningResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `plans.subscriptions.read` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A filter or paging parameter is invalid; every problem in `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    plans_create_provisioning: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProvisioningRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted; it runs in the background. */
+            201: {
+                headers: {
+                    /** @description Address of the provisioning. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ProvisioningResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `plans.provision` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such plan (`plans.plan_not_found`) or price (`plans.price_not_found`). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The plan is not sold (`plans.plan_not_active`) or requires identity checks (`plans.kyc_required`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; every problem in `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    plans_get_provisioning: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the provisioning. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The provisioning. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ProvisioningResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `plans.subscriptions.read` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such provisioning; code `plans.provisioning_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    plans_retry_provisioning: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the provisioning. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted again; it runs in the background. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_ProvisioningResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `plans.provision` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such provisioning; code `plans.provisioning_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description It did not fail; code `plans.provisioning_not_retryable`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     plans_get_own_subscription: {
         parameters: {
             query?: never;
@@ -42556,6 +43866,8 @@ export interface operations {
                 status?: string;
                 /** @description Only subscriptions on this plan. */
                 plan_id?: string;
+                /** @description Only the subscription of this tenant. */
+                tenant_id?: string;
                 /**
                  * @description Maximum number of items to return, 1 to 200. Defaults to 50.
                  * @example 50
@@ -42581,7 +43893,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description One page of subscriptions, newest first (without add-ons). */
+            /** @description One page of subscriptions, newest first (without add-ons), with the plan's code and name. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -42601,6 +43913,183 @@ export interface operations {
             };
             /** @description Not platform staff (`tenant_platform_only`) or missing `plans.subscriptions.read` (`permission_denied`). */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    plans_list_tenant_billing_periods: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the tenant. */
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The billing periods, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_BillingPeriodResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `plans.subscriptions.read` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    plans_get_tenant_billing_profile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the tenant. */
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The billing profile. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_BillingProfileResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `plans.subscriptions.read` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description None set yet; code `plans.billing_profile_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    plans_get_tenant_entitlements: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the tenant. */
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What the tenant may use now. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_EntitlementsResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `plans.subscriptions.read` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such tenant; code `tenant_not_found`. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

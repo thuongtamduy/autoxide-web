@@ -9,7 +9,7 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { oneOf, type SearchParams } from "@/lib/engage";
 import { formatMoney } from "@/lib/format";
 import { PLANS_MANAGE } from "@/lib/permissions";
-import { loadAllPlans, loadAllSubscriptions, subscriberCounts } from "@/lib/plans-server";
+import { loadAllPlans } from "@/lib/plans-server";
 import { can } from "@/lib/viewer";
 
 const STATUSES = ["active", "draft", "retired"] as const;
@@ -21,12 +21,7 @@ export default async function PlansPage(props: { searchParams: Promise<SearchPar
   const tp = await getTranslations("platform");
   const locale = await getLocale();
   const status = oneOf(await props.searchParams, "status", STATUSES);
-  const [all, subscriptions, manage] = await Promise.all([
-    loadAllPlans(),
-    loadAllSubscriptions(),
-    can(PLANS_MANAGE),
-  ]);
-  const counts = subscriberCounts(subscriptions);
+  const [all, manage] = await Promise.all([loadAllPlans(), can(PLANS_MANAGE)]);
   const plans = all.filter((p) => !status || p.status === status);
   return (
     <div className="blocks">
@@ -112,7 +107,7 @@ export default async function PlansPage(props: { searchParams: Promise<SearchPar
                     </span>
                   </Td>
                   <Td label={t("colTenants")} className="r">
-                    {counts.get(plan.id) ?? 0}
+                    {plan.subscriber_count ?? 0}
                   </Td>
                   <Td label={t("colStatus")}>
                     <StatusBadge

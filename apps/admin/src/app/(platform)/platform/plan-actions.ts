@@ -394,3 +394,23 @@ export async function suspendTenantAction(
   if (!result.ok) return { ...problemState(result.problem, ["reason"]), values: sent };
   return done(state);
 }
+
+/**
+ * Ghi nhận một kỳ đã thu ngoài hệ thống (vd chuyển khoản kiểm bằng tay, D-335): mã giao dịch của ngân
+ * hàng bắt buộc. Thuê bao quá hạn hay bị khoá dùng lại được.
+ */
+export async function markPaidAction(state: DialogState, formData: FormData): Promise<DialogState> {
+  const typed = values(formData, ["provider_reference"]);
+  if (!typed.provider_reference) {
+    const t = await getTranslations("access.required");
+    return { fields: { provider_reference: t("field") }, values: typed };
+  }
+  const result = await send((client) =>
+    client.POST("/api/v1/plans/billing-periods/{id}/mark-paid", {
+      params: { path: { id: text(formData, "period_id") } },
+      body: { provider_reference: typed.provider_reference ?? "" },
+    }),
+  );
+  if (!result.ok) return { ...problemState(result.problem, ["provider_reference"]), values: typed };
+  return done(state);
+}

@@ -268,3 +268,83 @@ test("chi tiết khách: thuê bao và hạn mức, xuất dữ liệu rồi t�
   await expect(toast(page)).toContainText("Access revoked");
   await expect(listed).toContainText("Revoked");
 });
+
+test("hồ sơ xuất hoá đơn (D-335): lỗi mã số thuế của core, địa chỉ theo danh mục hành chính", async ({
+  page,
+}) => {
+  await signIn(page, "/settings/plan");
+  await expect(page.getByText("No invoice details yet")).toBeVisible();
+  await page.getByLabel("Legal name").fill("Công ty TNHH Bếp Mộc");
+  await page.getByLabel("Tax code").fill("123");
+  await page.getByLabel("Email for invoices").fill("ketoan@bepmoc.vn");
+  await page.getByRole("button", { name: "Save details" }).click();
+  await expect(page.getByText("must be 10 digits, or 10 digits, `-` and 3 digits")).toBeVisible();
+  await page.getByLabel("Tax code").fill("0101234567");
+  await page.getByLabel("Province / city").selectOption("01");
+  await expect(page.getByLabel("Ward / commune")).toBeEnabled();
+  await page.getByLabel("Ward / commune").selectOption("00004");
+  await page.getByLabel("Street address").fill("12 Phố Huế");
+  await page.getByRole("button", { name: "Save details" }).click();
+  await expect(toast(page)).toHaveText("Invoice details saved.");
+  await page.reload();
+  await expect(page.getByLabel("Tax code")).toHaveValue("0101234567");
+  await expect(page.getByLabel("Ward / commune")).toHaveValue("00004");
+});
+
+test("chi tiết khách: kỳ thanh toán của khách, đánh dấu đã thu (D-335)", async ({ page }) => {
+  await signIn(page, "/platform");
+  await addCustomer(page);
+  await page.goto("/platform/subscriptions");
+  const sub = page.locator("tbody tr", { hasText: "Trà Sen" });
+  await sub.getByRole("button", { name: "Change plan" }).click();
+  await dialog(page).getByLabel("Plan and price").selectOption(`${BASIC}|${BASIC_MONTH}`);
+  await dialog(page).getByLabel("Type “Trà Sen” to confirm").fill("Trà Sen");
+  await dialog(page).getByRole("button", { name: "Change plan" }).click();
+  await expect(toast(page)).toHaveText("Trà Sen has the new plan.");
+  // Tên gói đi kèm thuê bao trong sổ khách (`expand=subscription`).
+  await expect(sub).toContainText("Cơ bản");
+
+  await page.goto("/platform");
+  await page.locator("tbody tr", { hasText: "tra-sen" }).getByRole("link").first().click();
+  const periods = page.getByTestId("tenant-periods");
+  await expect(periods).toContainText("To pay");
+  await periods.getByRole("button", { name: "Mark as paid" }).click();
+  await dialog(page).getByRole("button", { name: "Mark as paid" }).click();
+  await expect(dialog(page).locator(".ferr")).toBeVisible();
+  await dialog(page).getByLabel("Payment reference").fill("VCB-20261117-001");
+  await dialog(page).getByRole("button", { name: "Mark as paid" }).click();
+  await expect(toast(page)).toHaveText("Payment recorded.");
+  await expect(periods).toContainText("Paid");
+  await expect(periods).toContainText("VCB-20261117-001");
+});
+
+test("cấp phát khách theo gói (D-338): chạy xong; lỗi thì chạy lại từ bước đã tới", async ({
+  page,
+}) => {
+  await signIn(page, "/platform/provisioning");
+  await page.request.post(`${CORE}/__tenancy`, { data: { mode: "multi" } });
+  await expect(page.getByText(/Sample data/)).toHaveCount(0);
+  const provision = async (name: string, slug: string) => {
+    await page.getByRole("button", { name: "Provision a customer" }).click();
+    await dialog(page).getByLabel("Customer name").fill(name);
+    await dialog(page).getByLabel("Slug").fill(slug);
+    await dialog(page).getByLabel("First admin email").fill(`chu@${slug}.vn`);
+    await dialog(page).getByRole("button", { name: "Provision" }).click();
+    await expect(page).toHaveURL(/\/platform\/provisioning$/);
+  };
+  await provision("Hoa Sen", "hoa-sen");
+  await page.reload();
+  const runs = page.getByTestId("provisionings");
+  const done = runs.locator("tbody tr", { hasText: "hoa-sen" });
+  await expect(done).toContainText("Done");
+  await expect(done.getByRole("link", { name: "Hoa Sen" })).toBeVisible();
+
+  await provision("Lỗi Thử", "loi-thu");
+  await page.reload();
+  const failed = runs.locator("tbody tr", { hasText: "loi-thu" });
+  await expect(failed).toContainText("Stopped with an error");
+  await failed.getByRole("button", { name: "Retry" }).click();
+  await expect(toast(page)).toContainText("runs again");
+  await page.reload();
+  await expect(failed).toContainText("Done");
+});

@@ -5,6 +5,7 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { empty, json, problem, type Schemas, send } from "./mock-http.ts";
+import { addTenant } from "./mock-tenants.ts";
 
 type Plan = Schemas["PlanResponse"];
 type Subscription = Schemas["PlanSubscription"];
@@ -22,6 +23,10 @@ let subscriptions: Subscription[] = [];
 let periods: Schemas["BillingPeriodResponse"][] = [];
 let overrides = new Map<string, Schemas["OverrideResponse"][]>();
 let suspended = new Map<string, string>();
+/** Hồ sơ xuất hoá đơn theo khách (D-335). */
+let profiles = new Map<string, Schemas["BillingProfileResponse"]>();
+/** Lượt cấp phát (D-338); lượt `pending` chạy hết ở lần đọc kế tiếp. Slug `loi-*` hỏng ở bước gán gói. */
+let provisionings: Schemas["ProvisioningResponse"][] = [];
 /** Module đã cài (mock-core báo lúc chạy); quyền dùng mặc định bật hết như gói có mọi module. */
 let installed: string[] = [];
 /** `true` sau `POST /__plans/basic-features` có `modules`: quyền dùng chỉ còn module của gói. */
@@ -120,14 +125,16 @@ export function resetPlans() {
   ];
   overrides = new Map();
   suspended = new Map();
+  profiles = new Map();
+  provisionings = [];
   strictModules = false;
 }
 resetPlans();
 
-function period(id: string, status: string, start: string, end: string) {
+function period(id: string, status: string, start: string, end: string, tenant = OWN_TENANT) {
   return {
     id,
-    tenant_id: OWN_TENANT,
+    tenant_id: tenant,
     plan_id: BASIC,
     price_id: BASIC_MONTH,
     kind: "renewal",
@@ -157,6 +164,25 @@ export async function setBasicFeatures(request: IncomingMessage, response: Serve
     strictModules = true;
   }
   empty(response, 204);
+}
+
+/** Thuê bao kèm mã và tên gói (D-335: cả gói đã ngừng bán). */
+function withPlan(sub: Subscription): Subscription {
+  const found = plans.find((p) => p.id === sub.plan_id);
+  return { ...sub, plan_code: found?.code ?? null, plan_name: found?.name ?? null };
+}
+
+/** `expanded.subscription` / `.usage` của sổ khách (`expand=subscription,usage`, D-335). */
+export function expandedOf(tenant: string): {
+  subscription: Record<string, never> | null;
+  usage: Record<string, never>[] | null;
+} {
+  const sub = tenant === OWN_TENANT ? undefined : subscriptions.find((s) => s.tenant_id === tenant);
+  // `TenantExpanded` khai object tự do: ép kiểu như core trả JSON của module `plans`.
+  return {
+    subscription: sub ? (withPlan(sub) as unknown as Record<string, never>) : null,
+    usage: sub ? (usage(tenant) as unknown as Record<string, never>[]) : null,
+  };
 }
 
 /** Trạng thái thuê bao của khách (bộ lọc `subscription_status` của sổ khách); `null`: chưa có. */
@@ -261,10 +287,85 @@ export async function plansRoutes(
     return done(200, { data: plans.filter((p) => p.status === "active") });
   }
   if (route === "GET /api/v1/plans/usage") return done(200, { data: usage(OWN_TENANT) });
+  if (route === "GET /api/v1/plans/billing-profile") {
+    const found = profiles.get(OWN_TENANT);
+    if (!found) {
+      return fail(404, "plans.billing_profile_not_found", "No billing profile has been set yet.");
+    }
+    return done(200, { data: found });
+  }
+  if (route === "PUT /api/v1/plans/billing-profile") {
+    // Như core (D-335): thay cả hồ sơ; mã số thuế 10 chữ số hay 10-3; tỉnh, phường theo danh mục.
+    const body = (await json(request)) as Schemas["BillingProfileRequest"];
+    const errors: Schemas["ProblemField"][] = [];
+    if (!(body.legal_name ?? "").trim()) {
+      errors.push({ field: "legal_name", code: "length", detail: "must be 1 to 200 characters" });
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email ?? "")) {
+      errors.push({ field: "email", code: "email", detail: "must be an email address" });
+    }
+    if (body.tax_code && !/^\d{10}(-\d{3})?$/.test(body.tax_code)) {
+      errors.push({
+        field: "tax_code",
+        code: "format",
+        detail: "must be 10 digits, or 10 digits, `-` and 3 digits",
+      });
+    }
+    if (body.address && !["01", "79"].includes(body.address.province_code)) {
+      errors.push({ field: "address.province_code", code: "unknown", detail: "no such province" });
+    }
+    if (errors.length > 0) {
+      return fail(422, "validation_failed", "The request has invalid fields.", errors);
+    }
+    const saved: Schemas["BillingProfileResponse"] = {
+      tenant_id: OWN_TENANT,
+      legal_name: body.legal_name.trim(),
+      email: body.email,
+      tax_code: body.tax_code ?? null,
+      phone: body.phone ?? null,
+      address: body.address
+        ? {
+            ...body.address,
+            province_name:
+              body.address.province_code === "01" ? "Thành phố Hà Nội" : "Thành phố Hồ Chí Minh",
+            commune_name: body.address.commune_code,
+          }
+        : null,
+      updated_at: new Date().toISOString(),
+      updated_by: null,
+    };
+    profiles.set(OWN_TENANT, saved);
+    return done(200, { data: saved });
+  }
   if (route === "GET /api/v1/plans/billing-periods") {
     return done(200, {
-      data: [...periods].sort((a, b) => b.period_start.localeCompare(a.period_start)),
+      data: periods
+        .filter((p) => p.tenant_id === OWN_TENANT)
+        .sort((a, b) => b.period_start.localeCompare(a.period_start)),
     });
+  }
+  const paid = /^\/api\/v1\/plans\/billing-periods\/([^/]+)\/mark-paid$/.exec(path);
+  if (paid && method === "POST") {
+    // Như core (D-335): nhân sự nền tảng ghi nhận đã thu; mã giao dịch bắt buộc.
+    const body = (await json(request)) as Schemas["MarkPaidRequest"];
+    const found = periods.find((p) => p.id === paid[1]);
+    if (!found) return fail(404, "plans.period_not_found", "No billing period with this id.");
+    if (!(body.provider_reference ?? "").trim()) {
+      return fail(422, "validation_failed", "The request has invalid fields.", [
+        { field: "provider_reference", code: "length", detail: "must be 1 to 200 characters" },
+      ]);
+    }
+    if (found.status !== "open") {
+      return fail(409, "plans.period_not_open", "Only an open billing period can be marked paid.");
+    }
+    Object.assign(found, {
+      status: "paid",
+      paid_at: new Date().toISOString(),
+      provider_reference: body.provider_reference,
+    });
+    const sub = subscriptions.find((s) => s.tenant_id === found.tenant_id);
+    if (sub && ["past_due", "suspended"].includes(sub.status)) sub.status = "active";
+    return done(200, { data: found });
   }
   if (route === "GET /api/v1/plans/entitlements") {
     const current = plans.find((p) => p.id === own?.plan_id);
@@ -283,7 +384,7 @@ export async function plansRoutes(
   }
   if (route === "GET /api/v1/plans/subscription") {
     if (!own) return fail(404, "plans.subscription_not_found", "This tenant has no subscription.");
-    return done(200, { data: own });
+    return done(200, { data: withPlan(own) });
   }
   if (route === "POST /api/v1/plans/subscription/change") {
     const body = (await json(request)) as Schemas["ChangeRequest"];
@@ -313,7 +414,20 @@ export async function plansRoutes(
     return done(200, { data: own });
   }
   // ------------------------------------------------------------ Phía nền tảng: gói
-  if (route === "GET /api/v1/plans/plans") return done(200, page(plans));
+  if (route === "GET /api/v1/plans/plans") {
+    // `subscriber_count` (D-335): thuê bao chưa huỷ của mỗi gói.
+    const live = subscriptions.filter((s) => !["canceled", "deleted"].includes(s.status));
+    return done(
+      200,
+      page(
+        plans.map((p) => ({
+          ...p,
+          subscriber_count: live.filter((s) => s.plan_id === p.id && s.tenant_id !== OWN_TENANT)
+            .length,
+        })),
+      ),
+    );
+  }
   if (route === "POST /api/v1/plans/plans") {
     const body = (await json(request)) as Schemas["PlanRequest"];
     const errors = validPlan(body);
@@ -337,6 +451,13 @@ export async function plansRoutes(
     });
     plans.push(created);
     return done(201, { data: created });
+  }
+  if (path === "/api/v1/plans/provisionings" || path.startsWith("/api/v1/plans/provisionings/")) {
+    return provisioningRoute(request, response, path, method);
+  }
+  if (route === "GET /api/v1/plans/overrides") {
+    // Như core (D-335): ghi đè của mọi khách, theo trang.
+    return done(200, page([...overrides.values()].flat()));
   }
   if (route === "GET /api/v1/plans/subscriptions") {
     const status = url.searchParams.get("status");
@@ -405,7 +526,9 @@ export async function plansRoutes(
   }
   // ------------------------------------------------------------ Phía nền tảng: một khách
   const tenant =
-    /^\/api\/v1\/plans\/tenants\/([^/]+)\/(overrides|subscription|usage)(?:\/([^/]+))?$/.exec(path);
+    /^\/api\/v1\/plans\/tenants\/([^/]+)\/(overrides|subscription|usage|billing-periods|billing-profile)(?:\/([^/]+))?$/.exec(
+      path,
+    );
   if (tenant) {
     const id = tenant[1] ?? "";
     // Như core: khách nền tảng không bao giờ bị giới hạn theo gói (không thuê bao, không ghi đè).
@@ -419,6 +542,16 @@ export async function plansRoutes(
     const part = tenant[2];
     const tail = tenant[3];
     if (part === "usage") return done(200, { data: usage(id) });
+    if (part === "billing-periods") {
+      return done(200, { data: periods.filter((p) => p.tenant_id === id) });
+    }
+    if (part === "billing-profile") {
+      const found = profiles.get(id);
+      if (!found) {
+        return fail(404, "plans.billing_profile_not_found", "No billing profile has been set yet.");
+      }
+      return done(200, { data: found });
+    }
     if (part === "overrides") {
       const list = overrides.get(id) ?? [];
       if (method === "GET") return done(200, { data: list });
@@ -437,6 +570,7 @@ export async function plansRoutes(
           max_value: body.max_value ?? null,
           expires_at: body.expires_at ?? null,
           reason: body.reason,
+          tenant_id: id,
           created_by: null,
           created_at: new Date().toISOString(),
         };
@@ -482,6 +616,8 @@ export async function plansRoutes(
           status: target.trial_days > 0 ? "trialing" : "active",
         };
         subscriptions.push(created);
+        // Kỳ đầu tiên chờ thu (để thử "đánh dấu đã thu").
+        periods.push(period(randomUUID(), "open", "2026-11-17", "2026-12-17", id));
         return done(200, { data: created });
       }
       if (method === "POST" && tail === "cancel") {
@@ -504,4 +640,146 @@ export async function plansRoutes(
     }
   }
   return fail(404, "not_found", "No such route in the mock core.");
+}
+
+/** Chạy các lượt đang chờ tới hết (thay cho job `plans.provision`). */
+function runProvisionings() {
+  for (const run of provisionings) {
+    if (run.status !== "pending" && run.status !== "running") continue;
+    const at = new Date().toISOString();
+    if (!run.tenant_id) {
+      const id = addTenant(run.slug, run.tenant_name, run.parent_tenant_id ?? null);
+      if (!id) {
+        Object.assign(run, {
+          status: "failed",
+          error_code: "tenant_slug_taken",
+          error: `The slug \`${run.slug}\` is taken.`,
+        });
+        continue;
+      }
+      run.tenant_id = id;
+      run.step = "tenant_created";
+      run.steps.push({ step: "tenant_created", at });
+    }
+    if (run.slug.startsWith("loi-") && !run.error_code) {
+      Object.assign(run, {
+        status: "failed",
+        error_code: "plans.plan_not_found",
+        error: "No active plan with this id.",
+      });
+      continue;
+    }
+    if (!subscriptions.some((s) => s.tenant_id === run.tenant_id)) {
+      subscriptions.push({
+        ...(subscriptions[0] as Subscription),
+        id: randomUUID(),
+        tenant_id: run.tenant_id,
+        plan_id: run.plan_id,
+        price_id: run.price_id ?? null,
+        status: "trialing",
+      });
+    }
+    for (const step of ["subscribed", "seeded", "invited", "done"]) run.steps.push({ step, at });
+    Object.assign(run, {
+      status: "done",
+      step: "done",
+      error: null,
+      error_code: null,
+      updated_at: at,
+    });
+  }
+}
+
+/** `/plans/provisionings[/{id}[/retry]]` (D-338). */
+async function provisioningRoute(
+  request: IncomingMessage,
+  response: ServerResponse,
+  path: string,
+  method: string,
+): Promise<true> {
+  const one = /^\/api\/v1\/plans\/provisionings\/([^/]+)(\/retry)?$/.exec(path);
+  if (!one && method === "GET") {
+    runProvisionings();
+    send(response, 200, page([...provisionings].reverse()));
+    return true;
+  }
+  if (!one && method === "POST") {
+    const body = (await json(request)) as Schemas["ProvisioningRequest"];
+    const errors: Schemas["ProblemField"][] = [];
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(body.slug ?? "")) {
+      errors.push({
+        field: "slug",
+        code: "format",
+        detail: "must be 1 to 63 lower-case letters, digits and `-`",
+      });
+    }
+    if (!(body.name ?? "").trim()) {
+      errors.push({ field: "name", code: "length", detail: "must be 1 to 200 characters" });
+    }
+    if (!plans.some((p) => p.id === body.plan_id && p.status === "active")) {
+      errors.push({ field: "plan_id", code: "not_found", detail: "no active plan with this id" });
+    }
+    if (errors.length > 0) {
+      problem(response, 422, "validation_failed", "The request has invalid fields.", errors);
+      return true;
+    }
+    if (provisionings.some((p) => p.slug === body.slug)) {
+      problem(
+        response,
+        409,
+        "plans.provisioning_slug_taken",
+        `The slug \`${body.slug}\` is taken.`,
+      );
+      return true;
+    }
+    const at = new Date().toISOString();
+    const run: Schemas["ProvisioningResponse"] = {
+      id: randomUUID(),
+      slug: body.slug,
+      tenant_name: body.name,
+      plan_id: body.plan_id,
+      price_id: body.price_id ?? null,
+      placement: body.placement ?? null,
+      parent_tenant_id: body.parent_id ?? null,
+      admin_email: body.admin_email,
+      admin_name: body.admin_name ?? null,
+      sample_data: body.sample_data ?? false,
+      trial: body.trial ?? true,
+      status: "pending",
+      step: "created",
+      steps: [{ step: "created", at }],
+      tenant_id: null,
+      error: null,
+      error_code: null,
+      requested_by: null,
+      created_at: at,
+      updated_at: at,
+    };
+    provisionings.push(run);
+    send(response, 201, { data: run });
+    return true;
+  }
+  const run = provisionings.find((p) => p.id === one?.[1]);
+  if (!run) {
+    problem(response, 404, "plans.provisioning_not_found", "No provisioning with this id.");
+    return true;
+  }
+  if (one?.[2] && method === "POST") {
+    if (run.status !== "failed") {
+      problem(
+        response,
+        409,
+        "plans.provisioning_not_failed",
+        "Only a failed provisioning can be retried.",
+      );
+      return true;
+    }
+    // Lỗi đã được sửa (giả): chạy tiếp từ bước đã ghi.
+    Object.assign(run, { status: "pending", error_code: "fixed" });
+    send(response, 200, { data: run });
+    return true;
+  }
+  runProvisionings();
+  send(response, 200, { data: run });
+  return true;
 }

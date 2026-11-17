@@ -3,7 +3,7 @@ import "server-only";
 import { ApiError } from "@autoxide/sdk";
 import { cache } from "react";
 import { isNotFound, load } from "./core";
-import type { Entitlements, LimitUse, Plan, Subscription } from "./plans";
+import type { Entitlements, Plan, Subscription } from "./plans";
 
 // Đọc dữ liệu của module `plans` cho mặt điều khiển nền tảng (nhân sự khách nền tảng).
 
@@ -44,16 +44,6 @@ export async function loadAllSubscriptions(
     if (!cursor) break;
   }
   return all;
-}
-
-/** Số khách đang ở mỗi gói (thuê bao chưa bị xoá). */
-export function subscriberCounts(subscriptions: readonly Subscription[]): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const sub of subscriptions) {
-    if (sub.status === "deleted") continue;
-    counts.set(sub.plan_id, (counts.get(sub.plan_id) ?? 0) + 1);
-  }
-  return counts;
 }
 
 /** Thuê bao của khách đang đăng nhập; `null` khi khách chưa có (core trả 404). */
@@ -103,22 +93,6 @@ export async function loadTenantPlans(): Promise<{
     if (error instanceof ApiError && (error.status === 403 || error.status === 404)) return null;
     throw error;
   }
-}
-
-/**
- * Mức dùng hạn mức của từng khách trong `ids` (`GET /plans/tenants/{id}/usage`, một lời gọi mỗi
- * khách — sổ khách chỉ gọi cho các khách core báo là gần chạm hạn mức).
- */
-export async function loadUsageOf(ids: readonly string[]): Promise<Map<string, LimitUse[]>> {
-  const entries = await Promise.all(
-    ids.map(async (id) => {
-      const answer = await load((c) =>
-        c.GET("/api/v1/plans/tenants/{tenant_id}/usage", { params: { path: { tenant_id: id } } }),
-      );
-      return [id, answer.data] as const;
-    }),
-  );
-  return new Map(entries);
 }
 
 /**

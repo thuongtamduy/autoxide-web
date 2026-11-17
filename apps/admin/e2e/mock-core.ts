@@ -104,7 +104,7 @@ const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 
 /** Như giá trị mặc định của core (`GET /api/v1/kernel/client-config`; đã đối chiếu với core thật). */
 const CLIENT_CONFIG: Schemas["ClientConfigResponse"] = {
-  auth: { login_link: true, passkeys: true, self_registration: false },
+  auth: { login_link: true, passkeys: true, self_registration: false, support_access_max_hours: 8 },
   kernel: { version: "0.15.0", public_url: null },
   mail: { from: "Autoxide <noreply@localhost>", sends: false },
   media: {
@@ -254,6 +254,10 @@ function meOf(account: Account): Me {
     // Như core (D-308): role bắt buộc MFA mà chưa có app xác thực hay passkey.
     mfa_required: needsMfa(account.roleIds) && !account.mfa && account.passkeys.length === 0,
     ...preferencesOf(account.id),
+    // Như core (D-339): khách của request và cách vào (`direct` ở khách của mình).
+    tenant_id: "00000000-0000-7000-8000-000000000001",
+    access: "direct",
+    home_tenant_id: null,
     created_at: "2026-11-12T00:00:00Z",
   };
 }
@@ -615,8 +619,8 @@ const server = createServer(async (request, response) => {
   }
   const account = session.account;
   // Vào khách khác bằng header `Autoxide-Tenant` (uỷ quyền, hỗ trợ — D-310, D-313). Như core: không
-  // vào được → 403 `tenant_mismatch`; `/auth/me` ở khách khác trả 401; khách của request là khách đang
-  // vào. Dữ liệu khác core giả trả như ở khách của mình.
+  // vào được → 403 `tenant_mismatch`; `GET /auth/me` trả quyền ở khách đang vào (giả: đọc và viết bài);
+  // khách của request là khách đang vào. Dữ liệu khác core giả trả như ở khách của mình.
   const entered = enteredVia(request.headers["autoxide-tenant"]);
   if (entered === null) {
     return problem(
@@ -627,8 +631,18 @@ const server = createServer(async (request, response) => {
     );
   }
   if (entered) {
-    if (url.pathname === "/api/v1/auth/me") {
-      return problem(response, 401, "auth.invalid_token", "Your sign-in is not valid.");
+    if (route === "GET /api/v1/auth/me") {
+      // Như core (D-339): hồ sơ của tài khoản ở khách gốc, quyền là của khách đang vào.
+      return send(response, 200, {
+        data: {
+          ...meOf(account),
+          all_permissions: false,
+          permissions: ["content.read", "content.write"],
+          tenant_id: entered.id,
+          access: entered.access,
+          home_tenant_id: "00000000-0000-7000-8000-000000000001",
+        },
+      });
     }
     if (route === "GET /api/v1/kernel/tenant") {
       return send(response, 200, {

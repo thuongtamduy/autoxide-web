@@ -5,7 +5,7 @@ import { cache } from "react";
 import type { Viewer } from "@/nav/nav";
 import { holds } from "@/nav/nav";
 import { sampleDataEnabled } from "@/sample";
-import { currentEntry, isForbidden, load } from "./core";
+import { isForbidden, load } from "./core";
 
 // Người đang đăng nhập và sổ module, đọc một lần cho mỗi request (layout và trang dùng chung,
 // `cache` của React gộp các lời gọi trong cùng một lần render).
@@ -42,12 +42,10 @@ export const getCurrentTenant = cache(
 
 /** Quyền của người đang đăng nhập, để ẩn nút họ không dùng được (core vẫn kiểm ở mỗi lời gọi). */
 export const getViewer = cache(async (): Promise<Viewer> => {
-  const [me, entered] = await Promise.all([getMe(), currentEntry()]);
+  // Đang vào khách khác: `GET /auth/me` gửi kèm khách đó, core trả quyền ở đó (D-339).
+  const me = await getMe();
   return {
-    // Đang vào khách khác (uỷ quyền, hỗ trợ): core chưa cho biết quyền của người dùng ở khách đó
-    // (`GET /auth/me` chỉ trả lời ở khách của mình — đã báo core). Giao diện không ẩn gì; core vẫn
-    // kiểm từng lời gọi và trang hiện câu từ chối của core.
-    allPermissions: entered ? true : me.all_permissions,
+    allPermissions: me.all_permissions,
     permissions: me.permissions,
     modules: null,
     sample: sampleDataEnabled(),

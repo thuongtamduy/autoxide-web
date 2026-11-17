@@ -5,118 +5,14 @@
 // mọi lỗi một lần; chỉ khác là action gọi hàm mẫu thay cho API chưa có.
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
-import { saveBillingProfile, saveConnectionAction } from "@/app/(admin)/settings/sample-actions";
+import { saveConnectionAction } from "@/app/(admin)/settings/sample-actions";
 import { Dialog } from "@/components/ui/dialog";
-import {
-  DialogButtons,
-  Field,
-  FormAlert,
-  SelectField,
-  useFocusInvalid,
-  useOnDone,
-} from "@/components/ui/form";
+import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 
 export interface Option {
   value: string;
   label: string;
-}
-
-export interface ProfileValues {
-  legal_name: string;
-  tax_code: string;
-  email: string;
-  phone: string;
-  address_province_code: string;
-  address_commune: string;
-  address_line: string;
-}
-
-/** Hồ sơ xuất hoá đơn: đơn vị, mã số thuế, email nhận hoá đơn, điện thoại, địa chỉ. */
-export function BillingProfileForm({
-  profile,
-  provinces,
-  editable,
-}: {
-  profile: ProfileValues;
-  provinces: Option[];
-  editable: boolean;
-}) {
-  const t = useTranslations("settings.plan.profile");
-  const toast = useToast();
-  const form = useRef<HTMLFormElement>(null);
-  const [state, action, pending] = useActionState(saveBillingProfile, {});
-  useFocusInvalid(form, state);
-  useOnDone(state.done, () => toast(t("saved")));
-  const value = (name: keyof ProfileValues) => state.values?.[name] ?? profile[name];
-  return (
-    <form ref={form} action={action} noValidate className="card padded dlg-form">
-      <Field
-        label={t("legalName")}
-        name="legal_name"
-        defaultValue={value("legal_name")}
-        error={state.fields?.legal_name}
-        disabled={!editable}
-      />
-      <div className="fld-row">
-        <Field
-          label={t("taxCode")}
-          name="tax_code"
-          mono
-          defaultValue={value("tax_code")}
-          hint={t("taxCodeHint")}
-          error={state.fields?.tax_code}
-          disabled={!editable}
-        />
-        <Field
-          label={t("phone")}
-          name="phone"
-          type="tel"
-          defaultValue={value("phone")}
-          error={state.fields?.phone}
-          disabled={!editable}
-        />
-      </div>
-      <Field
-        label={t("email")}
-        name="email"
-        type="email"
-        defaultValue={value("email")}
-        error={state.fields?.email}
-        disabled={!editable}
-      />
-      <div className="fld-row">
-        <SelectField
-          label={t("province")}
-          name="address_province_code"
-          options={provinces}
-          defaultValue={value("address_province_code")}
-          disabled={!editable}
-        />
-        <Field
-          label={t("commune")}
-          name="address_commune"
-          defaultValue={value("address_commune")}
-          hint={t("communeHint")}
-          disabled={!editable}
-        />
-      </div>
-      <Field
-        label={t("line")}
-        name="address_line"
-        defaultValue={value("address_line")}
-        disabled={!editable}
-      />
-      {editable ? (
-        <div className="role-foot">
-          <FormAlert state={state} />
-          <button type="submit" className="btn pri" disabled={pending}>
-            {t("save")}
-          </button>
-        </div>
-      ) : null}
-    </form>
-  );
 }
 
 export interface ConnectionField {

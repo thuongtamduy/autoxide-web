@@ -1,6 +1,6 @@
 "use server";
 
-// Server Action cho phần Cài đặt dùng dữ liệu mẫu (W-006): gói và thuê bao (bước 35), kết nối
+// Server Action cho phần Cài đặt dùng dữ liệu mẫu (W-006): kết nối
 // đối tác (bước 33/36/39), job (bước 52), yêu cầu duyệt của agent (bước 51). Gọi hàm mẫu
 // của `src/sample/` thay cho API chưa có; cùng cách trả lỗi như phần gọi core thật, để khi có API
 // chỉ thay lời gọi.
@@ -14,7 +14,6 @@ import {
   retryJob,
   saveConnection,
   testConnection,
-  updateBillingProfile,
 } from "@/sample/settings";
 
 function idOf(formData: FormData): string {
@@ -23,34 +22,6 @@ function idOf(formData: FormData): string {
 
 function typed(formData: FormData, names: readonly string[]): Record<string, string> {
   return Object.fromEntries(names.map((name) => [name, String(formData.get(name) ?? "")]));
-}
-
-// ---------------------------------------------------------------- Gói và thuê bao
-
-const PROFILE_FIELDS = [
-  "legal_name",
-  "tax_code",
-  "email",
-  "phone",
-  "address_province_code",
-  "address_commune",
-  "address_line",
-] as const;
-
-export async function saveBillingProfile(state: FormState, formData: FormData): Promise<FormState> {
-  const off = await sampleGuard();
-  if (off) return off;
-  const values = typed(formData, PROFILE_FIELDS);
-  const outcome = await updateBillingProfile({
-    legal_name: values.legal_name ?? "",
-    tax_code: values.tax_code ?? "",
-    email: values.email ?? "",
-    phone: values.phone ?? "",
-    address_province_code: values.address_province_code ?? "",
-    address_commune: values.address_commune ?? "",
-    address_line: values.address_line ?? "",
-  });
-  return finishSample(state, outcome, PROFILE_FIELDS, values);
 }
 
 // ---------------------------------------------------------------- Kết nối đối tác
