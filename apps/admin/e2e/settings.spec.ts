@@ -28,10 +28,10 @@ test("Cài đặt chung: tab theo bản thiết kế, Nhân sự là link sang T
   await expect(page).toHaveURL(/\/settings\/plan$/);
   await expect(page.getByRole("heading", { level: 1, name: "General settings" })).toBeVisible();
   const tabs = page.getByRole("navigation", { name: "General settings sections" });
-  await expect(tabs.getByRole("link")).toHaveCount(8);
+  await expect(tabs.getByRole("link")).toHaveCount(9);
   await expect(tabs.getByRole("link").first()).toContainText("Plan and subscription");
   await expect(tabs.getByRole("link").first()).toHaveAttribute("aria-current", "page");
-  await expect(tabs.getByRole("link").last()).toContainText("Audit log");
+  await expect(tabs.getByRole("link").last()).toContainText("Your data");
   await expect(tabs.getByRole("link", { name: "Staff" })).toHaveAttribute(
     "href",
     "/org/access/users",

@@ -3,10 +3,10 @@
 import { useTranslations } from "next-intl";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
+import type { AddressOption } from "@/lib/address";
 import { formatMoney } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import { text } from "@/sample";
-import { PROVINCES, provinceByCode } from "@/sample/address";
 import type { CartLine } from "@/sample/cart";
 import type { StoreCode } from "@/sample/catalog";
 import {
@@ -30,6 +30,7 @@ import { CheckoutSteps } from "./checkout-steps";
 import { DayRange, dayRangeText } from "./day-range";
 import { ErrorSummary, ErrorText, errorFor, useErrorText } from "./form-errors";
 import { QuoteSummary } from "./quote-summary";
+import { useCommunes } from "./use-communes";
 
 // Trang đặt hàng (bước 2 "Giao hàng" và 3 "Thanh toán" của bản thiết kế `Checkout`) trong một form:
 // - tổng tiền tính lại ngay trên trình duyệt bằng đúng hàm báo giá của máy chủ (`buildQuote`);
@@ -77,7 +78,10 @@ export function CheckoutForm({
   pickupStores,
   nowIso,
   idempotencyKey,
+  provinces,
 }: {
+  /** Tỉnh, thành phố của danh mục hành chính (core; phường, xã tải khi chọn tỉnh). */
+  provinces: readonly AddressOption[];
   locale: string;
   siteName: string;
   lines: CartLine[];
@@ -100,6 +104,7 @@ export function CheckoutForm({
       ? store
       : (pickupStores[0]?.code ?? ""),
   }));
+  const { communes, loading: loadingCommunes } = useCommunes(values.province, locale);
   const [errors, setErrors] = useState<FieldError[]>([]);
   const [usePoints, setUsePoints] = useState(false);
   const [sumOpen, setSumOpen] = useState(false);
@@ -184,23 +189,15 @@ export function CheckoutForm({
     };
   };
 
-  const province = provinceByCode(values.province);
+  const province = provinces.find((p) => p.code === values.province);
+  const ward = communes.find((w) => w.code === values.ward);
   const deliveryLine =
     own && values.delivery === "pickup"
       ? t("done.pickup", {
           store: pickupStores.find((s) => s.code === values.pickup_store)?.name ?? "",
         })
       : t("done.ship", {
-          address: [
-            values.street.trim(),
-            province?.wards.find((w) => w.code === values.ward)
-              ? text(
-                  province.wards.find((w) => w.code === values.ward)?.name ?? { vi: "", en: "" },
-                  locale,
-                )
-              : "",
-            province ? text(province.name, locale) : "",
-          ]
+          address: [values.street.trim(), ward?.name ?? "", province?.name ?? ""]
             .filter(Boolean)
             .join(", "),
         });
@@ -212,6 +209,9 @@ export function CheckoutForm({
       {/* Dữ liệu gửi lên máy chủ: một chỗ, lấy từ trạng thái của form. */}
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="idempotency_key" value={idempotencyKey} />
+      {/* Tên tỉnh, phường đi kèm mã: đơn ghi đúng tên đã thấy lúc đặt. */}
+      <input type="hidden" name="province_name" value={province?.name ?? ""} />
+      <input type="hidden" name="ward_name" value={ward?.name ?? ""} />
       {(Object.keys(values) as (keyof FormValues)[]).map((key) =>
         typeof values[key] === "boolean" ? (
           values[key] ? (
@@ -487,9 +487,9 @@ export function CheckoutForm({
                         }}
                       >
                         <option value="">{t("provinceChoose")}</option>
-                        {PROVINCES.map((p) => (
+                        {provinces.map((p) => (
                           <option key={p.code} value={p.code}>
-                            {text(p.name, locale)}
+                            {p.name}
                           </option>
                         ))}
                       </select>
@@ -505,13 +505,13 @@ export function CheckoutForm({
                         className={`sel ${field("ward").className}`}
                         autoComplete="address-level2"
                         value={values.ward}
-                        disabled={!province}
+                        disabled={!province || loadingCommunes}
                         onChange={(e) => set("ward", e.target.value)}
                       >
                         <option value="">{province ? t("wardChoose") : t("wardFirst")}</option>
-                        {province?.wards.map((w) => (
+                        {communes.map((w) => (
                           <option key={w.code} value={w.code}>
-                            {text(w.name, locale)}
+                            {w.name}
                           </option>
                         ))}
                       </select>

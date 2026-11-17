@@ -296,6 +296,9 @@ export interface CheckoutForm {
   pickup_store: string;
   province: string;
   ward: string;
+  /** Tên tỉnh, phường người mua thấy lúc đặt (danh mục của core); trống thì tra danh sách mẫu. */
+  province_name?: string;
+  ward_name?: string;
   street: string;
   payment: PaymentMethod | "";
   points: number;
@@ -439,6 +442,8 @@ export function readCheckoutForm(form: FormData): CheckoutForm {
     pickup_store: str("pickup_store", 10),
     province: str("province", 10),
     ward: str("ward", 10),
+    province_name: str("province_name"),
+    ward_name: str("ward_name"),
     street: str("street"),
     payment: (PAYMENT_METHODS as readonly string[]).includes(payment)
       ? (payment as PaymentMethod)

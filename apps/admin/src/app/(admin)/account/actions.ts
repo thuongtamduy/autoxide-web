@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { send } from "@/lib/action";
+import { proof } from "@/lib/confirm-server";
 import { secureCookies } from "@/lib/env";
 import { type FormState, nextDone, parseForm, problemState } from "@/lib/form";
 import { type QrPath, qrPath } from "@/lib/qr";
@@ -65,15 +66,27 @@ export async function changePassword(state: FormState, formData: FormData): Prom
   return { done: nextDone(state) };
 }
 
-const EmailForm = z.object({ new_email: z.string().trim().min(1), current_password: password });
+const EmailForm = z.object({ new_email: z.string().trim().min(1) });
 
 /** Đổi email: core gửi thư xác minh tới địa chỉ mới; email chỉ đổi khi bấm link. */
 export async function changeEmail(state: FormState, formData: FormData): Promise<FormState> {
   const { fallback, messages } = await required();
   const typed = String(formData.get("new_email") ?? "");
   const input = parseForm(EmailForm, formData, fallback, messages);
-  if (!input.ok) return { fields: input.fields, values: { new_email: typed } };
-  const result = await send((client) => client.POST("/api/v1/auth/me/email", { body: input.data }));
+  const confirmed = await proof(formData);
+  if (!input.ok || !confirmed.ok) {
+    return {
+      ...(confirmed.ok ? {} : confirmed.state),
+      fields: {
+        ...(input.ok ? {} : input.fields),
+        ...(confirmed.ok ? {} : confirmed.state.fields),
+      },
+      values: { new_email: typed },
+    };
+  }
+  const result = await send((client) =>
+    client.POST("/api/v1/auth/me/email", { body: { ...input.data, ...confirmed.body } }),
+  );
   if (!result.ok) {
     return {
       ...problemState(result.problem, ["new_email", "current_password"], {
@@ -141,11 +154,10 @@ export async function startTotp(
   state: TotpSetupState,
   formData: FormData,
 ): Promise<TotpSetupState> {
-  const { fallback, messages } = await required();
-  const input = parseForm(z.object({ current_password: password }), formData, fallback, messages);
-  if (!input.ok) return { fields: input.fields };
+  const confirmed = await proof(formData);
+  if (!confirmed.ok) return confirmed.state;
   const result = await send((client) =>
-    client.POST("/api/v1/auth/me/mfa/totp", { body: input.data }),
+    client.POST("/api/v1/auth/me/mfa/totp", { body: confirmed.body }),
   );
   if (!result.ok) {
     return problemState(result.problem, ["current_password"], {
@@ -218,10 +230,7 @@ export interface PasskeyStartState extends FormState {
   options?: unknown;
 }
 
-const PasskeyForm = z.object({
-  name: z.string().trim().min(1).max(100),
-  current_password: password,
-});
+const PasskeyForm = z.object({ name: z.string().trim().min(1).max(100) });
 
 /**
  * Bước 1 thêm passkey: tên và mật khẩu → options cho trình duyệt. Id của nghi thức nằm trong
@@ -231,11 +240,19 @@ export async function startPasskey(formData: FormData): Promise<PasskeyStartStat
   const { fallback, messages } = await required();
   const typed = String(formData.get("name") ?? "");
   const input = parseForm(PasskeyForm, formData, fallback, messages);
-  if (!input.ok) return { fields: input.fields, values: { name: typed } };
+  const confirmed = await proof(formData);
+  if (!input.ok || !confirmed.ok) {
+    return {
+      ...(confirmed.ok ? {} : confirmed.state),
+      fields: {
+        ...(input.ok ? {} : input.fields),
+        ...(confirmed.ok ? {} : confirmed.state.fields),
+      },
+      values: { name: typed },
+    };
+  }
   const result = await send((client) =>
-    client.POST("/api/v1/auth/me/passkeys/registration", {
-      body: { current_password: input.data.current_password },
-    }),
+    client.POST("/api/v1/auth/me/passkeys/registration", { body: confirmed.body }),
   );
   if (!result.ok) {
     return {
@@ -335,17 +352,24 @@ export async function endOtherSessions(state: EndedState): Promise<EndedState> {
 
 // ---------------------------------------------------------------- Xoá tài khoản
 
-const DeleteForm = z.object({
-  current_password: password,
-  confirm_email: z.string().trim().min(1),
-});
+const DeleteForm = z.object({ confirm_email: z.string().trim().min(1) });
 
 /** Xoá tài khoản: gõ lại email để xác nhận, rồi mật khẩu. Xong thì xoá cookie, về đăng nhập. */
 export async function deleteAccount(_state: FormState, formData: FormData): Promise<FormState> {
   const { fallback, messages } = await required();
   const typed = String(formData.get("confirm_email") ?? "");
   const input = parseForm(DeleteForm, formData, fallback, messages);
-  if (!input.ok) return { fields: input.fields, values: { confirm_email: typed } };
+  const confirmed = await proof(formData);
+  if (!input.ok || !confirmed.ok) {
+    return {
+      ...(confirmed.ok ? {} : confirmed.state),
+      fields: {
+        ...(input.ok ? {} : input.fields),
+        ...(confirmed.ok ? {} : confirmed.state.fields),
+      },
+      values: { confirm_email: typed },
+    };
+  }
   const me = await getMe();
   if (input.data.confirm_email.toLowerCase() !== me.email.toLowerCase()) {
     const t = await getTranslations("account.delete");
@@ -354,11 +378,7 @@ export async function deleteAccount(_state: FormState, formData: FormData): Prom
       values: { confirm_email: typed },
     };
   }
-  const result = await send((client) =>
-    client.DELETE("/api/v1/auth/me", {
-      body: { current_password: input.data.current_password },
-    }),
-  );
+  const result = await send((client) => client.DELETE("/api/v1/auth/me", { body: confirmed.body }));
   if (!result.ok) {
     return {
       ...problemState(result.problem, ["current_password"], {

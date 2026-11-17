@@ -38,7 +38,7 @@ const filled: CheckoutForm = {
   name: "Nguyễn Văn A",
   phone: "0912 345 678",
   province: "79",
-  ward: "79-01",
+  ward: "26743",
   street: "[Số nhà mẫu]",
   payment: "vietqr",
   terms: true,

@@ -544,6 +544,25 @@
       "done": "Invitation accepted: the new roles work from your next page.",
       "noToken": "This link has no invitation token.",
       "home": "Go to the overview"
+    },
+    "confirm": {
+      "title": "Confirm it is you",
+      "by": {
+        "password": "Password",
+        "totp": "Authenticator code",
+        "passkey": "Passkey"
+      },
+      "password": "Current password",
+      "totpCode": "Code from your authenticator app",
+      "totpHint": "6 digits; it changes every 30 seconds.",
+      "passkeyHint": "Your browser asks for a passkey of this account when you continue.",
+      "passkeyUnsupported": "This browser cannot use passkeys.",
+      "passkeyCancelled": "The passkey was not used. Try again.",
+      "passkeyFailed": "The passkey could not be used. Try again or choose another way.",
+      "passkeyExpired": "The passkey check expired. Try again.",
+      "passwordRequired": "Enter your current password.",
+      "codeRequired": "Enter the code.",
+      "none": "Add a password or a passkey first to make this change."
     }
   },
   "sample": {
@@ -1170,7 +1189,8 @@
       "jobs": "Jobs",
       "staff": "Staff",
       "webhooks": "Webhooks",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "data": "Your data"
     },
     "general": {
       "title": "General settings",
@@ -1749,6 +1769,21 @@
       "noEvents": "No events for this record.",
       "delivered": "delivered to every receiver",
       "undelivered": "not delivered yet"
+    },
+    "data": {
+      "title": "Export all your data",
+      "about": "One JSON Lines file with every record of your business here, to keep or to move to another provider. Password hashes, secrets and uploaded file contents are left out. Needs kernel.data.export.",
+      "export": "Export data",
+      "exportTitle": "Export all data of your business?",
+      "exportAll": "Every record goes into one file; it runs in the background.",
+      "exportPersonal": "The file holds personal data of your buyers and staff: keep it safe.",
+      "exportKeep": "The file is deleted after the retention days of the server.",
+      "exportSubmit": "Start the export",
+      "exportDone": "Export started; it appears below when ready.",
+      "busy": "An export is running; this page refreshes until it ends.",
+      "download": "Download",
+      "keptUntil": "kept until",
+      "none": "No export yet."
     }
   },
   "content": {
@@ -10843,7 +10878,8 @@
       "chips": {
         "active": "Active",
         "locked": "Locked",
-        "unverified": "Phone not verified"
+        "unverified": "Phone not verified",
+        "disabled": "Locked"
       },
       "account": "Account",
       "site": "Registered on",
@@ -10875,7 +10911,18 @@
       "saved": "Registration setting saved.",
       "unverifiedTitle": "Unverified phone numbers",
       "unverifiedCount": "{n} accounts have not verified their phone number.",
-      "unverifiedText": "They can still buy, but cannot comment or review until their phone number is verified (Decree 147/2024 — check the original text)."
+      "unverifiedText": "They can still buy, but cannot comment or review until their phone number is verified (Decree 147/2024 — check the original text).",
+      "aboutCore": "Buyers sign in with their own account on your shop and hold no permissions. Staff need auth.customers.read to view and auth.customers.manage to lock or unlock. Nobody can see passwords.",
+      "all": "All",
+      "search": "Email or name",
+      "find": "Find",
+      "none": "No buyer account here.",
+      "lockTitle": "Lock the account of {name}?",
+      "lockSignsOut": "They are signed out everywhere and cannot sign in until unlocked.",
+      "lockUndo": "Unlock any time to let them in again.",
+      "pages": "Pages of buyer accounts",
+      "first": "First page",
+      "next": "Next page"
     },
     "segments": {
       "title": "Groups",

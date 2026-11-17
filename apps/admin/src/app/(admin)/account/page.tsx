@@ -7,6 +7,7 @@ import {
 import { ProfileForm } from "@/components/account/profile-form";
 import { Icon } from "@/components/shell/icon";
 import { Time } from "@/components/ui/time";
+import { loadConfirmMethods } from "@/lib/confirm-server";
 import { load } from "@/lib/core";
 import { getCurrentTenant, getMe } from "@/lib/viewer";
 
@@ -72,7 +73,7 @@ export default async function ProfilePage() {
             </span>
             <span className="item-acts">
               {verified ? null : <ResendVerification email={me.email} />}
-              <ChangeEmailDialog />
+              <ChangeEmailDialog methods={await loadConfirmMethods()} />
             </span>
           </div>
           {pending ? (

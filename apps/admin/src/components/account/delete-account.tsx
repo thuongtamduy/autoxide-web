@@ -3,11 +3,20 @@
 import { useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
 import { deleteAccount } from "@/app/(admin)/account/actions";
+import { ConfirmFields, signForProof } from "@/components/account/confirm-identity";
 import { Dialog } from "@/components/ui/dialog";
 import { DialogButtons, Field, FormAlert, useFocusInvalid } from "@/components/ui/form";
+import type { ConfirmMethods } from "@/lib/confirm";
+import type { FormState } from "@/lib/form";
 
-/** Xoá tài khoản: nêu rõ hệ quả, gõ lại email và mật khẩu để xác nhận. */
-export function DeleteAccountDialog({ email }: { email: string }) {
+/** Xoá tài khoản: nêu rõ hệ quả, gõ lại email và xác nhận là bạn (mật khẩu, mã hay passkey). */
+export function DeleteAccountDialog({
+  email,
+  methods,
+}: {
+  email: string;
+  methods: ConfirmMethods;
+}) {
   const t = useTranslations("account.delete");
   return (
     <Dialog
@@ -25,15 +34,28 @@ export function DeleteAccountDialog({ email }: { email: string }) {
         </>
       }
     >
-      {(close) => <DeleteForm email={email} close={close} />}
+      {(close) => <DeleteForm email={email} close={close} methods={methods} />}
     </Dialog>
   );
 }
 
-function DeleteForm({ email, close }: { email: string; close: () => void }) {
+function DeleteForm({
+  email,
+  close,
+  methods,
+}: {
+  email: string;
+  close: () => void;
+  methods: ConfirmMethods;
+}) {
   const t = useTranslations("account.delete");
+  const tc = useTranslations("account.confirm");
   const form = useRef<HTMLFormElement>(null);
-  const [state, action, pending] = useActionState(deleteAccount, {});
+  const [state, action, pending] = useActionState(
+    async (previous: FormState, data: FormData) =>
+      (await signForProof(data, tc)) ?? deleteAccount(previous, data),
+    {},
+  );
   useFocusInvalid(form, state);
   return (
     <form ref={form} action={action} noValidate className="dlg-form">
@@ -47,13 +69,7 @@ function DeleteForm({ email, close }: { email: string; close: () => void }) {
         error={state.fields?.confirm_email}
         autoFocus
       />
-      <Field
-        label={t("password")}
-        name="current_password"
-        type="password"
-        autoComplete="current-password"
-        error={state.fields?.current_password}
-      />
+      <ConfirmFields methods={methods} state={state} />
       <FormAlert state={state} />
       <DialogButtons submit={t("submit")} pending={pending} close={close} danger />
     </form>

@@ -6,6 +6,7 @@
 // mã tham chiếu chống ghi hai lần.
 import { useLocale, useTranslations } from "next-intl";
 import { useActionState, useRef } from "react";
+import { saveRegistration } from "@/app/(admin)/customers/account-actions";
 import {
   addCustomerAction,
   adjustPointsAction,
@@ -19,7 +20,6 @@ import {
   type PreviewState,
   previewRuleAction,
   referralRuleAction,
-  registrationAction,
   reminderRuleAction,
   tagsAction,
 } from "@/app/(admin)/customers/actions";
@@ -357,7 +357,7 @@ export function PreviewRuleForm({ orgs }: { orgs: Option[] }) {
 export function RegistrationForm({ open }: { open: boolean }) {
   const t = useTranslations("customers.accounts");
   return (
-    <ActionForm<FormState> action={registrationAction} submit={t("save")} done={t("saved")}>
+    <ActionForm<FormState> action={saveRegistration} submit={t("save")} done={t("saved")}>
       {() => (
         <CheckField
           label={t("selfSignup")}

@@ -101,8 +101,12 @@ export function placeOrders(input: PlaceInput): { numbers: string[]; replayed: b
         : {
             kind: "ship",
             street: form.street.trim(),
-            ward: ward?.name ?? { vi: "", en: "" },
-            province: province?.name ?? { vi: "", en: "" },
+            ward: form.ward_name
+              ? { vi: form.ward_name, en: form.ward_name }
+              : (ward?.name ?? { vi: "", en: "" }),
+            province: form.province_name
+              ? { vi: form.province_name, en: form.province_name }
+              : (province?.name ?? { vi: "", en: "" }),
           },
       eta: group.eta,
       events: [{ key: "placed", at: placedAt }],

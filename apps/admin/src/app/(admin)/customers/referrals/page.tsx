@@ -9,6 +9,7 @@ import { formatDay } from "@/lib/catalog";
 import { CUSTOMERS_ENGAGEMENT_MANAGE } from "@/lib/customers";
 import { formatCount, formatMoney } from "@/lib/format";
 import { can } from "@/lib/viewer";
+import { sampleDataEnabled } from "@/sample";
 import {
   listReferralRules,
   listReferrals,
@@ -29,6 +30,8 @@ const TONE: Record<ReferralStatus, string> = {
 // và trước đơn đầu; thưởng (điểm) khi đơn đầu hoàn tất và đủ giá trị tối thiểu. Trạng thái tính từ đơn đầu
 // thật của bộ mẫu. Cùng SĐT / email / thiết bị với người giới thiệu thì bị loại.
 export default async function ReferralsPage(props: PageProps<"/customers/referrals">) {
+  // Tab dữ liệu mẫu (bước 47): tắt dữ liệu mẫu thì không có.
+  if (!sampleDataEnabled()) notFound();
   if (!(await can(CUSTOMER_TABS.referrals))) notFound();
   const [t, locale, params, referrals, rules, manage] = await Promise.all([
     getTranslations("customers"),

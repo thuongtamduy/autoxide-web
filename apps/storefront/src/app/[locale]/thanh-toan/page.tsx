@@ -7,6 +7,7 @@ import { Icon } from "@/components/icon";
 import { SampleMark } from "@/components/sample-mark";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
+import { loadProvinces } from "@/lib/address-server";
 import { routes } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 import { siteIdentity } from "@/lib/site";
@@ -58,6 +59,7 @@ export default async function CheckoutPage(props: PageProps<"/[locale]/thanh-toa
         {t("sampleNote")}
       </p>
       <CheckoutForm
+        provinces={await loadProvinces(locale)}
         locale={locale}
         siteName={site.name}
         lines={lines}

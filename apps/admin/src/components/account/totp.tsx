@@ -7,10 +7,13 @@ import {
   disableTotp,
   regenerateRecoveryCodes,
   startTotp,
+  type TotpSetupState,
 } from "@/app/(admin)/account/actions";
+import { ConfirmFields, signForProof } from "@/components/account/confirm-identity";
 import { Dialog } from "@/components/ui/dialog";
 import { DialogButtons, Field, FormAlert, useFocusInvalid, useOnDone } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
+import type { ConfirmMethods } from "@/lib/confirm";
 import type { QrPath } from "@/lib/qr";
 import { RecoveryCodes } from "./recovery-codes";
 
@@ -18,7 +21,7 @@ import { RecoveryCodes } from "./recovery-codes";
  * Nút của mục "Xác thực hai bước". Cả ba hộp thoại luôn được dựng (chỉ ẩn nút): bật xong thì
  * trang tải lại với trạng thái mới, mà hộp thoại vẫn phải giữ mã khôi phục đang hiện.
  */
-export function TotpActions({ enabled }: { enabled: boolean }) {
+export function TotpActions({ enabled, methods }: { enabled: boolean; methods: ConfirmMethods }) {
   const t = useTranslations("account.totp");
   return (
     <>
@@ -29,7 +32,7 @@ export function TotpActions({ enabled }: { enabled: boolean }) {
         triggerClass="btn sm pri"
         hideTrigger={enabled}
       >
-        {(close) => <EnableTotp close={close} />}
+        {(close) => <EnableTotp close={close} methods={methods} />}
       </Dialog>
       <Dialog
         label={t("newCodes")}
@@ -52,24 +55,22 @@ export function TotpActions({ enabled }: { enabled: boolean }) {
   );
 }
 
-function EnableTotp({ close }: { close: () => void }) {
+function EnableTotp({ close, methods }: { close: () => void; methods: ConfirmMethods }) {
   const t = useTranslations("account.totp");
+  const tc = useTranslations("account.confirm");
   const form = useRef<HTMLFormElement>(null);
-  const [setup, start, starting] = useActionState(startTotp, {});
+  const [setup, start, starting] = useActionState(
+    async (previous: TotpSetupState, data: FormData): Promise<TotpSetupState> =>
+      (await signForProof(data, tc)) ?? startTotp(previous, data),
+    {},
+  );
   useFocusInvalid(form, setup);
   if (setup.secret && setup.qr) {
     return <ScanAndConfirm secret={setup.secret} qr={setup.qr} close={close} />;
   }
   return (
     <form ref={form} action={start} noValidate className="dlg-form">
-      <Field
-        label={t("password")}
-        name="current_password"
-        type="password"
-        autoComplete="current-password"
-        error={setup.fields?.current_password}
-        autoFocus
-      />
+      <ConfirmFields methods={methods} state={setup} />
       <FormAlert state={setup} />
       <DialogButtons submit={t("continue")} pending={starting} close={close} />
     </form>

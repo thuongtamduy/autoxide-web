@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { DeleteAccountDialog } from "@/components/account/delete-account";
 import { Icon } from "@/components/shell/icon";
+import { loadConfirmMethods } from "@/lib/confirm-server";
 import { getMe } from "@/lib/viewer";
 
 // Tab "Dữ liệu của tôi": tải về mọi dữ liệu core giữ về mình, và xoá tài khoản. Xoá cần mật khẩu
@@ -9,6 +10,10 @@ import { getMe } from "@/lib/viewer";
 export default async function DataPage() {
   const t = await getTranslations("account.data");
   const me = await getMe();
+  // Xác nhận bằng mật khẩu, mã hay passkey (`POST /auth/me/reauth`): tài khoản chỉ có passkey
+  // cũng xoá được tài khoản của mình.
+  const methods = await loadConfirmMethods();
+  const canConfirm = methods.password || methods.totp || methods.passkey;
   return (
     <div className="blocks">
       <section className="block" aria-labelledby="data-h">
@@ -38,12 +43,12 @@ export default async function DataPage() {
             <span className="item-main">
               <span className="item-title">{t("delete")}</span>
               <span className="item-meta">
-                {me.has_password ? t("deleteMeta") : t("deleteNeedsPassword")}
+                {canConfirm ? t("deleteMeta") : t("deleteNeedsPassword")}
               </span>
             </span>
             <span className="item-acts">
-              {me.has_password ? (
-                <DeleteAccountDialog email={me.email} />
+              {canConfirm ? (
+                <DeleteAccountDialog email={me.email} methods={methods} />
               ) : (
                 <Link className="btn sm" href="/account/security">
                   {t("setPassword")}

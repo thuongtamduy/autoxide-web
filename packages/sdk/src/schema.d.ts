@@ -6097,6 +6097,219 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tax/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tax categories.
+         * @description Requires `tax.read`.
+         */
+        get: operations["tax_list_tax_categories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/jurisdictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tax jurisdictions.
+         * @description Requires `tax.read`.
+         */
+        get: operations["tax_list_tax_jurisdictions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/packs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the imported tax data packs.
+         * @description Requires `tax.read`.
+         */
+        get: operations["tax_list_tax_packs"];
+        put?: never;
+        /**
+         * Import a tax data pack.
+         * @description Platform staff with `tax.packs_manage`. Replaces the data of the jurisdictions the pack lists,
+         *     for every tenant. Only a higher version than the one imported is accepted; the same pack again
+         *     changes nothing.
+         */
+        post: operations["tax_import_tax_pack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tax profiles in your scope.
+         * @description Requires `tax.read`. Only profiles set on a unit (not inherited ones).
+         */
+        get: operations["tax_list_tax_profiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/profiles/{org_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the tax profile that applies to a unit.
+         * @description Requires `tax.read` on the unit. A unit without its own profile gets the nearest one above it
+         *     (`own: false`).
+         */
+        get: operations["tax_get_tax_profile"];
+        /**
+         * Set the tax profile of a unit.
+         * @description Requires `tax.profiles_manage` on the unit. The body replaces the unit's own profile (units
+         *     below without their own profile inherit it).
+         */
+        put: operations["tax_set_tax_profile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute the taxes of a document.
+         * @description Requires `tax.read` on the selling unit. Only computes. Taxes are rounded once per rate on the
+         *     whole document, then shared between the lines, so the lines always add up to the totals.
+         */
+        post: operations["tax_quote_taxes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tax rates with their dates.
+         * @description Requires `tax.read`. With `on`, only the rates in force that day.
+         */
+        get: operations["tax_list_tax_rates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tax rules with their dates.
+         * @description Requires `tax.read`. With `on`, only those in force that day.
+         */
+        get: operations["tax_list_tax_rules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/withholding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute the taxes a platform withholds from a payment.
+         * @description Requires `tax.read`. Only computes.
+         */
+        post: operations["tax_quote_withholding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tax/withholding-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the withholding rates for platforms.
+         * @description Requires `tax.read`. With `on`, only those in force that day.
+         */
+        get: operations["tax_list_tax_withholding_rates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/webhooks": {
         parameters: {
             query?: never;
@@ -10501,6 +10714,57 @@ export interface components {
             };
         };
         /** @description Envelope of a single result. */
+        Data_TaxPackResponse: {
+            /** @description An imported tax data pack. */
+            data: {
+                /** @description Day its sources were last checked. */
+                checked_on: string;
+                /** @example vn */
+                code: string;
+                content_sha256: string;
+                /** Format: uuid */
+                id: string;
+                /** Format: date-time */
+                imported_at: string;
+                /** Format: uuid */
+                imported_by?: string | null;
+                source_note: string;
+                /** Format: int64 */
+                version: number;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TaxProfileResponse: {
+            /** @description The tax profile that applies to a unit. */
+            data: components["schemas"]["TaxProfile"] & {
+                /** @description `true` when the profile is the unit's own; `false` when it comes from a unit above. */
+                own: boolean;
+                /** Format: date-time */
+                updated_at: string;
+                /** Format: uuid */
+                updated_by?: string | null;
+            };
+        };
+        /** @description Envelope of a single result. */
+        Data_TaxQuote: {
+            /** @description Taxes of a document. */
+            data: {
+                gross: components["schemas"]["Money"];
+                invoice_type: components["schemas"]["TaxInvoiceType"];
+                lines: components["schemas"]["TaxedLine"][];
+                net: components["schemas"]["Money"];
+                /**
+                 * @description The seller's regime used: `vat_credit`, `vat_direct`, `household` or `exempt`.
+                 * @example vat_credit
+                 */
+                regime: string;
+                /** @description What was used (rates and their ids, pack version, rounding): keep it with the document. */
+                snapshot: Record<string, never>;
+                tax: components["schemas"]["Money"];
+                totals: components["schemas"]["TaxTotal"][];
+            };
+        };
+        /** @description Envelope of a single result. */
         Data_Tenant: {
             /** @description A customer (tenant) of the platform. */
             data: {
@@ -11835,6 +12099,112 @@ export interface components {
             }[];
         };
         /** @description Envelope of a single result. */
+        Data_Vec_TaxCategoryResponse: {
+            data: {
+                /** @example vat.standard_reducible */
+                code: string;
+                jurisdiction: string;
+                name_en: string;
+                name_vi: string;
+                /** @description `vat`, `excise`, `environment`. */
+                tax_kind: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_TaxJurisdictionResponse: {
+            data: {
+                /** @example VN */
+                code: string;
+                /** @example VND */
+                default_currency: string;
+                name: string;
+                /** @description The data pack it comes from, and its version. */
+                pack_code: string;
+                /** Format: int64 */
+                pack_version: number;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_TaxPackResponse: {
+            data: {
+                /** @description Day its sources were last checked. */
+                checked_on: string;
+                /** @example vn */
+                code: string;
+                content_sha256: string;
+                /** Format: uuid */
+                id: string;
+                /** Format: date-time */
+                imported_at: string;
+                /** Format: uuid */
+                imported_by?: string | null;
+                source_note: string;
+                /** Format: int64 */
+                version: number;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_TaxRateResponse: {
+            data: {
+                /** @description `percent`, `per_unit` or `exempt` (not subject to the tax). */
+                basis: string;
+                category: string;
+                /** @description First day in force. */
+                effective_from: string;
+                /** @description First day no longer in force; `null` while in force. */
+                effective_to?: string | null;
+                /** Format: uuid */
+                id: string;
+                jurisdiction: string;
+                /** @description Legal basis (check it against the original document before production use). */
+                legal_basis: string;
+                /** Format: int64 */
+                pack_version: number;
+                per_unit?: components["schemas"]["Money"] | null;
+                /** @example 8 */
+                rate_percent: string;
+                /**
+                 * Format: int32
+                 * @description Order the taxes apply in: a later stage is computed on the price plus earlier taxes.
+                 */
+                stage: number;
+                tax_kind: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_TaxRuleResponse: {
+            data: {
+                /** @example einvoice.cash_register_required */
+                code: string;
+                effective_from: string;
+                effective_to?: string | null;
+                /** Format: uuid */
+                id: string;
+                jurisdiction: string;
+                legal_basis: string;
+                value: Record<string, never>;
+            }[];
+        };
+        /** @description Envelope of a single result. */
+        Data_Vec_TaxWithholdingRateResponse: {
+            data: {
+                business_line: string;
+                effective_from: string;
+                effective_to?: string | null;
+                /** Format: uuid */
+                id: string;
+                jurisdiction: string;
+                legal_basis: string;
+                payee_regime: string;
+                /** @description `marketplace` or `affiliate`. */
+                payer_kind: string;
+                rate_percent: string;
+                /** @description `vat` or `pit`. */
+                tax_kind: string;
+                threshold?: components["schemas"]["Money"] | null;
+            }[];
+        };
+        /** @description Envelope of a single result. */
         Data_Vec_TenantExport: {
             data: {
                 /** Format: date-time */
@@ -11988,6 +12358,20 @@ export interface components {
                 verified: boolean;
             };
         };
+        /** @description Envelope of a single result. */
+        Data_WithholdingQuote: {
+            /** @description Taxes to withhold. */
+            data: {
+                components: components["schemas"]["TaxComponent"][];
+                snapshot: Record<string, never>;
+                total: components["schemas"]["Money"];
+            };
+        };
+        /**
+         * @description A decimal number written as a string, like "12.5" or "-0.08": a dot before the fraction, no thousands separators, no exponent, at most 28 digits.
+         * @example 0.08
+         */
+        DecimalString: string;
         /** @description A new delegation to a child tenant. */
         DelegationRequest: {
             /**
@@ -15589,6 +15973,19 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @description One page of a list. */
+        Page_TaxProfileResponse: {
+            /** @description The items of this page, in the requested order. */
+            data: (components["schemas"]["TaxProfile"] & {
+                /** @description `true` when the profile is the unit's own; `false` when it comes from a unit above. */
+                own: boolean;
+                /** Format: date-time */
+                updated_at: string;
+                /** Format: uuid */
+                updated_by?: string | null;
+            })[];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @description One page of a list. */
         Page_Tenant: {
             /** @description The items of this page, in the requested order. */
             data: {
@@ -18008,6 +18405,289 @@ export interface components {
             state?: string | null;
         };
         /**
+         * @description Who buys.
+         * @enum {string}
+         */
+        TaxBuyerKind: "consumer" | "business";
+        /** @description A tax category. */
+        TaxCategoryResponse: {
+            /** @example vat.standard_reducible */
+            code: string;
+            jurisdiction: string;
+            name_en: string;
+            name_vi: string;
+            /** @description `vat`, `excise`, `environment`. */
+            tax_kind: string;
+        };
+        /** @description One tax on a line. */
+        TaxComponent: {
+            amount: components["schemas"]["Money"];
+            /** @description `true`: not subject to this tax (shown as such on the invoice, not as 0%). */
+            exempt: boolean;
+            /**
+             * @description Rate in percent as a decimal string, e.g. `"8"`; `"0"` for a per-unit or exempt tax.
+             * @example 8
+             */
+            rate_percent: string;
+            /**
+             * @description `vat`, `excise`, `pit`…
+             * @example vat
+             */
+            tax_kind: string;
+        };
+        /**
+         * @description Kind of invoice the seller issues.
+         * @enum {string}
+         */
+        TaxInvoiceType: "vat_invoice" | "sales_invoice";
+        /** @description A tax jurisdiction. */
+        TaxJurisdictionResponse: {
+            /** @example VN */
+            code: string;
+            /** @example VND */
+            default_currency: string;
+            name: string;
+            /** @description The data pack it comes from, and its version. */
+            pack_code: string;
+            /** Format: int64 */
+            pack_version: number;
+        };
+        /** @description A tax data pack to import. */
+        TaxPackRequest: {
+            /**
+             * @description The pack, in the format of `modules/tax/packs/vn.json`: `code`, `version`, `checked_on`,
+             *     `source_note`, `jurisdictions`, `categories`, `rates`, `withholding_rates`, `rules`.
+             */
+            pack: Record<string, never>;
+        };
+        /** @description An imported tax data pack. */
+        TaxPackResponse: {
+            /** @description Day its sources were last checked. */
+            checked_on: string;
+            /** @example vn */
+            code: string;
+            content_sha256: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            imported_at: string;
+            /** Format: uuid */
+            imported_by?: string | null;
+            source_note: string;
+            /** Format: int64 */
+            version: number;
+        };
+        /**
+         * @description Whether the line amounts include the taxes.
+         * @enum {string}
+         */
+        TaxPriceMode: "inclusive" | "exclusive";
+        /** @description Tax profile of an organization unit. */
+        TaxProfile: {
+            address?: Record<string, never> | null;
+            annual_revenue?: components["schemas"]["Money"] | null;
+            /** @description `goods`, `services`, `production_transport`, `other`. */
+            business_lines: string[];
+            /** @example VN */
+            jurisdiction: string;
+            legal_name?: string | null;
+            /**
+             * Format: uuid
+             * @description The unit the profile is set on (the unit asked about, or the nearest one above it).
+             */
+            org_id: string;
+            /**
+             * @description `vat_credit` (VAT by credit), `vat_direct` (VAT on revenue), `household` (household
+             *     business) or `exempt`.
+             * @example vat_credit
+             */
+            regime: string;
+            /**
+             * @description Tax code: 10 or 13 digits (`0101234567-001` for a branch), or a 12-digit personal id used
+             *     as tax code.
+             */
+            tax_code?: string | null;
+        };
+        /** @description The whole tax profile of a unit. */
+        TaxProfileRequest: {
+            address?: components["schemas"]["AddressInput"] | null;
+            annual_revenue?: components["schemas"]["Money"] | null;
+            /** @description `goods`, `services`, `production_transport`, `other`. */
+            business_lines?: string[];
+            /** @example VN */
+            jurisdiction: string;
+            /** @description Up to 200 characters. */
+            legal_name?: string | null;
+            /**
+             * @description `vat_credit`, `vat_direct`, `household` or `exempt`.
+             * @example vat_credit
+             */
+            regime: string;
+            /**
+             * @description 10 or 13 digits (`0101234567-001` for a branch), or a 12-digit personal id used as tax
+             *     code.
+             */
+            tax_code?: string | null;
+        };
+        /** @description The tax profile that applies to a unit. */
+        TaxProfileResponse: components["schemas"]["TaxProfile"] & {
+            /** @description `true` when the profile is the unit's own; `false` when it comes from a unit above. */
+            own: boolean;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: uuid */
+            updated_by?: string | null;
+        };
+        /** @description Taxes of a document. */
+        TaxQuote: {
+            gross: components["schemas"]["Money"];
+            invoice_type: components["schemas"]["TaxInvoiceType"];
+            lines: components["schemas"]["TaxedLine"][];
+            net: components["schemas"]["Money"];
+            /**
+             * @description The seller's regime used: `vat_credit`, `vat_direct`, `household` or `exempt`.
+             * @example vat_credit
+             */
+            regime: string;
+            /** @description What was used (rates and their ids, pack version, rounding): keep it with the document. */
+            snapshot: Record<string, never>;
+            tax: components["schemas"]["Money"];
+            totals: components["schemas"]["TaxTotal"][];
+        };
+        /** @description A document to tax. */
+        TaxQuoteRequest: {
+            buyer_kind?: components["schemas"]["TaxBuyerKind"] | null;
+            /** @example VND */
+            currency: string;
+            /** @example VN */
+            jurisdiction: string;
+            /** @description 1 to 1000 lines. */
+            lines: components["schemas"]["TaxableLine"][];
+            /** @description `exclusive`: amounts are before taxes; `inclusive`: they include them. */
+            price_mode: components["schemas"]["TaxPriceMode"];
+            /**
+             * Format: uuid
+             * @description The selling unit; default the tenant's root. Its tax profile (or the nearest above) decides
+             *     the regime; without one the seller declares VAT by credit.
+             */
+            seller_org_id?: string | null;
+            /**
+             * Format: date
+             * @description Day the tax applies (`YYYY-MM-DD`, in the seller's time zone).
+             */
+            tax_point: string;
+        };
+        /** @description A tax rate with its dates. */
+        TaxRateResponse: {
+            /** @description `percent`, `per_unit` or `exempt` (not subject to the tax). */
+            basis: string;
+            category: string;
+            /** @description First day in force. */
+            effective_from: string;
+            /** @description First day no longer in force; `null` while in force. */
+            effective_to?: string | null;
+            /** Format: uuid */
+            id: string;
+            jurisdiction: string;
+            /** @description Legal basis (check it against the original document before production use). */
+            legal_basis: string;
+            /** Format: int64 */
+            pack_version: number;
+            per_unit?: components["schemas"]["Money"] | null;
+            /** @example 8 */
+            rate_percent: string;
+            /**
+             * Format: int32
+             * @description Order the taxes apply in: a later stage is computed on the price plus earlier taxes.
+             */
+            stage: number;
+            tax_kind: string;
+        };
+        /** @description A tax rule with its dates (e.g. when cash register invoices are required). */
+        TaxRuleResponse: {
+            /** @example einvoice.cash_register_required */
+            code: string;
+            effective_from: string;
+            effective_to?: string | null;
+            /** Format: uuid */
+            id: string;
+            jurisdiction: string;
+            legal_basis: string;
+            value: Record<string, never>;
+        };
+        /** @description Total of one tax at one rate on the whole document. */
+        TaxTotal: {
+            amount: components["schemas"]["Money"];
+            /** @description Amount the tax is computed on. */
+            base: components["schemas"]["Money"];
+            exempt: boolean;
+            rate_percent: string;
+            tax_kind: string;
+        };
+        /** @description Tax a platform withholds. */
+        TaxWithholdingInput: {
+            amount: components["schemas"]["Money"];
+            /**
+             * @description `goods`, `services`, `production_transport` or `other`.
+             * @example goods
+             */
+            business_line: string;
+            /** @example VN */
+            jurisdiction: string;
+            /**
+             * Format: date
+             * @description Day of the payment.
+             */
+            on: string;
+            /**
+             * @description The payee's regime: `household`… (a business declares itself: nothing is withheld).
+             * @example household
+             */
+            payee_regime: string;
+            /**
+             * @description `marketplace` or `affiliate`.
+             * @example marketplace
+             */
+            payer_kind: string;
+        };
+        /** @description A rate a platform withholds from payments to sellers. */
+        TaxWithholdingRateResponse: {
+            business_line: string;
+            effective_from: string;
+            effective_to?: string | null;
+            /** Format: uuid */
+            id: string;
+            jurisdiction: string;
+            legal_basis: string;
+            payee_regime: string;
+            /** @description `marketplace` or `affiliate`. */
+            payer_kind: string;
+            rate_percent: string;
+            /** @description `vat` or `pit`. */
+            tax_kind: string;
+            threshold?: components["schemas"]["Money"] | null;
+        };
+        /** @description One line to tax. */
+        TaxableLine: {
+            /** @description Amount of the line (after discounts), in the document currency; not negative. */
+            amount: components["schemas"]["Money"];
+            /** @description Tax category code, e.g. `vat.standard` (`GET /api/v1/tax/categories`). */
+            category: string;
+            /** @description The caller's id of the line, given back in the answer. */
+            line_id: string;
+            quantity?: components["schemas"]["DecimalString"] | null;
+        };
+        /** @description A line with its taxes. */
+        TaxedLine: {
+            category: string;
+            /** @description Amount with taxes: `net` + every tax. */
+            gross: components["schemas"]["Money"];
+            line_id: string;
+            /** @description Amount before taxes. */
+            net: components["schemas"]["Money"];
+            taxes: components["schemas"]["TaxComponent"][];
+        };
+        /**
          * @description What a term groups.
          * @enum {string}
          */
@@ -18953,6 +19633,12 @@ export interface components {
          * @enum {string}
          */
         Visibility: "private" | "public";
+        /** @description Taxes to withhold. */
+        WithholdingQuote: {
+            components: components["schemas"]["TaxComponent"][];
+            snapshot: Record<string, never>;
+            total: components["schemas"]["Money"];
+        };
     };
     responses: never;
     parameters: never;
@@ -44685,6 +45371,794 @@ export interface operations {
             };
             /** @description Missing `plans.billing.read`; code `permission_denied`. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_list_tax_categories: {
+        parameters: {
+            query?: {
+                /** @description Only this jurisdiction, e.g. `VN`. */
+                jurisdiction?: string;
+                /** @description Only this category (rates). */
+                category?: string;
+                /** @description Only what is in force on this day (`YYYY-MM-DD`). */
+                on?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The categories, by jurisdiction and code. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TaxCategoryResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A parameter is invalid; every problem in `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_list_tax_jurisdictions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The jurisdictions, by code. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TaxJurisdictionResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_list_tax_packs: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The packs, newest version first per code. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TaxPackResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_import_tax_pack: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxPackRequest"];
+            };
+        };
+        responses: {
+            /** @description The pack in use for this code after the import. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TaxPackResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not platform staff (`tenant_platform_only`) or missing `tax.packs_manage` (`permission_denied`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A version as high or higher is imported; code `tax.pack_outdated`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The pack is invalid; every problem in `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_list_tax_profiles: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Maximum number of items to return, 1 to 200. Defaults to 50.
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Where to continue: the `next_cursor` of the previous page. Omit for the
+                 *     first page. Treat the value as opaque.
+                 */
+                cursor?: string;
+                /**
+                 * @description `desc` (newest first, the default) or `asc` (oldest first). Keep the same
+                 *     order (and `sort`, where offered) while following `next_cursor`.
+                 */
+                order?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of profiles. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_TaxProfileResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A paging parameter is invalid; every problem in `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_get_tax_profile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Id of the organization unit. */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The profile that applies. */
+            200: {
+                headers: {
+                    /** @description Version of the profile: send it back in `If-Match` when changing it. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TaxProfileResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No profile on the unit or above it, or the unit is outside your scope; code `tax.profile_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_set_tax_profile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The `ETag` you read. When given, the change is made only if nobody changed the profile since; otherwise `412`. */
+                "If-Match"?: string | null;
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Id of the organization unit. */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description The profile after the change. */
+            200: {
+                headers: {
+                    /** @description Version of the profile. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TaxProfileResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.profiles_manage` (`permission_denied`), the unit is outside your scope (`org_out_of_scope`) or frozen (`org_frozen`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description `If-Match` does not match; code `precondition_failed`. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A value is invalid; every problem in `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_quote_taxes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description The taxes per line and per rate. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_TaxQuote"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read` (`permission_denied`) or the unit is outside your scope (`org_out_of_scope`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unknown jurisdiction (`tax.jurisdiction_unknown`) or category (`tax.category_unknown`), no rate on that day (`tax.rate_missing`), or a value is invalid (see `errors`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_list_tax_rates: {
+        parameters: {
+            query?: {
+                /** @description Only this jurisdiction, e.g. `VN`. */
+                jurisdiction?: string;
+                /** @description Only this category (rates). */
+                category?: string;
+                /** @description Only what is in force on this day (`YYYY-MM-DD`). */
+                on?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The rates, by category, stage and start date. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TaxRateResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A parameter is invalid; every problem in `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_list_tax_rules: {
+        parameters: {
+            query?: {
+                /** @description Only this jurisdiction, e.g. `VN`. */
+                jurisdiction?: string;
+                /** @description Only this category (rates). */
+                category?: string;
+                /** @description Only what is in force on this day (`YYYY-MM-DD`). */
+                on?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The rules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TaxRuleResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A parameter is invalid; every problem in `errors`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_quote_withholding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+                /** @description A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxWithholdingInput"];
+            };
+        };
+        responses: {
+            /** @description The taxes to withhold (empty when none applies). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_WithholdingQuote"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unknown jurisdiction (`tax.jurisdiction_unknown`) or a value is invalid (see `errors`). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    tax_list_tax_withholding_rates: {
+        parameters: {
+            query?: {
+                /** @description Only this jurisdiction, e.g. `VN`. */
+                jurisdiction?: string;
+                /** @description Only this category (rates). */
+                category?: string;
+                /** @description Only what is in force on this day (`YYYY-MM-DD`). */
+                on?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The withholding rates. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_TaxWithholdingRateResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing `tax.read`; code `permission_denied`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description A parameter is invalid; every problem in `errors`. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

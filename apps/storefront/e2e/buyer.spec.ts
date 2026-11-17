@@ -60,7 +60,7 @@ test("giỏ chia theo nơi bán → đặt hàng có lỗi → đặt xong, hai 
   await page.getByLabel("Họ tên").fill("Khách Mẫu");
   await page.getByLabel("Số điện thoại").fill("0912 345 678");
   await page.getByLabel("Tỉnh, thành phố").selectOption("01");
-  await page.getByLabel("Phường, xã").selectOption("01-03");
+  await page.getByLabel("Phường, xã").selectOption("00166");
   await page.getByLabel("Số nhà, tên đường").fill("[Số nhà mẫu]");
   // Hà Nội, bán từ CN Quận 3: 40.000 ₫ (Bộ dao 1,1 kg).
   await expect(page.locator(".co-sum")).toContainText("40.000 ₫");
@@ -291,7 +291,7 @@ for (const width of [360, 390, 768, 1024, 1440]) {
     // Bước thanh toán (sau khi điền bước giao hàng).
     await page.goto("/thanh-toan");
     await page.getByLabel("Tỉnh, thành phố").selectOption("79");
-    await page.getByLabel("Phường, xã").selectOption("79-01");
+    await page.getByLabel("Phường, xã").selectOption("26743");
     await page.getByLabel("Số nhà, tên đường").fill("[Số nhà mẫu]");
     await page.getByRole("button", { name: "Tiếp tục" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Thanh toán");

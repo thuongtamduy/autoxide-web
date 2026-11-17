@@ -9174,6 +9174,162 @@
         ],
         "type": "object"
       },
+      "Data_TaxPackResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "description": "An imported tax data pack.",
+            "properties": {
+              "checked_on": {
+                "description": "Day its sources were last checked.",
+                "type": "string"
+              },
+              "code": {
+                "example": "vn",
+                "type": "string"
+              },
+              "content_sha256": {
+                "type": "string"
+              },
+              "id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "imported_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "imported_by": {
+                "format": "uuid",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_note": {
+                "type": "string"
+              },
+              "version": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "version",
+              "checked_on",
+              "source_note",
+              "content_sha256",
+              "imported_at"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_TaxProfileResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TaxProfile"
+              },
+              {
+                "properties": {
+                  "own": {
+                    "description": "`true` when the profile is the unit's own; `false` when it comes from a unit above.",
+                    "type": "boolean"
+                  },
+                  "updated_at": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "updated_by": {
+                    "format": "uuid",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "own",
+                  "updated_at"
+                ],
+                "type": "object"
+              }
+            ],
+            "description": "The tax profile that applies to a unit."
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_TaxQuote": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "description": "Taxes of a document.",
+            "properties": {
+              "gross": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "invoice_type": {
+                "$ref": "#/components/schemas/TaxInvoiceType"
+              },
+              "lines": {
+                "items": {
+                  "$ref": "#/components/schemas/TaxedLine"
+                },
+                "type": "array"
+              },
+              "net": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "regime": {
+                "description": "The seller's regime used: `vat_credit`, `vat_direct`, `household` or `exempt`.",
+                "example": "vat_credit",
+                "type": "string"
+              },
+              "snapshot": {
+                "description": "What was used (rates and their ids, pack version, rounding): keep it with the document.",
+                "type": "object"
+              },
+              "tax": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "totals": {
+                "items": {
+                  "$ref": "#/components/schemas/TaxTotal"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "lines",
+              "totals",
+              "net",
+              "tax",
+              "gross",
+              "invoice_type",
+              "regime",
+              "snapshot"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "Data_Tenant": {
         "description": "Envelope of a single result.",
         "properties": {
@@ -12100,6 +12256,364 @@
         ],
         "type": "object"
       },
+      "Data_Vec_TaxCategoryResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "items": {
+              "description": "A tax category.",
+              "properties": {
+                "code": {
+                  "example": "vat.standard_reducible",
+                  "type": "string"
+                },
+                "jurisdiction": {
+                  "type": "string"
+                },
+                "name_en": {
+                  "type": "string"
+                },
+                "name_vi": {
+                  "type": "string"
+                },
+                "tax_kind": {
+                  "description": "`vat`, `excise`, `environment`.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "jurisdiction",
+                "code",
+                "name_en",
+                "name_vi",
+                "tax_kind"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_Vec_TaxJurisdictionResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "items": {
+              "description": "A tax jurisdiction.",
+              "properties": {
+                "code": {
+                  "example": "VN",
+                  "type": "string"
+                },
+                "default_currency": {
+                  "example": "VND",
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "pack_code": {
+                  "description": "The data pack it comes from, and its version.",
+                  "type": "string"
+                },
+                "pack_version": {
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "code",
+                "name",
+                "default_currency",
+                "pack_code",
+                "pack_version"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_Vec_TaxPackResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "items": {
+              "description": "An imported tax data pack.",
+              "properties": {
+                "checked_on": {
+                  "description": "Day its sources were last checked.",
+                  "type": "string"
+                },
+                "code": {
+                  "example": "vn",
+                  "type": "string"
+                },
+                "content_sha256": {
+                  "type": "string"
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "imported_at": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "imported_by": {
+                  "format": "uuid",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "source_note": {
+                  "type": "string"
+                },
+                "version": {
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "version",
+                "checked_on",
+                "source_note",
+                "content_sha256",
+                "imported_at"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_Vec_TaxRateResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "items": {
+              "description": "A tax rate with its dates.",
+              "properties": {
+                "basis": {
+                  "description": "`percent`, `per_unit` or `exempt` (not subject to the tax).",
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string"
+                },
+                "effective_from": {
+                  "description": "First day in force.",
+                  "type": "string"
+                },
+                "effective_to": {
+                  "description": "First day no longer in force; `null` while in force.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "jurisdiction": {
+                  "type": "string"
+                },
+                "legal_basis": {
+                  "description": "Legal basis (check it against the original document before production use).",
+                  "type": "string"
+                },
+                "pack_version": {
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "per_unit": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Money"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rate_percent": {
+                  "example": "8",
+                  "type": "string"
+                },
+                "stage": {
+                  "description": "Order the taxes apply in: a later stage is computed on the price plus earlier taxes.",
+                  "format": "int32",
+                  "type": "integer"
+                },
+                "tax_kind": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "jurisdiction",
+                "category",
+                "tax_kind",
+                "basis",
+                "rate_percent",
+                "stage",
+                "effective_from",
+                "legal_basis",
+                "pack_version"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_Vec_TaxRuleResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "items": {
+              "description": "A tax rule with its dates (e.g. when cash register invoices are required).",
+              "properties": {
+                "code": {
+                  "example": "einvoice.cash_register_required",
+                  "type": "string"
+                },
+                "effective_from": {
+                  "type": "string"
+                },
+                "effective_to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "jurisdiction": {
+                  "type": "string"
+                },
+                "legal_basis": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "id",
+                "jurisdiction",
+                "code",
+                "value",
+                "effective_from",
+                "legal_basis"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "Data_Vec_TaxWithholdingRateResponse": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "items": {
+              "description": "A rate a platform withholds from payments to sellers.",
+              "properties": {
+                "business_line": {
+                  "type": "string"
+                },
+                "effective_from": {
+                  "type": "string"
+                },
+                "effective_to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "jurisdiction": {
+                  "type": "string"
+                },
+                "legal_basis": {
+                  "type": "string"
+                },
+                "payee_regime": {
+                  "type": "string"
+                },
+                "payer_kind": {
+                  "description": "`marketplace` or `affiliate`.",
+                  "type": "string"
+                },
+                "rate_percent": {
+                  "type": "string"
+                },
+                "tax_kind": {
+                  "description": "`vat` or `pit`.",
+                  "type": "string"
+                },
+                "threshold": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Money"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "jurisdiction",
+                "payer_kind",
+                "payee_regime",
+                "business_line",
+                "tax_kind",
+                "rate_percent",
+                "effective_from",
+                "legal_basis"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "Data_Vec_TenantExport": {
         "description": "Envelope of a single result.",
         "properties": {
@@ -12467,6 +12981,46 @@
           "data"
         ],
         "type": "object"
+      },
+      "Data_WithholdingQuote": {
+        "description": "Envelope of a single result.",
+        "properties": {
+          "data": {
+            "description": "Taxes to withhold.",
+            "properties": {
+              "components": {
+                "items": {
+                  "$ref": "#/components/schemas/TaxComponent"
+                },
+                "type": "array"
+              },
+              "snapshot": {
+                "type": "object"
+              },
+              "total": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "components",
+              "total",
+              "snapshot"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "DecimalString": {
+        "description": "A decimal number written as a string, like \"12.5\" or \"-0.08\": a dot before the fraction, no thousands separators, no exponent, at most 28 digits.",
+        "examples": [
+          "0.08"
+        ],
+        "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+        "type": "string"
       },
       "DelegationRequest": {
         "additionalProperties": false,
@@ -20103,6 +20657,55 @@
         ],
         "type": "object"
       },
+      "Page_TaxProfileResponse": {
+        "description": "One page of a list.",
+        "properties": {
+          "data": {
+            "description": "The items of this page, in the requested order.",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/TaxProfile"
+                },
+                {
+                  "properties": {
+                    "own": {
+                      "description": "`true` when the profile is the unit's own; `false` when it comes from a unit above.",
+                      "type": "boolean"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "updated_by": {
+                      "format": "uuid",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "own",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                }
+              ],
+              "description": "The tax profile that applies to a unit."
+            },
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object"
+      },
       "Page_Tenant": {
         "description": "One page of a list.",
         "properties": {
@@ -25495,6 +26098,761 @@
         },
         "type": "object"
       },
+      "TaxBuyerKind": {
+        "description": "Who buys.",
+        "enum": [
+          "consumer",
+          "business"
+        ],
+        "type": "string"
+      },
+      "TaxCategoryResponse": {
+        "description": "A tax category.",
+        "properties": {
+          "code": {
+            "example": "vat.standard_reducible",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "name_vi": {
+            "type": "string"
+          },
+          "tax_kind": {
+            "description": "`vat`, `excise`, `environment`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jurisdiction",
+          "code",
+          "name_en",
+          "name_vi",
+          "tax_kind"
+        ],
+        "type": "object"
+      },
+      "TaxComponent": {
+        "description": "One tax on a line.",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "exempt": {
+            "description": "`true`: not subject to this tax (shown as such on the invoice, not as 0%).",
+            "type": "boolean"
+          },
+          "rate_percent": {
+            "description": "Rate in percent as a decimal string, e.g. `\"8\"`; `\"0\"` for a per-unit or exempt tax.",
+            "example": "8",
+            "type": "string"
+          },
+          "tax_kind": {
+            "description": "`vat`, `excise`, `pit`…",
+            "example": "vat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tax_kind",
+          "rate_percent",
+          "exempt",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "TaxInvoiceType": {
+        "description": "Kind of invoice the seller issues.",
+        "enum": [
+          "vat_invoice",
+          "sales_invoice"
+        ],
+        "type": "string"
+      },
+      "TaxJurisdictionResponse": {
+        "description": "A tax jurisdiction.",
+        "properties": {
+          "code": {
+            "example": "VN",
+            "type": "string"
+          },
+          "default_currency": {
+            "example": "VND",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pack_code": {
+            "description": "The data pack it comes from, and its version.",
+            "type": "string"
+          },
+          "pack_version": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "default_currency",
+          "pack_code",
+          "pack_version"
+        ],
+        "type": "object"
+      },
+      "TaxPackRequest": {
+        "additionalProperties": false,
+        "description": "A tax data pack to import.",
+        "properties": {
+          "pack": {
+            "description": "The pack, in the format of `modules/tax/packs/vn.json`: `code`, `version`, `checked_on`,\n`source_note`, `jurisdictions`, `categories`, `rates`, `withholding_rates`, `rules`.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "pack"
+        ],
+        "type": "object"
+      },
+      "TaxPackResponse": {
+        "description": "An imported tax data pack.",
+        "properties": {
+          "checked_on": {
+            "description": "Day its sources were last checked.",
+            "type": "string"
+          },
+          "code": {
+            "example": "vn",
+            "type": "string"
+          },
+          "content_sha256": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "imported_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "imported_by": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_note": {
+            "type": "string"
+          },
+          "version": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "version",
+          "checked_on",
+          "source_note",
+          "content_sha256",
+          "imported_at"
+        ],
+        "type": "object"
+      },
+      "TaxPriceMode": {
+        "description": "Whether the line amounts include the taxes.",
+        "enum": [
+          "inclusive",
+          "exclusive"
+        ],
+        "type": "string"
+      },
+      "TaxProfile": {
+        "description": "Tax profile of an organization unit.",
+        "properties": {
+          "address": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "annual_revenue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Money",
+                "description": "Estimated revenue a year, for thresholds (cash register invoices)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_lines": {
+            "description": "`goods`, `services`, `production_transport`, `other`.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "jurisdiction": {
+            "example": "VN",
+            "type": "string"
+          },
+          "legal_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_id": {
+            "description": "The unit the profile is set on (the unit asked about, or the nearest one above it).",
+            "format": "uuid",
+            "type": "string"
+          },
+          "regime": {
+            "description": "`vat_credit` (VAT by credit), `vat_direct` (VAT on revenue), `household` (household\nbusiness) or `exempt`.",
+            "example": "vat_credit",
+            "type": "string"
+          },
+          "tax_code": {
+            "description": "Tax code: 10 or 13 digits (`0101234567-001` for a branch), or a 12-digit personal id used\nas tax code.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "org_id",
+          "jurisdiction",
+          "regime",
+          "business_lines"
+        ],
+        "type": "object"
+      },
+      "TaxProfileRequest": {
+        "additionalProperties": false,
+        "description": "The whole tax profile of a unit.",
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AddressInput",
+                "description": "Address; names are filled in from the codes."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "annual_revenue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Money",
+                "description": "Estimated revenue a year (thresholds such as cash register invoices)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "business_lines": {
+            "description": "`goods`, `services`, `production_transport`, `other`.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "jurisdiction": {
+            "example": "VN",
+            "type": "string"
+          },
+          "legal_name": {
+            "description": "Up to 200 characters.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "regime": {
+            "description": "`vat_credit`, `vat_direct`, `household` or `exempt`.",
+            "example": "vat_credit",
+            "type": "string"
+          },
+          "tax_code": {
+            "description": "10 or 13 digits (`0101234567-001` for a branch), or a 12-digit personal id used as tax\ncode.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "jurisdiction",
+          "regime"
+        ],
+        "type": "object"
+      },
+      "TaxProfileResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TaxProfile"
+          },
+          {
+            "properties": {
+              "own": {
+                "description": "`true` when the profile is the unit's own; `false` when it comes from a unit above.",
+                "type": "boolean"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "updated_by": {
+                "format": "uuid",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "own",
+              "updated_at"
+            ],
+            "type": "object"
+          }
+        ],
+        "description": "The tax profile that applies to a unit."
+      },
+      "TaxQuote": {
+        "description": "Taxes of a document.",
+        "properties": {
+          "gross": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "invoice_type": {
+            "$ref": "#/components/schemas/TaxInvoiceType"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/TaxedLine"
+            },
+            "type": "array"
+          },
+          "net": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "regime": {
+            "description": "The seller's regime used: `vat_credit`, `vat_direct`, `household` or `exempt`.",
+            "example": "vat_credit",
+            "type": "string"
+          },
+          "snapshot": {
+            "description": "What was used (rates and their ids, pack version, rounding): keep it with the document.",
+            "type": "object"
+          },
+          "tax": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "totals": {
+            "items": {
+              "$ref": "#/components/schemas/TaxTotal"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines",
+          "totals",
+          "net",
+          "tax",
+          "gross",
+          "invoice_type",
+          "regime",
+          "snapshot"
+        ],
+        "type": "object"
+      },
+      "TaxQuoteRequest": {
+        "additionalProperties": false,
+        "description": "A document to tax.",
+        "properties": {
+          "buyer_kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TaxBuyerKind",
+                "description": "`consumer` (default) or `business`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "example": "VND",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "example": "VN",
+            "type": "string"
+          },
+          "lines": {
+            "description": "1 to 1000 lines.",
+            "items": {
+              "$ref": "#/components/schemas/TaxableLine"
+            },
+            "type": "array"
+          },
+          "price_mode": {
+            "$ref": "#/components/schemas/TaxPriceMode",
+            "description": "`exclusive`: amounts are before taxes; `inclusive`: they include them."
+          },
+          "seller_org_id": {
+            "description": "The selling unit; default the tenant's root. Its tax profile (or the nearest above) decides\nthe regime; without one the seller declares VAT by credit.",
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tax_point": {
+            "description": "Day the tax applies (`YYYY-MM-DD`, in the seller's time zone).",
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jurisdiction",
+          "tax_point",
+          "price_mode",
+          "currency",
+          "lines"
+        ],
+        "type": "object"
+      },
+      "TaxRateResponse": {
+        "description": "A tax rate with its dates.",
+        "properties": {
+          "basis": {
+            "description": "`percent`, `per_unit` or `exempt` (not subject to the tax).",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "effective_from": {
+            "description": "First day in force.",
+            "type": "string"
+          },
+          "effective_to": {
+            "description": "First day no longer in force; `null` while in force.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "type": "string"
+          },
+          "legal_basis": {
+            "description": "Legal basis (check it against the original document before production use).",
+            "type": "string"
+          },
+          "pack_version": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "per_unit": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rate_percent": {
+            "example": "8",
+            "type": "string"
+          },
+          "stage": {
+            "description": "Order the taxes apply in: a later stage is computed on the price plus earlier taxes.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "tax_kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "jurisdiction",
+          "category",
+          "tax_kind",
+          "basis",
+          "rate_percent",
+          "stage",
+          "effective_from",
+          "legal_basis",
+          "pack_version"
+        ],
+        "type": "object"
+      },
+      "TaxRuleResponse": {
+        "description": "A tax rule with its dates (e.g. when cash register invoices are required).",
+        "properties": {
+          "code": {
+            "example": "einvoice.cash_register_required",
+            "type": "string"
+          },
+          "effective_from": {
+            "type": "string"
+          },
+          "effective_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "type": "string"
+          },
+          "legal_basis": {
+            "type": "string"
+          },
+          "value": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "jurisdiction",
+          "code",
+          "value",
+          "effective_from",
+          "legal_basis"
+        ],
+        "type": "object"
+      },
+      "TaxTotal": {
+        "description": "Total of one tax at one rate on the whole document.",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "base": {
+            "$ref": "#/components/schemas/Money",
+            "description": "Amount the tax is computed on."
+          },
+          "exempt": {
+            "type": "boolean"
+          },
+          "rate_percent": {
+            "type": "string"
+          },
+          "tax_kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tax_kind",
+          "rate_percent",
+          "exempt",
+          "base",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "TaxWithholdingInput": {
+        "additionalProperties": false,
+        "description": "Tax a platform withholds.",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "business_line": {
+            "description": "`goods`, `services`, `production_transport` or `other`.",
+            "example": "goods",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "example": "VN",
+            "type": "string"
+          },
+          "on": {
+            "description": "Day of the payment.",
+            "format": "date",
+            "type": "string"
+          },
+          "payee_regime": {
+            "description": "The payee's regime: `household`… (a business declares itself: nothing is withheld).",
+            "example": "household",
+            "type": "string"
+          },
+          "payer_kind": {
+            "description": "`marketplace` or `affiliate`.",
+            "example": "marketplace",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jurisdiction",
+          "on",
+          "payer_kind",
+          "payee_regime",
+          "business_line",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "TaxWithholdingRateResponse": {
+        "description": "A rate a platform withholds from payments to sellers.",
+        "properties": {
+          "business_line": {
+            "type": "string"
+          },
+          "effective_from": {
+            "type": "string"
+          },
+          "effective_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "type": "string"
+          },
+          "legal_basis": {
+            "type": "string"
+          },
+          "payee_regime": {
+            "type": "string"
+          },
+          "payer_kind": {
+            "description": "`marketplace` or `affiliate`.",
+            "type": "string"
+          },
+          "rate_percent": {
+            "type": "string"
+          },
+          "tax_kind": {
+            "description": "`vat` or `pit`.",
+            "type": "string"
+          },
+          "threshold": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "jurisdiction",
+          "payer_kind",
+          "payee_regime",
+          "business_line",
+          "tax_kind",
+          "rate_percent",
+          "effective_from",
+          "legal_basis"
+        ],
+        "type": "object"
+      },
+      "TaxableLine": {
+        "description": "One line to tax.",
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money",
+            "description": "Amount of the line (after discounts), in the document currency; not negative."
+          },
+          "category": {
+            "description": "Tax category code, e.g. `vat.standard` (`GET /api/v1/tax/categories`).",
+            "type": "string"
+          },
+          "line_id": {
+            "description": "The caller's id of the line, given back in the answer.",
+            "type": "string"
+          },
+          "quantity": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecimalString",
+                "description": "Quantity, for taxes charged per unit."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "line_id",
+          "category",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "TaxedLine": {
+        "description": "A line with its taxes.",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "gross": {
+            "$ref": "#/components/schemas/Money",
+            "description": "Amount with taxes: `net` + every tax."
+          },
+          "line_id": {
+            "type": "string"
+          },
+          "net": {
+            "$ref": "#/components/schemas/Money",
+            "description": "Amount before taxes."
+          },
+          "taxes": {
+            "items": {
+              "$ref": "#/components/schemas/TaxComponent"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "line_id",
+          "category",
+          "net",
+          "taxes",
+          "gross"
+        ],
+        "type": "object"
+      },
       "Taxonomy": {
         "description": "What a term groups.",
         "enum": [
@@ -27573,6 +28931,29 @@
           "public"
         ],
         "type": "string"
+      },
+      "WithholdingQuote": {
+        "description": "Taxes to withhold.",
+        "properties": {
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/TaxComponent"
+            },
+            "type": "array"
+          },
+          "snapshot": {
+            "type": "object"
+          },
+          "total": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "components",
+          "total",
+          "snapshot"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -68948,6 +70329,1298 @@
         ],
         "x-permissions": [
           "plans.billing.read"
+        ]
+      }
+    },
+    "/api/v1/tax/categories": {
+      "get": {
+        "description": "Requires `tax.read`.",
+        "operationId": "tax_list_tax_categories",
+        "parameters": [
+          {
+            "description": "Only this jurisdiction, e.g. `VN`.",
+            "in": "query",
+            "name": "jurisdiction",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only this category (rates).",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only what is in force on this day (`YYYY-MM-DD`).",
+            "in": "query",
+            "name": "on",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TaxCategoryResponse"
+                }
+              }
+            },
+            "description": "The categories, by jurisdiction and code."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A parameter is invalid; every problem in `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the tax categories.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      }
+    },
+    "/api/v1/tax/jurisdictions": {
+      "get": {
+        "description": "Requires `tax.read`.",
+        "operationId": "tax_list_tax_jurisdictions",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TaxJurisdictionResponse"
+                }
+              }
+            },
+            "description": "The jurisdictions, by code."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the tax jurisdictions.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      }
+    },
+    "/api/v1/tax/packs": {
+      "get": {
+        "description": "Requires `tax.read`.",
+        "operationId": "tax_list_tax_packs",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TaxPackResponse"
+                }
+              }
+            },
+            "description": "The packs, newest version first per code."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the imported tax data packs.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      },
+      "post": {
+        "description": "Platform staff with `tax.packs_manage`. Replaces the data of the jurisdictions the pack lists,\nfor every tenant. Only a higher version than the one imported is accepted; the same pack again\nchanges nothing.",
+        "operationId": "tax_import_tax_pack",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaxPackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_TaxPackResponse"
+                }
+              }
+            },
+            "description": "The pack in use for this code after the import."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not platform staff (`tenant_platform_only`) or missing `tax.packs_manage` (`permission_denied`)."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A version as high or higher is imported; code `tax.pack_outdated`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The pack is invalid; every problem in `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Import a tax data pack.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.packs_manage"
+        ]
+      }
+    },
+    "/api/v1/tax/profiles": {
+      "get": {
+        "description": "Requires `tax.read`. Only profiles set on a unit (not inherited ones).",
+        "operationId": "tax_list_tax_profiles",
+        "parameters": [
+          {
+            "description": "Maximum number of items to return, 1 to 200. Defaults to 50.",
+            "example": 50,
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Where to continue: the `next_cursor` of the previous page. Omit for the\nfirst page. Treat the value as opaque.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "`desc` (newest first, the default) or `asc` (oldest first). Keep the same\norder (and `sort`, where offered) while following `next_cursor`.",
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "description": "Sort direction of a list. Lists are ordered by creation time, unless the endpoint offers\na `sort` parameter to order by something else.",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TaxProfileResponse"
+                }
+              }
+            },
+            "description": "One page of profiles."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A paging parameter is invalid; every problem in `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the tax profiles in your scope.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      }
+    },
+    "/api/v1/tax/profiles/{org_id}": {
+      "get": {
+        "description": "Requires `tax.read` on the unit. A unit without its own profile gets the nearest one above it\n(`own: false`).",
+        "operationId": "tax_get_tax_profile",
+        "parameters": [
+          {
+            "description": "Id of the organization unit.",
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_TaxProfileResponse"
+                }
+              }
+            },
+            "description": "The profile that applies.",
+            "headers": {
+              "ETag": {
+                "description": "Version of the profile: send it back in `If-Match` when changing it.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No profile on the unit or above it, or the unit is outside your scope; code `tax.profile_not_found`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the tax profile that applies to a unit.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      },
+      "put": {
+        "description": "Requires `tax.profiles_manage` on the unit. The body replaces the unit's own profile (units\nbelow without their own profile inherit it).",
+        "operationId": "tax_set_tax_profile",
+        "parameters": [
+          {
+            "description": "Id of the organization unit.",
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The `ETag` you read. When given, the change is made only if nobody changed the profile since; otherwise `412`.",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaxProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_TaxProfileResponse"
+                }
+              }
+            },
+            "description": "The profile after the change.",
+            "headers": {
+              "ETag": {
+                "description": "Version of the profile.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.profiles_manage` (`permission_denied`), the unit is outside your scope (`org_out_of_scope`) or frozen (`org_frozen`)."
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`If-Match` does not match; code `precondition_failed`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A value is invalid; every problem in `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the tax profile of a unit.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.profiles_manage"
+        ]
+      }
+    },
+    "/api/v1/tax/quote": {
+      "post": {
+        "description": "Requires `tax.read` on the selling unit. Only computes. Taxes are rounded once per rate on the\nwhole document, then shared between the lines, so the lines always add up to the totals.",
+        "operationId": "tax_quote_taxes",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaxQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_TaxQuote"
+                }
+              }
+            },
+            "description": "The taxes per line and per rate."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read` (`permission_denied`) or the unit is outside your scope (`org_out_of_scope`)."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown jurisdiction (`tax.jurisdiction_unknown`) or category (`tax.category_unknown`), no rate on that day (`tax.rate_missing`), or a value is invalid (see `errors`)."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Compute the taxes of a document.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      }
+    },
+    "/api/v1/tax/rates": {
+      "get": {
+        "description": "Requires `tax.read`. With `on`, only the rates in force that day.",
+        "operationId": "tax_list_tax_rates",
+        "parameters": [
+          {
+            "description": "Only this jurisdiction, e.g. `VN`.",
+            "in": "query",
+            "name": "jurisdiction",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only this category (rates).",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only what is in force on this day (`YYYY-MM-DD`).",
+            "in": "query",
+            "name": "on",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TaxRateResponse"
+                }
+              }
+            },
+            "description": "The rates, by category, stage and start date."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A parameter is invalid; every problem in `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the tax rates with their dates.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      }
+    },
+    "/api/v1/tax/rules": {
+      "get": {
+        "description": "Requires `tax.read`. With `on`, only those in force that day.",
+        "operationId": "tax_list_tax_rules",
+        "parameters": [
+          {
+            "description": "Only this jurisdiction, e.g. `VN`.",
+            "in": "query",
+            "name": "jurisdiction",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only this category (rates).",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only what is in force on this day (`YYYY-MM-DD`).",
+            "in": "query",
+            "name": "on",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TaxRuleResponse"
+                }
+              }
+            },
+            "description": "The rules."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A parameter is invalid; every problem in `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the tax rules with their dates.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      }
+    },
+    "/api/v1/tax/withholding": {
+      "post": {
+        "description": "Requires `tax.read`. Only computes.",
+        "operationId": "tax_quote_withholding",
+        "parameters": [
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "A random UUID that makes this request safe to retry: a repeat with the same key within 24 hours returns the first result (with `Idempotent-Replayed: true`) instead of doing it twice.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "examples": [
+                "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11"
+              ],
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaxWithholdingInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_WithholdingQuote"
+                }
+              }
+            },
+            "description": "The taxes to withhold (empty when none applies)."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown jurisdiction (`tax.jurisdiction_unknown`) or a value is invalid (see `errors`)."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Compute the taxes a platform withholds from a payment.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
+        ]
+      }
+    },
+    "/api/v1/tax/withholding-rates": {
+      "get": {
+        "description": "Requires `tax.read`. With `on`, only those in force that day.",
+        "operationId": "tax_list_tax_withholding_rates",
+        "parameters": [
+          {
+            "description": "Only this jurisdiction, e.g. `VN`.",
+            "in": "query",
+            "name": "jurisdiction",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only this category (rates).",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only what is in force on this day (`YYYY-MM-DD`).",
+            "in": "query",
+            "name": "on",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language.",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "examples": [
+                "vi"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Data_Vec_TaxWithholdingRateResponse"
+                }
+              }
+            },
+            "description": "The withholding rates."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not signed in; see `GET /api/v1/auth/me` for the codes."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Missing `tax.read`; code `permission_denied`."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "A parameter is invalid; every problem in `errors`."
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Any error, as RFC 9457 Problem Details. The `code` field identifies the problem."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the withholding rates for platforms.",
+        "tags": [
+          "tax"
+        ],
+        "x-permissions": [
+          "tax.read"
         ]
       }
     },

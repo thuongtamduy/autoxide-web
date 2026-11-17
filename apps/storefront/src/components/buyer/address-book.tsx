@@ -2,12 +2,14 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import type { AddressOption } from "@/lib/address";
 import { text } from "@/sample";
 import type { SavedAddress } from "@/sample/account";
-import { PROVINCES, provinceByCode, wardByCode } from "@/sample/address";
+import { provinceByCode, wardByCode } from "@/sample/address";
 import { type FieldError, normalizePhone, PHONE } from "@/sample/checkout";
 import { Icon } from "../icon";
 import { ErrorText, errorFor } from "./form-errors";
+import { useCommunes } from "./use-communes";
 
 /**
  * Sổ địa chỉ: địa chỉ đã lưu (hai cấp tỉnh → phường, xã), đặt mặc định, xoá, thêm mới. Mẫu: chỉ đổi
@@ -16,7 +18,10 @@ import { ErrorText, errorFor } from "./form-errors";
 export function AddressBook({
   initial,
   locale,
+  provinces,
 }: {
+  /** Tỉnh, thành phố của danh mục hành chính (core); phường, xã tải khi chọn tỉnh. */
+  provinces: readonly AddressOption[];
   initial: readonly SavedAddress[];
   locale: string;
 }) {
@@ -32,7 +37,13 @@ export function AddressBook({
     street: "",
   });
   const [errors, setErrors] = useState<FieldError[]>([]);
-  const province = provinceByCode(draft.province);
+  const province = provinces.find((p) => p.code === draft.province);
+  const { communes, loading } = useCommunes(draft.province, locale);
+  // Tên của địa chỉ đã lưu: tên lưu kèm (địa chỉ vừa thêm), không thì tra danh sách mẫu.
+  const names = (a: SavedAddress) => [
+    a.ward_name ?? text(wardByCode(a.province, a.ward)?.name ?? { vi: "", en: "" }, locale),
+    a.province_name ?? text(provinceByCode(a.province)?.name ?? { vi: "", en: "" }, locale),
+  ];
 
   const save = (event: React.FormEvent) => {
     event.preventDefault();
@@ -56,6 +67,8 @@ export function AddressBook({
         street: draft.street.trim(),
         province: draft.province,
         ward: draft.ward,
+        province_name: province?.name ?? "",
+        ward_name: communes.find((w) => w.code === draft.ward)?.name ?? "",
         default: items.length === 0,
       },
     ]);
@@ -87,15 +100,7 @@ export function AddressBook({
             <span>
               {a.name} · <span className="num">{a.phone}</span>
             </span>
-            <span className="muted">
-              {[
-                a.street,
-                text(wardByCode(a.province, a.ward)?.name ?? { vi: "", en: "" }, locale),
-                text(provinceByCode(a.province)?.name ?? { vi: "", en: "" }, locale),
-              ]
-                .filter(Boolean)
-                .join(", ")}
-            </span>
+            <span className="muted">{[a.street, ...names(a)].filter(Boolean).join(", ")}</span>
             <span className="acx-ret-btns">
               {a.default ? null : (
                 <button
@@ -165,9 +170,9 @@ export function AddressBook({
               </label>
               <select className="sel" {...input("province")}>
                 <option value="">{t("provinceChoose")}</option>
-                {PROVINCES.map((p) => (
+                {provinces.map((p) => (
                   <option key={p.code} value={p.code}>
-                    {text(p.name, locale)}
+                    {p.name}
                   </option>
                 ))}
               </select>
@@ -177,11 +182,11 @@ export function AddressBook({
               <label className="lab" htmlFor="ad-ward">
                 {t("ward")}
               </label>
-              <select className="sel" disabled={!province} {...input("ward")}>
+              <select className="sel" disabled={!province || loading} {...input("ward")}>
                 <option value="">{t("wardChoose")}</option>
-                {province?.wards.map((w) => (
+                {communes.map((w) => (
                   <option key={w.code} value={w.code}>
-                    {text(w.name, locale)}
+                    {w.name}
                   </option>
                 ))}
               </select>

@@ -75,12 +75,22 @@ test("khách hàng: hồ sơ từ đơn thật, dữ liệu cá nhân che bớt,
   await dialog(page).getByRole("button", { name: "Add customer" }).click();
   await expect(toast(page)).toContainText("Profile created.");
 
-  // Tài khoản người mua: khoá rồi Hoàn tác.
-  await page.goto("/customers/accounts?chip=active");
-  await page.getByRole("button", { name: "Lock" }).first().click();
+  // Tài khoản người mua (API thật `/auth/customers`): tìm không dấu, khoá có xác nhận, mở lại.
+  await page.goto("/customers/accounts");
+  await page.getByRole("searchbox", { name: "Email or name" }).fill("duc");
+  await page.getByRole("button", { name: "Find" }).click();
+  const buyer = page.getByTestId("buyer-accounts").locator("tbody tr");
+  await expect(buyer).toHaveCount(1);
+  await expect(buyer).toContainText("Trần Minh Đức");
+  await buyer.getByRole("button", { name: "Lock" }).click();
+  await dialog(page).getByRole("button", { name: "Lock" }).click();
   await expect(toast(page)).toContainText("Locked; every session of this person was revoked.");
-  await toast(page).getByRole("button", { name: "Undo" }).click();
-  await expect(toast(page)).toContainText("Undone.");
+  await expect(buyer).toContainText("Locked");
+  await buyer.getByRole("button", { name: "Unlock" }).click();
+  await expect(toast(page)).toContainText("Unlocked");
+  await page.getByLabel("Let buyers register themselves").uncheck();
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(toast(page)).toContainText("Registration setting saved.");
 
   // Nhóm: xem trước số khớp không lưu gì.
   await page.goto("/customers/segments");
