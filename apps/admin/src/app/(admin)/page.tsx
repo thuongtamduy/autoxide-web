@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { PlanCard } from "@/components/plans/plan-card";
 import { SampleBadge } from "@/components/sample-badge";
 import { Icon } from "@/components/shell/icon";
 import { ToastProvider } from "@/components/ui/toast";
@@ -277,6 +278,8 @@ export default async function DashboardPage() {
                 )}
               </section>
             ) : null}
+
+            <PlanCard />
 
             <section className="card dash-card" aria-labelledby="dash-act-h">
               <div className="dash-head">

@@ -69,7 +69,7 @@ import {
   resetOrg,
   setRootName,
 } from "./mock-org.ts";
-import { plansRoutes, resetPlans } from "./mock-plans.ts";
+import { plansRoutes, resetPlans, setBasicFeatures } from "./mock-plans.ts";
 import {
   finishLoginCeremony,
   fireEvent,
@@ -104,6 +104,7 @@ const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 
 /** Như giá trị mặc định của core (`GET /api/v1/kernel/client-config`; đã đối chiếu với core thật). */
 const CLIENT_CONFIG: Schemas["ClientConfigResponse"] = {
+  auth: { login_link: true, passkeys: false, self_registration: false },
   kernel: { version: "0.15.0", public_url: null },
   mail: { from: "Autoxide <noreply@localhost>", sends: false },
   media: {
@@ -394,6 +395,7 @@ const server = createServer(async (request, response) => {
   if (route === "POST /__tenancy") return setTenancy(request, response);
   if (route === "POST /__org/root-name") return setRootName(request, response);
   if (route === "GET /__team/tokens") return teamTokens(response);
+  if (route === "POST /__plans/basic-features") return setBasicFeatures(request, response);
   if (route === "POST /__own-tenant") return setOwnTenant(request, response);
   if (route === "POST /__domains/dns") return setDnsRecord(request, response);
   if (route === "POST /__webhooks/fire") {

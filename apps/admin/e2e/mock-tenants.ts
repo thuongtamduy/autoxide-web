@@ -15,9 +15,11 @@
 //   `mail.connection.smtp.url` (bí mật, nhóm `connection`, tên cũ `mail.smtp_url` vẫn nhận — D-297) để thử cách hiện secret, và cấu hình nghiệp vụ của D-296 (kiểm giá trị
 //   như core: 422 `validation_failed`, lỗi ở ô `value`). Mỗi khách một bộ giá trị; nhân sự nền tảng
 //   đặt cho khách bất kỳ ở `…/tenants/{id}/settings…` (khách `moving` → 409 `tenant_moving`);
-// - sổ khách lọc `read_only`, `placement_kind`, `schema_state`; `subscription_status`, `near_limit=true`
-//   luôn trả trang rỗng, `expand=placement,subscription,usage` thêm `expanded` (thuê bao, hạn mức
-//   `null`) — như core trước bước 35; giá trị lạ → 422 theo ô;
+// - sổ khách lọc `read_only`, `placement_kind`, `schema_state`, `subscription_status`, `near_limit=true`
+//   (hai bộ lọc sau theo `mock-plans.ts`), `expand=placement,subscription,usage` thêm `expanded`
+//   (thuê bao, hạn mức luôn `null` — như core hiện nay); giá trị lạ → 422 theo ô;
+// - xuất dữ liệu một khách (`…/tenants/{id}/exports`): lượt mới `pending`, thành `ready` ở lần đọc
+//   kế tiếp; tải nội dung khi chưa `ready` → 409 `kernel.export_not_ready`;
 // - `read_only` (D-296) độc lập với `status`, khách nền tảng không chỉ đọc được (422 ô `read_only`);
 // - `POST /__own-tenant {"read_only": true}`: người đăng nhập thuộc một khách thường đang chỉ đọc
 //   (`GET /kernel/tenant`); mock-core từ chối mọi lệnh ghi của họ bằng 403 `tenant_read_only`.
@@ -26,6 +28,7 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { type Account, empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
+import { isNearLimit, subscriptionStatusOf } from "./mock-plans.ts";
 
 type Tenant = Schemas["Tenant"];
 type SettingState = Schemas["TenantSettingState"];
@@ -182,6 +185,8 @@ let tenants: Tenant[] = [];
 /** Giá trị cấu hình theo khách: id khách → tên → giá trị. */
 let values = new Map<string, Map<string, { value: string; updated_at: string }>>();
 let moves: Schemas["TenantMove"][] = [];
+/** Lượt xuất dữ liệu theo khách; lượt `pending` thành `ready` ở lần đọc kế tiếp. */
+let exports = new Map<string, Schemas["TenantExport"][]>();
 /** Khách của người đăng nhập (mặc định khách nền tảng). */
 let own = PLATFORM_TENANT;
 
@@ -189,6 +194,7 @@ export function resetTenants() {
   mode = "single";
   values = new Map();
   moves = [];
+  exports = new Map();
   own = PLATFORM_TENANT;
   tenants = [
     {
@@ -494,16 +500,16 @@ export async function tenantRoutes(
       const readOnly = url.searchParams.get("read_only");
       const kind = url.searchParams.get("placement_kind");
       const schema = url.searchParams.get("schema_state");
-      // Thuê bao và hạn mức là của bước 35: chưa có thì không khách nào khớp.
-      const nothing =
-        url.searchParams.has("subscription_status") ||
-        url.searchParams.get("near_limit") === "true";
+      // Thuê bao và hạn mức: theo module `plans` giả (`mock-plans.ts`).
+      const subStatus = url.searchParams.get("subscription_status");
+      const near = url.searchParams.get("near_limit") === "true";
       const placementOf = (x: Tenant) => PLACEMENTS.find((p) => p.name === x.placement);
       const list = [...tenants]
         .reverse()
         .filter(
           (x) =>
-            !nothing &&
+            (!subStatus || subscriptionStatusOf(x.id) === subStatus) &&
+            (!near || isNearLimit(x.id)) &&
             (!status || x.status === status) &&
             (!parent || x.parent_id === parent) &&
             (readOnly === null || String(x.read_only === true) === readOnly) &&
@@ -586,6 +592,10 @@ export async function tenantRoutes(
       send(response, 201, { data: created } satisfies Schemas["Data_Tenant"]);
       return true;
     }
+    const exportMatch = path.match(
+      /^\/api\/v1\/kernel\/tenants\/([^/]+)\/exports(?:\/([^/]+)(\/content)?)?$/,
+    );
+    if (exportMatch) return exportRoute(response, method, account, exportMatch);
     const moveMatch = path.match(/^\/api\/v1\/kernel\/tenants\/([^/]+)\/(move|moves\/([^/]+))$/);
     if (moveMatch) {
       const owner = tenants.find((x) => x.id === moveMatch[1] || x.slug === moveMatch[1]);
@@ -821,4 +831,78 @@ async function settingRoute(
     return true;
   }
   return false;
+}
+
+/** `/kernel/tenants/{id}/exports[/{export_id}[/content]]`. */
+function exportRoute(
+  response: ServerResponse,
+  method: string,
+  account: Account,
+  match: RegExpMatchArray,
+): true {
+  const owner = tenants.find((x) => x.id === match[1]);
+  if (!owner) {
+    problem(response, 404, "tenant_not_found", "No tenant has this id.");
+    return true;
+  }
+  const list = exports.get(owner.id) ?? [];
+  const exportId = match[2];
+  if (!exportId && method === "POST") {
+    const running = list.find((x) => x.status === "pending" || x.status === "running");
+    const now = new Date().toISOString();
+    const created: Schemas["TenantExport"] = running ?? {
+      id: randomUUID(),
+      tenant_id: owner.id,
+      status: "pending",
+      reason: "manual",
+      requested_by: account.id,
+      tables: [],
+      size: null,
+      error: null,
+      expires_at: null,
+      created_at: now,
+      updated_at: now,
+    };
+    if (!running) exports.set(owner.id, [created, ...list]);
+    response.setHeader("Location", `/api/v1/kernel/tenants/${owner.id}/exports/${created.id}`);
+    send(response, 201, { data: created });
+    return true;
+  }
+  // Lượt đang chờ xong ở lần đọc kế tiếp (thay cho job chạy nền).
+  for (const job of list) {
+    if (job.status === "pending") {
+      job.status = "ready";
+      job.tables = [
+        { table: "auth_users", rows: 3 },
+        { table: "content_entries", rows: 12 },
+      ];
+      job.size = 18_432;
+      job.expires_at = new Date(Date.now() + 7 * 86_400_000).toISOString();
+      job.updated_at = new Date().toISOString();
+    }
+  }
+  if (!exportId && method === "GET") {
+    send(response, 200, { data: list } satisfies Schemas["Data_Vec_TenantExport"]);
+    return true;
+  }
+  const job = list.find((x) => x.id === exportId);
+  if (!job) {
+    problem(response, 404, "kernel.export_not_found", "No such export.");
+    return true;
+  }
+  if (!match[3] && method === "GET") {
+    send(response, 200, { data: job } satisfies Schemas["Data_TenantExport"]);
+    return true;
+  }
+  if (job.status !== "ready") {
+    problem(response, 409, "kernel.export_not_ready", "The export is not ready.");
+    return true;
+  }
+  const lines = [
+    { export: { tenant_id: owner.id, created_at: job.created_at } },
+    { table: "auth_users", row: { id: account.id, email: account.email } },
+  ];
+  response.writeHead(200, { "Content-Type": "application/x-ndjson" });
+  response.end(`${lines.map((line) => JSON.stringify(line)).join("\n")}\n`);
+  return true;
 }

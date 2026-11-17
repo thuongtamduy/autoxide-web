@@ -31,6 +31,8 @@ let inviteTokens = new Map<string, string>();
 let linkTokens = new Map<string, string>();
 let delegations: Schemas["DelegationResponse"][] = [];
 let grants: Schemas["SupportGrantResponse"][] = [];
+/** Lần cấp của nhân sự nền tảng vào các khách khác (`/auth/support-grants`). */
+let platformGrants: Schemas["SupportGrantResponse"][] = [];
 let profiles = new Map<string, { locale: string | null; time_zone: string | null }>();
 
 const DAY = 86_400_000;
@@ -41,6 +43,7 @@ export function resetTeam() {
   inviteTokens = new Map();
   linkTokens = new Map();
   profiles = new Map();
+  platformGrants = [];
   const now = Date.now();
   delegations = [
     {
@@ -365,6 +368,10 @@ export async function teamRoutes(
     send(response, 200, { data: found });
     return true;
   }
+  // ------------------------------------------------------------ Cấp quyền vào khách (nền tảng)
+  if (path === "/api/v1/auth/support-grants" || path.startsWith("/api/v1/auth/support-grants/")) {
+    return platformGrantRoutes(request, response, url, account, deps);
+  }
   // ------------------------------------------------------------ Quyền vào hỗ trợ
   if (route === "GET /api/v1/auth/support-access") {
     send(response, 200, { data: grants });
@@ -474,4 +481,109 @@ function knownZone(zone: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** Trần thời hạn như mặc định của core (`AUTOXIDE_AUTH_SUPPORT_ACCESS_MAX_HOURS`). */
+const MAX_SUPPORT_HOURS = 8;
+
+/**
+ * `/auth/support-grants` của nhân sự nền tảng (D-313 của core): chỉ người có mọi permission (admin của
+ * khách nền tảng) dùng được; lý do 10–500 ký tự, thời hạn 1–8 giờ, `legal_request` cần số văn bản.
+ */
+async function platformGrantRoutes(
+  request: IncomingMessage,
+  response: ServerResponse,
+  url: URL,
+  account: Account,
+  deps: TeamDeps,
+): Promise<boolean> {
+  const method = request.method ?? "GET";
+  if (!account.canReadModules) {
+    problem(response, 403, "permission_denied", "Missing permission `auth.support.grant`.");
+    return true;
+  }
+  const one = /^\/api\/v1\/auth\/support-grants\/([^/]+)$/.exec(url.pathname);
+  const tenant = url.searchParams.get("tenant_id");
+  if (!one && method === "GET") {
+    if (!tenant) {
+      problem(response, 422, "validation_failed", "The request has invalid fields.", [
+        { field: "tenant_id", code: "required", detail: "is required" },
+      ]);
+      return true;
+    }
+    send(response, 200, {
+      data: platformGrants
+        .filter((g) => g.tenant_id === tenant)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    });
+    return true;
+  }
+  if (!one && method === "POST") {
+    const body = (await json(request)) as Schemas["SupportGrantRequest"];
+    const errors: Schemas["ProblemField"][] = [];
+    const reason = (body.reason ?? "").trim();
+    if (reason.length < 10 || reason.length > 500) {
+      errors.push({ field: "reason", code: "length", detail: "must be 10 to 500 characters long" });
+    }
+    if (!["support", "legal_request"].includes(body.basis)) {
+      errors.push({ field: "basis", code: "invalid", detail: "must be support or legal_request" });
+    }
+    if (body.basis === "legal_request" && !(body.legal_reference ?? "").trim()) {
+      errors.push({ field: "legal_reference", code: "required", detail: "is required" });
+    }
+    const staff = deps.accounts().find((a) => a.id === body.staff_user_id && !a.deleted);
+    if (!staff) {
+      errors.push({ field: "staff_user_id", code: "not_found", detail: "no such staff account" });
+    }
+    if (errors.length > 0) {
+      problem(response, 422, "validation_failed", "The request has invalid fields.", errors);
+      return true;
+    }
+    if (body.hours < 1 || body.hours > MAX_SUPPORT_HOURS) {
+      problem(
+        response,
+        422,
+        "auth.support_duration_exceeded",
+        `Support access lasts at most ${MAX_SUPPORT_HOURS} hours.`,
+      );
+      return true;
+    }
+    const now = new Date();
+    const created: Schemas["SupportGrantResponse"] = {
+      id: randomUUID(),
+      tenant_id: body.tenant_id,
+      staff_user_id: body.staff_user_id,
+      staff_name: staff?.name || staff?.email || null,
+      role_id: body.role_id,
+      basis: body.basis,
+      reason,
+      legal_reference: body.basis === "legal_request" ? (body.legal_reference ?? null) : null,
+      starts_at: now.toISOString(),
+      expires_at: new Date(now.getTime() + body.hours * 3_600_000).toISOString(),
+      first_used_at: null,
+      granted_by: account.id,
+      revoked_at: null,
+      revoked_by_tenant: false,
+      created_at: now.toISOString(),
+    };
+    platformGrants.push(created);
+    send(response, 201, { data: created });
+    return true;
+  }
+  if (one && method === "DELETE") {
+    const found = platformGrants.find((g) => g.id === one[1] && g.tenant_id === tenant);
+    if (!found) {
+      problem(
+        response,
+        404,
+        "auth.support_grant_not_found",
+        "No grant with this id for this tenant.",
+      );
+      return true;
+    }
+    found.revoked_at = new Date().toISOString();
+    send(response, 200, { data: found });
+    return true;
+  }
+  return false;
 }

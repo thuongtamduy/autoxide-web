@@ -70,6 +70,8 @@ export function resetPlans() {
       code: "co-ban",
       name: "Cơ bản",
       is_default: true,
+      // Mặc định có đủ tính năng để các màn khác thử được; `POST /__plans/basic-features` đổi.
+      features: ["auth.api_keys", "content.ai_suggestions"],
       prices: [price(BASIC_MONTH, 290_000, "month")],
     }),
     plan({
@@ -131,6 +133,28 @@ function period(id: string, status: string, start: string, end: string) {
     reference: `plans:${id}:${start}:renewal`,
     created_at: AT,
   };
+}
+
+/** `POST /__plans/basic-features {features}`: đổi tính năng của gói "Cơ bản" (khách đang dùng). */
+export async function setBasicFeatures(request: IncomingMessage, response: ServerResponse) {
+  const body = (await json(request)) as { features?: string[] };
+  const basic = plans.find((p) => p.id === BASIC);
+  if (basic) basic.features = body.features ?? [];
+  empty(response, 204);
+}
+
+/** Trạng thái thuê bao của khách (bộ lọc `subscription_status` của sổ khách); `null`: chưa có. */
+export function subscriptionStatusOf(tenant: string): string | null {
+  if (tenant === OWN_TENANT) return null;
+  return subscriptions.find((s) => s.tenant_id === tenant)?.status ?? null;
+}
+
+/** Khách dùng từ 80 % một hạn mức trở lên (bộ lọc `near_limit`), như core. */
+export function isNearLimit(tenant: string): boolean {
+  if (subscriptionStatusOf(tenant) === null) return false;
+  return usage(tenant).some(
+    (u) => u.max !== null && u.max !== undefined && (u.over_limit || u.used >= u.max * 0.8),
+  );
 }
 
 /** Mức dùng hạn mức của khách: tính từ gói đang dùng và ghi đè. */

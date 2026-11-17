@@ -19,6 +19,8 @@ import type { SearchParams } from "@/lib/engage";
 import { formatMoney } from "@/lib/format";
 import { initialsOf } from "@/lib/initials";
 import { PROVISION, TENANTS_MANAGE, TENANTS_READ } from "@/lib/permissions";
+import { type LimitUse, tightest } from "@/lib/plans";
+import { loadTenantPlans, loadUsageOf, subscriberCounts } from "@/lib/plans-server";
 import {
   daysUntil,
   matchesQuery,
@@ -27,6 +29,7 @@ import {
   type PlatformTenant,
   parseTenantQuery,
   SCHEMA_STATES,
+  SUBSCRIPTION_STATES,
   sameQuery,
   TENANT_VIEWS,
   type TenantQuery,
@@ -35,6 +38,7 @@ import {
 } from "@/lib/platform";
 import {
   filteredTenants,
+  nearLimitIds,
   type PlatformData,
   platformData,
   platformGate,
@@ -42,16 +46,14 @@ import {
 } from "@/lib/platform-server";
 import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
-import { getUsage, listPlans, listSubscriptions, nearestLimit } from "@/sample/platform-plans";
-
-const ENDPOINTS =
-  "GET /api/v1/plans/subscriptions, GET /api/v1/plans/tenants/{id}/usage, GET /api/v1/plans/plans (bước 35)";
+import type { SubscriptionStatus } from "@/sample/platform-data";
 
 // Màn "Khách hàng" của mặt điều khiển: sổ khách và placement THẬT của core (bước 33) — tên, trạng
 // thái, cây khách, nơi lưu, migration, cờ chỉ đọc; lọc theo chỉ đọc / loại placement / trạng thái
-// migration do core lọc (D-296, tham số trên địa chỉ trang); tạo khách mới bằng `POST /kernel/tenants`. Gói, thuê bao, hạn
-// mức (bước 35) và khách chỉ có trong luồng cấp phát mẫu là dữ liệu mẫu (W-014), chỉ khi bật dữ liệu
-// mẫu. Không có dữ liệu nghiệp vụ của khách ở đây.
+// migration / thuê bao / gần chạm hạn mức do core lọc (D-296, bước 35; tham số trên địa chỉ trang);
+// tạo khách mới bằng `POST /kernel/tenants`. Gói và thuê bao của module `plans` (đợt 3b): đọc mọi
+// thuê bao một lần, mức dùng hạn mức chỉ cho các khách core báo là gần chạm. Khách chỉ có trong luồng
+// cấp phát mẫu là dữ liệu mẫu (W-014). Không có dữ liệu nghiệp vụ của khách ở đây.
 export default async function TenantsPage(props: { searchParams: Promise<SearchParams> }) {
   const gate = await platformGate(TENANTS_READ);
   if (gate) return gate;
@@ -69,12 +71,10 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
     throw error;
   }
   const { tenants, placements } = data;
-  const [{ data: subs }, { data: plans }, listed] = await Promise.all([
-    sample ? listSubscriptions() : { data: [] },
-    sample ? listPlans() : { data: [] },
-    filteredTenants(query, data),
-  ]);
-  const usage = sample ? await Promise.all(tenants.map((x) => getUsage(x.id))) : [];
+  const [billing, listed] = await Promise.all([loadTenantPlans(), filteredTenants(query, data)]);
+  const subs = billing?.subscriptions ?? [];
+  const plans = billing?.plans ?? [];
+  const usage = billing ? await loadUsageOf(await nearLimitIds()) : new Map<string, LimitUse[]>();
   const rowOf = (tenant: PlatformTenant): TenantRow => {
     const subscription = subs.find((s) => s.tenant_id === tenant.id) ?? null;
     return {
@@ -83,11 +83,12 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
       placement: tenant.placement ?? placements.find((p) => p.id === tenant.placement_id) ?? null,
       subscription,
       plan: plans.find((p) => p.id === subscription?.plan_id) ?? null,
-      nearest: nearestLimit(usage[tenants.indexOf(tenant)]?.data ?? []),
+      nearest: tightest(usage.get(tenant.id) ?? []),
       children: tenants.filter((x) => x.parent_id === tenant.id).length,
     };
   };
   const rows = tenants.map(rowOf);
+  const counts = subscriberCounts(subs);
   const shown = orderTree(
     listed
       .map((tenant) => rows.find((row) => row.tenant.id === tenant.id) ?? rowOf(tenant))
@@ -111,18 +112,18 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         models: new Set(customers.map((r) => r.tenant.business_model)).size,
       }),
     },
-    ...(sample
+    ...(billing
       ? [
           {
             key: "trial",
             value: customers.filter((row) => row.subscription?.status === "trialing").length,
             sub: t("tenants.kpi.trialSub", {
-              count: customers.filter(
-                (row) =>
-                  row.subscription?.status === "trialing" &&
-                  row.subscription.trial_ends_at !== null &&
-                  daysUntil(row.subscription.trial_ends_at, now) <= 7,
-              ).length,
+              count: customers.filter((row) => {
+                const ends = row.subscription?.trial_ends_at;
+                return (
+                  row.subscription?.status === "trialing" && !!ends && daysUntil(ends, now) <= 7
+                );
+              }).length,
             }),
           },
           {
@@ -161,8 +162,6 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         crumb={t("tenants.crumb")}
         title={t("tenants.title")}
         description={t("tenants.description")}
-        step={sample ? "35" : undefined}
-        endpoint={sample ? ENDPOINTS : undefined}
         actions={
           <>
             {manage ? (
@@ -203,7 +202,10 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         </TipHeading>
         <Chips
           label={t("tenants.filterLabel")}
-          chips={TENANT_VIEWS.map((view) => ({
+          chips={TENANT_VIEWS.filter(
+            (view) =>
+              billing || !("subscription_status" in view.query || "near_limit" in view.query),
+          ).map((view) => ({
             href: tenantQueryHref(view.query),
             label: t(`tenants.filter.${view.key}`),
             on: sameQuery(view.query, query),
@@ -211,7 +213,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
             count: rows.filter((row) => matchesQuery(row, view.query)).length,
           }))}
         />
-        <TenantFilterForm query={query} />
+        <TenantFilterForm query={query} plans={billing !== null} />
         <div className="card tcard">
           <Table cards className="pf-table">
             <thead>
@@ -219,8 +221,8 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                 <Th>{t("tenants.col.tenant")}</Th>
                 <Th>{t("tenants.col.plan")}</Th>
                 <Th>{t("tenants.col.place")}</Th>
-                {sample ? <Th>{t("tenants.col.subscription")}</Th> : null}
-                {sample ? <Th>{t("tenants.col.limit")}</Th> : null}
+                {billing ? <Th>{t("tenants.col.subscription")}</Th> : null}
+                {billing ? <Th>{t("tenants.col.limit")}</Th> : null}
               </tr>
             </thead>
             <tbody>
@@ -263,7 +265,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                         <span>
                           {tenant.is_platform
                             ? t("tenants.platformTenant")
-                            : sample
+                            : billing
                               ? (plan?.name ?? t("tenants.noPlan"))
                               : "—"}
                         </span>
@@ -304,13 +306,19 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                         <span className="muted">{t("tenants.preparing")}</span>
                       )}
                     </Td>
-                    {sample ? (
+                    {billing ? (
                       <Td label={t("tenants.col.subscription")}>
                         {subscription ? (
                           <span className="cell2">
                             <StatusBadge
-                              className={SUB_BADGE[subscription.status]}
-                              label={t(`subStatus.${subscription.status}`)}
+                              className={
+                                SUB_BADGE[subscription.status as SubscriptionStatus] ?? "badge"
+                              }
+                              label={
+                                t.has(`subStatus.${subscription.status}`)
+                                  ? t(`subStatus.${subscription.status}`)
+                                  : subscription.status
+                              }
                             />
                             {note ? <span className="sub">{note}</span> : null}
                           </span>
@@ -319,7 +327,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                         )}
                       </Td>
                     ) : null}
-                    {sample ? (
+                    {billing ? (
                       <Td label={t("tenants.col.limit")}>
                         {row.nearest ? (
                           <UsageMeter usage={row.nearest} compact />
@@ -337,7 +345,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
         </div>
       </section>
 
-      {sample ? (
+      {billing ? (
         <section className="block" aria-labelledby="pf-plans-h">
           <div className="block-head">
             <TipHeading id="pf-plans-h" tip="plans">
@@ -352,26 +360,28 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
             {plans
               .filter((p) => p.kind === "base" && p.status === "active")
               .map((plan) => {
-                const cheapest = [...plan.prices]
-                  .filter((p) => p.active)
-                  .sort((a, b) => a.amount_minor - b.amount_minor)[0];
+                const cheapest = plan.prices
+                  .filter((p) => p.active && p.kind === "recurring")
+                  .sort((a, b) => Number(a.amount.amount) - Number(b.amount.amount))[0];
                 return (
                   <li key={plan.id} className="card pf-plan">
                     <span className="pf-plan-head">
                       <b>{plan.name}</b>
                       <span className="cnt">
-                        {t("tenants.subscribers", { count: plan.subscriber_count })}
+                        {t("tenants.subscribers", { count: counts.get(plan.id) ?? 0 })}
                       </span>
                     </span>
                     <span className="pf-plan-price">
                       {cheapest
                         ? t("price", {
                             amount: formatMoney(
-                              cheapest.amount_minor,
-                              cheapest.amount_currency,
+                              cheapest.amount.amount,
+                              cheapest.amount.currency,
                               locale,
                             ),
-                            interval: t(`interval.${cheapest.interval}`),
+                            interval: t(
+                              `interval.${cheapest.interval === "year" ? "year" : "month"}`,
+                            ),
                           })
                         : "—"}
                     </span>
@@ -390,10 +400,11 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
 }
 
 /**
- * Lọc kết hợp (chip chỉ chọn một): ba ô chọn là tham số của `GET /kernel/tenants`. Form GET: kết quả
+ * Lọc kết hợp (chip chỉ chọn một): các ô chọn là tham số của `GET /kernel/tenants` (thuê bao và
+ * gần chạm hạn mức chỉ khi có module `plans`). Form GET: kết quả
  * nằm trên địa chỉ, chạy cả khi chưa có JS; "cần để ý" đang bật thì giữ lại.
  */
-async function TenantFilterForm({ query }: { query: TenantQuery }) {
+async function TenantFilterForm({ query, plans }: { query: TenantQuery; plans: boolean }) {
   const t = await getTranslations("platform");
   return (
     <Form
@@ -437,6 +448,29 @@ async function TenantFilterForm({ query }: { query: TenantQuery }) {
           ))}
         </select>
       </label>
+      {plans ? (
+        <label>
+          <span className="vh">{t("tenants.filterSub")}</span>
+          <select
+            className="inp"
+            name="subscription_status"
+            defaultValue={query.subscription_status ?? ""}
+          >
+            <option value="">{t("tenants.anySub")}</option>
+            {SUBSCRIPTION_STATES.map((state) => (
+              <option key={state} value={state}>
+                {t(`subStatus.${state}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {plans ? (
+        <label className="check">
+          <input type="checkbox" name="near_limit" value="true" defaultChecked={query.near_limit} />
+          <span>{t("tenants.onlyNear")}</span>
+        </label>
+      ) : null}
       <button type="submit" className="btn">
         {t("tenants.apply")}
       </button>

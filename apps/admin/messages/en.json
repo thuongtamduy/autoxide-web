@@ -305,7 +305,15 @@
       "title": "Recent activity",
       "all": "See all"
     },
-    "areas": "Areas"
+    "areas": "Areas",
+    "plan": {
+      "title": "Your plan",
+      "open": "See plan",
+      "unknownPlan": "A plan no longer on sale",
+      "readOnly": "Your subscription is suspended or canceled: data can be read but not changed.",
+      "over": "Above the limit: {list}. Nothing is removed, but nothing new can be added.",
+      "closest": "The limit closest to full."
+    }
   },
   "account": {
     "title": "My account",
@@ -1958,7 +1966,8 @@
       "apply": "Apply to draft",
       "dismiss": "Dismiss",
       "shareImage": "Share image",
-      "shareImageHint": "Shown when the link is shared on social networks; empty: the featured image."
+      "shareImageHint": "Shown when the link is shared on social networks; empty: the featured image.",
+      "aiPlan": "Your plan does not include AI suggestions (content.ai_suggestions). See Settings › Plan."
     },
     "languages": {
       "outdated": "Translation is out of date: the original changed",
@@ -1972,7 +1981,8 @@
       "queued": "Translation started; it appears as a draft when done",
       "retranslate": "Translate again with AI",
       "translate": "Translate with AI",
-      "note": "Each translation is its own entry: own address, status, schedule and history. A missing translation is never replaced by another language."
+      "note": "Each translation is its own entry: own address, status, schedule and history. A missing translation is never replaced by another language.",
+      "aiPlan": "Translating with AI is not in your plan. See Settings › Plan."
     },
     "history": {
       "none": "No revisions yet.",
@@ -4732,7 +4742,9 @@
         "shared": "Shared database",
         "migration": "Waiting for migration",
         "readOnly": "Read-only",
-        "attention": "Needs attention"
+        "attention": "Needs attention",
+        "pastDue": "Past due",
+        "nearLimit": "Near a limit"
       },
       "col": {
         "tenant": "Customer",
@@ -4769,7 +4781,10 @@
       "filterSchema": "Migration state",
       "anySchema": "Any migration state",
       "apply": "Apply",
-      "clear": "Clear filters"
+      "clear": "Clear filters",
+      "filterSub": "Subscription",
+      "anySub": "Any subscription",
+      "onlyNear": "Only near a limit (80 % or more)"
     },
     "tenant": {
       "back": "Customers",
@@ -4906,11 +4921,11 @@
       "supportOff": "The customer turned support access off: only a written request from an authority can be granted.",
       "tenantView": "What the customer sees",
       "export": "Export data",
-      "exportAbout": "A job copies every row and file of this customer into one archive, for the customer or for a move to another provider.",
+      "exportAbout": "A background job writes every record of this customer into one JSON Lines file, for the customer or for a move to another provider. Password hashes, secrets and uploaded file contents are left out.",
       "exportKeep": "kept until",
       "exportButton": "Export data",
       "exportTitle": "Export all data of {tenant}?",
-      "exportAll": "Every table and file of the customer goes into one archive.",
+      "exportAll": "Every record of the customer goes into one file; uploaded file contents are not included.",
       "exportPersonal": "The archive holds personal data of the customer’s buyers and staff: hand it over only through the customer’s owner.",
       "exportKeepDays": "The archive is deleted after 7 days.",
       "exportAudit": "The export and its reason are written to the customer’s audit log.",
@@ -4943,7 +4958,13 @@
       "reactivateBack": "Every request to this customer works again (other servers see it within a few seconds).",
       "files": "File storage",
       "settings": "Settings of this customer",
-      "settingsAbout": "Business settings the installed modules take per customer (languages, comment moderation, form retention…). A setting left unset uses the server-wide configuration; the customer’s servers use a new value within AUTOXIDE_TENANCY_CACHE_SECONDS. The customer’s own admins can change them too."
+      "settingsAbout": "Business settings the installed modules take per customer (languages, comment moderation, form retention…). A setting left unset uses the server-wide configuration; the customer’s servers use a new value within AUTOXIDE_TENANCY_CACHE_SECONDS. The customer’s own admins can change them too.",
+      "endsOn": "Ends on",
+      "renewsOn": "Renews on",
+      "scheduled": "Moves at period end to",
+      "exportAuto": "made when the subscription was canceled",
+      "exportDownload": "Download",
+      "exportBusy": "An export is running; refresh the page in a moment."
     },
     "provision": {
       "button": "Provision a customer",
@@ -5322,7 +5343,20 @@
       "revokeNow": "The staff member loses access at once, even in the middle of a session.",
       "revokeAudit": "The event auth.support_access_revoked is written to the customer’s audit log.",
       "revoked": "Access revoked; the customer sees it in their audit log.",
-      "none": "No grant with this status."
+      "none": "No grant with this status.",
+      "grantTitleFor": "Grant access to {tenant}",
+      "firstUsed": "First used",
+      "notUsed": "Not used yet",
+      "revokedByTenant": "Revoked by the customer",
+      "thisTenant": "this customer",
+      "required": {
+        "tenant": "Choose a customer.",
+        "staff": "Choose a staff member.",
+        "role": "Choose a role.",
+        "reason": "Write the reason.",
+        "legal": "Enter the number of the authority’s document."
+      },
+      "noCustomers": "There is no customer yet besides the platform."
     },
     "platformOnly": "Only staff of the platform tenant (the operator's own) can use the control plane. You are signed in to a customer's account.",
     "newTenant": {
@@ -5372,6 +5406,13 @@
       "offWrites": "Its staff can change data again from the next request.",
       "offJobs": "Nothing was lost while it was read-only; refused changes have to be made again.",
       "offDone": "{tenant} is writable again."
+    },
+    "exportState": {
+      "pending": "Waiting",
+      "running": "Running",
+      "ready": "Ready",
+      "failed": "Failed",
+      "expired": "Deleted"
     }
   },
   "catalog": {
@@ -12317,5 +12358,9 @@
         "body": "Choose filters, then press “Save as view” to reopen them in one click next time."
       }
     }
+  },
+  "planLock": {
+    "badge": "Higher plan",
+    "hint": "Your plan does not include this. Open Settings › Plan to change plan."
   }
 }

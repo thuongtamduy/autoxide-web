@@ -1944,3 +1944,31 @@ core từ chối như mô tả; trang gói phía khách khi chưa có thuê bao.
 
 Đã cân nhắc: sửa hạn mức bằng bảng nhiều ô — phải biết trước mọi khoá của mọi module; ô chữ cùng gợi ý khoá từ
 `GET /kernel/modules` đủ cho nhân sự vận hành.
+
+## W-048 · Nối bước 35 của core, đợt 3b: sổ khách theo thuê bao, chi tiết khách, vào dữ liệu khách, thẻ gói, khoá theo gói — 2026-11-17 — agent quyết
+
+Quyết định:
+
+- **Sổ khách** (`/platform`): cột gói, thuê bao, hạn mức gần chạm nhất lấy từ core (`GET /plans/subscriptions` một
+  lần; `GET /plans/tenants/{id}/usage` chỉ cho các khách core báo là gần chạm, `GET /kernel/tenants?near_limit=true`).
+  Bộ lọc `subscription_status`, `near_limit` gửi core như các bộ lọc khác; thêm chip "Quá hạn", "Gần chạm hạn mức".
+  "Cần để ý" dùng cùng ngưỡng 80 % với core. Phần gói chỉ hiện khi người xem đọc được thuê bao và bản cài có module
+  `plans`. `expand=subscription,usage` của core vẫn luôn `null` (đã báo core), nên chưa dùng.
+- **Chi tiết một khách**: khối thuê bao (gán gói, huỷ, khoá như màn Thuê bao) và hạn mức; xuất toàn bộ dữ liệu
+  (`/kernel/tenants/{id}/exports`), tải tệp qua route của giao diện (`/platform/tenants/{id}/exports/{export_id}`) để
+  token không xuống trình duyệt; các lần cấp quyền vào khách này, cấp mới và thu hồi.
+- **Vào dữ liệu khách** (`/platform/support`): thật. Core chỉ liệt kê theo từng khách (`tenant_id` bắt buộc), nên
+  trang đọc từng khách thường rồi gộp (đã báo core). Thời hạn chọn 1, 4, 8 giờ (8 là mặc định của
+  `AUTOXIDE_AUTH_SUPPORT_ACCESS_MAX_HOURS`; trần thấp hơn thì core từ chối và câu báo hiện ở ô thời hạn). Nhân sự chọn
+  từ `GET /auth/users` của khách nền tảng, role từ `GET /auth/roles`.
+- **Tổng quan**: thẻ "Gói của bạn" (tên gói, trạng thái, hạn mức gần chạm, hạn mức đang vượt) từ
+  `GET /plans/entitlements` — không hiện khi khách không bị gói giới hạn (`unrestricted`) hay thiếu `plans.billing.read`.
+- **Khoá theo gói**: gói chưa có `auth.api_keys` thì nút tạo API key bị khoá kèm nhãn "Cần gói cao hơn" (mở tab Gói);
+  chưa có `content.ai_suggestions` thì gợi ý SEO và dịch bằng AI của bài viết bị khoá kèm lý do. Không đoán thêm:
+  chỉ khoá tính năng core khai ở `features` của `GET /kernel/modules`; core vẫn từ chối `feature_not_enabled`.
+
+Lý do: core đã có đủ API (bước 33–35); không giữ mẫu cho thứ core đã có. Nhãn "Pro" cố định không đúng khi nhà vận hành
+đặt tên gói khác, nên nhãn ghi "Cần gói cao hơn".
+
+Đã cân nhắc: gọi `…/usage` cho mọi khách để có cột hạn mức đầy đủ — một lời gọi mỗi khách mỗi lần mở trang; chỉ gọi
+cho khách gần chạm là đủ để nhân sự thấy việc cần làm, phần còn lại chờ `expand=usage` của core.

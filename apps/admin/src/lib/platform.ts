@@ -3,16 +3,13 @@
 // đọc dữ liệu; trang ghép dữ liệu (mẫu hay API thật) rồi gọi các hàm này.
 import type { components } from "@autoxide/sdk";
 import { hrefWith, oneOf, type SearchParams } from "@/lib/engage";
+import { type LimitUse, type Plan, type Subscription, usagePercent } from "@/lib/plans";
 import {
-  type OperatorSubscription,
   PLATFORM_TENANT_ID,
   type Placement,
-  type Plan,
   type Tenant,
   type TenantStatus,
-  type TenantUsage,
 } from "@/sample/platform-data";
-import { usageRatio } from "@/sample/platform-plans";
 
 type CoreTenant = components["schemas"]["Tenant"];
 type CorePlacement = components["schemas"]["Placement"];
@@ -146,14 +143,25 @@ export function mergePlacements(
   ];
 }
 
-/** Một dòng của sổ khách hàng: khách kèm nơi lưu, thuê bao, gói, hạn mức gần chạm nhất. */
+/**
+ * Một dòng của sổ khách hàng: khách kèm nơi lưu, thuê bao và gói (module `plans` của core), hạn mức
+ * gần chạm nhất (chỉ đọc cho khách core báo là gần chạm, `near_limit`).
+ */
 export interface TenantRow {
   tenant: PlatformTenant;
   placement: Placement | null;
-  subscription: OperatorSubscription | null;
+  subscription: Subscription | null;
   plan: Plan | null;
-  nearest: TenantUsage | null;
+  nearest: LimitUse | null;
   children: number;
+}
+
+/** Ngưỡng "gần chạm hạn mức", như core (`near_limit`: từ 80 % trở lên). */
+export const NEAR_LIMIT_PERCENT = 80;
+
+/** Hạn mức này gần chạm (hay đã vượt). */
+export function isNear(limit: LimitUse | null): boolean {
+  return limit !== null && (limit.over_limit || usagePercent(limit) >= NEAR_LIMIT_PERCENT);
 }
 
 /** Khách cần nhân sự vận hành để ý: quá hạn, chỉ đọc, tạm khoá, cấp phát dở, sắp chạm hạn mức. */
@@ -165,23 +173,33 @@ export function needsAttention(row: TenantRow): boolean {
     row.tenant.read_only ||
     row.tenant.status === "suspended" ||
     row.tenant.status === "provisioning" ||
-    (row.nearest !== null && usageRatio(row.nearest) >= 85)
+    isNear(row.nearest)
   );
 }
 
 export const PLACEMENT_KINDS = ["shared", "dedicated"] as const;
 export const SCHEMA_STATES = ["ready", "behind", "migrating"] as const;
+export const SUBSCRIPTION_STATES = [
+  "trialing",
+  "active",
+  "past_due",
+  "suspended",
+  "canceled",
+  "deleted",
+] as const;
 
 /**
  * Bộ lọc của sổ khách trên địa chỉ trang (`/platform?placement_kind=dedicated&read_only=true`).
  * Ba bộ lọc đầu là tham số của `GET /kernel/tenants` (D-296 của core): core lọc cả sổ, không chỉ
- * trang đang xem. `attention` ghép cả dữ liệu mẫu của bước 35 (thuê bao, hạn mức) nên lọc ở đây.
- * Lọc theo thuê bao (`subscription_status`, `near_limit`) chưa có: core luôn trả rỗng tới bước 35.
+ * trang đang xem; cũng vậy với thuê bao (`subscription_status`) và hạn mức (`near_limit`) của module
+ * `plans`. `attention` gộp nhiều điều kiện (core không có bộ lọc này) nên lọc ở đây.
  */
 export interface TenantQuery {
   read_only?: boolean;
   placement_kind?: (typeof PLACEMENT_KINDS)[number];
   schema_state?: (typeof SCHEMA_STATES)[number];
+  subscription_status?: (typeof SUBSCRIPTION_STATES)[number];
+  near_limit?: boolean;
   attention?: boolean;
 }
 
@@ -194,18 +212,21 @@ export function parseTenantQuery(params: SearchParams): TenantQuery {
   if (kind) query.placement_kind = kind;
   const state = oneOf(params, "schema_state", SCHEMA_STATES);
   if (state) query.schema_state = state;
+  const sub = oneOf(params, "subscription_status", SUBSCRIPTION_STATES);
+  if (sub) query.subscription_status = sub;
+  if (oneOf(params, "near_limit", ["true"] as const)) query.near_limit = true;
   if (oneOf(params, "attention", ["true"] as const)) query.attention = true;
   return query;
 }
 
 /** Phần của bộ lọc gửi cho core (`GET /kernel/tenants`); rỗng khi không lọc gì ở core. */
-export function coreTenantFilter(
-  query: TenantQuery,
-): Pick<TenantQuery, "read_only" | "placement_kind" | "schema_state"> {
+export function coreTenantFilter(query: TenantQuery): Omit<TenantQuery, "attention"> {
   return {
     ...(query.read_only !== undefined ? { read_only: query.read_only } : {}),
     ...(query.placement_kind ? { placement_kind: query.placement_kind } : {}),
     ...(query.schema_state ? { schema_state: query.schema_state } : {}),
+    ...(query.subscription_status ? { subscription_status: query.subscription_status } : {}),
+    ...(query.near_limit ? { near_limit: true } : {}),
   };
 }
 
@@ -215,6 +236,8 @@ export function tenantQueryHref(query: TenantQuery): string {
     read_only: query.read_only === undefined ? undefined : String(query.read_only),
     placement_kind: query.placement_kind,
     schema_state: query.schema_state,
+    subscription_status: query.subscription_status,
+    near_limit: query.near_limit ? "true" : undefined,
     attention: query.attention ? "true" : undefined,
   });
 }
@@ -231,17 +254,23 @@ export const TENANT_VIEWS = [
   { key: "shared", query: { placement_kind: "shared" } },
   { key: "migration", query: { schema_state: "behind" } },
   { key: "readOnly", query: { read_only: true } },
+  { key: "pastDue", query: { subscription_status: "past_due" } },
+  { key: "nearLimit", query: { near_limit: true } },
   { key: "attention", query: { attention: true } },
 ] as const satisfies readonly { key: string; query: TenantQuery }[];
 
 /**
- * Dòng có khớp bộ lọc không. Khách của core đã được core lọc theo ba bộ lọc đầu; hàm này lọc khách
+ * Dòng có khớp bộ lọc không. Khách của core đã được core lọc (trừ "cần để ý"); hàm này lọc khách
  * chỉ có trong dữ liệu mẫu theo cùng luật, đếm số trên chip, và lọc "cần để ý".
  */
 export function matchesQuery(row: TenantRow, query: TenantQuery): boolean {
   if (query.read_only !== undefined && row.tenant.read_only !== query.read_only) return false;
   if (query.placement_kind && row.placement?.kind !== query.placement_kind) return false;
   if (query.schema_state && row.placement?.schema_state !== query.schema_state) return false;
+  if (query.subscription_status && row.subscription?.status !== query.subscription_status) {
+    return false;
+  }
+  if (query.near_limit && !isNear(row.nearest)) return false;
   if (query.attention && !needsAttention(row)) return false;
   return true;
 }

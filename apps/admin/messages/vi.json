@@ -305,7 +305,15 @@
       "title": "Hoạt động gần đây",
       "all": "Xem tất cả"
     },
-    "areas": "Phân hệ"
+    "areas": "Phân hệ",
+    "plan": {
+      "title": "Gói của bạn",
+      "open": "Xem gói",
+      "unknownPlan": "Gói đã ngừng bán",
+      "readOnly": "Thuê bao đang bị khoá hoặc đã huỷ: xem được dữ liệu nhưng không sửa được.",
+      "over": "Đang vượt hạn mức: {list}. Không mất gì, nhưng không thêm mới được.",
+      "closest": "Hạn mức gần chạm nhất."
+    }
   },
   "account": {
     "title": "Tài khoản của tôi",
@@ -1958,7 +1966,8 @@
       "apply": "Áp dụng vào bản nháp",
       "dismiss": "Bỏ qua",
       "shareImage": "Ảnh chia sẻ",
-      "shareImageHint": "Hiện khi link được chia sẻ lên mạng xã hội; bỏ trống thì dùng ảnh đại diện."
+      "shareImageHint": "Hiện khi link được chia sẻ lên mạng xã hội; bỏ trống thì dùng ảnh đại diện.",
+      "aiPlan": "Gói hiện tại chưa có gợi ý AI (content.ai_suggestions). Xem Cài đặt › Gói và thuê bao."
     },
     "languages": {
       "outdated": "Bản dịch đã cũ: bản gốc đã đổi",
@@ -1972,7 +1981,8 @@
       "queued": "Đã bắt đầu dịch; xong sẽ có bản nháp",
       "retranslate": "Dịch lại bằng AI",
       "translate": "Dịch bằng AI",
-      "note": "Mỗi bản dịch là một bài riêng: đường dẫn, trạng thái, lịch đăng và lịch sử riêng. Thiếu bản dịch thì không lấy ngôn ngữ khác thay."
+      "note": "Mỗi bản dịch là một bài riêng: đường dẫn, trạng thái, lịch đăng và lịch sử riêng. Thiếu bản dịch thì không lấy ngôn ngữ khác thay.",
+      "aiPlan": "Gói hiện tại chưa có dịch bằng AI. Xem Cài đặt › Gói và thuê bao."
     },
     "history": {
       "none": "Chưa có phiên bản nào.",
@@ -4732,7 +4742,9 @@
         "shared": "Dùng chung",
         "migration": "Chờ migration",
         "readOnly": "Chỉ đọc",
-        "attention": "Cần chú ý"
+        "attention": "Cần chú ý",
+        "pastDue": "Quá hạn",
+        "nearLimit": "Gần chạm hạn mức"
       },
       "col": {
         "tenant": "Khách hàng",
@@ -4769,7 +4781,10 @@
       "filterSchema": "Trạng thái migration",
       "anySchema": "Mọi trạng thái migration",
       "apply": "Áp dụng",
-      "clear": "Bỏ lọc"
+      "clear": "Bỏ lọc",
+      "filterSub": "Thuê bao",
+      "anySub": "Mọi thuê bao",
+      "onlyNear": "Chỉ khách gần chạm hạn mức (từ 80 %)"
     },
     "tenant": {
       "back": "Khách hàng",
@@ -4906,11 +4921,11 @@
       "supportOff": "Khách đã tắt quyền vào hỗ trợ: chỉ cấp được theo yêu cầu bằng văn bản của cơ quan có thẩm quyền.",
       "tenantView": "Khách thấy gì",
       "export": "Xuất dữ liệu",
-      "exportAbout": "Job chép mọi dòng và tệp của khách vào một tệp nén, để trả cho khách hay chuyển sang nhà cung cấp khác.",
+      "exportAbout": "Một job chạy nền ghi mọi bản ghi của khách vào một tệp JSON Lines, để giao cho khách hay chuyển sang nhà cung cấp khác. Không có mật khẩu đã băm, secret và nội dung tệp tải lên.",
       "exportKeep": "giữ tới",
       "exportButton": "Xuất dữ liệu",
       "exportTitle": "Xuất toàn bộ dữ liệu của {tenant}?",
-      "exportAll": "Mọi bảng và tệp của khách vào một tệp nén.",
+      "exportAll": "Mọi bản ghi của khách vào một tệp; không có nội dung tệp tải lên.",
       "exportPersonal": "Tệp có dữ liệu cá nhân của khách mua và nhân sự của khách: chỉ giao qua chủ tài khoản của khách.",
       "exportKeepDays": "Tệp bị xoá sau 7 ngày.",
       "exportAudit": "Lần xuất và lý do được ghi vào nhật ký audit của khách.",
@@ -4943,7 +4958,13 @@
       "reactivateBack": "Mọi request vào khách này chạy lại (máy chủ khác thấy thay đổi sau vài giây).",
       "files": "Nơi lưu file",
       "settings": "Cấu hình của khách này",
-      "settingsAbout": "Cấu hình nghiệp vụ module nhận theo khách (ngôn ngữ, kiểm duyệt bình luận, thời hạn giữ bài gửi form…). Để trống thì dùng cấu hình chung của máy chủ; máy chủ của khách dùng giá trị mới trong AUTOXIDE_TENANCY_CACHE_SECONDS. Quản trị viên của khách cũng tự đổi được."
+      "settingsAbout": "Cấu hình nghiệp vụ module nhận theo khách (ngôn ngữ, kiểm duyệt bình luận, thời hạn giữ bài gửi form…). Để trống thì dùng cấu hình chung của máy chủ; máy chủ của khách dùng giá trị mới trong AUTOXIDE_TENANCY_CACHE_SECONDS. Quản trị viên của khách cũng tự đổi được.",
+      "endsOn": "Kết thúc ngày",
+      "renewsOn": "Gia hạn ngày",
+      "scheduled": "Hết kỳ chuyển sang",
+      "exportAuto": "tự xuất khi huỷ thuê bao",
+      "exportDownload": "Tải về",
+      "exportBusy": "Đang xuất; tải lại trang sau ít phút."
     },
     "provision": {
       "button": "Cấp phát khách mới",
@@ -5322,7 +5343,20 @@
       "revokeNow": "Nhân sự mất quyền vào ngay, kể cả đang giữa phiên.",
       "revokeAudit": "Event auth.support_access_revoked ghi vào audit của khách.",
       "revoked": "Đã thu hồi; khách thấy trong nhật ký audit.",
-      "none": "Không có lần cấp nào ở trạng thái này."
+      "none": "Không có lần cấp nào ở trạng thái này.",
+      "grantTitleFor": "Cấp quyền vào dữ liệu của {tenant}",
+      "firstUsed": "Vào lần đầu",
+      "notUsed": "Chưa vào",
+      "revokedByTenant": "Khách đã thu hồi",
+      "thisTenant": "khách này",
+      "required": {
+        "tenant": "Chọn khách.",
+        "staff": "Chọn nhân sự.",
+        "role": "Chọn role.",
+        "reason": "Ghi lý do.",
+        "legal": "Nhập số văn bản của cơ quan có thẩm quyền."
+      },
+      "noCustomers": "Chưa có khách nào ngoài khách nền tảng."
     },
     "platformOnly": "Chỉ nhân sự của khách nền tảng (của chính nhà vận hành) dùng được mặt điều khiển. Bạn đang đăng nhập vào tài khoản của một khách hàng.",
     "newTenant": {
@@ -5372,6 +5406,13 @@
       "offWrites": "Nhân sự của khách sửa được dữ liệu từ request kế tiếp.",
       "offJobs": "Không mất gì trong lúc chỉ đọc; thay đổi đã bị từ chối thì phải làm lại.",
       "offDone": "{tenant} đã ghi được trở lại."
+    },
+    "exportState": {
+      "pending": "Đang chờ",
+      "running": "Đang chạy",
+      "ready": "Đã xong",
+      "failed": "Lỗi",
+      "expired": "Đã xoá"
     }
   },
   "catalog": {
@@ -12317,5 +12358,9 @@
         "body": "Chọn bộ lọc rồi bấm “Lưu thành view” để lần sau mở lại bằng một lần bấm."
       }
     }
+  },
+  "planLock": {
+    "badge": "Cần gói cao hơn",
+    "hint": "Gói hiện tại chưa có phần này. Mở Cài đặt › Gói và thuê bao để đổi gói."
   }
 }

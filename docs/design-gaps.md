@@ -29,8 +29,8 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 - [ ] Chuông thông báo (Hộp thư / Đã lưu / Xong) — mẫu, M
 - [ ] Trang tổng quan của từng phân hệ — mẫu, L
 - [ ] Phân hệ "Báo cáo" (bán hàng, tồn kho và giá vốn, gộp cửa hàng, xuất dữ liệu) — mẫu, L
-- [ ] Thẻ gói và hạn mức trên Tổng quan — API có (`/plans/subscription`, `/plans/usage`), chưa nối (đợt 3b), S
-- [ ] Nhãn "Pro" cho tính năng của gói cao hơn — API có (`features` của `/plans/entitlements`), chưa nối (đợt 3b), M
+- [x] Thẻ gói và hạn mức trên Tổng quan — `/plans/entitlements`, `/plans/subscription` (W-048), S
+- [x] Nhãn "Pro" cho tính năng của gói cao hơn — nhãn "Cần gói cao hơn" theo `features` của `/plans/entitlements` (W-048), M
 - [ ] Thanh đáy điện thoại 5 mục (thêm Việc, Tìm) — S
 - [ ] "Phân hệ chưa bật cho gói", trang "không có quyền" có nút "Gửi yêu cầu quyền" — mẫu, M
 - [x] Màn nhận lời mời (`/invitation`: đặt mật khẩu hoặc bỏ trống để đăng nhập bằng link / passkey; đã có tài khoản thì đăng nhập rồi nhận) — API (17/11, W-046)

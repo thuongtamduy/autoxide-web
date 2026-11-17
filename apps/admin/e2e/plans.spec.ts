@@ -145,3 +145,111 @@ test("nền tảng: thuê bao — khách chưa có thuê bao, gán gói cần g�
   await expect(row).toContainText("Pro");
   await expect(row).toContainText("Trial");
 });
+
+// ---------------------------------------------------------------- Đợt 3b
+
+test("Tổng quan: thẻ gói; gói không có tính năng thì khoá nút tạo API key và AI của bài viết", async ({
+  page,
+}) => {
+  await signIn(page, "/");
+  await expect(page.getByTestId("dash-plan")).toHaveText("Cơ bản");
+  await expect(page.getByTestId("dash-plan-over")).toContainText("Organization units 4 / 3");
+  await page.getByRole("link", { name: "See plan" }).click();
+  await expect(page).toHaveURL(/\/settings\/plan$/);
+
+  // Gói "Cơ bản" có đủ tính năng: nút tạo key mở được.
+  await page.goto("/settings/api-keys");
+  await expect(page.getByRole("link", { name: "Create API key" })).toBeVisible();
+  await expect(page.getByTestId("plan-lock-auth.api_keys")).toHaveCount(0);
+
+  await page.request.post(`${CORE}/__plans/basic-features`, { data: { features: [] } });
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Create API key" })).toBeDisabled();
+  await page.getByTestId("plan-lock-auth.api_keys").click();
+  await expect(page).toHaveURL(/\/settings\/plan$/);
+
+  await page.goto("/content");
+  await page.locator("tbody tr").first().getByRole("link").first().click();
+  await expect(page).toHaveURL(/\/content\/[0-9a-f-]{36}$/);
+  await page.getByRole("tab", { name: /SEO/ }).click();
+  await expect(page.getByRole("button", { name: "Suggest title and description" })).toBeDisabled();
+  await expect(page.getByRole("tabpanel")).toContainText(
+    "Your plan does not include AI suggestions",
+  );
+});
+
+test("sổ khách: gói, thuê bao, gần chạm hạn mức lấy từ core; lọc theo thuê bao", async ({
+  page,
+}) => {
+  await signIn(page, "/platform");
+  await addCustomer(page);
+  await page.goto("/platform");
+  // Dữ liệu mẫu cũng có một "Trà Sen": lấy dòng theo tên ngắn của khách vừa tạo.
+  const row = page.locator("tbody tr", { hasText: "tra-sen" });
+  await expect(row).toContainText("No plan");
+  await expect(page.getByRole("link", { name: /Near a limit/ })).toContainText("0");
+
+  await page.goto("/platform/subscriptions");
+  const sub = page.locator("tbody tr", { hasText: "Trà Sen" });
+  await sub.getByRole("button", { name: "Change plan" }).click();
+  await dialog(page).getByLabel("Plan and price").selectOption(`${BASIC}|${BASIC_MONTH}`);
+  await dialog(page).getByLabel("Type “Trà Sen” to confirm").fill("Trà Sen");
+  await dialog(page).getByRole("button", { name: "Change plan" }).click();
+  await expect(toast(page)).toHaveText("Trà Sen has the new plan.");
+
+  await page.goto("/platform");
+  await expect(row).toContainText("Cơ bản");
+  await expect(row).toContainText("Trial");
+  // 4 nút trên hạn mức 3 của gói Cơ bản: core báo gần chạm (đã vượt).
+  await expect(row).toContainText("Organization units");
+  await page.getByRole("link", { name: /Near a limit/ }).click();
+  await expect(page).toHaveURL(/near_limit=true/);
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator("tbody tr")).toContainText("tra-sen");
+
+  await page.goto("/platform");
+  await page.getByLabel("Subscription").selectOption("active");
+  await page.getByRole("button", { name: "Apply" }).click();
+  await expect(page).toHaveURL(/subscription_status=active/);
+  await expect(page.getByText("No customer matches")).toBeVisible();
+});
+
+test("chi tiết khách: thuê bao và hạn mức, xuất dữ liệu rồi tải về, cấp và thu hồi quyền vào", async ({
+  page,
+}) => {
+  await signIn(page, "/platform");
+  await addCustomer(page);
+  // Đang ở trang chi tiết của "Trà Sen".
+  await expect(page.getByTestId("tenant-subscription")).toContainText("No subscription");
+
+  await page.getByRole("button", { name: "Export data" }).click();
+  await dialog(page).getByRole("button", { name: "Queue the export" }).click();
+  await expect(toast(page)).toContainText("Export of Trà Sen queued");
+  await page.reload();
+  const exports = page.getByTestId("tenant-exports");
+  await expect(exports).toContainText("Ready");
+  const href = await exports.getByRole("link", { name: "Download" }).getAttribute("href");
+  const file = await page.request.get(href ?? "");
+  expect(file.ok()).toBe(true);
+  expect(await file.text()).toContain('"table":"auth_users"');
+
+  await page.getByRole("button", { name: "Grant access" }).click();
+  await dialog(page).getByLabel("Reason").fill("ngắn");
+  await dialog(page).getByRole("button", { name: "Grant access" }).click();
+  await expect(dialog(page).getByText("must be 10 to 500 characters long")).toBeVisible();
+  await dialog(page).getByLabel("Reason").fill("Khách báo lỗi đồng bộ kho, phiếu #e2e-31");
+  await dialog(page).getByRole("button", { name: "Grant access" }).click();
+  await expect(toast(page)).toContainText("Access granted");
+  const grant = page.getByTestId("tenant-grants").locator("tbody tr", { hasText: "#e2e-31" });
+  await expect(grant).toContainText("In effect");
+  await expect(grant).toContainText("Not used yet");
+
+  await page.goto("/platform/support");
+  await expect(page.getByText(/Sample data/)).toHaveCount(0);
+  const listed = page.locator("tbody tr", { hasText: "#e2e-31" });
+  await expect(listed).toContainText("Trà Sen");
+  await listed.getByRole("button", { name: "Revoke" }).click();
+  await dialog(page).getByRole("button", { name: "Revoke" }).click();
+  await expect(toast(page)).toContainText("Access revoked");
+  await expect(listed).toContainText("Revoked");
+});

@@ -18,7 +18,6 @@ import {
 } from "@/components/platform/common";
 import { MovePlanForm, MovePoll } from "@/components/platform/move";
 import { PlacementStorageView } from "@/components/platform/storage";
-import { SampleBadge } from "@/components/sample-badge";
 import { TenantSettingsList } from "@/components/settings/tenant-settings";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
@@ -29,8 +28,8 @@ import { TENANTS_MANAGE, TENANTS_MOVE } from "@/lib/permissions";
 import { moveFinished, moveSteps, moveTargets } from "@/lib/platform";
 import type { PlatformData } from "@/lib/platform-server";
 import { can } from "@/lib/viewer";
-import { sampleDataEnabled } from "@/sample";
 import { PLATFORM_TENANT_ID, type TenantStatus } from "@/sample/platform-data";
+import { TenantExportSection, TenantPlanSection, TenantSupportSection } from "./tenant-plan";
 
 type CoreTenant = components["schemas"]["Tenant"];
 type TenantSetting = components["schemas"]["TenantSettingState"];
@@ -44,14 +43,11 @@ export interface MoveSearch {
   move?: string | undefined;
 }
 
-const PENDING =
-  "GET /api/v1/plans/tenants/{id}/subscription, …/usage, …/overrides (bước 35); GET/POST /api/v1/auth/support-grants (bước 34); mới: POST /api/v1/kernel/tenants/{id}/exports";
-
 // Chi tiết một khách của core (bước 33, W-027, W-032, W-035): tên, trạng thái, nơi lưu (kèm nơi lưu
 // file của placement), cây khách, cấu hình theo khách (`…/tenants/{id}/settings`); đổi tên, tạm khoá
 // / mở lại, bật / tắt chỉ đọc bằng `PATCH /kernel/tenants/{id}` kèm `If-Match`; dời sang placement khác (`POST …/move`: chạy thử trước, rồi chạy thật bằng job, theo dõi
-// ở `GET …/moves/{move_id}`). Thuê bao, hạn mức, xuất dữ liệu và quyền vào hỗ trợ chưa có API
-// (bước 34, 35 và mục "mới" của bảng thiếu API).
+// ở `GET …/moves/{move_id}`). Thuê bao và hạn mức, xuất dữ liệu, quyền vào hỗ trợ: `tenant-plan.tsx`
+// (đợt 3b).
 export async function CoreTenantView({
   tenant,
   etag,
@@ -68,7 +64,6 @@ export async function CoreTenantView({
 }) {
   const t = await getTranslations("platform");
   const [manage, mover] = await Promise.all([can(TENANTS_MANAGE), can(TENANTS_MOVE)]);
-  const sample = sampleDataEnabled();
   const platform = tenant.id === PLATFORM_TENANT_ID;
   const status = tenant.status as TenantStatus;
   const placement = data.placements.find((p) => p.name === tenant.placement) ?? null;
@@ -235,17 +230,12 @@ export async function CoreTenantView({
         <MoveSection tenant={tenant} status={status} data={data} search={search} />
       ) : null}
 
-      {sample ? (
-        <section className="block" aria-labelledby="pf-t-pending">
-          <div className="block-head">
-            <h2 id="pf-t-pending" className="h2">
-              {t("tenant.pendingTitle")}
-            </h2>
-            <SampleBadge step="35" endpoint={PENDING} />
-          </div>
-          <p className="fhint">{t("tenant.pendingAbout")}</p>
-        </section>
-      ) : null}
+      {platform ? null : <TenantPlanSection tenant={tenant} />}
+
+      <div className="blocks">
+        {platform ? null : <TenantSupportSection tenant={tenant} />}
+        <TenantExportSection tenant={tenant} />
+      </div>
 
       {manage && !platform ? (
         <section className="block" aria-labelledby="pf-t-ro">

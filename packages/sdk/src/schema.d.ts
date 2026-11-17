@@ -353,6 +353,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/delegations/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tenants below this one, to choose where a delegation goes.
+         * @description Requires `auth.delegations.manage`. Children first, then their children, each level sorted
+         *     by slug; at most 16 levels down. Only names and states — nothing of their data.
+         */
+        get: operations["auth_list_child_tenants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/delegations/{id}": {
         parameters: {
             query?: never;
@@ -1097,6 +1118,27 @@ export interface paths {
          *     `order=asc`.
          */
         get: operations["auth_list_memberships"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/memberships/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count the people of every organization unit.
+         * @description Requires `auth.users.read`. One entry per unit of the tree, the root first, including units
+         *     nobody works in — for showing a number next to each unit without reading every membership.
+         */
+        get: operations["auth_count_memberships"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4970,6 +5012,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/public/site": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the profile of the website being visited.
+         * @description No sign-in needed. The website is the organization unit the domain of the request is bound to
+         *     (see `PATCH /api/v1/kernel/domains/{id}`), or the one named with `site` when the page is not
+         *     served on its own domain; otherwise the whole tenant (its root unit). A store's own domain thus
+         *     shows the store's name, address and hours, not the head office's. Use `unit_id` as `site` in
+         *     other public calls (menus, content) when they are not made on that domain.
+         */
+        get: operations["organizations_get_site_profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/public/stores": {
         parameters: {
             query?: never;
@@ -6507,8 +6573,44 @@ export interface components {
              */
             reference: string;
         };
+        /** @description A tenant below this one (a child, or a child of a child…). */
+        ChildTenantResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /**
+             * Format: uuid
+             * @description The tenant right above it (this tenant for a direct child).
+             */
+            parent_id: string;
+            /** @example store-hanoi */
+            slug: string;
+            /**
+             * @description `provisioning`, `active`, `suspended`, `maintenance` or `moving`.
+             * @example active
+             */
+            status: string;
+        };
         /** @description Settings of the server an interface needs, by module: only values safe to show anyone. A module without such settings is absent. */
         ClientConfigResponse: {
+            /** @description Sign-in settings an interface needs. */
+            auth: {
+                /**
+                 * @description `true` when people can sign in with a link sent by email (`AUTOXIDE_AUTH_LOGIN_LINK`,
+                 *     `POST /api/v1/auth/login/link`): show "sign in with a link".
+                 */
+                login_link: boolean;
+                /**
+                 * @description `true` when passkeys are set up (`AUTOXIDE_AUTH_PASSKEY_RP_ID`): show "sign in with a
+                 *     passkey".
+                 */
+                passkeys: boolean;
+                /**
+                 * @description `true` when people can create their own account (`AUTOXIDE_AUTH_SELF_REGISTRATION`):
+                 *     show "create an account".
+                 */
+                self_registration: boolean;
+            };
             /** @description Content settings an interface needs. */
             content: {
                 /**
@@ -9839,6 +9941,12 @@ export interface components {
                  */
                 role_id: string;
                 /**
+                 * @description Display name of that staff member, so the tenant knows who may enter; `null` when the
+                 *     account no longer exists.
+                 * @example Lan Nguyen
+                 */
+                staff_name?: string | null;
+                /**
                  * Format: uuid
                  * @description The platform staff account.
                  */
@@ -10490,6 +10598,26 @@ export interface components {
             }[];
         };
         /** @description Envelope of a single result. */
+        Data_Vec_ChildTenantResponse: {
+            data: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /**
+                 * Format: uuid
+                 * @description The tenant right above it (this tenant for a direct child).
+                 */
+                parent_id: string;
+                /** @example store-hanoi */
+                slug: string;
+                /**
+                 * @description `provisioning`, `active`, `suspended`, `maintenance` or `moving`.
+                 * @example active
+                 */
+                status: string;
+            }[];
+        };
+        /** @description Envelope of a single result. */
         Data_Vec_CommentCount: {
             data: {
                 /**
@@ -10557,7 +10685,12 @@ export interface components {
         /** @description Envelope of a single result. */
         Data_Vec_LimitUse: {
             data: {
-                /** @example organizations.units */
+                /**
+                 * @description The limit; `<limit>.<part>` is the separate cap of one part of a limit that has parts (for
+                 *     example `organizations.units.store`: units of type `store`), listed when the plan caps that
+                 *     part or the tenant uses it.
+                 * @example organizations.units
+                 */
                 key: string;
                 /** @description `count`, `amount` or `metered`. */
                 kind: string;
@@ -10579,6 +10712,24 @@ export interface components {
             }[];
         };
         /** @description Envelope of a single result. */
+        Data_Vec_MemberCountResponse: {
+            data: {
+                /**
+                 * Format: int64
+                 * @description People with a membership on this unit itself (each person once, whatever their roles).
+                 */
+                direct: number;
+                /** Format: uuid */
+                org_id: string;
+                /**
+                 * Format: int64
+                 * @description People with a membership on this unit or on a unit above it — the people
+                 *     `GET /api/v1/auth/memberships?org_id=…&inherited=true` lists.
+                 */
+                total: number;
+            }[];
+        };
+        /** @description Envelope of a single result. */
         Data_Vec_MembershipResponse: {
             data: {
                 /**
@@ -10586,6 +10737,18 @@ export interface components {
                  * @description The unit; the root unit has the id of the tenant.
                  */
                 org_id: string;
+                /**
+                 * @description Name of the unit, so a user who cannot read the organization tree still sees where they
+                 *     work; `null` when the unit no longer exists (or no organization module is installed).
+                 * @example Store 1
+                 */
+                org_name?: string | null;
+                /**
+                 * @description Type of the unit (see `GET /api/v1/organizations/unit-types`); `tenant` for the root, `null`
+                 *     like `org_name`.
+                 * @example store
+                 */
+                org_unit_type?: string | null;
                 /**
                  * @description The roles there, sorted by name. A role grants each permission at its scope from this
                  *     unit (`unit`: this unit, `subtree`: this unit and the units below it).
@@ -11032,6 +11195,12 @@ export interface components {
                  * @example organizations.timezone
                  */
                 key: string;
+                /**
+                 * @description The shape of the value as a JSON Schema (`type`: `string`, `boolean`, `integer`, `number`,
+                 *     `array` or `object`, with `enum`, `pattern`, `items`… where they apply), for building the
+                 *     right input; `null` when the module does not say. The server checks every value anyway.
+                 */
+                schema?: Record<string, never> | null;
             }[];
         };
         /** @description Envelope of a single result. */
@@ -11068,6 +11237,12 @@ export interface components {
                  * @description The role of the platform tenant whose permissions they get.
                  */
                 role_id: string;
+                /**
+                 * @description Display name of that staff member, so the tenant knows who may enter; `null` when the
+                 *     account no longer exists.
+                 * @example Lan Nguyen
+                 */
+                staff_name?: string | null;
                 /**
                  * Format: uuid
                  * @description The platform staff account.
@@ -12090,7 +12265,12 @@ export interface components {
         };
         /** @description Use of one limit. */
         LimitUse: {
-            /** @example organizations.units */
+            /**
+             * @description The limit; `<limit>.<part>` is the separate cap of one part of a limit that has parts (for
+             *     example `organizations.units.store`: units of type `store`), listed when the plan caps that
+             *     part or the tenant uses it.
+             * @example organizations.units
+             */
             key: string;
             /** @description `count`, `amount` or `metered`. */
             kind: string;
@@ -12413,6 +12593,22 @@ export interface components {
              */
             width?: number | null;
         };
+        /** @description How many people work in one organization unit. */
+        MemberCountResponse: {
+            /**
+             * Format: int64
+             * @description People with a membership on this unit itself (each person once, whatever their roles).
+             */
+            direct: number;
+            /** Format: uuid */
+            org_id: string;
+            /**
+             * Format: int64
+             * @description People with a membership on this unit or on a unit above it — the people
+             *     `GET /api/v1/auth/memberships?org_id=…&inherited=true` lists.
+             */
+            total: number;
+        };
         /** @description The roles to give in one unit. */
         MembershipRequest: {
             /**
@@ -12430,6 +12626,18 @@ export interface components {
              * @description The unit; the root unit has the id of the tenant.
              */
             org_id: string;
+            /**
+             * @description Name of the unit, so a user who cannot read the organization tree still sees where they
+             *     work; `null` when the unit no longer exists (or no organization module is installed).
+             * @example Store 1
+             */
+            org_name?: string | null;
+            /**
+             * @description Type of the unit (see `GET /api/v1/organizations/unit-types`); `tenant` for the root, `null`
+             *     like `org_name`.
+             * @example store
+             */
+            org_unit_type?: string | null;
             /**
              * @description The roles there, sorted by name. A role grants each permission at its scope from this
              *     unit (`unit`: this unit, `subtree`: this unit and the units below it).
@@ -12660,6 +12868,11 @@ export interface components {
              * @example amount
              */
             kind: string;
+            /**
+             * @description When set, a plan can also cap each part separately with the key `<key>.<part>`; this says
+             *     what a part is (e.g. `unit type`: `organizations.units.store` caps units of type `store`).
+             */
+            parts?: string | null;
             /** @description Period of a `metered` limit: `month`. */
             period?: string | null;
             /** @description Unit of an `amount` limit, e.g. `bytes`. */
@@ -15049,7 +15262,11 @@ export interface components {
             is_default?: boolean;
             /** @description `base` (default) or `addon`. */
             kind?: string;
-            /** @description Limits by key (`limits` of the modules); `null` is unlimited, a limit left out is 0. */
+            /**
+             * @description Limits by key (`limits` of the modules); `null` is unlimited, a limit left out is 0. A limit
+             *     that has parts also takes a cap per part, `<limit>.<part>` (for example
+             *     `organizations.units.store`); a part left out has no cap of its own.
+             */
             limits?: {
                 [key: string]: number | null;
             };
@@ -16400,6 +16617,12 @@ export interface components {
              * @example organizations.timezone
              */
             key: string;
+            /**
+             * @description The shape of the value as a JSON Schema (`type`: `string`, `boolean`, `integer`, `number`,
+             *     `array` or `object`, with `enum`, `pattern`, `items`… where they apply), for building the
+             *     right input; `null` when the module does not say. The server checks every value anyway.
+             */
+            schema?: Record<string, never> | null;
         };
         /** @description A new value for a setting. */
         SettingValueRequest: {
@@ -16826,6 +17049,12 @@ export interface components {
              * @description The role of the platform tenant whose permissions they get.
              */
             role_id: string;
+            /**
+             * @description Display name of that staff member, so the tenant knows who may enter; `null` when the
+             *     account no longer exists.
+             * @example Lan Nguyen
+             */
+            staff_name?: string | null;
             /**
              * Format: uuid
              * @description The platform staff account.
@@ -19054,6 +19283,56 @@ export interface operations {
             };
             /** @description The child is not below this tenant, the role or unit does not exist, the expiry is past, or the reason is missing; see `errors`. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_list_child_tenants: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenants below this one. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_ChildTenantResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.delegations.manage`; code `permission_denied`. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21660,6 +21939,56 @@ export interface operations {
             };
             /** @description A paging parameter is invalid; see `errors`. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    auth_count_memberships: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The counts, one entry per unit. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_Vec_MemberCountResponse"];
+                };
+            };
+            /** @description Not signed in; see `GET /api/v1/auth/me` for the codes. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Missing permission `auth.users.read`; code `permission_denied`. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39270,6 +39599,63 @@ export interface operations {
                 };
             };
             /** @description No suppression has this id; code `newsletter.suppression_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Any error, as RFC 9457 Problem Details. The `code` field identifies the problem. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    organizations_get_site_profile: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The website (organization unit) asking, when it is not called on its own domain; a domain
+                 *     bound to a unit chooses it already. Content of that unit and of the units above it is
+                 *     shown. Omitted: the website of the whole tenant.
+                 */
+                site?: string;
+            };
+            header?: {
+                /** @description Language of the `detail` of errors: `en` (the default) or `vi`. Codes never change with the language. */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The public profile of the website's unit. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Data_PublicProfileResponse"];
+                };
+            };
+            /** @description `site` is not a UUID; code `invalid_site`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No active unit `site` in this tenant; code `site_not_found`. */
             404: {
                 headers: {
                     [name: string]: unknown;

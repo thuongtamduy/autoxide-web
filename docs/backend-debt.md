@@ -48,7 +48,14 @@ hàng: việc của web, `NEXT.md`); `reason` khi tạm khoá khách (bước 35
 4. **Gặp khi nối bước 35 (17/11, W-047):** (a) nhân sự nền tảng chưa đọc được kỳ thanh toán của một khách
    (`GET /plans/billing-periods` chỉ của khách gọi) — cần để "đánh dấu đã thu"; (b) chưa có danh sách ghi đè của mọi
    khách (giao diện đọc từng khách); (c) số khách mỗi gói giao diện tự đếm từ `GET /plans/subscriptions`.
-5. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` không có mô tả trong
+5. **Gặp khi nối bước 35 đợt 3b (17/11, W-048):** (a) `expand=subscription,usage` của `GET /kernel/tenants` vẫn luôn
+   `null` dù đã có module `plans` — giao diện phải đọc mọi thuê bao riêng và gọi `…/tenants/{id}/usage` từng khách;
+   (b) `GET /auth/support-grants` bắt buộc `tenant_id`: màn "Vào dữ liệu khách" phải gọi từng khách — nên cho bỏ
+   `tenant_id` (mọi khách, theo trang); (c) trần thời hạn (`AUTOXIDE_AUTH_SUPPORT_ACCESS_MAX_HOURS`) chưa có trong API
+   — nên đưa vào `GET /kernel/client-config`; (d) nhân sự nền tảng không biết trước khách có tắt quyền vào hỗ trợ
+   không (chỉ biết khi bị từ chối `auth.support_access_disabled`); (e) thuê bao không kèm tên gói và
+   `GET /plans/catalog` chỉ có gói đang bán: khách dùng gói đã ngừng bán không thấy tên gói của mình.
+6. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` không có mô tả trong
    `openapi.json` (mã nguồn có: "với `org_id` và `inherited=true` thì tính cả membership ở nút trên"); thiếu nó thì
    người được gán ở nút cha không hiện ở nút con.
 
