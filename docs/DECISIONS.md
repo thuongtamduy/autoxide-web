@@ -1851,3 +1851,34 @@ vào `docs/prompts/web-build-api-gaps.md` của core (bước 41, 45, 46, 47).
 
 Đã cân nhắc: đổi số điện thoại và thêm passkey cho người mua bằng mẫu — giả một luồng xác thực dễ làm người thử tưởng
 đã an toàn; để "sắp có" tới bước 47.
+
+## W-045 · Nối bước 34 của core, đợt 1: cây tổ chức, bộ chọn nút, hồ sơ công khai, tên cửa hàng — 2026-11-17 — agent quyết
+
+Quyết định: SDK ghim core `5b35b99` (bước 34, 35, xuất dữ liệu khách). Đợt này nối phần "cây tổ chức" của bước 34;
+role theo độ sâu, lời mời, uỷ quyền, quyền vào hỗ trợ (đợt 2) và gói, thuê bao (đợt 3) làm sau.
+
+- **Màn Cây tổ chức** (`/org`) bỏ dữ liệu mẫu: cây từ `GET /organizations/units` (đọc hết, tối đa 10 trang × 200),
+  người ở nút từ `GET /auth/memberships?org_id=&inherited=true` (tên, email đọc từng người, cần `auth.users.read`),
+  độ sâu của role = độ sâu rộng nhất mà role cấp, cài đặt từ `GET /units/{id}/settings` và sổ cài đặt của core
+  (mô tả của core làm lời giới thiệu khi sửa). Giá trị cài đặt sửa bằng một ô chữ; dạng giá trị đoán theo giá trị đang
+  có, mặc định và chữ gõ (JSON, danh sách cách bằng dấu phẩy, chuỗi) — core kiểm và báo lỗi dưới ô. Bỏ nút "Tách
+  nhánh" (chờ bước 38) và nút mời ở màn này (đợt 2 nối lời mời thật).
+- **Bộ chọn nút** ở góc trên trái (thiết kế "Đổi khách hàng hoặc nút tổ chức"), chỉ hiện khi người xem đọc được cây và
+  cây có hơn một nút. Nút chọn nhớ ở cookie `ax_unit` (httpOnly, chỉ là id); nút gốc = cả khách (xoá cookie). Có nút
+  chọn thì danh sách bài, media, form lọc `owner_org`; bài / media / form / menu tạo mới gửi `org_id` của nút. Menu là
+  của từng website (D-305 của core): màn Menu luôn lọc theo nút chọn, không chọn thì website của cả khách (nút gốc).
+  Phần "khách hàng khác bạn làm việc cùng" của thiết kế để đợt 2 (`GET /auth/me/tenants`).
+- **Hồ sơ công khai** (`/org/access/public`) thành tab thật: trạng thái "Công khai" theo `GET /organizations/public/stores`,
+  sửa bằng `PATCH /units/{id}/public-profile`. Địa chỉ chọn tỉnh rồi phường / xã từ module `address` của core (tải
+  danh sách phường khi đổi tỉnh, qua Server Action). Một khung giờ chung cho mọi ngày (giờ từng ngày, ngày đặc biệt: API).
+- **Tên cửa hàng của website** = tên hiển thị trong hồ sơ công khai của nút gốc (`unit_type = tenant` trong
+  `GET /organizations/public/stores`); không có thì `AUTOXIDE_STOREFRONT_NAME` như trước. Logo và thông tin pháp lý
+  vẫn chờ core (hồ sơ công khai chưa có các trường này).
+- Tên loại nút: loại khách tự đặt dùng tên khách đặt; loại gốc `tenant` (core dựng sẵn, tên tiếng Anh) dùng chữ của
+  giao diện.
+
+Lý do: core đã có API (D-303 – D-307, D-314, D-315); không giữ mẫu cho thứ core đã có. Đã chạy thử với core thật
+(SQLite, một khách, danh mục hành chính nhập bằng `autoxide task address.import`).
+
+Đã cân nhắc: nút chọn ở tham số URL — mất khi sang màn khác, thiết kế muốn "đổi nút vẫn giữ màn đang xem"; danh sách
+mọi hồ sơ công khai bằng một lời gọi mỗi nút — `public/stores` đã cho biết nút nào công khai.

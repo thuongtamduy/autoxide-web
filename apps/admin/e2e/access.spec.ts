@@ -275,7 +275,7 @@ test("điện thoại: bảng người dùng thành thẻ có nhãn cột", asyn
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test("tab dữ liệu mẫu: lời mời, uỷ quyền, hồ sơ công khai, quyền vào hỗ trợ", async ({ page }) => {
+test("tab dữ liệu mẫu: lời mời, uỷ quyền, quyền vào hỗ trợ", async ({ page }) => {
   await signIn(page, "/org/access/invitations");
   await expect(page.getByText("Sample data · waiting for API step 34")).toBeVisible();
   await expect(rows(page)).toHaveCount(5);
@@ -307,22 +307,8 @@ test("tab dữ liệu mẫu: lời mời, uỷ quyền, hồ sơ công khai, quy
   await expect(toast(page)).toHaveText("Delegated; the event is recorded at both customers.");
   await expect(rows(page)).toHaveCount(4);
 
-  await page.getByRole("link", { name: /Public profiles/ }).click();
-  await page.getByRole("link", { name: "Kho Thủ Đức" }).click();
-  await page.getByLabel("Show on the website").check();
-  await page.getByRole("button", { name: "Save profile" }).click();
-  await expect(page.locator(".falert")).toHaveText("3 fields need fixing.");
-  await page.getByLabel("Show on the website").check();
-  await page.getByLabel("Province or city").selectOption("79");
-  await page.getByLabel("Ward or commune").fill("Phường Thủ Đức");
-  await page.getByLabel("Street address").fill("[Sample street]");
-  await page.getByRole("button", { name: "Save profile" }).click();
-  await expect(toast(page)).toHaveText(
-    "Saved; the store page on the website updates in a few minutes.",
-  );
-  await expect(rows(page).filter({ hasText: "Kho Thủ Đức" })).toContainText("Public");
-
   await page.getByRole("link", { name: /Support access/ }).click();
+  await expect(page).toHaveURL(/\/org\/access\/support$/);
   await page.getByRole("button", { name: "Revoke" }).click();
   await dialog(page).getByRole("button", { name: "Revoke now" }).click();
   await expect(toast(page)).toHaveText("Access revoked.");

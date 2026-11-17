@@ -33,7 +33,11 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
   tin, duyệt bình luận (chữ thường hay Markdown) và các bài có bình luận.
 - **Tổ chức › Người dùng và role**: tài khoản kèm role, lọc theo trạng thái và lần đăng nhập gần nhất,
   role với bộ chọn permission (permission rủi ro có nhãn), đặt mật khẩu đầu tiên và tắt xác thực hai
-  bước chỉ khi cần, đăng xuất mọi nơi, gỡ passkey của người mất thiết bị.
+  bước chỉ khi cần, đăng xuất mọi nơi, gỡ passkey của người mất thiết bị; hồ sơ công khai của các nút
+  (tên, địa chỉ theo danh mục hành chính chính thức, giờ mở cửa, nhận tại quầy) hiện trên website.
+- **Cây tổ chức**: các nút theo loại, ai làm việc ở mỗi nút (cả người được gán ở nút trên), cài đặt
+  đang có hiệu lực kèm nút đặt nó, thêm nút con có Hoàn tác. Bộ chọn nút ở góc trên trái thu hẹp bài,
+  media, form và menu về một nút (cái tạo mới thuộc nút đó).
 - **Cài đặt**: tên miền riêng (bản ghi TXT cần tạo, kiểm tra ngay, kết quả kiểm lại hằng ngày, gỡ; bản
   cài một khách thì giải thích thay vì báo lỗi), module, cài đặt theo khách, webhook (kèm lần giao gần nhất), nhật ký audit, API key và
   AI agent (MCP; xác nhận key mới bằng mật khẩu, mã của app xác thực hay passkey; quản trị viên xem và
@@ -51,13 +55,13 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 **Các màn dùng dữ liệu mẫu** (có nhãn "Dữ liệu mẫu · chờ API bước N"), vì core dựng chúng ở các bước
 sau: Bán hàng (đơn hàng, đổi trả, bán tại quầy, vận chuyển và COD, cửa hàng, kênh bán), Sản phẩm
 (danh mục, giá, nhóm thuế, tồn kho), Tiếp thị (khuyến mại, tiếp thị liên kết), Khách hàng, Sàn và
-Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Cây tổ chức, Tuân thủ và phần còn lại
+Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Tuân thủ và phần còn lại
 của Mặt điều khiển nền tảng (gói, thuê bao, cấp phát, sức khoẻ, vào dữ liệu khách). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
 liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật, trừ production); thay đổi ở đó nằm
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).
 
-Chạy với core Autoxide từ commit `fb3ba06` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
+Chạy với core Autoxide từ commit `5b35b99` của nhánh `main` trở lên (bản phát hành kế tiếp, v0.15.0,
 sẽ có).
 
 ## Cần có
@@ -177,7 +181,7 @@ pnpm --filter @autoxide/storefront dev                       # http://localhost:
 | ---------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTOXIDE_API_URL`           | `http://127.0.0.1:8080` | Địa chỉ của core, không có `/api/v1`. Trình duyệt không gọi trực tiếp.                                                                                      |
 | `AUTOXIDE_STOREFRONT_URL`    | tên miền đang mở        | Địa chỉ công khai của website: link canonical, sitemap, RSS. Trống: tên miền người đọc đang mở.                                                             |
-| `AUTOXIDE_STOREFRONT_NAME`   | cửa hàng mẫu / Autoxide | Tên cửa hàng ở đầu trang, chân trang và tiêu đề.                                                                                                            |
+| `AUTOXIDE_STOREFRONT_NAME`   | cửa hàng mẫu / Autoxide | Tên cửa hàng khi hồ sơ công khai của nút gốc không công khai.                                                                                               |
 | `AUTOXIDE_STOREFRONT_THEME`  | `default`               | Kiểu giao diện: `default`, `market`, `minimal` hoặc `luxe`.                                                                                                 |
 | `AUTOXIDE_STOREFRONT_TENANT` | trống                   | Khách (slug hay ID) của core chạy nhiều khách; trống: chọn theo tên miền người đọc mở (cần máy chủ này nằm trong `AUTOXIDE_HTTP_TRUSTED_PROXIES` của core). |
 | `AUTOXIDE_WEB_SAMPLE_DATA`   | `false` khi chạy thật   | Hiện các khối bán hàng dùng dữ liệu mẫu.                                                                                                                    |
@@ -237,8 +241,8 @@ Caddy chuyển tiếp `Host` của người đọc và đặt `X-Forwarded-Proto
 proxy khác thì cũng cho nó đặt `X-Forwarded-Proto`: thiếu header này, máy chủ Next.js coi là `http` và link
 canonical sẽ bắt đầu bằng `http://`. Tên miền chưa cửa hàng nào xác minh nhận trang "không tìm thấy" (404)
 của website. Tên cửa hàng ở
-đầu trang vẫn lấy từ `AUTOXIDE_STOREFRONT_NAME` (một tên cho mọi cửa hàng) cho tới khi core công bố hồ
-sơ công khai của từng khách.
+đầu trang lấy từ hồ sơ công khai của nút gốc của khách (Tổ chức › Người dùng và role › Hồ sơ công khai, bật
+"Hiện trên website"); hồ sơ đó không công khai thì lấy từ `AUTOXIDE_STOREFRONT_NAME`.
 
 ## Cách hoạt động
 

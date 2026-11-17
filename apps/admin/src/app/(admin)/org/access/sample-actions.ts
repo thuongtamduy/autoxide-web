@@ -16,7 +16,6 @@ import {
   revokeInvitation,
   revokeSupportGrant,
   setSupportAccess,
-  updateProfile,
 } from "@/sample/org";
 
 async function required(): Promise<{ fallback: string; messages: Record<string, string> }> {
@@ -140,29 +139,6 @@ export async function revokeDelegationAction(
 }
 
 // ---------------------------------------------------------------- Hồ sơ công khai
-
-const ProfileForm = z.object({ display_name: z.string().trim().min(1) });
-
-export async function saveProfile(state: FormState, formData: FormData): Promise<FormState> {
-  const off = await guard();
-  if (off) return off;
-  const names = ["display_name", "province_code", "commune_name", "line", "opens", "closes"];
-  const values = typed(formData, names);
-  const { fallback, messages } = await required();
-  const input = parseForm(ProfileForm, formData, fallback, messages);
-  if (!input.ok) return { fields: input.fields, values };
-  const outcome = await updateProfile(String(formData.get("unit_id") ?? ""), {
-    public: formData.get("public") === "on",
-    pickup: formData.get("pickup") === "on",
-    display_name: values.display_name ?? "",
-    province_code: values.province_code ?? "",
-    commune_name: values.commune_name ?? "",
-    line: values.line ?? "",
-    opens: values.opens ?? "",
-    closes: values.closes ?? "",
-  });
-  return finish(state, outcome, names, values);
-}
 
 // ---------------------------------------------------------------- Quyền vào hỗ trợ
 

@@ -20,6 +20,7 @@ import {
 } from "@/lib/engage-server";
 import { type FormState, nextDone, problemState } from "@/lib/form";
 import { type FieldDraft, fieldToCore, SUBMISSION_STATUSES } from "@/lib/forms";
+import { currentUnit } from "@/lib/org-server";
 
 type Schemas = components["schemas"];
 
@@ -151,7 +152,11 @@ export async function createForm(
 ): Promise<FormEditorState> {
   const input = await readForm(formData);
   if (!input.ok) return input.state;
-  const result = await send((client) => client.POST("/api/v1/forms", { body: input.body }));
+  // Form mới thuộc nút đang chọn ở góc trên trái; không chọn thì là form của cả khách.
+  const unit = await currentUnit();
+  const result = await send((client) =>
+    client.POST("/api/v1/forms", { body: { ...input.body, ...(unit ? { org_id: unit.id } : {}) } }),
+  );
   if (!result.ok) {
     return {
       ...nestedProblemState(result.problem, TOP, ["fields["], KEY_TAKEN),

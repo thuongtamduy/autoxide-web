@@ -1,46 +1,39 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { InviteDialog } from "@/components/access/sample-forms";
+import { TipHeading } from "@/components/help/info-tip";
 import { MessagePanel } from "@/components/message-panel";
-import { SampleBadge } from "@/components/sample-badge";
 import { InlineAction } from "@/components/ui/confirm";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
-import { Time } from "@/components/ui/time";
 import { ToastProvider } from "@/components/ui/toast";
 import { allRoles } from "@/lib/access";
+import { load } from "@/lib/core";
 import { initialsOf } from "@/lib/initials";
 import {
-  INVITATIONS_MANAGE,
+  chainOf,
+  groupMemberships,
+  memberCounts,
+  ordered,
+  SCOPES,
+  type Scope,
+  settingText,
+  typeLabel,
+  widestScope,
+} from "@/lib/org";
+import { loadMemberships, loadUnits, loadUnitTypes, loadUser } from "@/lib/org-server";
+import {
   ROLES_READ,
   SETTINGS_WRITE,
   UNITS_MANAGE,
   UNITS_READ,
   UNITS_WRITE,
+  USERS_READ,
 } from "@/lib/permissions";
 import { can } from "@/lib/viewer";
-import { sampleDataEnabled } from "@/sample";
-import { listInvitations, listUnits, listUnitTypes, type OrgUnit } from "@/sample/org";
-import {
-  chainOf,
-  effectiveSettings,
-  listMemberships,
-  listSplitRequests,
-  memberCounts,
-  SCOPES,
-  SETTING_CHOICES,
-  SETTINGS,
-  SPLITTABLE,
-} from "@/sample/org-tree";
-import { roleOptions } from "./access/sample-gate";
-import { addUnit, archiveUnit, askSplit, dropSetting, putSetting } from "./actions";
+import { addUnit, approveUnit, archiveUnit, dropSetting, putSetting } from "./actions";
 import "@/components/engage/engage.css";
 import "@/components/orgtree/orgtree.css";
-import { TipHeading } from "@/components/help/info-tip";
-
-const ENDPOINTS =
-  "GET/POST /api/v1/organizations/units, GET /api/v1/auth/memberships?org_id=, GET/PUT/DELETE /api/v1/organizations/units/{id}/settings, POST /api/v1/organizations/units/{id}/split-requests";
 
 const SCOPE_BADGE = {
   own: "badge b-draft",
@@ -49,24 +42,10 @@ const SCOPE_BADGE = {
   tenant: "badge b-ok",
 } as const;
 
-/** Thứ tự cây: duyệt sâu từ gốc; con theo thứ tự tạo. Nút đã lưu trữ không hiện. */
-function ordered(units: readonly OrgUnit[]): { unit: OrgUnit; depth: number }[] {
-  const out: { unit: OrgUnit; depth: number }[] = [];
-  const walk = (parent: string | null, depth: number) => {
-    for (const unit of units.filter((u) => u.parent_id === parent && u.status !== "archived")) {
-      out.push({ unit, depth });
-      walk(unit.id, depth + 1);
-    }
-  };
-  walk(null, 0);
-  return out;
-}
-
-// Màn "Cây tổ chức" (phân hệ Tổ chức): cả màn chờ API của bước 34 của core, dựng bằng dữ liệu mẫu
-// (W-006, W-012). Cây bên trái, chi tiết nút bên phải; điện thoại: danh sách → chi tiết
-// (`?unit=` có thì hiện chi tiết, không thì hiện cây). Role cho lời mời là role thật của core.
+// Màn "Cây tổ chức" (phân hệ Tổ chức), module `organizations` của core (bước 34, D-303 – D-306):
+// cây bên trái, chi tiết nút bên phải; điện thoại: danh sách → chi tiết (`?unit=` có thì hiện chi
+// tiết, không thì hiện cây). Người ở nút: `GET /auth/memberships?org_id=` (gồm người gán ở nút trên).
 export default async function OrgTreePage(props: PageProps<"/org">) {
-  if (!sampleDataEnabled()) notFound();
   const t = await getTranslations("orgtree");
   if (!(await can(UNITS_READ))) {
     const errors = await getTranslations("errors");
@@ -78,77 +57,93 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
     );
   }
   const params = await props.searchParams;
-  const [{ data: units }, { data: types }, counts] = await Promise.all([
-    listUnits(),
-    listUnitTypes(),
-    memberCounts(),
-  ]);
+  const units = await loadUnits();
+  if (!units) notFound();
   const tree = ordered(units);
   const root = tree[0]?.unit;
   if (!root) notFound();
   const wanted = typeof params.unit === "string" ? params.unit : "";
   const node = tree.find((entry) => entry.unit.id === wanted)?.unit ?? root;
   const view = wanted ? "node" : "tree";
-  const [
-    { data: members },
-    invitations,
-    settings,
-    { data: splits },
-    write,
-    manage,
-    invite,
-    writeSettings,
-    readRoles,
-  ] = await Promise.all([
-    listMemberships({ org_id: node.id, include_inherited: true }),
-    listInvitations({ status: "pending" }),
-    effectiveSettings(node.id),
-    listSplitRequests(node.id),
-    can(UNITS_WRITE),
-    can(UNITS_MANAGE),
-    can(INVITATIONS_MANAGE),
-    can(SETTINGS_WRITE),
-    can(ROLES_READ),
-  ]);
-  const roles = invite && readRoles ? await allRoles() : null;
-  const nameOf = new Map(units.map((u) => [u.id, u.name]));
-  const typeName = (code: string) => (t.has(`types.${code}`) ? t(`types.${code}`) : code);
-  const path = chainOf(units, node.id).slice(1).reverse();
-  const waiting = invitations.data.filter((i) => i.org_id === node.id);
-  const split = splits.find((s) => s.status === "requested");
-  const canSplit = manage && SPLITTABLE.includes(node.unit_type) && node.status === "active";
-  const valueLabel = (kind: string, value: string) =>
-    t.has(`values.${kind}.${value}`) ? t(`values.${kind}.${value}`) : value;
 
-  const addButton = write ? (
-    <FormDialog
-      action={addUnit}
-      label={t("add.button")}
-      triggerClass="btn pri"
-      title={t("add.title", { parent: node.name })}
-      intro={t("add.intro")}
-      submit={t("add.submit")}
-      done={t("add.done", { parent: node.name })}
-      undoAction={archiveUnit}
-      undoLabel={t("undo")}
-      undoDone={t("add.undone")}
-      fields={[
-        { kind: "hidden", name: "parent_id", value: node.id },
-        { kind: "text", name: "name", label: t("add.name") },
-        {
-          kind: "select",
-          name: "unit_type",
-          label: t("add.type"),
-          defaultValue: "store",
-          options: types
-            .filter((type) => type.code !== "tenant")
-            .map((type) => ({ value: type.code, label: typeName(type.code) })),
-          hint: t("add.typeHint", { parent: node.name }),
-        },
-        { kind: "text", name: "code", label: t("add.code"), mono: true, hint: t("add.codeHint") },
-      ]}
-    />
-  ) : null;
+  const [types, settings, catalog, rows, allRows, write, manage, writeSettings, readRoles, users] =
+    await Promise.all([
+      loadUnitTypes(),
+      load((c) =>
+        c.GET("/api/v1/organizations/units/{id}/settings", { params: { path: { id: node.id } } }),
+      ).then((r) => r.data),
+      load((c) => c.GET("/api/v1/organizations/settings")).then((r) => r.data),
+      loadMemberships({ org_id: node.id }),
+      loadMemberships({}),
+      can(UNITS_WRITE),
+      can(UNITS_MANAGE),
+      can(SETTINGS_WRITE),
+      can(ROLES_READ),
+      can(USERS_READ),
+    ]);
+  const members = groupMemberships(rows);
+  const counts = memberCounts(allRows);
+  const roles = readRoles ? await allRoles() : [];
+  const scopeOf = new Map(roles.map((r) => [r.id, widestScope(r)]));
+  // Tên và email của người ở nút (`auth.users.read`); không có quyền thì hiện mã người dùng.
+  const people = new Map(
+    users
+      ? await Promise.all(
+          [...new Set(members.map((m) => m.user_id))].map(
+            async (id) => [id, await loadUser(id)] as const,
+          ),
+        )
+      : [],
+  );
+  const nameOf = new Map(units.map((u) => [u.id, u.name]));
+  const typeName = (code: string) =>
+    typeLabel(types, code, (c) => (t.has(`types.${c}`) ? t(`types.${c}`) : null));
+  const path = chainOf(units, node.id).slice(1).reverse();
+  const describe = new Map(catalog.map((s) => [s.key, s.description]));
+  const defaults = new Map(catalog.map((s) => [s.key, s.default ?? null]));
+  const settingLabel = (key: string) => {
+    const id = `settings.keys.${key.replaceAll(".", "_")}`;
+    return t.has(id) ? t(id) : key;
+  };
+
+  const addButton =
+    write && node.status === "active" ? (
+      <FormDialog
+        action={addUnit}
+        label={t("add.button")}
+        triggerClass="btn pri"
+        title={t("add.title", { parent: node.name })}
+        intro={t("add.intro")}
+        submit={t("add.submit")}
+        done={t("add.done", { parent: node.name })}
+        undoAction={archiveUnit}
+        undoLabel={t("undo")}
+        undoDone={t("add.undone")}
+        fields={[
+          { kind: "hidden", name: "parent_id", value: node.id },
+          { kind: "text", name: "name", label: t("add.name") },
+          {
+            kind: "select",
+            name: "unit_type",
+            label: t("add.type"),
+            defaultValue: types.some((type) => type.code === "store")
+              ? "store"
+              : (types.find((type) => type.code !== "tenant")?.code ?? ""),
+            options: types
+              .filter((type) => type.code !== "tenant")
+              .map((type) => ({ value: type.code, label: typeName(type.code) })),
+            hint: t("add.typeHint", { parent: node.name }),
+          },
+          {
+            kind: "text",
+            name: "code",
+            label: t("add.code"),
+            mono: true,
+            hint: t("add.codeHint"),
+          },
+        ]}
+      />
+    ) : null;
 
   return (
     <ToastProvider>
@@ -158,9 +153,6 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
             <span className="crumb ell">{t("crumb", { tenant: root.name })}</span>
             <h1 className="h1">{t("title")}</h1>
             <p className="pdesc">{t("description")}</p>
-            <span>
-              <SampleBadge step="34" endpoint={ENDPOINTS} />
-            </span>
           </div>
           {addButton ? <div className="headacts eg-headacts">{addButton}</div> : null}
         </section>
@@ -208,37 +200,21 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                 </h2>
                 <span className="badge b-arch">{typeName(node.unit_type)}</span>
                 {node.code ? <span className="mono muted">{node.code}</span> : null}
-                <div className="eg-acts ot-acts">
-                  {invite ? (
-                    <InviteDialog
-                      units={[{ value: node.id, label: node.name }]}
-                      roles={roleOptions(roles)}
+                {manage && node.status === "pending" ? (
+                  <div className="eg-acts ot-acts">
+                    <InlineAction
+                      action={approveUnit}
+                      id={node.id}
+                      label={t("approve")}
+                      done={t("approved")}
                     />
-                  ) : null}
-                  {canSplit && !split ? (
-                    <FormDialog
-                      action={askSplit}
-                      label={t("split.button")}
-                      title={t("split.title", { unit: node.name })}
-                      intro={t("split.intro")}
-                      points={[t("split.copy"), t("split.readOnly"), t("split.keeps")]}
-                      submit={t("split.submit")}
-                      done={t("split.done", { unit: node.name })}
-                      fields={[
-                        { kind: "hidden", name: "unit_id", value: node.id },
-                        { kind: "textarea", name: "note", label: t("split.note") },
-                        { kind: "check", name: "acknowledged", label: t("split.ack") },
-                      ]}
-                    />
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
-              {split ? (
-                <p className="note">
-                  {t("split.waiting")} <Time value={split.created_at} />
-                </p>
-              ) : null}
               {node.status === "pending" ? <p className="note warn">{t("pendingNote")}</p> : null}
+              {node.status === "suspended" ? (
+                <p className="note warn">{node.status_reason ?? t("suspendedNote")}</p>
+              ) : null}
             </section>
 
             <section className="block" aria-labelledby="ot-members-h">
@@ -246,11 +222,11 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                 <h2 id="ot-members-h" className="h2">
                   {t("members.title")}
                 </h2>
-                <span className="cnt">{members.length + waiting.length}</span>
+                <span className="cnt">{members.length}</span>
               </div>
               <p className="fhint">{t("members.hint")}</p>
               <div className="card tcard">
-                {members.length + waiting.length === 0 ? (
+                {members.length === 0 ? (
                   <p className="empty">{t("members.empty")}</p>
                 ) : (
                   <Table cards>
@@ -263,61 +239,63 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                       </tr>
                     </thead>
                     <tbody>
-                      {members.map((m) => (
-                        <tr key={m.id}>
-                          <Td className="rt-title">
-                            <span className="ot-person">
-                              <span className="avatar sm" aria-hidden="true">
-                                {initialsOf(m.user.name)}
+                      {members.map((m) => {
+                        const person = people.get(m.user_id);
+                        const scopes = [
+                          ...new Set(
+                            m.roles
+                              .map((r) => scopeOf.get(r.id))
+                              .filter((s): s is Scope => Boolean(s)),
+                          ),
+                        ].sort((a, b) => SCOPES.indexOf(a) - SCOPES.indexOf(b));
+                        return (
+                          <tr key={`${m.user_id}|${m.org_id}`}>
+                            <Td className="rt-title">
+                              <span className="ot-person">
+                                <span className="avatar sm" aria-hidden="true">
+                                  {initialsOf(person?.name ?? person?.email ?? "?")}
+                                </span>
+                                <span className="cell2">
+                                  {person ? (
+                                    <>
+                                      <Link
+                                        className="open ell"
+                                        href={`/org/access/users/${m.user_id}`}
+                                      >
+                                        {person.name}
+                                      </Link>
+                                      <span className="sub mono ell">{person.email}</span>
+                                    </>
+                                  ) : (
+                                    <b className="mono ell">{m.user_id.slice(0, 8)}</b>
+                                  )}
+                                </span>
                               </span>
-                              <span className="cell2">
-                                <b className="ell">{m.user.name}</b>
-                                <span className="sub mono ell">{m.user.email}</span>
-                              </span>
-                            </span>
-                          </Td>
-                          <Td label={t("members.role")}>
-                            <span className="mono">{m.roles.map((r) => r.name).join(", ")}</span>
-                          </Td>
-                          <Td label={t("members.depth")}>
-                            {m.roles.map((r) => (
-                              <span key={r.id} className={SCOPE_BADGE[r.scope]}>
-                                {t(`scopes.${r.scope}`)}
-                              </span>
-                            ))}
-                          </Td>
-                          <Td label={t("members.from")}>
-                            {m.inherited ? (
-                              <span className="muted">
-                                {t("members.inherited", { unit: nameOf.get(m.org_id) ?? "—" })}
-                              </span>
-                            ) : (
-                              t("members.direct")
-                            )}
-                          </Td>
-                        </tr>
-                      ))}
-                      {waiting.map((i) => (
-                        <tr key={i.id}>
-                          <Td className="rt-title">
-                            <span className="ot-person">
-                              <span className="avatar sm" aria-hidden="true">
-                                {initialsOf(i.email)}
-                              </span>
-                              <span className="cell2">
-                                <b className="mono ell">{i.email}</b>
-                              </span>
-                            </span>
-                          </Td>
-                          <Td label={t("members.role")}>
-                            <span className="mono">{i.roles.map((r) => r.name).join(", ")}</span>
-                          </Td>
-                          <Td label={t("members.depth")}>—</Td>
-                          <Td label={t("members.from")}>
-                            <span className="badge b-warn">{t("members.invited")}</span>
-                          </Td>
-                        </tr>
-                      ))}
+                            </Td>
+                            <Td label={t("members.role")}>
+                              <span className="mono">{m.roles.map((r) => r.name).join(", ")}</span>
+                            </Td>
+                            <Td label={t("members.depth")}>
+                              {scopes.length > 0
+                                ? scopes.map((scope) => (
+                                    <span key={scope} className={SCOPE_BADGE[scope]}>
+                                      {t(`scopes.${scope}`)}
+                                    </span>
+                                  ))
+                                : "—"}
+                            </Td>
+                            <Td label={t("members.from")}>
+                              {m.inherited ? (
+                                <span className="muted">
+                                  {t("members.inherited", { unit: nameOf.get(m.org_id) ?? "—" })}
+                                </span>
+                              ) : (
+                                t("members.direct")
+                              )}
+                            </Td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </Table>
                 )}
@@ -330,7 +308,9 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
               </TipHeading>
               <p className="fhint">{t("settings.hint")}</p>
               <div className="card tcard">
-                {settings.ok ? (
+                {settings.length === 0 ? (
+                  <p className="empty">{t("settings.empty")}</p>
+                ) : (
                   <Table cards>
                     <thead>
                       <tr>
@@ -345,10 +325,9 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                       </tr>
                     </thead>
                     <tbody>
-                      {settings.data.map((setting) => {
-                        const info = SETTINGS.find((s) => s.key === setting.key);
-                        const kind = info?.kind ?? "text";
-                        const label = t(`settings.keys.${setting.key.replaceAll(".", "_")}`);
+                      {settings.map((setting) => {
+                        const label = settingLabel(setting.key);
+                        const shown = settingText(setting.value);
                         return (
                           <tr key={setting.key}>
                             <Td className="rt-title">
@@ -357,7 +336,15 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                                 <span className="sub mono">{setting.key}</span>
                               </span>
                             </Td>
-                            <Td label={t("settings.value")}>{valueLabel(kind, setting.value)}</Td>
+                            <Td label={t("settings.value")}>
+                              {shown === "" ? (
+                                <span className="muted">{t("settings.unset")}</span>
+                              ) : typeof setting.value === "boolean" ? (
+                                t(setting.value ? "settings.on" : "settings.off")
+                              ) : (
+                                shown
+                              )}
+                            </Td>
                             <Td label={t("settings.source")}>
                               {!setting.inherited ? (
                                 <span className="badge b-info">{t("settings.here")}</span>
@@ -371,28 +358,35 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                                 <span className="badge b-draft">{t("settings.default")}</span>
                               )}
                             </Td>
-                            {writeSettings && info ? (
+                            {writeSettings ? (
                               <Td className="rt-acts">
                                 <span className="row-acts">
                                   <FormDialog
                                     action={putSetting}
                                     label={t("settings.set")}
                                     title={t("settings.setTitle", { key: label, unit: node.name })}
-                                    intro={t("settings.setIntro")}
+                                    intro={describe.get(setting.key) ?? t("settings.setIntro")}
                                     submit={t("settings.save")}
                                     done={t("settings.saved")}
                                     fields={[
                                       { kind: "hidden", name: "unit_id", value: node.id },
                                       { kind: "hidden", name: "key", value: setting.key },
                                       {
-                                        kind: "select",
+                                        kind: "hidden",
+                                        name: "current",
+                                        value: JSON.stringify(setting.value ?? null),
+                                      },
+                                      {
+                                        kind: "hidden",
+                                        name: "fallback",
+                                        value: JSON.stringify(defaults.get(setting.key) ?? null),
+                                      },
+                                      {
+                                        kind: "text",
                                         name: "value",
-                                        label: label,
-                                        defaultValue: setting.value,
-                                        options: SETTING_CHOICES[info.kind].map((value) => ({
-                                          value,
-                                          label: valueLabel(info.kind, value),
-                                        })),
+                                        label,
+                                        defaultValue: shown,
+                                        hint: t("settings.setIntro"),
                                       },
                                     ]}
                                   />
@@ -406,16 +400,12 @@ export default async function OrgTreePage(props: PageProps<"/org">) {
                                   ) : null}
                                 </span>
                               </Td>
-                            ) : writeSettings ? (
-                              <Td />
                             ) : null}
                           </tr>
                         );
                       })}
                     </tbody>
                   </Table>
-                ) : (
-                  <p className="empty">{settings.problem.detail}</p>
                 )}
               </div>
             </section>

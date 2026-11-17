@@ -1758,3 +1758,62 @@
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* Bộ chọn nút tổ chức (góc trên trái). */
+.ax button.ctx {
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.ax .ctx-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  line-height: 1.2;
+}
+.ax .ctx-sub {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax .org-picker {
+  max-width: 520px;
+}
+.ax .org-picker .inp {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.ax .op-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+.ax .op-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.ax .op-node:hover {
+  background: var(--hover);
+}
+.ax .op-node.on {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.ax .op-kind {
+  font-size: 12px;
+  color: var(--ink-3);
+}

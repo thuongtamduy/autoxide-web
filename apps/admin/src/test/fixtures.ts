@@ -4,6 +4,10 @@ import type { ModuleInfo } from "@autoxide/sdk";
 export const NOTES: ModuleInfo = {
   name: "notes",
   internal: false,
+  always_enabled: false,
+  features: [],
+  limits: [],
+  requires: [],
   position: 2,
   permissions: [{ name: "notes.write", description: "Write notes.", risk: "write" }],
   events: [{ name: "notes.note_created", description: "A note was created." }],

@@ -20,7 +20,7 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 ### Khung, đăng nhập, trạng thái chung
 
 - [x] Góc trên trái hiện tên khách khi core nhiều khách (`GET /kernel/tenant`) — API (16/11)
-- [ ] Bộ chọn nút tổ chức ở góc trên trái (cây mẫu, bước 34) — mẫu, L
+- [x] Bộ chọn nút tổ chức ở góc trên trái — API (17/11, W-045); phần "khách hàng khác" chờ đợt 2 (`GET /auth/me/tenants`)
 - [x] Đăng nhập bằng passkey ở `/login` (`POST /auth/login/passkey/options`, `/auth/login/passkey`) — API (16/11)
 - [x] Thanh báo mất kết nối (16/11)
 - [ ] `loading.tsx` (khung xám) cho các màn chính — S mỗi màn
@@ -58,7 +58,7 @@ cho core ở `docs/prompts/web-build-api-gaps.md` của core; core có API mới
 - [x] Menu: xem khác biệt khi lưu bị 412 (bản của họ / bản của bạn / mục trùng) — API (16/11)
 - [x] Bản tin: dải số tổng — đã có ở tab Danh sách (cộng `subscriptions` của `GET /newsletter/lists`)
 - [ ] Media: "Đang dùng ở" (cần core), lọc thiếu alt theo ngôn ngữ — M / S
-- [ ] Menu: bộ chọn website theo tên miền — mẫu, S–M
+- [x] Menu: chọn website — theo bộ chọn nút góc trên trái (menu của từng website, D-305 của core) — API (17/11, W-045)
 - [ ] Khối "Nhúng sản phẩm" trong bài — chờ bước 51
 
 ### Thương mại (toàn bộ là mẫu)

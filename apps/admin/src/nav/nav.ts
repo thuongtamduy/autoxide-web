@@ -312,8 +312,8 @@ export const NAV: NavGroup[] = [
     id: "org",
     icon: "org",
     pages: [
-      // Cây tổ chức: chờ API của bước 34 (module `organizations`), dựng bằng dữ liệu mẫu (W-012).
-      { id: "orgTree", href: "/org", permission: UNITS_READ, sample: { step: "34" } },
+      // Cây tổ chức: module `organizations` của core (bước 34).
+      { id: "orgTree", href: "/org", permission: UNITS_READ, module: "organizations" },
       // Không ghi `module`: không có module `auth` thì không đăng nhập được vào trang này.
       { id: "access", href: "/org/access", permission: [USERS_READ, ROLES_READ] },
     ],

@@ -5,6 +5,7 @@ import type { Entry, Term } from "./content";
 import { optional } from "./content-server";
 import { anonymousClient, load, loadTagged } from "./core";
 import type { LegacyMenu, PublicSiteMenu, RefObject, SiteMenu, SiteMenuSummary } from "./menus";
+import { currentUnit, rootUnit } from "./org-server";
 import { USERS_READ } from "./permissions";
 import { termName, termSlug } from "./structure";
 import { can } from "./viewer";
@@ -14,14 +15,25 @@ import { can } from "./viewer";
 /** Số trang tối đa khi đọc hết danh sách menu (mỗi trang 200): một website có ít menu. */
 const MAX_PAGES = 5;
 
-/** Mọi menu (mọi ngôn ngữ), sắp theo khoá rồi ngôn ngữ. */
+/**
+ * Mọi menu (mọi ngôn ngữ) của một website, sắp theo khoá rồi ngôn ngữ. Website = nút đang chọn ở
+ * góc trên trái, không chọn thì website của cả khách (nút gốc): mỗi website có menu riêng (D-305).
+ */
 export async function loadMenus(): Promise<SiteMenuSummary[]> {
   const all: SiteMenuSummary[] = [];
   let cursor: string | undefined;
+  const site = (await currentUnit()) ?? (await rootUnit());
   for (let page = 0; page < MAX_PAGES; page++) {
     const answer = await load((client) =>
       client.GET("/api/v1/menus", {
-        params: { query: { limit: 200, order: "asc", ...(cursor ? { cursor } : {}) } },
+        params: {
+          query: {
+            limit: 200,
+            order: "asc",
+            ...(cursor ? { cursor } : {}),
+            ...(site ? { owner_org: site.id } : {}),
+          },
+        },
       }),
     );
     all.push(...answer.data);

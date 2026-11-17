@@ -15,7 +15,7 @@ Cập nhật file này mỗi khi gửi đợt yêu cầu mới, khi core làm xo
 | 16/11/2026 | [thuongtamduy/autoxide#54](https://github.com/thuongtamduy/autoxide/pull/54) | Giao diện đã nối bước 33 phần C và D-296; 6 chỗ mô tả OpenAPI chưa khớp (nhỏ)                                                                                                                           | **Đã merge vào `main`, core chưa sửa** — không gấp, giao diện chịu được cả hai dạng                                                 |
 | 16/11/2026 | [thuongtamduy/autoxide#57](https://github.com/thuongtamduy/autoxide/pull/57) | Chạy thử với core thật: 2 chỗ core trả khác mô tả OpenAPI (mã chọn khách `tenant_required` / `tenant_not_found` chưa ở "Conventions"; thiếu tham số query bắt buộc trả `400 bad_request` thay vì `422`) | Đã gửi; không gấp, giao diện chịu được cả hai                                                                                       |
 
-## Còn nợ (đếm ngày 16/11/2026)
+## Còn nợ (đếm ngày 16/11/2026; bước 34, 35 đã xong ngày 17/11)
 
 272 dòng `[ ]` trong bảng của core. Chia hai loại, nhắc khác nhau:
 
@@ -30,13 +30,20 @@ Cập nhật file này mỗi khi gửi đợt yêu cầu mới, khi core làm xo
 Đã xong (16/11, core #53): 4 chỗ core trả khác mô tả OpenAPI; danh sách danh mục và thẻ công khai của `content`
 (website `/blog` đã dùng). Bộ biểu tượng ngành hàng cho menu: core trả lời không cần đổi (giao diện tự ánh xạ).
 
-1. **Endpoint công khai cho đơn vị hành chính** của module `address` (website đặt hàng đang dùng dữ liệu mẫu).
-2. **`reason` khi tạm khoá khách** (`PATCH /kernel/tenants/{id}`) để ghi audit.
-3. **Danh sách loại đối tượng** cho menu (sổ đối tượng).
+Đã xong (bước 34, core `5b35b99`): đơn vị hành chính công khai của `address` (website chưa nối ô địa chỉ khi đặt
+hàng: việc của web, `NEXT.md`); `reason` khi tạm khoá khách (bước 35 phần F).
+
+1. **Danh sách loại đối tượng** cho menu (sổ đối tượng).
+2. **Hồ sơ công khai cho website** (gặp khi nối W-045, 17/11): (a) thêm logo, thông tin pháp lý (tên doanh nghiệp, mã
+   số, địa chỉ đăng ký, logo đã thông báo Bộ Công Thương) vào hồ sơ công khai; (b) một endpoint công khai trả hồ sơ
+   của **website đang được gọi** (nút mà tên miền hay `?site=` chọn) — `GET /organizations/public/stores` chỉ liệt kê
+   cửa hàng, nên tên miền gắn với một cửa hàng con vẫn hiện tên của nút gốc.
+3. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` không có mô tả trong
+   `openapi.json` (mã nguồn có: "với `org_id` và `inherited=true` thì tính cả membership ở nút trên"); thiếu nó thì
+   người được gán ở nút cha không hiện ở nút con.
 
 ### Nhắc khi core tới bước
 
-- Bước 34: hồ sơ công khai của khách (website cần tên, thông tin pháp lý, logo Bộ Công Thương), role theo nút.
 - Bước 41–46: phần thương mại công khai của website (catalog lọc theo người bán, thông tin theo biến thể, báo
   giá giỏ có điểm và cách trả theo người bán, `return_until`, phí sàn công khai, đăng nhập người mua bằng OTP).
 - Bước 51: hộp việc, số đếm menu, số liệu tóm tắt có `definition`, sổ đối tượng, nhúng bản ghi trong nội dung.

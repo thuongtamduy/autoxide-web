@@ -37,7 +37,11 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
 - **Organization › Users and roles**: accounts with their roles, status filter and last sign-in,
   roles with a permission picker (risky permissions are labelled), first password and two-step
   sign-in reset only where they apply, sign-out everywhere, removing the passkeys of someone who
-  lost their device.
+  lost their device; public profiles of the units (name, address on the official list of
+  administrative units, opening hours, pickup) shown on the website.
+- **Organization tree**: units by type, who works at each unit (also through a parent unit), the
+  settings in force with the unit they come from, adding a child unit with undo. A unit picker at the
+  top left narrows posts, media, forms and menus to one unit (new ones belong to it).
 - **Settings**: custom domains (the DNS TXT record to create, verify now, daily re-check status,
   remove; explained instead of refused on a single-tenant installation), modules, per-customer
   settings, webhooks (with their last delivery), audit log,
@@ -57,14 +61,14 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
 builds them in later steps: Sales (orders, returns, counter sales, shipping and COD, stores,
 sales channels), Products (catalog, prices, tax groups, inventory), Marketing (promotions,
 affiliate marketing), Customers, Marketplace and the Seller Center, Finance (ledger, e-invoices,
-tax), Organization tree, Compliance, and the rest of the Platform console (plans, subscriptions,
+tax), Compliance, and the rest of the Platform console (plans, subscriptions,
 provisioning, health, customer data access). Parts of the real screens the core
 has no API for yet use sample data the same way. Sample data shows only when
 `AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes there are kept in the
 app's memory and lost on restart. The sample records agree across screens (an order, its
 shipment, its ledger entries and its invoice are the same order).
 
-Works with Autoxide core from commit `fb3ba06` of its `main` branch or newer (the next release,
+Works with Autoxide core from commit `5b35b99` of its `main` branch or newer (the next release,
 v0.15.0, will include it).
 
 ## Requirements
@@ -187,7 +191,7 @@ pnpm --filter @autoxide/storefront dev                       # http://localhost:
 | ---------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTOXIDE_API_URL`           | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Browsers never call it directly.                                                                                             |
 | `AUTOXIDE_STOREFRONT_URL`    | the domain opened       | Public address of the website: canonical links, sitemap, RSS. Empty: the domain the visitor opened.                                                                  |
-| `AUTOXIDE_STOREFRONT_NAME`   | sample shop / Autoxide  | Name of the shop in the header, footer and titles.                                                                                                                   |
+| `AUTOXIDE_STOREFRONT_NAME`   | sample shop / Autoxide  | Name of the shop when the root unit's public profile is not public.                                                                                                  |
 | `AUTOXIDE_STOREFRONT_THEME`  | `default`               | Look: `default`, `market`, `minimal` or `luxe`.                                                                                                                      |
 | `AUTOXIDE_STOREFRONT_TENANT` | empty                   | Customer (slug or ID) of a core that runs several; empty: chosen by the domain the visitor opened (needs this server in the core's `AUTOXIDE_HTTP_TRUSTED_PROXIES`). |
 | `AUTOXIDE_WEB_SAMPLE_DATA`   | `false` in production   | Show the shop sections that use sample data.                                                                                                                         |
@@ -249,8 +253,9 @@ Caddy passes on the visitor's `Host` and sets `X-Forwarded-Proto`, which is all 
 With another reverse proxy, make it set `X-Forwarded-Proto` too: without it, the Next.js server
 assumes `http` and the canonical links would start with `http://`. A domain that no shop has
 verified gets the website's "page not found" (404).
-The shop's name in the header still comes from `AUTOXIDE_STOREFRONT_NAME` (one name for every
-shop) until the core publishes each tenant's public profile.
+The shop's name in the header comes from the public profile of the tenant's root unit (Organization ›
+Users and roles › Public profiles, "Show on the website" on); when that profile is not public, from
+`AUTOXIDE_STOREFRONT_NAME`.
 
 ## How it works
 

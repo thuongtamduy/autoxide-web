@@ -13,6 +13,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ModuleInfo } from "@autoxide/sdk";
 import { contentResource, contentTermChildren } from "./mock-content.ts";
 import { empty, json, problem, type Schemas, send } from "./mock-http.ts";
+import { ROOT_UNIT } from "./mock-org.ts";
 
 type Item = Schemas["SiteMenuItem"];
 type Input = Schemas["SiteMenuItemInput"];
@@ -22,6 +23,10 @@ type Menu = Schemas["SiteMenu"] & { version: number; updated_by: string | null }
 export const MENUS_MODULE: ModuleInfo = {
   name: "menus",
   internal: false,
+  always_enabled: false,
+  features: [],
+  limits: [],
+  requires: [],
   position: 9,
   permissions: [
     { name: "menus.read", description: "Read website menus.", risk: "read" },
@@ -117,6 +122,7 @@ export function resetMenus() {
       updated_at: at,
       version: 1,
       updated_by: null,
+      org_id: ROOT_UNIT,
       items: [
         item({ label: "", ref: { kind: "content.term", id: TERM }, icon: "grid" }),
         item({
@@ -143,6 +149,7 @@ export function resetMenus() {
       updated_at: at,
       version: 1,
       updated_by: null,
+      org_id: ROOT_UNIT,
       items: [item({ label: "Về chúng tôi", url: "/ve-chung-toi" })],
     },
   ];
@@ -154,10 +161,19 @@ function view({ version: _version, updated_by: _by, ...menu }: Menu): Schemas["S
 }
 
 function summary(menu: Menu): Schemas["SiteMenuSummary"] {
-  const { id, key, locale, created_at, updated_at, updated_by } = menu;
+  const { id, key, locale, created_at, updated_at, updated_by, org_id } = menu;
   const count = (items: readonly { children: readonly unknown[] }[]): number =>
     items.reduce((n, item) => n + 1 + count(item.children as { children: unknown[] }[]), 0);
-  return { id, key, locale, created_at, updated_at, updated_by, item_count: count(menu.items) };
+  return {
+    id,
+    key,
+    locale,
+    org_id,
+    created_at,
+    updated_at,
+    updated_by,
+    item_count: count(menu.items),
+  };
 }
 
 /** Id mọi mục của cây (cả mục con). */
@@ -549,7 +565,10 @@ export async function menusRoutes(
 ): Promise<void> {
   if (route === "GET /api/v1/menus") {
     const order = url.searchParams.get("order") === "asc" ? 1 : -1;
-    const sorted = [...menus].sort((a, b) => order * a.id.localeCompare(b.id));
+    const owner = url.searchParams.get("owner_org");
+    const sorted = [...menus]
+      .filter((m) => !owner || m.org_id === owner)
+      .sort((a, b) => order * a.id.localeCompare(b.id));
     return send(response, 200, {
       data: sorted.map(summary),
       pagination: { limit: Number(url.searchParams.get("limit") ?? 50), next_cursor: null },
@@ -576,7 +595,8 @@ export async function menusRoutes(
     }
     const items = check(body.items ?? [], locale, problems);
     if (problems.length > 0) return invalid(response, problems);
-    if (menus.some((m) => m.key === key && m.locale === locale)) {
+    const org = body.org_id ?? ROOT_UNIT;
+    if (menus.some((m) => m.key === key && m.locale === locale && m.org_id === org)) {
       return problem(
         response,
         409,
@@ -595,6 +615,7 @@ export async function menusRoutes(
       updated_at: at,
       updated_by: callerId,
       version: 1,
+      org_id: org,
       items,
     };
     menus.push(menu);

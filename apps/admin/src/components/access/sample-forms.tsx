@@ -7,7 +7,6 @@ import { useActionState, useRef } from "react";
 import {
   delegateRole,
   inviteStaff,
-  saveProfile,
   saveSupportAccess,
 } from "@/app/(admin)/org/access/sample-actions";
 import { Dialog } from "@/components/ui/dialog";
@@ -176,95 +175,6 @@ export interface ProfileValues {
   opens: string;
   closes: string;
   pickup: boolean;
-}
-
-/** Hồ sơ công khai của một nút. */
-export function ProfileForm({
-  profile,
-  provinces,
-}: {
-  profile: ProfileValues;
-  provinces: Option[];
-}) {
-  const t = useTranslations("access.public");
-  const toast = useToast();
-  const form = useRef<HTMLFormElement>(null);
-  const [state, action, pending] = useActionState(saveProfile, {});
-  useFocusInvalid(form, state);
-  useOnDone(state.done, () => toast(t("saved")));
-  const value = (name: keyof ProfileValues) => state.values?.[name] ?? String(profile[name] ?? "");
-  return (
-    <form
-      ref={form}
-      action={action}
-      noValidate
-      className="card dlg-form padded"
-      key={profile.unit_id}
-    >
-      <input type="hidden" name="unit_id" value={profile.unit_id} />
-      <CheckField
-        name="public"
-        label={t("isPublic")}
-        hint={t("isPublicHint")}
-        defaultChecked={profile.public}
-      />
-      <Field
-        label={t("displayName")}
-        name="display_name"
-        defaultValue={value("display_name")}
-        error={state.fields?.display_name}
-      />
-      <SelectField
-        label={t("province")}
-        name="province_code"
-        options={[{ value: "", label: t("choose") }, ...provinces]}
-        defaultValue={value("province_code")}
-        error={state.fields?.province_code}
-        hint={t("provinceHint")}
-      />
-      <Field
-        label={t("commune")}
-        name="commune_name"
-        defaultValue={value("commune_name")}
-        error={state.fields?.commune_name}
-      />
-      <Field
-        label={t("line")}
-        name="line"
-        defaultValue={value("line")}
-        error={state.fields?.line}
-      />
-      <div className="fld-row">
-        <Field
-          label={t("opens")}
-          name="opens"
-          type="time"
-          defaultValue={value("opens")}
-          error={state.fields?.opens}
-        />
-        <Field
-          label={t("closes")}
-          name="closes"
-          type="time"
-          defaultValue={value("closes")}
-          error={state.fields?.closes}
-        />
-      </div>
-      <p className="fhint">{t("hoursHint")}</p>
-      <CheckField
-        name="pickup"
-        label={t("pickup")}
-        hint={t("pickupHint")}
-        defaultChecked={profile.pickup}
-      />
-      <FormAlert state={state} />
-      <div className="dlg-acts">
-        <button type="submit" className="btn pri" disabled={pending}>
-          {t("save")}
-        </button>
-      </div>
-    </form>
-  );
 }
 
 /** Bật / tắt cho nhân sự nền tảng vào để hỗ trợ (`auth.support_access`). */

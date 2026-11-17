@@ -17,6 +17,7 @@ import {
 } from "@/lib/content";
 import { loadAuthors } from "@/lib/content-server";
 import { isForbidden, load } from "@/lib/core";
+import { ownerFilter } from "@/lib/org-server";
 import { getMe } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 import { listWebsites, websiteChecklist } from "@/sample/content";
@@ -150,8 +151,12 @@ export default async function ContentPage(props: PageProps<"/content">) {
 /** Trang đang xem: bảng bài, hay (tab "Sắp đăng") lịch đang chờ kèm bài có lịch. */
 async function loadPage(filters: ListFilters) {
   if (filters.status !== "scheduled") {
+    // Nút đang chọn ở góc trên trái: chỉ bài của nút đó (`owner_org`).
+    const owner = await ownerFilter();
     const page = await load((client) =>
-      client.GET("/api/v1/content/entries", { params: { query: listQuery(filters) } }),
+      client.GET("/api/v1/content/entries", {
+        params: { query: { ...listQuery(filters), ...owner } },
+      }),
     );
     return { kind: "entries" as const, ...page };
   }

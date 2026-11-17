@@ -6,6 +6,7 @@ import {
   sameOrigin,
   streamBody,
 } from "@/lib/media-route";
+import { currentUnit } from "@/lib/org-server";
 import { routeClient } from "@/lib/route-session";
 
 // Tải một tệp lên thư viện media qua máy chủ của giao diện (`POST /api/v1/media` của core). Trình
@@ -28,10 +29,13 @@ export async function POST(request: Request) {
     if (!signedIn) {
       return problemResponse(401, "unauthenticated", "Sign in again to upload files.");
     }
+    // Tệp mới thuộc nút đang chọn ở góc trên trái; không chọn thì core chọn (D-305: `home_org`).
+    const unit = await currentUnit();
     const { data, error, response } = await client.POST("/api/v1/media", {
       params: {
         query: {
           name,
+          ...(unit ? { org_id: unit.id } : {}),
           ...(isUuid(folder) ? { folder_id: folder } : {}),
           ...(tags ? { tags } : {}),
         },

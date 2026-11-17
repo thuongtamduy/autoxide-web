@@ -251,6 +251,15 @@
       "untitled": "(untitled)",
       "media": "Media file",
       "user": "User"
+    },
+    "org": {
+      "open": "Change organization unit",
+      "title": "Choose an organization unit",
+      "search": "Find a store, warehouse, region…",
+      "all": "All of {name}",
+      "none": "No unit matches.",
+      "close": "Close",
+      "hint": "Choosing a unit shows only its posts, media, forms and menus; the screen you are on stays the same. Your role decides what you can change there."
     }
   },
   "dashboard": {
@@ -925,10 +934,11 @@
       "line": "Street address",
       "opens": "Opens",
       "closes": "Closes",
-      "hoursHint": "Same hours every day. Hours per day and special closing days need the API.",
+      "hoursHint": "Same hours every day. Hours per day and special days can be set through the API.",
       "pickup": "Pickup at the counter",
       "pickupHint": "Buyers can choose this store at checkout.",
-      "save": "Save profile"
+      "save": "Save profile",
+      "loading": "Loading…"
     },
     "support": {
       "allowTitle": "Access for support",
@@ -3600,21 +3610,6 @@
       "suspended": "Suspended",
       "archived": "Archived"
     },
-    "values": {
-      "tax_profile": {
-        "company_deduction": "Company, VAT credit method",
-        "household_flat": "Household business, flat rate",
-        "per_seller": "Each seller's own profile"
-      },
-      "bool": {
-        "true": "On",
-        "false": "Off"
-      },
-      "language": {
-        "en": "English",
-        "vi": "Vietnamese"
-      }
-    },
     "add": {
       "button": "Add child unit",
       "title": "Add a unit under {parent}",
@@ -3628,19 +3623,6 @@
       "code": "Internal code (optional)",
       "codeHint": "For example a store code; unique within the customer."
     },
-    "split": {
-      "button": "Request split",
-      "title": "Request to make {unit} a separate customer",
-      "intro": "Platform operations staff review the request, run a dry run and schedule the split with you. The branch becomes a child customer with its own database and stays in the customer tree.",
-      "copy": "The branch data is copied to its own database by a background job.",
-      "readOnly": "The branch is read-only for a few minutes during the switch; the split cannot be cancelled halfway.",
-      "keeps": "IDs and history stay the same; roles here keep working through delegation; combined reports still include the branch.",
-      "submit": "Send request",
-      "done": "Split request for {unit} sent; you will be notified when it is scheduled.",
-      "note": "Note for operations staff (optional)",
-      "ack": "I understand the split runs in the background and cannot be cancelled halfway",
-      "waiting": "A split request is waiting for platform operations staff, sent"
-    },
     "members": {
       "title": "Who works at this unit",
       "hint": "Includes people assigned at a parent unit with a depth that flows down to this unit.",
@@ -3650,8 +3632,7 @@
       "depth": "Depth",
       "from": "Assigned at",
       "inherited": "From {unit}",
-      "direct": "Directly at this unit",
-      "invited": "Invited · waiting"
+      "direct": "Directly at this unit"
     },
     "scopes": {
       "own": "Own records",
@@ -3681,8 +3662,14 @@
         "organizations_currency": "Currency",
         "organizations_language": "Language",
         "auth_customer_registration": "Buyer sign-up",
-        "tax_profile": "Tax profile"
-      }
+        "tax_profile": "Tax profile",
+        "organizations_languages": "Website languages",
+        "auth_support_access": "Platform support access"
+      },
+      "empty": "No module offers settings per unit yet.",
+      "unset": "Not set",
+      "on": "On",
+      "off": "Off"
     },
     "depth": {
       "title": "Depth of permissions",
@@ -3692,7 +3679,10 @@
       "subtree": "The assigned unit and every unit below it; a parent can create data for a child.",
       "tenant": "Everything of this customer.",
       "staff": "Staff accounts are platform-wide: one person can work for several customers and units. Buyers have separate accounts per customer."
-    }
+    },
+    "approve": "Approve unit",
+    "approved": "Unit approved; it can be written to now.",
+    "suspendedNote": "This unit is suspended; nothing can be written to it or to the units below it."
   },
   "compliance": {
     "crumb": "Compliance · rule set {ruleset}",

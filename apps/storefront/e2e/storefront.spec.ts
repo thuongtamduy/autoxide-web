@@ -10,6 +10,17 @@ test.beforeEach(async ({ request }) => {
   await request.post(`${CORE}/__storefront/reset`);
 });
 
+test("tên cửa hàng lấy từ hồ sơ công khai của nút gốc (core)", async ({ page, request }) => {
+  await request.post(`${CORE}/__org/root-name`, { data: { name: "Gốm Sứ Minh Long" } });
+  try {
+    await page.goto("/");
+    await expect(page.getByRole("banner")).toContainText("Gốm Sứ Minh Long");
+    await expect(page).toHaveTitle(/Gốm Sứ Minh Long/);
+  } finally {
+    await request.post(`${CORE}/__org/root-name`, { data: { name: "Bếp Mộc" } });
+  }
+});
+
 test("trang chủ tiếng Việt: menu thật của core, khối mẫu, bài viết thật", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");

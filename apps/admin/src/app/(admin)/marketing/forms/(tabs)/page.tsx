@@ -8,6 +8,7 @@ import { Time } from "@/components/ui/time";
 import { isForbidden, load } from "@/lib/core";
 import { FORMS_READ, hrefWith, one, oneOf, PAGE_SIZE } from "@/lib/engage";
 import { type Form, retention } from "@/lib/forms";
+import { ownerFilter } from "@/lib/org-server";
 import { can } from "@/lib/viewer";
 
 const BASE = "/marketing/forms";
@@ -22,11 +23,18 @@ export default async function FormsPage(props: PageProps<"/marketing/forms">) {
   const status = oneOf(params, "status", STATES);
   const cursor = one(params, "cursor", 500);
   let page: { data: Form[]; pagination: { next_cursor?: string | null } };
+  // Nút đang chọn ở góc trên trái: chỉ form của nút đó (`owner_org`).
+  const owner = await ownerFilter();
   try {
     page = await load((client) =>
       client.GET("/api/v1/forms", {
         params: {
-          query: { limit: PAGE_SIZE, ...(status ? { status } : {}), ...(cursor ? { cursor } : {}) },
+          query: {
+            limit: PAGE_SIZE,
+            ...(status ? { status } : {}),
+            ...(cursor ? { cursor } : {}),
+            ...owner,
+          },
         },
       }),
     );

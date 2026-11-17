@@ -16,6 +16,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { aiOn } from "./mock-content.ts";
 import { type Account, empty, json, problem, type Schemas, send, text } from "./mock-http.ts";
+import { ROOT_UNIT } from "./mock-org.ts";
 
 type Endpoint = Schemas["EndpointResponse"];
 type Delivery = Schemas["DeliveryResponse"];
@@ -392,6 +393,7 @@ export async function settingsRoutes(
       const created: ApiKey = {
         id: randomUUID(),
         owner: account.id,
+        org_id: ROOT_UNIT,
         name: text(body, "name"),
         prefix: secretKey.slice(0, 12),
         permissions: [...permissions].sort(),
