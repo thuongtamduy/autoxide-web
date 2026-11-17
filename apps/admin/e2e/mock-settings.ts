@@ -477,6 +477,8 @@ export async function settingsRoutes(
           (!q.get("subject") || e.subject === q.get("subject")) &&
           (!q.get("actor_user_id") || e.actor_user_id === q.get("actor_user_id")),
       );
+      // `order` như core: theo thời điểm, mặc định mới trước (sổ giả giữ mới ở đầu).
+      if (q.get("order") === "asc") list.reverse();
       const include = q.get("include");
       if (include && include !== "actor") {
         problem(response, 400, "bad_request", "A query parameter has an invalid value.");

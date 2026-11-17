@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Chips, Facts, Pager } from "@/components/engage/common";
+import { Chips, Facts } from "@/components/engage/common";
 import { ENTRY_BADGE, StatusBadge } from "@/components/finance/badges";
 import { SampleBadge } from "@/components/sample-badge";
 import { FormDialog } from "@/components/ui/form-dialog";
+import { Pager } from "@/components/ui/pager";
+import { RowMenu, type RowMenuItem } from "@/components/ui/row-menu";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { formatDay } from "@/lib/catalog";
 import { formatMonth, LEDGER_READ, LEDGER_REVERSE } from "@/lib/finance";
 import { formatMoney } from "@/lib/format";
+import { readPage, readSort, slicePage, sortRows } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   type EntryFilter,
@@ -47,7 +51,9 @@ const total = (e: LedgerEntry) =>
 
 // Tab "Sổ cái": bút toán kép chỉ thêm (không sửa, không xoá; sai thì ghi bút toán đảo), niêm phong
 // vào chuỗi băm mười giây một lần, cân đối thử theo kỳ. Bút toán do module khác sinh (đơn hàng, sàn)
-// sửa ở module nguồn; chỉ bút toán tay đảo được ở đây.
+// sửa ở module nguồn; chỉ bút toán tay đảo được ở đây. Bộ bảng (W-058): sắp theo ngày / số tiền, phân
+// trang có tổng (hàm mẫu trả đủ danh sách), "⋯" trên dòng (xem chi tiết, đảo bút toán tay). Sổ chỉ thêm
+// nên không có thao tác hàng loạt.
 export default async function LedgerPage(props: PageProps<"/finance">) {
   if (!(await can(LEDGER_READ))) {
     // Màn mở tab đầu tiên người xem được dùng.
@@ -66,9 +72,11 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
   const filter = FILTERS.find((f) => f === one("f"));
   const open = one("open");
   const today = vietnamDay();
+  const sort = readSort(params, ["date", "amount"], { field: "date", dir: "desc" });
+  const paging = readPage(params);
   const tbBook = bookOf(one("tb"));
   const [
-    page,
+    listed,
     name,
     { data: main },
     { data: market },
@@ -80,7 +88,7 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
     notes,
     tf,
   ] = await Promise.all([
-    listEntries({ book, filter, cursor: one("cursor") || null }),
+    listEntries({ book, filter, limit: 100_000 }),
     accountNamer(),
     listAccounts("main"),
     listAccounts("market"),
@@ -92,7 +100,14 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
     getTranslations("finance.notes"),
     getTranslations("finance"),
   ]);
+  const tt = await getTranslations("table");
   const accounts = [...main, ...market];
+  // Bút toán gốc giữ thứ tự của sổ (ngày hiệu lực rồi lúc ghi) khi cùng giá trị sắp.
+  const page = slicePage(
+    sortRows(listed.data, (e) => (sort.field === "amount" ? total(e) : e.effective_date), sort.dir),
+    paging.page,
+    paging.per,
+  );
   // Bút toán gốc / bút toán đảo của dòng đang mở (có thể nằm ở trang khác của danh sách).
   const opened = page.data.find((e) => e.id === open);
   const [original, reversal] = await Promise.all([
@@ -118,6 +133,10 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
       f: filter ?? null,
       tb: tbBook === "market" ? "market" : null,
       month: one("month") || null,
+      sort: one("sort") ? sort.field : null,
+      dir: one("sort") ? sort.dir : null,
+      page: paging.page > 1 ? String(paging.page) : null,
+      per: paging.per !== 25 ? String(paging.per) : null,
       ...over,
     };
     for (const [k, v] of Object.entries(merged)) if (v) query.set(k, v);
@@ -125,6 +144,57 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
     return text ? `/finance?${text}` : "/finance";
   };
   const thisMonth = formatMonth(monthOf(today), locale);
+  // Tham số giữ khi sắp / đổi trang (không gồm trang và dòng đang mở).
+  const keep = {
+    book: book ?? null,
+    f: filter ?? null,
+    tb: tbBook === "market" ? "market" : null,
+    month: one("month") || null,
+    ...(one("sort") ? { sort: sort.field, dir: sort.dir } : {}),
+  };
+  const canReverse = (e: LedgerEntry) =>
+    reverse &&
+    entryState(e) !== "reversed" &&
+    e.source_module === "ledger" &&
+    e.source_kind === "manual";
+  const reverseDialog = (e: LedgerEntry) => (
+    <FormDialog
+      action={reverseEntryAction}
+      label={t("reverse.button")}
+      title={t("reverse.title", { reference: e.reference })}
+      intro={t("reverse.intro")}
+      points={[t("reverse.once"), t("reverse.period")]}
+      submit={t("reverse.submit")}
+      done={t("reverse.done")}
+      danger
+      triggerClass="btn sm danger"
+      fields={[
+        { kind: "hidden", name: "id", value: e.id },
+        {
+          kind: "textarea",
+          name: "reason",
+          label: t("reverse.reason"),
+          hint: t("reverse.reasonHint"),
+        },
+        {
+          kind: "date",
+          name: "effective_date",
+          label: t("reverse.date"),
+          defaultValue: today,
+        },
+      ]}
+    />
+  );
+  // "⋯" của một dòng: xem / đóng chi tiết, đảo bút toán tay.
+  const menu = (e: LedgerEntry): RowMenuItem[] => [
+    {
+      label: open === e.id ? t("close") : t("details"),
+      href: open === e.id ? base({}) : `${base({ open: e.id })}#fin-entries-h`,
+    },
+    ...(canReverse(e)
+      ? [{ label: t("reverse.button"), danger: true, dialog: reverseDialog(e) }]
+      : []),
+  ];
   const kpis = [
     { label: t("kpis.gateway"), value: money(kpiGateway), sub: t("kpis.gatewaySub") },
     { label: t("kpis.cod"), value: money(kpiCod), sub: t("kpis.codSub"), href: "/sales/shipping" },
@@ -165,19 +235,23 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
         <Chips
           label={t("filter")}
           chips={[
-            { href: base({ book: null, f: null }), label: t("all"), on: !book && !filter },
             {
-              href: base({ book: "main", f: null }),
+              href: base({ book: null, f: null, page: null }),
+              label: t("all"),
+              on: !book && !filter,
+            },
+            {
+              href: base({ book: "main", f: null, page: null }),
               label: tf("books.main"),
               on: book === "main" && !filter,
             },
             {
-              href: base({ book: "market", f: null }),
+              href: base({ book: "market", f: null, page: null }),
               label: tf("books.market"),
               on: book === "market" && !filter,
             },
             ...FILTERS.map((f) => ({
-              href: base({ book: null, f }),
+              href: base({ book: null, f, page: null }),
               label: t(`filters.${f}`),
               on: filter === f,
             })),
@@ -192,9 +266,23 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
                 <tr>
                   <Th>{t("entry")}</Th>
                   <Th>{t("book")}</Th>
-                  <Th>{t("date")}</Th>
-                  <Th className="text-right">{t("amount")}</Th>
+                  <SortTh field="date" sort={sort} base="/finance" keep={keep} first="desc">
+                    {t("date")}
+                  </SortTh>
+                  <SortTh
+                    field="amount"
+                    sort={sort}
+                    base="/finance"
+                    keep={keep}
+                    first="desc"
+                    className="text-right"
+                  >
+                    {t("amount")}
+                  </SortTh>
                   <Th>{t("state")}</Th>
+                  <Th>
+                    <span className="vh">{t("actions")}</span>
+                  </Th>
                 </tr>
               </thead>
               <tbody>
@@ -232,10 +320,16 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
                           {t(`states.${state}`)}
                         </StatusBadge>
                       </Td>
+                      <Td className="rt-acts">
+                        <RowMenu
+                          label={tt("moreFor", { name: entryTitle(e, kinds, locale) })}
+                          items={menu(e)}
+                        />
+                      </Td>
                     </tr>,
                     isOpen ? (
                       <tr key={`${e.id}-open`} className="cat-detail-row">
-                        <td colSpan={5}>
+                        <td colSpan={6}>
                           <div className="cat-detail">
                             <h3 className="h2">{entryTitle(e, kinds, locale)}</h3>
                             <Facts
@@ -296,38 +390,8 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
                             {noteKey && notes.has(noteKey) ? (
                               <p className="fhint">{notes(noteKey)}</p>
                             ) : null}
-                            {reverse &&
-                            state !== "reversed" &&
-                            e.source_module === "ledger" &&
-                            e.source_kind === "manual" ? (
-                              <div className="eg-acts">
-                                <FormDialog
-                                  action={reverseEntryAction}
-                                  label={t("reverse.button")}
-                                  title={t("reverse.title", { reference: e.reference })}
-                                  intro={t("reverse.intro")}
-                                  points={[t("reverse.once"), t("reverse.period")]}
-                                  submit={t("reverse.submit")}
-                                  done={t("reverse.done")}
-                                  danger
-                                  triggerClass="btn sm danger"
-                                  fields={[
-                                    { kind: "hidden", name: "id", value: e.id },
-                                    {
-                                      kind: "textarea",
-                                      name: "reason",
-                                      label: t("reverse.reason"),
-                                      hint: t("reverse.reasonHint"),
-                                    },
-                                    {
-                                      kind: "date",
-                                      name: "effective_date",
-                                      label: t("reverse.date"),
-                                      defaultValue: today,
-                                    },
-                                  ]}
-                                />
-                              </div>
+                            {canReverse(e) ? (
+                              <div className="eg-acts">{reverseDialog(e)}</div>
                             ) : null}
                           </div>
                         </td>
@@ -339,10 +403,7 @@ export default async function LedgerPage(props: PageProps<"/finance">) {
             </Table>
           )}
         </div>
-        <Pager
-          first={one("cursor") ? base({}) : null}
-          next={page.pagination.next_cursor ? base({ cursor: page.pagination.next_cursor }) : null}
-        />
+        <Pager total={page.total} page={page.page} per={paging.per} base="/finance" keep={keep} />
         <p className="fhint">{t("bookNote")}</p>
       </section>
 

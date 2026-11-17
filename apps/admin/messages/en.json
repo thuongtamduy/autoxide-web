@@ -805,7 +805,13 @@
       "all": "All",
       "noStatus": "No user has this status.",
       "lastSignIn": "Last sign-in",
-      "neverSignedIn": "Not yet"
+      "neverSignedIn": "Not yet",
+      "open": "Open",
+      "changeRoles": "Change roles",
+      "actions": "Actions",
+      "undo": "Undo",
+      "undone": "Undone.",
+      "bulkDisableTitle": "Disable the selected accounts?"
     },
     "create": {
       "open": "New user",
@@ -963,7 +969,10 @@
       "count": "{count, plural, =0 {No permission} one {# permission} other {# permissions}}",
       "builtin": "Built in",
       "custom": "Created here",
-      "members": "People"
+      "members": "People",
+      "open": "Open",
+      "bulkDeleteTitle": "Delete the selected roles?",
+      "bulkBuiltin": "Built-in roles cannot be selected; the core refuses a role it still needs."
     },
     "role": {
       "deleted": "Role deleted.",
@@ -1038,7 +1047,8 @@
       "revokeLink": "The link in the mail stops working at once.",
       "revokeAgain": "To invite them later, send a new invitation.",
       "revokeSubmit": "Revoke invitation",
-      "revoked": "Invitation revoked."
+      "revoked": "Invitation revoked.",
+      "bulkRevokeTitle": "Revoke the selected invitations?"
     },
     "delegations": {
       "create": "New delegation",
@@ -1077,7 +1087,8 @@
       "empty": "No delegation.",
       "childId": "ID of the child customer",
       "childIdHint": "The child customer's ID, as the platform operator gives it. It must be a customer below yours.",
-      "childPick": "Customer below this one"
+      "childPick": "Customer below this one",
+      "bulkRevokeTitle": "Revoke the selected delegations?"
     },
     "public": {
       "units": "Units",
@@ -1756,7 +1767,9 @@
       "retryFrom": "The job runs again from the start, with its attempts counted again.",
       "retryAudit": "The retry is written to the audit log with your name.",
       "retrySubmit": "Retry job",
-      "retried": "Job queued again."
+      "retried": "Job queued again.",
+      "bulkRetryTitle": "Retry the selected jobs?",
+      "bulkRetryDead": "Only jobs in the dead-letter queue run again; the others are reported as not done."
     },
     "webhooks": {
       "events": "Events",
@@ -1835,7 +1848,12 @@
       "status": {
         "active": "Turned on",
         "disabled": "Turned off"
-      }
+      },
+      "open": "Open",
+      "actions": "Actions",
+      "undo": "Undo",
+      "undone": "Undone.",
+      "bulkDeleteTitle": "Delete the selected endpoints?"
     },
     "audit": {
       "title": "Log",
@@ -1938,7 +1956,8 @@
       "owner": "Owner",
       "ownerGone": "Deleted account",
       "revokeOtherTitle": "Revoke {name} of {owner}?",
-      "revokeAudit": "The audit log records that you revoked it."
+      "revokeAudit": "The audit log records that you revoked it.",
+      "bulkRevokeTitle": "Revoke the selected keys?"
     },
     "approvals": {
       "title": "Commands waiting for approval",
@@ -4415,7 +4434,9 @@
         "choose": "Choose a reason",
         "note": "Note for the seller",
         "noteHint": "Needed when the reason is \"Other reason\"."
-      }
+      },
+      "bulkApproveTitle": "Approve the selected profiles?",
+      "bulkApproveEach": "Check each person's documents before approving them together."
     },
     "privacy": {
       "incident": {
@@ -4988,7 +5009,10 @@
           "comments": "Comments: data by email",
           "self": "My own data"
         },
-        "deadlines": "Answer deadlines per kind of request (proposed rule)."
+        "deadlines": "Answer deadlines per kind of request (proposed rule).",
+        "bulkVerifiedTitle": "Mark the selected requesters as verified?",
+        "bulkDoneTitle": "Mark the selected requests as answered?",
+        "bulkWrongState": "A request not at this step is reported as not done."
       }
     }
   },
@@ -5188,7 +5212,8 @@
       "clear": "Clear filters",
       "filterSub": "Subscription",
       "anySub": "Any subscription",
-      "onlyNear": "Only near a limit (80 % or more)"
+      "onlyNear": "Only near a limit (80 % or more)",
+      "open": "Open"
     },
     "tenant": {
       "back": "Customers",
@@ -7261,7 +7286,10 @@
         "balanced": "Both columns are equal.",
         "unbalanced": "The columns differ: a sign of a system error; tell an administrator.",
         "foot": "Balances are derived from entry lines; a periodic check recomputes them and reports any account that drifts. Chart-of-accounts numbers are used only for exports (see the Accounting export tab)."
-      }
+      },
+      "actions": "Actions",
+      "details": "Show details",
+      "close": "Hide details"
     },
     "exceptions": {
       "title": "Items to handle",
@@ -7366,7 +7394,14 @@
           "done": "Done"
         },
         "opened": "{count, plural, =0 {No new exceptions} one {# new exception} other {# new exceptions}}"
-      }
+      },
+      "details": "Show details",
+      "close": "Hide details",
+      "bulkIgnore": "Ignore",
+      "bulkIgnoreTitle": "Ignore the selected items?",
+      "bulkIgnoreNoEntry": "No entry is posted; each item is closed with the same note.",
+      "bulkIgnoreAudit": "Your name and the note are kept with each item. Items already handled are reported as not done.",
+      "rowActions": "Actions"
     },
     "bank": {
       "title": "Accounts receiving transfers",
@@ -7606,7 +7641,12 @@
         "done": "Draft deleted"
       },
       "basisIssue": "Invoices are made on delivery.",
-      "basisCorrection": "Correcting invoices."
+      "basisCorrection": "Correcting invoices.",
+      "actions": "Actions",
+      "details": "Show details",
+      "close": "Hide details",
+      "bulkIssueTitle": "Issue the selected drafts?",
+      "bulkIssueDrafts": "Only drafts are issued; other invoices stay as they are."
     },
     "series": {
       "title": "Invoice and document series",
@@ -11412,7 +11452,8 @@
       "deleteSubmit": "Delete",
       "deleted": "Group deleted.",
       "legalTitle": "Segmentation is personal data processing.",
-      "legalText": "Purpose and basis are recorded in the Compliance register. Using groups for marketing needs the customer’s consent (Law 91/2025, Decree 356/2025 — check the original text)."
+      "legalText": "Purpose and basis are recorded in the Compliance register. Using groups for marketing needs the customer’s consent (Law 91/2025, Decree 356/2025 — check the original text).",
+      "bulkDeleteTitle": "Delete the selected groups?"
     },
     "group": {
       "button": "New group",
@@ -11620,7 +11661,8 @@
       "by": "Blocked by",
       "codOrders": "{n} COD orders",
       "lift": "Lift block",
-      "lifted": "Block lifted; the buyer can use COD again."
+      "lifted": "Block lifted; the buyer can use COD again.",
+      "none": "No block matches."
     },
     "codRule": {
       "button": "Add rule",

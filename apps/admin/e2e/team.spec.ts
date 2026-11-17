@@ -86,7 +86,9 @@ test("lời mời: gom lỗi, mời, gửi lại, thu hồi; người mới nh�
   await dialog(page).getByRole("button", { name: "Send invitation" }).click();
   await expect(toast(page)).toHaveText("Invitation sent; follow it in this list.");
   const gone = rows(page).filter({ hasText: "gone@example.com" });
-  await gone.getByRole("button", { name: "Revoke" }).click();
+  // Bộ bảng (W-058): dòng giữ một nút (Gửi lại), thu hồi nằm trong "⋯".
+  await gone.getByRole("button", { name: "More actions for gone@example.com" }).click();
+  await page.getByRole("menuitem", { name: "Revoke" }).click();
   await dialog(page).getByRole("button", { name: "Revoke invitation" }).click();
   await expect(toast(page)).toHaveText("Invitation revoked.");
   await expect(gone).toContainText("Revoked");

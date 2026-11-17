@@ -87,7 +87,9 @@ test("tình trạng: thanh bên có Tuân thủ; hồ sơ Bộ Công Thương gh
 test("KYC, sự cố 72 giờ, bằng chứng văn bản", async ({ page }) => {
   await signIn(page, "/compliance/kyc");
   const row = page.locator("tbody tr", { hasText: "Bếp Nhà Thỏ" });
-  await row.getByRole("button", { name: "Return with reason" }).click();
+  // Bộ bảng (W-058): dòng giữ một nút (Duyệt), trả hồ sơ nằm trong "⋯".
+  await row.getByRole("button", { name: "More actions for Bếp Nhà Thỏ" }).click();
+  await page.getByRole("menuitem", { name: "Return with reason" }).click();
   await dialog(page).getByRole("button", { name: "Return profile" }).click();
   await expect(dialog(page).getByLabel("Reason")).toHaveAttribute("aria-invalid", "true");
   await dialog(page).getByLabel("Reason", { exact: true }).selectOption("name_mismatch");

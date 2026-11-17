@@ -805,7 +805,13 @@
       "all": "Tất cả",
       "noStatus": "Không có người dùng nào ở trạng thái này.",
       "lastSignIn": "Đăng nhập gần nhất",
-      "neverSignedIn": "Chưa có"
+      "neverSignedIn": "Chưa có",
+      "open": "Mở",
+      "changeRoles": "Đổi role",
+      "actions": "Thao tác",
+      "undo": "Hoàn tác",
+      "undone": "Đã hoàn tác.",
+      "bulkDisableTitle": "Khoá các tài khoản đã chọn?"
     },
     "create": {
       "open": "Tạo người dùng",
@@ -963,7 +969,10 @@
       "count": "{count, plural, =0 {Chưa có permission} other {# permission}}",
       "builtin": "Dựng sẵn",
       "custom": "Tạo ở đây",
-      "members": "Số người"
+      "members": "Số người",
+      "open": "Mở",
+      "bulkDeleteTitle": "Xoá các role đã chọn?",
+      "bulkBuiltin": "Role dựng sẵn không chọn được; core từ chối role còn cần dùng."
     },
     "role": {
       "deleted": "Đã xoá role.",
@@ -1038,7 +1047,8 @@
       "revokeLink": "Link trong thư ngừng dùng được ngay.",
       "revokeAgain": "Muốn mời lại sau thì gửi lời mời mới.",
       "revokeSubmit": "Thu hồi lời mời",
-      "revoked": "Đã thu hồi lời mời."
+      "revoked": "Đã thu hồi lời mời.",
+      "bulkRevokeTitle": "Thu hồi các lời mời đã chọn?"
     },
     "delegations": {
       "create": "Uỷ quyền mới",
@@ -1077,7 +1087,8 @@
       "empty": "Chưa có uỷ quyền nào.",
       "childId": "ID của khách con",
       "childIdHint": "ID của khách con, do nhà vận hành nền tảng cung cấp. Phải là khách nằm dưới khách của bạn.",
-      "childPick": "Khách cấp dưới"
+      "childPick": "Khách cấp dưới",
+      "bulkRevokeTitle": "Thu hồi các uỷ quyền đã chọn?"
     },
     "public": {
       "units": "Nút",
@@ -1756,7 +1767,9 @@
       "retryFrom": "Job chạy lại từ đầu, số lần thử đếm lại.",
       "retryAudit": "Lần chạy lại được ghi vào nhật ký audit kèm tên bạn.",
       "retrySubmit": "Chạy lại job",
-      "retried": "Đã xếp job chạy lại."
+      "retried": "Đã xếp job chạy lại.",
+      "bulkRetryTitle": "Chạy lại các job đã chọn?",
+      "bulkRetryDead": "Chỉ job trong dead-letter queue được chạy lại; job khác báo là chưa làm được."
     },
     "webhooks": {
       "events": "Event",
@@ -1835,7 +1848,12 @@
       "status": {
         "active": "Đang bật",
         "disabled": "Đã tắt"
-      }
+      },
+      "open": "Mở",
+      "actions": "Thao tác",
+      "undo": "Hoàn tác",
+      "undone": "Đã hoàn tác.",
+      "bulkDeleteTitle": "Xoá các endpoint đã chọn?"
     },
     "audit": {
       "title": "Nhật ký",
@@ -1938,7 +1956,8 @@
       "owner": "Chủ key",
       "ownerGone": "Tài khoản đã xoá",
       "revokeOtherTitle": "Thu hồi {name} của {owner}?",
-      "revokeAudit": "Nhật ký audit ghi lại bạn đã thu hồi key này."
+      "revokeAudit": "Nhật ký audit ghi lại bạn đã thu hồi key này.",
+      "bulkRevokeTitle": "Thu hồi các key đã chọn?"
     },
     "approvals": {
       "title": "Lệnh chờ duyệt",
@@ -4415,7 +4434,9 @@
         "choose": "Chọn lý do",
         "note": "Ghi chú cho người bán",
         "noteHint": "Bắt buộc khi lý do là \"Lý do khác\"."
-      }
+      },
+      "bulkApproveTitle": "Duyệt các hồ sơ đã chọn?",
+      "bulkApproveEach": "Kiểm giấy tờ của từng người trước khi duyệt cùng lúc."
     },
     "privacy": {
       "incident": {
@@ -4988,7 +5009,10 @@
           "comments": "Bình luận: dữ liệu theo email",
           "self": "Dữ liệu của tôi"
         },
-        "deadlines": "Hạn trả lời theo loại yêu cầu (quy tắc đề xuất)."
+        "deadlines": "Hạn trả lời theo loại yêu cầu (quy tắc đề xuất).",
+        "bulkVerifiedTitle": "Ghi đã xác minh người yêu cầu cho các yêu cầu đã chọn?",
+        "bulkDoneTitle": "Ghi đã trả lời các yêu cầu đã chọn?",
+        "bulkWrongState": "Yêu cầu không ở bước này báo là chưa làm được."
       }
     }
   },
@@ -5188,7 +5212,8 @@
       "clear": "Bỏ lọc",
       "filterSub": "Thuê bao",
       "anySub": "Mọi thuê bao",
-      "onlyNear": "Chỉ khách gần chạm hạn mức (từ 80 %)"
+      "onlyNear": "Chỉ khách gần chạm hạn mức (từ 80 %)",
+      "open": "Mở"
     },
     "tenant": {
       "back": "Khách hàng",
@@ -7261,7 +7286,10 @@
         "balanced": "Hai cột bằng nhau.",
         "unbalanced": "Hai cột lệch nhau: dấu hiệu lỗi hệ thống, báo quản trị viên.",
         "foot": "Số dư suy từ dòng bút toán; bước kiểm định kỳ tính lại và báo tài khoản lệch. Số hiệu tài khoản theo chế độ kế toán chỉ dùng khi xuất (xem tab Xuất kế toán)."
-      }
+      },
+      "actions": "Thao tác",
+      "details": "Xem chi tiết",
+      "close": "Đóng chi tiết"
     },
     "exceptions": {
       "title": "Mục chờ xử lý",
@@ -7366,7 +7394,14 @@
           "done": "Xong"
         },
         "opened": "{count, plural, =0 {Không có mục lệch mới} other {# mục lệch mới}}"
-      }
+      },
+      "details": "Xem chi tiết",
+      "close": "Đóng chi tiết",
+      "bulkIgnore": "Bỏ qua",
+      "bulkIgnoreTitle": "Bỏ qua các mục đã chọn?",
+      "bulkIgnoreNoEntry": "Không ghi bút toán nào; mỗi mục được đóng với cùng một ghi chú.",
+      "bulkIgnoreAudit": "Tên bạn và ghi chú được lưu cùng từng mục. Mục đã xử lý báo là chưa làm được.",
+      "rowActions": "Thao tác"
     },
     "bank": {
       "title": "Tài khoản nhận chuyển khoản",
@@ -7606,7 +7641,12 @@
         "done": "Đã xoá nháp"
       },
       "basisIssue": "Hoá đơn lập khi giao hàng.",
-      "basisCorrection": "Xử lý hoá đơn sai sót."
+      "basisCorrection": "Xử lý hoá đơn sai sót.",
+      "actions": "Thao tác",
+      "details": "Xem chi tiết",
+      "close": "Đóng chi tiết",
+      "bulkIssueTitle": "Phát hành các hoá đơn nháp đã chọn?",
+      "bulkIssueDrafts": "Chỉ hoá đơn nháp được phát hành; hoá đơn khác giữ nguyên."
     },
     "series": {
       "title": "Ký hiệu hoá đơn, chứng từ",
@@ -11412,7 +11452,8 @@
       "deleteSubmit": "Xoá",
       "deleted": "Đã xoá nhóm.",
       "legalTitle": "Phân khúc là xử lý dữ liệu cá nhân.",
-      "legalText": "Mục đích và căn cứ ghi trong sổ của Tuân thủ. Dùng nhóm để tiếp thị cần khách đã đồng ý (Luật BVDLCN 91/2025, NĐ 356/2025 — cần đối chiếu văn bản gốc)."
+      "legalText": "Mục đích và căn cứ ghi trong sổ của Tuân thủ. Dùng nhóm để tiếp thị cần khách đã đồng ý (Luật BVDLCN 91/2025, NĐ 356/2025 — cần đối chiếu văn bản gốc).",
+      "bulkDeleteTitle": "Xoá các nhóm đã chọn?"
     },
     "group": {
       "button": "Tạo nhóm khách",
@@ -11620,7 +11661,8 @@
       "by": "Người chặn",
       "codOrders": "{n} đơn COD",
       "lift": "Gỡ chặn",
-      "lifted": "Đã gỡ chặn; người mua đặt COD lại được."
+      "lifted": "Đã gỡ chặn; người mua đặt COD lại được.",
+      "none": "Không có lần chặn nào khớp."
     },
     "codRule": {
       "button": "Thêm quy tắc",

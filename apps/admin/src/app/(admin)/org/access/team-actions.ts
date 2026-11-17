@@ -6,9 +6,10 @@
 // chỉ kiểm ô bắt buộc để gom mọi lỗi một lần, rồi đổi Problem thành lỗi theo ô.
 import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { send } from "@/lib/action";
+import { type Outcome, send } from "@/lib/action";
 import { type FormState, nextDone, problemState } from "@/lib/form";
 import { rootUnit } from "@/lib/org-server";
+import { type BulkInput, type BulkResult, cleanIds, eachId } from "@/lib/table";
 
 function text(formData: FormData, name: string): string {
   return String(formData.get(name) ?? "").trim();
@@ -72,6 +73,38 @@ export async function revokeInvite(state: FormState, formData: FormData): Promis
   return done(state);
 }
 
+/**
+ * Lặp một lệnh của core cho từng id đã chọn (core chưa có endpoint hàng loạt), gom lỗi theo dòng bằng
+ * câu của core.
+ */
+async function eachCall(
+  input: BulkInput,
+  call: (id: string) => Promise<Outcome<unknown>>,
+): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const answer = await call(id);
+    return answer.ok ? null : answer.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+/** Gửi lại nhiều lời mời (thanh hàng loạt): mỗi lời mời có link mới, link cũ hết hiệu lực. */
+export async function bulkResendInvites(input: BulkInput): Promise<BulkResult> {
+  return eachCall(input, (id) =>
+    send((client) =>
+      client.POST("/api/v1/auth/invitations/{id}/resend", { params: { path: { id } } }),
+    ),
+  );
+}
+
+/** Thu hồi nhiều lời mời (thanh hàng loạt); lời mời đã nhận hay đã thu hồi thì core báo lỗi. */
+export async function bulkRevokeInvites(input: BulkInput): Promise<BulkResult> {
+  return eachCall(input, (id) =>
+    send((client) => client.DELETE("/api/v1/auth/invitations/{id}", { params: { path: { id } } })),
+  );
+}
+
 // ---------------------------------------------------------------- Uỷ quyền
 
 const DELEGATE_FIELDS = ["child_tenant_id", "role_id", "reason", "expires_at"];
@@ -108,6 +141,13 @@ export async function revokeDelegation(state: FormState, formData: FormData): Pr
   );
   if (!result.ok) return problemState(result.problem, []);
   return done(state);
+}
+
+/** Thu hồi nhiều uỷ quyền (thanh hàng loạt); lặp `DELETE /auth/delegations/{id}`. */
+export async function bulkRevokeDelegations(input: BulkInput): Promise<BulkResult> {
+  return eachCall(input, (id) =>
+    send((client) => client.DELETE("/api/v1/auth/delegations/{id}", { params: { path: { id } } })),
+  );
 }
 
 // ---------------------------------------------------------------- Quyền vào hỗ trợ
