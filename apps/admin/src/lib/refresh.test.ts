@@ -36,6 +36,18 @@ describe("refreshTokens", () => {
     }
   });
 
+  it("chuyển tiếp X-Forwarded-For của người dùng tới core", async () => {
+    let forwarded: string | null = null;
+    const fetch = async (request: Request) => {
+      forwarded = request.headers.get("x-forwarded-for");
+      return Response.json({ data: TOKENS });
+    };
+
+    await refreshTokens("r1", { baseUrl: "http://core.test", forwardedFor: "203.0.113.7", fetch });
+
+    expect(forwarded).toBe("203.0.113.7");
+  });
+
   it("token bị từ chối trả code của core", async () => {
     const fetch = async () =>
       Response.json(

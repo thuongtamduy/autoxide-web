@@ -29,6 +29,12 @@ export interface ClientOptions {
    * ra (đăng nhập, đổi mật khẩu) để người dùng nhận ra thiết bị trong danh sách phiên.
    */
   userAgent?: string | undefined;
+  /**
+   * `X-Forwarded-For` của request người dùng gửi tới máy chủ gọi core. Core đọc địa chỉ người
+   * dùng từ đây khi bật `AUTOXIDE_HTTP_CLIENT_IP_HEADER`; thiếu nó thì mọi người dùng đều mang
+   * địa chỉ của máy chủ này và chung một hạn mức request.
+   */
+  forwardedFor?: string | undefined;
   /** `fetch` thay thế (test). */
   fetch?: (request: Request) => Promise<Response>;
 }
@@ -49,6 +55,9 @@ export function headersMiddleware(options: ClientOptions): Middleware {
       if (options.userAgent) {
         // Core chỉ giữ 255 ký tự đầu.
         request.headers.set("User-Agent", options.userAgent.slice(0, 255));
+      }
+      if (options.forwardedFor) {
+        request.headers.set("X-Forwarded-For", options.forwardedFor);
       }
       // Mỗi lệnh ghi một khoá mới: core trả lại kết quả lần đầu nếu cùng request bị gửi
       // lại (mạng chập chờn, proxy retry), không làm hai lần.

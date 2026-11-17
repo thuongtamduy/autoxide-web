@@ -17,7 +17,7 @@ Cập nhật file này mỗi khi gửi đợt yêu cầu mới, khi core làm xo
 | 17/11/2026 | [thuongtamduy/autoxide#66](https://github.com/thuongtamduy/autoxide/pull/66) | Đã nối bước 34 đợt 1 (W-045); 3 yêu cầu mới: hồ sơ công khai của website đang được gọi (kèm pháp lý, logo), số người ở mỗi nút, dạng giá trị của cài đặt; tham số `inherited` chưa có mô tả OpenAPI                  | Đã gửi; không gấp                                                                                                                   |
 | 17/11/2026 | [thuongtamduy/autoxide#68](https://github.com/thuongtamduy/autoxide/pull/68) | Đã nối bước 34 đợt 2 (W-046); 4 yêu cầu mới: tên nút trong `GET /auth/me/memberships`, danh sách khách con cho khách cha, `auth.login_link` trong client-config, tên nhân sự nền tảng trong lần cấp quyền vào hỗ trợ | Đã gửi; không gấp                                                                                                                   |
 | 17/11/2026 | [thuongtamduy/autoxide#71](https://github.com/thuongtamduy/autoxide/pull/71) | Đã nối bước 35 đợt 3a (W-047); còn thiếu: `billing-profile`, kỳ thanh toán theo khách cho nhân sự nền tảng, `subscriber_count`, danh sách ghi đè của mọi khách                                                       | Đã gửi; không gấp                                                                                                                   |
-| 17/11/2026 | [thuongtamduy/autoxide#73](https://github.com/thuongtamduy/autoxide/pull/73) | Đã nối bước 35 đợt 3b (W-048); còn thiếu: `expand=subscription,usage` luôn `null`, `support-grants` bắt buộc `tenant_id`, trần giờ hỗ trợ, khách tắt hỗ trợ, tên gói trong thuê bao                                  | Đã gửi; không gấp                                                                                                                   |
+| 17/11/2026 | [thuongtamduy/autoxide#73](https://github.com/thuongtamduy/autoxide/pull/73) | Đã nối bước 35 đợt 3b (W-049); còn thiếu: `expand=subscription,usage` luôn `null`, `support-grants` bắt buộc `tenant_id`, trần giờ hỗ trợ, khách tắt hỗ trợ, tên gói trong thuê bao                                  | Đã gửi; không gấp                                                                                                                   |
 
 ## Còn nợ (đếm ngày 16/11/2026; bước 34, 35 đã xong ngày 17/11)
 
@@ -49,7 +49,7 @@ hàng: việc của web, `NEXT.md`); `reason` khi tạm khoá khách (bước 35
 4. **Gặp khi nối bước 35 (17/11, W-047):** (a) nhân sự nền tảng chưa đọc được kỳ thanh toán của một khách
    (`GET /plans/billing-periods` chỉ của khách gọi) — cần để "đánh dấu đã thu"; (b) chưa có danh sách ghi đè của mọi
    khách (giao diện đọc từng khách); (c) số khách mỗi gói giao diện tự đếm từ `GET /plans/subscriptions`.
-5. **Gặp khi nối bước 35 đợt 3b (17/11, W-048):** (a) `expand=subscription,usage` của `GET /kernel/tenants` vẫn luôn
+5. **Gặp khi nối bước 35 đợt 3b (17/11, W-049):** (a) `expand=subscription,usage` của `GET /kernel/tenants` vẫn luôn
    `null` dù đã có module `plans` — giao diện phải đọc mọi thuê bao riêng và gọi `…/tenants/{id}/usage` từng khách;
    (b) `GET /auth/support-grants` bắt buộc `tenant_id`: màn "Vào dữ liệu khách" phải gọi từng khách — nên cho bỏ
    `tenant_id` (mọi khách, theo trang); (c) trần thời hạn (`AUTOXIDE_AUTH_SUPPORT_ACCESS_MAX_HOURS`) chưa có trong API

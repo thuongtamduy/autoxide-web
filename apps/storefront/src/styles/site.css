@@ -1093,11 +1093,11 @@ html[data-theme="dark"] .sp .th-moon {
   .sp .home-hero > .hero-text > .hero-trust {
     display: none;
   }
-  .sp .home-hero .hero-actions {
-    flex-wrap: nowrap;
-  }
+  /* Hai nút chia đều một hàng khi đủ chỗ; không đủ (360px, chữ dài) thì nút xuống hàng thay vì
+     tràn khung: `min-width: max-content` giữ nút không hẹp hơn chữ của nó. */
   .sp .home-hero .hero-actions > .btn {
     flex: 1 1 0;
+    min-width: max-content;
     justify-content: center;
     padding-left: 10px;
     padding-right: 10px;

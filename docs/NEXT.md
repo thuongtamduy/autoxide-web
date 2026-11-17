@@ -8,7 +8,7 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
 - SDK ghim core ở commit `434aa4b` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
-  một khách — D-303 tới D-333). Quyết định mới nhất của repo này: W-048.
+  một khách — D-303 tới D-333). Quyết định mới nhất của repo này: W-049.
 - Đợt 8 (17/11): nối đợt 1 của bước 34 (W-045): màn Cây tổ chức thật, bộ chọn nút góc trên trái (lọc bài, media, form,
   menu theo nút), tab Hồ sơ công khai thật (địa chỉ theo danh mục hành chính của core), tên cửa hàng của website lấy
   từ hồ sơ công khai của nút gốc. Đã chạy thử với core thật.
@@ -17,7 +17,7 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
   múi giờ), "Nơi bạn làm việc", role ở các nút khác gốc. Đã chạy thử với core thật.
 - Đợt 10 (17/11): nối đợt 3a của bước 35 (W-047): gói và thuê bao phía khách, gói và giá, ghi đè theo khách, thuê bao
   của mọi khách ở mặt điều khiển. Đã chạy thử với core thật.
-- Đợt 11 (17/11): nối đợt 3b của bước 35 (W-048): sổ khách theo thuê bao và hạn mức, chi tiết khách (thuê bao, xuất dữ
+- Đợt 11 (17/11): nối đợt 3b của bước 35 (W-049): sổ khách theo thuê bao và hạn mức, chi tiết khách (thuê bao, xuất dữ
   liệu, quyền vào), màn "Vào dữ liệu khách" thật, thẻ gói ở Tổng quan, khoá nút theo tính năng của gói.
 - Đã chạy thử với core thật (16/11, core nhiều khách trên SQLite, hai khách, hai tên miền): website chọn đúng cửa
   hàng theo tên miền (bài, sitemap, canonical, robots); tên miền lạ trả 404 (W-038, trước đó là 500). Trang quản trị

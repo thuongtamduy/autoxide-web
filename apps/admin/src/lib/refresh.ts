@@ -21,6 +21,8 @@ const pending = new Map<string, Promise<RefreshResult>>();
 
 export interface RefreshOptions {
   baseUrl: string;
+  /** `X-Forwarded-For` của request đang làm mới (xem `callerInfo` ở `core.ts`). */
+  forwardedFor?: string | undefined;
   fetch?: (request: Request) => Promise<Response>;
 }
 
@@ -43,6 +45,7 @@ export function refreshTokens(
 async function exchange(refreshToken: string, options: RefreshOptions): Promise<RefreshResult> {
   const client = createAutoxideClient({
     baseUrl: options.baseUrl,
+    forwardedFor: options.forwardedFor,
     ...(options.fetch ? { fetch: options.fetch } : {}),
   });
   try {
