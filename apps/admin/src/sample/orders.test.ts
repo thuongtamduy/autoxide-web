@@ -231,6 +231,15 @@ describe("đổi trả", () => {
     expect((await order("BM-2611-0409")).refunded.amount).toBe("690000");
   });
 
+  it("yêu cầu trả tại quầy không duyệt được (đi thẳng tới nhận hàng), kể cả từ thanh hàng loạt", async () => {
+    const inStore = (await listReturns()).data.find(
+      (r) => r.return_method === "in_store" && r.status === "requested",
+    );
+    if (!inStore) throw new Error("thiếu yêu cầu trả tại quầy");
+    const out = await decideReturn(inStore.id, { step: "approve" });
+    expect(!out.ok && out.problem.code).toBe("orders.return_invalid_transition");
+  });
+
   it("từ chối cần lý do trong danh sách và lời giải thích; nhận hàng rồi hoàn", async () => {
     const list = (await listReturns()).data;
     const requested = list.find((r) => r.order_number === "BM-2611-0395");

@@ -2757,7 +2757,8 @@ export async function decideReturn(
   const now = new Date().toISOString();
   switch (input.step) {
     case "approve":
-      if (r.status !== "requested") return wrong();
+      // Yêu cầu trả tại quầy không qua bước duyệt: nhân viên nhận hàng ngay (bước "receive").
+      if (r.status !== "requested" || r.return_method === "in_store") return wrong();
       r.status = "approved";
       r.decided_by = SAMPLE_ACTOR;
       r.decided_at = now;
