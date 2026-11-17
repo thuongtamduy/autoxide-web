@@ -19,8 +19,8 @@ import type { SearchParams } from "@/lib/engage";
 import { formatMoney } from "@/lib/format";
 import { initialsOf } from "@/lib/initials";
 import { PROVISION, TENANTS_MANAGE, TENANTS_READ } from "@/lib/permissions";
-import { type LimitUse, tightest } from "@/lib/plans";
-import { loadTenantPlans, loadUsageOf, subscriberCounts } from "@/lib/plans-server";
+import { tightest } from "@/lib/plans";
+import { loadTenantPlans } from "@/lib/plans-server";
 import {
   daysUntil,
   matchesQuery,
@@ -38,21 +38,19 @@ import {
 } from "@/lib/platform";
 import {
   filteredTenants,
-  nearLimitIds,
   type PlatformData,
   platformData,
   platformGate,
   platformRefused,
 } from "@/lib/platform-server";
 import { can } from "@/lib/viewer";
-import { sampleDataEnabled } from "@/sample";
 import type { SubscriptionStatus } from "@/sample/platform-data";
 
 // Màn "Khách hàng" của mặt điều khiển: sổ khách và placement THẬT của core (bước 33) — tên, trạng
 // thái, cây khách, nơi lưu, migration, cờ chỉ đọc; lọc theo chỉ đọc / loại placement / trạng thái
 // migration / thuê bao / gần chạm hạn mức do core lọc (D-296, bước 35; tham số trên địa chỉ trang);
 // tạo khách mới bằng `POST /kernel/tenants`. Gói và thuê bao của module `plans` (đợt 3b): đọc mọi
-// thuê bao một lần, mức dùng hạn mức chỉ cho các khách core báo là gần chạm. Khách chỉ có trong luồng
+// thuê bao và mức dùng đi kèm sổ khách (`expand=subscription,usage`, D-335). Khách chỉ có trong luồng
 // cấp phát mẫu là dữ liệu mẫu (W-014). Không có dữ liệu nghiệp vụ của khách ở đây.
 export default async function TenantsPage(props: { searchParams: Promise<SearchParams> }) {
   const gate = await platformGate(TENANTS_READ);
@@ -61,7 +59,6 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
   const locale = await getLocale();
   const params = await props.searchParams;
   const query = parseTenantQuery(params);
-  const sample = sampleDataEnabled();
   let data: PlatformData;
   try {
     data = await platformData();
@@ -72,23 +69,21 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
   }
   const { tenants, placements } = data;
   const [billing, listed] = await Promise.all([loadTenantPlans(), filteredTenants(query, data)]);
-  const subs = billing?.subscriptions ?? [];
   const plans = billing?.plans ?? [];
-  const usage = billing ? await loadUsageOf(await nearLimitIds()) : new Map<string, LimitUse[]>();
+  // Thuê bao và mức dùng đi kèm sổ khách (`expand=subscription,usage`, D-335).
   const rowOf = (tenant: PlatformTenant): TenantRow => {
-    const subscription = subs.find((s) => s.tenant_id === tenant.id) ?? null;
+    const subscription = billing ? tenant.subscription : null;
     return {
       tenant,
       // Placement đi kèm sổ khách (`expand=placement`); khách mẫu: placement mẫu cùng id.
       placement: tenant.placement ?? placements.find((p) => p.id === tenant.placement_id) ?? null,
       subscription,
       plan: plans.find((p) => p.id === subscription?.plan_id) ?? null,
-      nearest: tightest(usage.get(tenant.id) ?? []),
+      nearest: billing ? tightest(tenant.usage ?? []) : null,
       children: tenants.filter((x) => x.parent_id === tenant.id).length,
     };
   };
   const rows = tenants.map(rowOf);
-  const counts = subscriberCounts(subs);
   const shown = orderTree(
     listed
       .map((tenant) => rows.find((row) => row.tenant.id === tenant.id) ?? rowOf(tenant))
@@ -179,7 +174,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                   .map((x) => ({ value: x.id, label: x.name }))}
               />
             ) : null}
-            {provision && sample ? <ProvisionDialog /> : null}
+            {provision ? <ProvisionDialog primary={false} /> : null}
           </>
         }
       />
@@ -266,7 +261,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                           {tenant.is_platform
                             ? t("tenants.platformTenant")
                             : billing
-                              ? (plan?.name ?? t("tenants.noPlan"))
+                              ? (subscription?.plan_name ?? plan?.name ?? t("tenants.noPlan"))
                               : "—"}
                         </span>
                         <span className="sub">
@@ -368,7 +363,7 @@ export default async function TenantsPage(props: { searchParams: Promise<SearchP
                     <span className="pf-plan-head">
                       <b>{plan.name}</b>
                       <span className="cnt">
-                        {t("tenants.subscribers", { count: counts.get(plan.id) ?? 0 })}
+                        {t("tenants.subscribers", { count: plan.subscriber_count ?? 0 })}
                       </span>
                     </span>
                     <span className="pf-plan-price">

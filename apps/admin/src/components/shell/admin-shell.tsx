@@ -99,8 +99,7 @@ export async function AdminShell({
   const entry = entered ? mine.find((x) => x.id === entered) : undefined;
   const picker = workspace === "tenant" ? await orgPicker(t, current, switchTo.length > 0) : null;
   const viewer: Viewer = {
-    // Ở khách khác core chưa cho biết quyền của người dùng (xem `getViewer`): không ẩn gì.
-    allPermissions: entered ? true : me.all_permissions,
+    allPermissions: me.all_permissions,
     permissions: me.permissions,
     modules,
     sample: sampleDataEnabled(),
@@ -318,7 +317,7 @@ export async function AdminShell({
             <div className="note warn" role="status" data-testid="entered-banner">
               {t("shell.entered.text", {
                 name: entry?.name ?? current?.name ?? "",
-                access: t(`shell.org.access.${entry?.access ?? "delegation"}`),
+                access: t(`shell.org.access.${entry?.access ?? me.access ?? "delegation"}`),
               })}{" "}
               <form action={leaveTenant} style={{ display: "inline" }}>
                 <button type="submit" className="btn sm">

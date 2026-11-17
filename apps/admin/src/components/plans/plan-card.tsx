@@ -46,7 +46,9 @@ export async function PlanCard() {
         </Link>
       </div>
       <p className="dash-rev-head">
-        <b data-testid="dash-plan">{sub ? (plan?.name ?? t("unknownPlan")) : tp("noPlan")}</b>
+        <b data-testid="dash-plan">
+          {sub ? (sub.plan_name ?? plan?.name ?? t("unknownPlan")) : tp("noPlan")}
+        </b>
         {status ? <span className="dash-hint">{status}</span> : null}
       </p>
       {entitlements.access === "read_only" ? <p className="note warn">{t("readOnly")}</p> : null}

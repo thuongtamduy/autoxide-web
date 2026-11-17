@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
-import { SampleBadge } from "@/components/sample-badge";
+import { BillingProfileForm } from "@/components/settings/billing-profile-form";
 import { ChangePlanDialog } from "@/components/settings/plan-forms";
-import { BillingProfileForm } from "@/components/settings/sample-forms";
 import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
-import { load } from "@/lib/core";
+import { isNotFound, load } from "@/lib/core";
 import { formatBytes, formatCount, formatMoney } from "@/lib/format";
 import { BILLING_MANAGE, BILLING_READ } from "@/lib/permissions";
 import {
@@ -20,9 +19,7 @@ import {
 } from "@/lib/plans";
 import { loadOwnSubscription } from "@/lib/plans-server";
 import { can } from "@/lib/viewer";
-import { sampleDataEnabled } from "@/sample";
-import { SAMPLE_PROVINCES } from "@/sample/org";
-import { getBillingProfile } from "@/sample/settings";
+import { communesOf } from "../../../org/access/profile-actions";
 import { cancelRenewal, resumeRenewal } from "../../plan-actions";
 
 const STATUSES = ["open", "paid", "void"] as const;
@@ -34,8 +31,8 @@ const BADGE: Record<string, string> = {
 };
 
 // Tab "Gói và thuê bao" (module `plans` của core, bước 35): gói đang dùng, mức dùng hạn mức, kỳ thanh
-// toán, đổi gói, huỷ / tiếp tục gia hạn. Tiền thuê bao đi qua cổng của nhà vận hành. Hồ sơ xuất hoá
-// đơn chưa có API (dữ liệu mẫu, có nhãn).
+// toán, đổi gói, huỷ / tiếp tục gia hạn, hồ sơ xuất hoá đơn (D-335). Tiền thuê bao đi qua cổng của
+// nhà vận hành.
 export default async function PlanPage(props: PageProps<"/settings/plan">) {
   const t = await getTranslations("settings.plan");
   if (!(await can(BILLING_READ))) {
@@ -57,8 +54,11 @@ export default async function PlanPage(props: PageProps<"/settings/plan">) {
     load((c) => c.GET("/api/v1/plans/catalog")).then((r) => r.data),
     can(BILLING_MANAGE),
   ]);
-  const sample = sampleDataEnabled();
-  const profile = sample ? (await getBillingProfile()).data : null;
+  const [profile, provinces] = await Promise.all([
+    loadBillingProfile(),
+    load((c) => c.GET("/api/v1/address/provinces")).then((r) => r.data),
+  ]);
+  const communes = profile?.address ? await communesOf(profile.address.province_code) : [];
   const money = (amount: { amount: string; currency: string }) =>
     formatMoney(amount.amount, amount.currency, locale);
   const planName = (id: string | null | undefined) =>
@@ -102,7 +102,7 @@ export default async function PlanPage(props: PageProps<"/settings/plan">) {
           <div className="card kpi">
             <span className="kpi-label">{t("kpiPlan")}</span>
             <b className="kpi-value" data-testid="plan-name">
-              {sub ? planName(sub.plan_id) : t("noPlan")}
+              {sub ? (sub.plan_name ?? planName(sub.plan_id)) : t("noPlan")}
             </b>
             {sub ? (
               <span className="kpi-sub">
@@ -148,7 +148,7 @@ export default async function PlanPage(props: PageProps<"/settings/plan">) {
             <div className="item">
               <div className="item-main">
                 <span className="item-title">
-                  {planName(sub.plan_id)} · {t("basePlan")}
+                  {sub.plan_name ?? planName(sub.plan_id)} · {t("basePlan")}
                 </span>
                 <span className="item-meta">
                   {price ? (
@@ -343,22 +343,38 @@ export default async function PlanPage(props: PageProps<"/settings/plan">) {
         </div>
       </section>
 
-      {profile ? (
-        <section className="block" aria-labelledby="profile-h">
-          <div className="block-head">
-            <h3 id="profile-h" className="h2">
-              {t("profile.title")}
-            </h3>
-            <SampleBadge step="35" endpoint="GET/PUT /api/v1/plans/billing-profile" />
-          </div>
-          <p className="fhint">{t("profile.about")}</p>
-          <BillingProfileForm
-            profile={profile}
-            provinces={SAMPLE_PROVINCES.map((p) => ({ value: p.id, label: p.name }))}
-            editable={manage}
-          />
-        </section>
-      ) : null}
+      <section className="block" aria-labelledby="profile-h">
+        <div className="block-head">
+          <h3 id="profile-h" className="h2">
+            {t("profile.title")}
+          </h3>
+        </div>
+        <p className="fhint">{profile ? t("profile.about") : t("profile.none")}</p>
+        <BillingProfileForm
+          profile={{
+            legal_name: profile?.legal_name ?? "",
+            tax_code: profile?.tax_code ?? "",
+            email: profile?.email ?? "",
+            phone: profile?.phone ?? "",
+            province_code: profile?.address?.province_code ?? "",
+            commune_code: profile?.address?.commune_code ?? "",
+            line: profile?.address?.line ?? "",
+          }}
+          provinces={provinces.map((p) => ({ value: p.code, label: p.name }))}
+          communes={communes}
+          editable={manage}
+        />
+      </section>
     </div>
   );
+}
+
+/** Hồ sơ xuất hoá đơn của khách; `null` khi chưa có (core trả 404 `plans.billing_profile_not_found`). */
+async function loadBillingProfile() {
+  try {
+    return (await load((c) => c.GET("/api/v1/plans/billing-profile"))).data;
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw error;
+  }
 }

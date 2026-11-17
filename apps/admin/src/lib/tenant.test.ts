@@ -62,7 +62,9 @@ describe("khách đang vào (uỷ quyền, hỗ trợ)", () => {
   });
 
   it("không gửi khách đang vào cho phần tài khoản của chính mình", () => {
-    expect(sendsEntered("/api/v1/auth/me")).toBe(false);
+    // `GET /auth/me` ở khách đang vào trả quyền ở đó (D-339); sửa hồ sơ là của khách mình.
+    expect(sendsEntered("/api/v1/auth/me")).toBe(true);
+    expect(sendsEntered("/api/v1/auth/me", "PATCH")).toBe(false);
     expect(sendsEntered("/api/v1/auth/me/tenants")).toBe(false);
     expect(sendsEntered("/api/v1/auth/memberships")).toBe(true);
     expect(sendsEntered("/api/v1/content/entries")).toBe(true);

@@ -147,7 +147,7 @@ export default async function SubscriptionsPage(props: { searchParams: Promise<S
                           {tenant.name}
                         </Link>
                         <span className="sub">
-                          {plan?.name ?? "—"}
+                          {sub.plan_name ?? plan?.name ?? "—"}
                           {price
                             ? ` · ${tp(`interval.${price.interval === "year" ? "year" : "month"}`)}`
                             : ""}

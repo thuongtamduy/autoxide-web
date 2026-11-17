@@ -30,7 +30,8 @@ export interface PlatformData {
 
 /**
  * Đọc hết các trang của sổ khách (mỗi trang 200, tối đa 10 trang — đủ cho một bản cài), kèm
- * placement của từng khách (`expand=placement`: core đọc cho cả trang một lần, không gọi riêng).
+ * placement, thuê bao và mức dùng hạn mức của từng khách (`expand`: core đọc cho cả trang một lần,
+ * không gọi riêng).
  */
 async function coreTenants(query: ReturnType<typeof coreTenantFilter> = {}): Promise<CoreTenant[]> {
   const all: CoreTenant[] = [];
@@ -39,7 +40,12 @@ async function coreTenants(query: ReturnType<typeof coreTenantFilter> = {}): Pro
     const result = await load((client) =>
       client.GET("/api/v1/kernel/tenants", {
         params: {
-          query: { limit: 200, expand: "placement", ...query, ...(cursor ? { cursor } : {}) },
+          query: {
+            limit: 200,
+            expand: "placement,subscription,usage",
+            ...query,
+            ...(cursor ? { cursor } : {}),
+          },
         },
       }),
     );
@@ -87,14 +93,6 @@ export async function filteredTenants(
     ...found.map((x) => known.get(x.id) ?? fromCoreTenant(x, data.placements)),
     ...data.tenants.filter((x) => x.source === "sample"),
   ];
-}
-
-/**
- * Khách đang dùng từ 80 % một hạn mức trở lên (`GET /kernel/tenants?near_limit=true`, module
- * `plans`); rỗng khi bản cài không có module này.
- */
-export async function nearLimitIds(): Promise<string[]> {
-  return (await coreTenants({ near_limit: true })).map((x) => x.id);
 }
 
 /**

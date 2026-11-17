@@ -113,6 +113,8 @@ export const TENANTS_MANAGE = "kernel.tenants.manage";
 export const TENANTS_MOVE = "kernel.tenants.move";
 /** Vào ngữ cảnh một khách bằng header `Autoxide-Tenant` (bước 33). */
 export const TENANTS_OPERATE = "kernel.tenants.operate";
+/** Xoá hẳn một khách đã tạm khoá (D-337 của core, không hoàn tác được). */
+export const TENANTS_DELETE = "kernel.tenants.delete";
 /** Xem các nơi lưu dữ liệu (placement) và trạng thái migration của chúng. */
 export const PLACEMENTS_READ = "kernel.placements.read";
 /** Xem gói, giá và quyền dùng của gói (bước 35). */

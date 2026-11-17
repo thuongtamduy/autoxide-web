@@ -54,3 +54,75 @@ export async function resumeRenewal(state: FormState): Promise<FormState> {
   if (!result.ok) return problemState(result.problem, []);
   return done(state);
 }
+
+const PROFILE_FIELDS = [
+  "legal_name",
+  "tax_code",
+  "email",
+  "phone",
+  "province_code",
+  "commune_code",
+  "line",
+] as const;
+
+/** Lỗi ô địa chỉ của core (`address.commune_code`) về đúng ô của form. */
+const ADDRESS_FIELD: Record<string, string> = {
+  "address.province_code": "province_code",
+  "address.commune_code": "commune_code",
+  "address.line": "line",
+  "address.country": "province_code",
+};
+
+/**
+ * Lưu hồ sơ xuất hoá đơn (`PUT /plans/billing-profile`, D-335 của core: thay cả hồ sơ). Địa chỉ: để
+ * trống cả ba ô (không có), hoặc điền đủ. Core kiểm mã số thuế, email, tỉnh và phường.
+ */
+export async function saveBillingProfile(state: FormState, formData: FormData): Promise<FormState> {
+  const values = Object.fromEntries(
+    PROFILE_FIELDS.map((name) => [name, String(formData.get(name) ?? "").trim()]),
+  ) as Record<(typeof PROFILE_FIELDS)[number], string>;
+  const t = await getTranslations("access.required");
+  const fields: Record<string, string> = {};
+  if (!values.legal_name) fields.legal_name = t("field");
+  if (!values.email) fields.email = t("field");
+  const address = [values.province_code, values.commune_code, values.line];
+  if (address.some(Boolean)) {
+    if (!values.province_code) fields.province_code = t("field");
+    if (!values.commune_code) fields.commune_code = t("field");
+    if (!values.line) fields.line = t("field");
+  }
+  if (Object.keys(fields).length > 0) return { fields, values };
+  const result = await send((client) =>
+    client.PUT("/api/v1/plans/billing-profile", {
+      body: {
+        legal_name: values.legal_name,
+        email: values.email,
+        tax_code: values.tax_code || null,
+        phone: values.phone || null,
+        address: address.some(Boolean)
+          ? {
+              country: "VN",
+              province_code: values.province_code,
+              commune_code: values.commune_code,
+              line: values.line,
+            }
+          : null,
+      },
+    }),
+  );
+  if (!result.ok) {
+    const problem = {
+      ...result.problem,
+      ...(result.problem.errors
+        ? {
+            errors: result.problem.errors.map((entry) => ({
+              ...entry,
+              field: ADDRESS_FIELD[entry.field] ?? entry.field,
+            })),
+          }
+        : {}),
+    };
+    return { ...problemState(problem, [...PROFILE_FIELDS]), values };
+  }
+  return done(state);
+}

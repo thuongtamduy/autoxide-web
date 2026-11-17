@@ -279,7 +279,7 @@
     "mfaBody": "Một role của bạn bắt buộc điều này: permission của role đó tạm tắt tới khi bạn thêm app xác thực hoặc passkey.",
     "mfaLink": "Bật ngay",
     "entered": {
-      "text": "Bạn đang làm việc ở {name} qua {access}. Mọi màn đều hiện: máy chủ của khách từ chối việc role của bạn không được làm.",
+      "text": "Bạn đang làm việc ở {name} qua {access}, với quyền được cấp ở đó. Khách thấy mọi thay đổi trong nhật ký audit của họ.",
       "leave": "Về khách của tôi",
       "endedTitle": "Quyền vào khách này đã hết",
       "endedBody": "Uỷ quyền hay quyền vào hỗ trợ đã bị thu hồi hoặc hết hạn."
@@ -1285,7 +1285,10 @@
         "commune": "Phường / xã",
         "communeHint": "Theo danh mục đơn vị hành chính có ngày hiệu lực.",
         "line": "Số nhà, đường",
-        "save": "Lưu hồ sơ"
+        "save": "Lưu hồ sơ",
+        "none": "Chưa có thông tin xuất hoá đơn. Điền để hoá đơn ghi đúng tên doanh nghiệp của bạn.",
+        "choose": "Chọn…",
+        "loading": "Đang tải…"
       },
       "unlimited": "không giới hạn",
       "noPlan": "Chưa có gói",
@@ -4676,7 +4679,8 @@
       "active": "Đang hoạt động",
       "suspended": "Tạm khoá hẳn",
       "maintenance": "Bảo trì",
-      "moving": "Đang dời"
+      "moving": "Đang dời",
+      "deleted": "Đã xoá"
     },
     "subStatus": {
       "trialing": "Dùng thử",
@@ -4694,7 +4698,8 @@
     "provStatus": {
       "running": "Đang chạy",
       "failed": "Dừng lỗi",
-      "done": "Xong"
+      "done": "Xong",
+      "pending": "Đang chờ"
     },
     "grantStatus": {
       "active": "Còn hạn",
@@ -4998,7 +5003,30 @@
       "exportBusy": "Đang xuất; tải lại trang sau ít phút.",
       "suspendReason": "Lý do",
       "suspendReasonHint": "Ghi vào nhật ký audit của khách, 1 đến 500 ký tự.",
-      "suspendReasonRequired": "Ghi lý do."
+      "suspendReasonRequired": "Ghi lý do.",
+      "periodRange": "Kỳ thanh toán",
+      "periodAmount": "Số tiền",
+      "periodState": "Trạng thái",
+      "markPaid": "Đánh dấu đã thu",
+      "markPaidTitle": "Ghi nhận tiền {tenant} đã trả?",
+      "markPaidActive": "Thuê bao quá hạn hay bị khoá dùng lại được ngay.",
+      "markPaidDone": "Đã ghi nhận đã thu.",
+      "paymentReference": "Mã giao dịch",
+      "paymentReferenceHint": "Mã giao dịch của ngân hàng hay cổng thanh toán.",
+      "billingName": "Xuất hoá đơn cho",
+      "billingTax": "Mã số thuế",
+      "billingEmail": "Email nhận hoá đơn",
+      "erase": "Xoá hẳn",
+      "eraseTitle": "Xoá hẳn {tenant}?",
+      "eraseAll": "Mọi bản ghi và tệp của khách bị xoá; tên miền được nhả ra.",
+      "eraseKept": "Chứng từ kế toán luật buộc giữ thì vẫn giữ (Luật Kế toán 88/2015, Điều 41).",
+      "eraseExport": "Xuất dữ liệu trước nếu còn cần.",
+      "eraseNoUndo": "Không hoàn tác được. Khách vẫn nằm trong sổ với trạng thái đã xoá.",
+      "eraseSubmit": "Xoá hẳn",
+      "erased": "Đã xoá hẳn {tenant}.",
+      "eraseConfirm": "Gõ “{slug}” để xác nhận",
+      "eraseConfirmWrong": "Gõ đúng tên ngắn của khách.",
+      "eraseReasonHint": "Ghi vào nhật ký audit của nền tảng, 1 đến 500 ký tự."
     },
     "provision": {
       "button": "Cấp phát khách mới",
@@ -5026,7 +5054,13 @@
       "noParent": "Không có khách cha",
       "email": "Email quản trị đầu tiên",
       "sample": "Gieo dữ liệu mẫu",
-      "sampleHint": "Sản phẩm, bài viết mẫu để khách thử ngay."
+      "sampleHint": "Sản phẩm, bài viết mẫu để khách thử ngay.",
+      "stepsCore": "Các bước: tạo khách → gán gói → dữ liệu mẫu của module trong gói → mời quản trị viên đầu tiên.",
+      "kycCore": "Gói cần xác minh danh tính chưa cấp phát được.",
+      "dedicatedCore": "Gói riêng cần một placement riêng thêm bằng CLI trước (URL chứa mật khẩu).",
+      "placementHintCore": "Theo gói: main cho gói dùng chung; gói riêng cần placement riêng.",
+      "priceOption": "{name} · {price} · {placement}",
+      "adminName": "Tên quản trị viên đầu tiên (tuỳ chọn)"
     },
     "plans": {
       "crumb": "Nền tảng Autoxide · bán gói",
@@ -5251,7 +5285,10 @@
         "subscribed": "Gán gói",
         "invited": "Mời quản trị",
         "done": "Xong"
-      }
+      },
+      "descriptionCore": "Tạo khách trên một gói một lần: khách, gói, dữ liệu mẫu và lời mời quản trị viên đầu tiên. Chạy nền; lỗi thì sửa rồi chạy lại từ bước đã tới.",
+      "stepsCore": "Các bước: tạo khách → gán gói → dữ liệu mẫu → mời quản trị viên → xong. Chạy lại không bao giờ tạo khách thứ hai.",
+      "stoppedAfter": "Dừng sau bước: {step}"
     },
     "fleet": {
       "crumb": "Nền tảng Autoxide · database",
@@ -5462,6 +5499,11 @@
       "ready": "Đã xong",
       "failed": "Lỗi",
       "expired": "Đã xoá"
+    },
+    "periodStatus": {
+      "open": "Chờ thu",
+      "paid": "Đã thu",
+      "void": "Đã huỷ"
     }
   },
   "catalog": {

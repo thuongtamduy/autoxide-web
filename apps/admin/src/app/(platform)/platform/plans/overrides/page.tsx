@@ -19,7 +19,7 @@ import { can, getModules } from "@/lib/viewer";
 
 // Tab "Ghi đè cho từng khách" (`/plans/tenants/{id}/overrides`, bước 35 của core): ghi đè thay hẳn giá
 // trị của gói cho một khách (module, tính năng, hạn mức), bắt buộc có lý do, có thể đặt ngày hết hạn.
-// Đặt và bỏ đều Hoàn tác được. Core chưa có danh sách ghi đè của mọi khách: đọc từng khách (của core).
+// Đặt và bỏ đều Hoàn tác được. Danh sách ghi đè của mọi khách đọc từ `GET /plans/overrides` (D-335).
 export default async function OverridesPage() {
   const t = await getTranslations("platform.overrides");
   const tp = await getTranslations("platform");
@@ -32,19 +32,7 @@ export default async function OverridesPage() {
   ]);
   // Khách của core, trừ khách nền tảng (core: khách nền tảng không bao giờ bị giới hạn theo gói).
   const tenants = all.filter((x) => x.source === "core" && !x.is_platform);
-  const overrides = (
-    await Promise.all(
-      tenants.map(async (tenant) =>
-        (
-          await load((c) =>
-            c.GET("/api/v1/plans/tenants/{tenant_id}/overrides", {
-              params: { path: { tenant_id: tenant.id } },
-            }),
-          )
-        ).data.map((o) => ({ ...o, tenant_id: tenant.id })),
-      ),
-    )
-  ).flat();
+  const overrides = await loadAllOverrides();
   const name = (id: string) => tenants.find((x) => x.id === id)?.name ?? id;
   const value = (o: Override) =>
     o.kind === "limit"
@@ -196,4 +184,21 @@ export default async function OverridesPage() {
       </section>
     </div>
   );
+}
+
+/** Ghi đè của mọi khách (`GET /plans/overrides`, theo trang; tối đa 10 trang × 200). */
+async function loadAllOverrides(): Promise<Override[]> {
+  const all: Override[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < 10; page++) {
+    const answer = await load((c) =>
+      c.GET("/api/v1/plans/overrides", {
+        params: { query: { limit: 200, ...(cursor ? { cursor } : {}) } },
+      }),
+    );
+    all.push(...answer.data);
+    cursor = answer.pagination.next_cursor ?? undefined;
+    if (!cursor) break;
+  }
+  return all;
 }

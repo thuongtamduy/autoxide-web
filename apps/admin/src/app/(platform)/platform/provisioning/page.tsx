@@ -1,49 +1,65 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { sampleGate } from "@/app/(admin)/org/access/sample-gate";
-import { retryProvisioningAction } from "@/app/(platform)/platform/actions";
+import { retryProvision } from "@/app/(platform)/platform/provision-actions";
 import { Chips } from "@/components/engage/common";
-import { PlatformHead, PROVISION_BADGE, StatusBadge } from "@/components/platform/common";
+import { PlatformHead, StatusBadge } from "@/components/platform/common";
+import { MovePoll } from "@/components/platform/move";
 import { ProvisionDialog } from "@/components/platform/provision-dialog";
 import { InlineAction } from "@/components/ui/confirm";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
+import { load } from "@/lib/core";
 import { oneOf, type SearchParams } from "@/lib/engage";
 import { PROVISION } from "@/lib/permissions";
-import { listProvisionings } from "@/sample/platform";
-import { PROVISION_STEPS, type ProvisionStatus } from "@/sample/platform-data";
-import { listPlans } from "@/sample/platform-plans";
+import { loadAllPlans } from "@/lib/plans-server";
+import { platformGate, platformRefused } from "@/lib/platform-server";
+import { can } from "@/lib/viewer";
 
-const STATUSES: readonly ProvisionStatus[] = ["running", "failed", "done"];
-const ENDPOINTS =
-  "POST /api/v1/plans/provisionings, GET /api/v1/plans/provisionings/{id}, POST …/{id}/retry (bước 35); mới: GET /api/v1/plans/provisionings?status= (danh sách), lịch sử từng bước";
+const STATUSES = ["pending", "running", "failed", "done"] as const;
+/** Các bước của một lượt cấp phát theo thứ tự (D-338 của core). */
+const STEPS = ["created", "tenant_created", "subscribed", "seeded", "invited", "done"] as const;
+const BADGE: Record<string, string> = {
+  pending: "badge b-info",
+  running: "badge b-info",
+  failed: "badge b-bad",
+  done: "badge b-ok",
+};
 
-// Màn "Cấp phát" (dữ liệu mẫu, W-014): mỗi lượt cấp phát chạy từng bước bằng job; lỗi thì dừng ở
-// bước đó và chạy lại được từ chính bước đó (ID khách sinh trước, không tạo khách thứ hai).
+// Màn "Cấp phát" (`/plans/provisionings`, D-338 của core): mỗi lượt tạo khách trên một gói chạy nền
+// từng bước (tạo khách → gán gói → dữ liệu mẫu → mời quản trị viên); hỏng thì dừng ở bước đó, sửa rồi
+// chạy lại từ bước đã ghi (không tạo khách thứ hai). Trang tự làm mới khi còn lượt đang chạy.
 export default async function ProvisioningPage(props: { searchParams: Promise<SearchParams> }) {
-  const gate = await sampleGate(PROVISION);
+  const gate = await platformGate(PROVISION);
   if (gate) return gate;
   const t = await getTranslations("platform.prov");
   const tp = await getTranslations("platform");
   const status = oneOf(await props.searchParams, "status", STATUSES);
-  const [{ data: all }, { data: plans }] = await Promise.all([listProvisionings(), listPlans()]);
+  let all: Awaited<ReturnType<typeof loadRuns>>;
+  try {
+    all = await loadRuns();
+  } catch (error) {
+    const refused = await platformRefused(error);
+    if (refused) return refused;
+    throw error;
+  }
+  const [plans, provision] = await Promise.all([loadAllPlans(), can(PROVISION)]);
   const runs = all.filter((run) => !status || run.status === status);
-  const last = PROVISION_STEPS.length - 1;
+  const last = STEPS.length - 1;
+  const busy = all.some((run) => run.status === "pending" || run.status === "running");
   return (
     <div className="page">
       <PlatformHead
         crumb={t("crumb")}
         title={t("title")}
-        description={t("description")}
-        step="35"
-        endpoint={ENDPOINTS}
-        actions={<ProvisionDialog />}
+        description={t("descriptionCore")}
+        actions={provision ? <ProvisionDialog /> : undefined}
       />
+      {busy ? <MovePoll /> : null}
       <section className="block" aria-labelledby="pf-prov-h">
         <h2 id="pf-prov-h" className="h2">
           {t("listTitle")}
         </h2>
-        <p className="fhint">{t("steps")}</p>
+        <p className="fhint">{t("stepsCore")}</p>
         <Chips
           label={t("filter")}
           chips={[
@@ -56,7 +72,7 @@ export default async function ProvisioningPage(props: { searchParams: Promise<Se
             })),
           ]}
         />
-        <div className="card tcard">
+        <div className="card tcard" data-testid="provisionings">
           <Table cards>
             <thead>
               <tr>
@@ -71,15 +87,15 @@ export default async function ProvisioningPage(props: { searchParams: Promise<Se
             </thead>
             <tbody>
               {runs.map((run) => {
-                const index = PROVISION_STEPS.indexOf(run.step);
+                const index = Math.max(0, STEPS.indexOf(run.step as (typeof STEPS)[number]));
                 const plan = plans.find((p) => p.id === run.plan_id);
-                const stoppedAt =
-                  run.status === "failed" ? run.history.find((h) => h.failed)?.step : undefined;
+                const stepName = (step: string) =>
+                  t.has(`step.${step}`) ? t(`step.${step}`) : step;
                 return (
                   <tr key={run.id}>
                     <Td className="rt-title">
                       <span className="cell2">
-                        {run.status === "done" || index >= 1 ? (
+                        {run.tenant_id ? (
                           <Link href={`/platform/tenants/${run.tenant_id}`} className="open">
                             {run.tenant_name}
                           </Link>
@@ -87,17 +103,15 @@ export default async function ProvisioningPage(props: { searchParams: Promise<Se
                           <b>{run.tenant_name}</b>
                         )}
                         <span className="sub">
-                          {run.signup_id ? t("selfSignup") : t("admin", { email: run.admin_email })}
+                          <span className="mono">{run.slug}</span> ·{" "}
+                          {t("admin", { email: run.admin_email })}
                         </span>
                       </span>
                     </Td>
                     <Td label={t("colPlan")}>
                       <span className="cell2">
                         <span>{plan?.name ?? "—"}</span>
-                        <span className="sub">
-                          {tp(`placementKind.${run.placement}`)}
-                          {run.placement_name ? ` · ${run.placement_name}` : ""}
-                        </span>
+                        <span className="sub mono">{run.placement ?? "main"}</span>
                       </span>
                     </Td>
                     <Td label={t("colProgress")}>
@@ -106,13 +120,9 @@ export default async function ProvisioningPage(props: { searchParams: Promise<Se
                           <span className="ell">
                             {run.status === "done"
                               ? t("finished", { total: last })
-                              : stoppedAt
-                                ? t("stoppedAt", { step: t(`step.${stoppedAt}`) })
-                                : t("atStep", {
-                                    n: index,
-                                    total: last,
-                                    step: t(`step.${run.step}`),
-                                  })}
+                              : run.status === "failed"
+                                ? t("stoppedAfter", { step: stepName(run.step) })
+                                : t("atStep", { n: index, total: last, step: stepName(run.step) })}
                           </span>
                         </div>
                         <progress
@@ -125,15 +135,19 @@ export default async function ProvisioningPage(props: { searchParams: Promise<Se
                     </Td>
                     <Td label={t("colStatus")}>
                       <StatusBadge
-                        className={PROVISION_BADGE[run.status]}
-                        label={tp(`provStatus.${run.status}`)}
+                        className={BADGE[run.status] ?? "badge"}
+                        label={
+                          tp.has(`provStatus.${run.status}`)
+                            ? tp(`provStatus.${run.status}`)
+                            : run.status
+                        }
                       />
                     </Td>
                     <Td className="rt-acts">
                       <div className="eg-acts">
-                        {run.status === "failed" ? (
+                        {run.status === "failed" && provision ? (
                           <InlineAction
-                            action={retryProvisioningAction}
+                            action={retryProvision}
                             id={run.id}
                             label={t("retry")}
                             done={t("retried", { tenant: run.tenant_name })}
@@ -142,17 +156,18 @@ export default async function ProvisioningPage(props: { searchParams: Promise<Se
                       </div>
                       <details className="visits">
                         <summary>{t("history")}</summary>
-                        {run.last_error ? (
-                          <p className="note warn">{t("error", { error: run.last_error })}</p>
+                        {run.error ? (
+                          <p className="note warn">
+                            {t("error", { error: run.error })}
+                            {run.error_code ? (
+                              <span className="sub mono"> · {run.error_code}</span>
+                            ) : null}
+                          </p>
                         ) : null}
-                        {run.status === "failed" ? <p className="fhint">{t("fix")}</p> : null}
                         <ul>
-                          {run.history.map((h) => (
-                            <li key={`${h.at}${h.step}${h.failed ? "x" : ""}`}>
-                              <Time value={h.at} /> ·{" "}
-                              {h.failed
-                                ? t("failedStep", { step: t(`step.${h.step}`) })
-                                : t(`step.${h.step}`)}
+                          {run.steps.map((h) => (
+                            <li key={`${h.at}${h.step}`}>
+                              <Time value={h.at} /> · {stepName(h.step)}
                             </li>
                           ))}
                         </ul>
@@ -168,4 +183,21 @@ export default async function ProvisioningPage(props: { searchParams: Promise<Se
       </section>
     </div>
   );
+}
+
+/** Mọi lượt cấp phát, mới trước (tối đa 10 trang × 200). */
+async function loadRuns() {
+  const all = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < 10; page++) {
+    const answer = await load((c) =>
+      c.GET("/api/v1/plans/provisionings", {
+        params: { query: { limit: 200, order: "desc", ...(cursor ? { cursor } : {}) } },
+      }),
+    );
+    all.push(...answer.data);
+    cursor = answer.pagination.next_cursor ?? undefined;
+    if (!cursor) break;
+  }
+  return all;
 }

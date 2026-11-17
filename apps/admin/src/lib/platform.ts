@@ -25,6 +25,12 @@ export type PlatformTenant = Tenant & {
   source: Source;
   read_only: boolean;
   placement: PlatformPlacement | null;
+  /**
+   * Thuê bao và mức dùng hạn mức (`expand=subscription,usage` của sổ khách, D-335 của core); `null`
+   * khi không có (khách chưa có thuê bao, bản cài không có module `plans`, khách mẫu).
+   */
+  subscription: Subscription | null;
+  usage: LimitUse[] | null;
 };
 export type PlacementStorage = components["schemas"]["PlacementStorage"];
 /**
@@ -89,6 +95,9 @@ export function fromCoreTenant(
     primary_domain: sample?.primary_domain ?? null,
     status_reason: sample?.status_reason ?? null,
     read_only: core.read_only ?? false,
+    // `expanded` khai object tự do (mỗi module góp phần của mình): hình dạng theo mô tả của core.
+    subscription: (core.expanded?.subscription as Subscription | null | undefined) ?? null,
+    usage: (core.expanded?.usage as LimitUse[] | null | undefined) ?? null,
     placement: expanded
       ? fromCorePlacement(
           expanded,
@@ -121,6 +130,8 @@ export function mergeTenants(
         return {
           ...x,
           read_only: false,
+          subscription: null,
+          usage: null,
           placement: placement ? { ...placement, source: "sample" as const } : null,
           source: "sample" as const,
         };

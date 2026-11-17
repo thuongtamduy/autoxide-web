@@ -46,7 +46,10 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
   changing plan (a bigger plan applies at once, a smaller one at the end of the period), canceling
   and resuming renewal. **Platform › Plans and prices**: plans with their modules, features, limits
   and prices, selling, the default plan, retiring; overrides per customer (with undo); the
-  subscription of every customer (change plan, cancel, suspend). The Overview shows your plan and the
+  subscription of every customer (change plan, cancel, suspend); invoice details; each customer's
+  billing periods, with "mark as paid" for transfers checked by hand. **Platform › Provisioning**:
+  create a customer on a plan in one go (customer, plan, sample data, first admin invitation), retry a
+  failed run. A suspended customer can be deleted for good (accounting records are kept). The Overview shows your plan and the
   limit closest to full; actions your plan does not include (creating API keys, AI suggestions for
   posts) are locked with a "Higher plan" tag, and areas of modules outside the plan are not offered.
 - **Switching customers**: people who may work in other customers (through a delegation from a parent
@@ -79,7 +82,7 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
 builds them in later steps: Sales (orders, returns, counter sales, shipping and COD, stores,
 sales channels), Products (catalog, prices, tax groups, inventory), Marketing (promotions,
 affiliate marketing), Customers, Marketplace and the Seller Center, Finance (ledger, e-invoices,
-tax), Compliance, and the rest of the Platform console (provisioning, health). Parts of the real screens the core
+tax), Compliance, and the rest of the Platform console (health). Parts of the real screens the core
 has no API for yet use sample data the same way. Sample data shows only when
 `AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes there are kept in the
 app's memory and lost on restart. The sample records agree across screens (an order, its

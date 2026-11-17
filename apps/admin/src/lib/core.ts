@@ -44,7 +44,7 @@ export function withEntry(client: AutoxideClient, tenant: string | null): Autoxi
   if (!tenant) return client;
   client.use({
     onRequest({ request }) {
-      if (sendsEntered(new URL(request.url).pathname)) {
+      if (sendsEntered(new URL(request.url).pathname, request.method)) {
         request.headers.set("Autoxide-Tenant", tenant);
       }
       return request;

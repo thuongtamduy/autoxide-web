@@ -60,10 +60,12 @@ export function enteredTenant(value: string | undefined): string | null {
 }
 
 /**
- * Lời gọi tới `path` có gửi `Autoxide-Tenant` của khách đang vào không. Phần tài khoản của chính
- * mình (`/auth/me…`) core chỉ trả lời ở khách của mình (ở khách khác `GET /auth/me` trả 401), nên
- * không gửi; mọi lời gọi khác làm việc ở khách đang vào.
+ * Lời gọi `method path` có gửi `Autoxide-Tenant` của khách đang vào không. Phần tài khoản của chính
+ * mình (`/auth/me…`: hồ sơ, mật khẩu, MFA, passkey, phiên) ở khách của mình, nên không gửi — trừ
+ * `GET /auth/me`: ở khách đang vào core trả quyền của người dùng ở đó (D-339). Mọi lời gọi khác làm
+ * việc ở khách đang vào.
  */
-export function sendsEntered(path: string): boolean {
+export function sendsEntered(path: string, method = "GET"): boolean {
+  if (path === "/api/v1/auth/me") return method === "GET";
   return !/^\/api\/v1\/auth\/me(\/|$)/.test(path);
 }
