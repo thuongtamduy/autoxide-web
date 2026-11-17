@@ -112,8 +112,11 @@ test("vận chuyển: đặt hãng, vận đơn tay báo lỗi theo ô, khớp C
   await expect(page.getByRole("heading", { level: 1, name: "Shipping" })).toBeVisible();
   await expect(page.getByText("Sample data · waiting for API step 44")).toBeVisible();
 
-  await page.getByRole("link", { name: "BM-2611-0415" }).click();
-  await page.getByRole("button", { name: "Book carrier" }).click();
+  await page
+    .getByRole("row", { name: /BM-2611-0415/ })
+    .first()
+    .getByRole("button", { name: "Book carrier" })
+    .click();
   await dialog(page).getByRole("button", { name: "Book" }).click();
   await expect(toast(page)).toContainText("Request sent to the carrier");
 
@@ -146,10 +149,12 @@ test("vận chuyển: đặt hãng, vận đơn tay báo lỗi theo ô, khớp C
 
   // Tắt phương thức có Hoàn tác; tính thử phí nêu ngày giao dự kiến và hãng lỗi.
   await page.goto("/sales/shipping/rates");
+  // "Tắt" lặp lại trên mọi dòng nên nằm trong "⋯".
   await page
     .getByRole("row", { name: /same_day/ })
-    .getByRole("button", { name: "Turn off" })
+    .getByRole("button", { name: /^More actions for / })
     .click();
+  await page.getByRole("menuitem", { name: "Turn off" }).click();
   await expect(toast(page)).toContainText("Turned off");
   await toast(page).getByRole("button", { name: "Undo" }).click();
   await expect(toast(page)).toContainText("Undone");

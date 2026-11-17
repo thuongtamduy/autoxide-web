@@ -8,6 +8,7 @@ import { seedMarket } from "./market-data";
 import { ORDER_REFS, orderByNumber } from "./order-refs";
 import {
   acceptOrders,
+  canRemindCart,
   countOrders,
   createStoreReturn,
   decideProposal,
@@ -371,5 +372,31 @@ describe("mã đơn dùng chung giữa các phân hệ", () => {
         m.number,
       ).toBe(m.items);
     }
+  });
+});
+
+describe("bảng giỏ bỏ dở", () => {
+  it("chỉ nhắc được giỏ có đồng ý nhận tin, có liên hệ, chưa nhắc đủ lần", async () => {
+    const carts = (await listCarts()).data;
+    for (const c of carts) {
+      expect(canRemindCart(c)).toBe(c.consent && c.contact !== null && c.reminders_sent < 2);
+    }
+    const fresh = carts.find((c) => canRemindCart(c));
+    if (!fresh) throw new Error("thiếu giỏ nhắc được");
+    expect((await remindCart(fresh.id)).ok).toBe(true);
+    expect((await remindCart(fresh.id)).ok).toBe(true);
+    const after = (await listCarts()).data.find((c) => c.id === fresh.id);
+    expect(after && canRemindCart(after)).toBe(false);
+  });
+
+  it("sắp theo giá trị và giờ bỏ dở", async () => {
+    const values = (await listCarts({ field: "value", dir: "desc" })).data.map((c) =>
+      Number(c.value.amount),
+    );
+    expect(values).toEqual([...values].sort((a, b) => b - a));
+    const times = (await listCarts({ field: "abandoned", dir: "asc" })).data.map((c) =>
+      Date.parse(c.abandoned_at),
+    );
+    expect(times).toEqual([...times].sort((a, b) => a - b));
   });
 });

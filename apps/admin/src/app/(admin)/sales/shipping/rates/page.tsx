@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { commerceGate } from "@/app/(admin)/catalog/gate";
-import { methodActiveAction } from "@/app/(admin)/sales/shipping/actions";
+import {
+  bulkMethodOffAction,
+  bulkMethodOnAction,
+  methodActiveAction,
+  undoMethodOffAction,
+  undoMethodOnAction,
+} from "@/app/(admin)/sales/shipping/actions";
 import { ChangeButtons } from "@/components/engage/actions";
 import { MethodDialog, QuoteForm } from "@/components/shipping/forms";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
+import { RowMenu, type RowMenuItem } from "@/components/ui/row-menu";
 import { Table, Td, Th } from "@/components/ui/table";
 import { formatMoney } from "@/lib/format";
 import { formatWeight, SHIPPING_SETTINGS_MANAGE } from "@/lib/shipping";
@@ -20,11 +28,14 @@ import { provinceOptions, TAB_PERMISSIONS, unitOptions } from "../shared";
 // Tab "Phí vận chuyển": phương thức giao khai ở nút cha thì nút con dùng chung; cửa hàng khai cùng mã
 // thì ghi đè. Bảng phí theo vùng (tỉnh cụ thể thắng "cả nước") và bậc cân; tính thử phí dùng cùng hàm
 // với báo giá cho đơn hàng. Địa chỉ hai cấp tỉnh → phường / xã (sau sắp xếp đơn vị hành chính 2025).
+// Bảng phương thức: phương thức đang tắt hiện nút "Bật" trên dòng; "Tắt" (lặp lại trên mọi dòng) và
+// "Xem bảng phí" nằm trong "⋯"; chọn nhiều để bật / tắt (lặp lệnh từng phương thức, có Hoàn tác).
 export default async function RatesPage(props: PageProps<"/sales/shipping/rates">) {
   const gate = await commerceGate(TAB_PERMISSIONS.rates);
   if (gate) return gate;
-  const [t, locale, params] = await Promise.all([
+  const [t, tt, locale, params] = await Promise.all([
     getTranslations("shipping"),
+    getTranslations("table"),
     getLocale(),
     props.searchParams,
   ]);
@@ -44,6 +55,7 @@ export default async function RatesPage(props: PageProps<"/sales/shipping/rates"
   const money = (amount: string) => formatMoney(amount, "VND", locale);
   const name = (m: { names: Record<string, string>; code: string }) =>
     m.names[locale] ?? m.names.vi ?? m.code;
+  const undo = { label: t("undo"), done: t("undone") };
   return (
     <div className="blocks">
       <p className="fhint">{t("rates.about")}</p>
@@ -61,91 +73,141 @@ export default async function RatesPage(props: PageProps<"/sales/shipping/rates"
         </div>
         <p className="fhint">{t("rates.methodsAbout")}</p>
         <div className="card tcard">
-          <Table cards>
-            <thead>
-              <tr>
-                <Th>{t("rates.method")}</Th>
-                <Th>{t("rates.kind")}</Th>
-                <Th>{t("rates.node")}</Th>
-                <Th className="text-right">{t("rates.freeOver")}</Th>
-                <Th>{t("rates.state")}</Th>
-                <Th>
-                  <span className="vh">{t("rates.actions")}</span>
-                </Th>
-              </tr>
-            </thead>
-            <tbody>
-              {methods.map((m) => (
-                <tr key={m.id}>
-                  <Td className="rt-title">
-                    <span className="cell2">
-                      <span>{name(m)}</span>
-                      <span className="sub">
-                        <span className="mono">{m.code}</span>
-                        {m.estimated_min_days !== null && m.estimated_max_days !== null
-                          ? ` · ${
-                              m.estimated_max_days === 0
-                                ? t("rates.sameDay")
-                                : t("rates.days", {
-                                    min: m.estimated_min_days,
-                                    max: m.estimated_max_days,
-                                  })
-                            }`
-                          : ""}
-                        {m.cutoff ? ` · ${t("rates.cutoff", { time: m.cutoff })}` : ""}
-                      </span>
-                    </span>
-                  </Td>
-                  <Td label={t("rates.kind")}>
-                    <span className="cell2">
-                      <span>{t(`kinds.${m.kind}`)}</span>
-                      {m.carrier_name ? (
-                        <span className="sub">
-                          {m.carrier_name}
-                          {m.carrier_status === "error" ? ` · ${t("rates.carrierError")}` : ""}
-                        </span>
-                      ) : null}
-                    </span>
-                  </Td>
-                  <Td label={t("rates.node")}>
-                    <span className="cell2">
-                      <span>{m.org_name}</span>
-                      {m.overrides ? <span className="sub">{t("rates.overrides")}</span> : null}
-                    </span>
-                  </Td>
-                  <Td label={t("rates.freeOver")} className="text-right num">
-                    {m.free_over ? money(m.free_over.amount) : t("rates.noFree")}
-                  </Td>
-                  <Td label={t("rates.state")}>
-                    <span className={m.active ? "badge b-ok" : "badge b-arch"}>
-                      <span className="dot" />
-                      {m.active ? t("rates.on") : t("rates.off")}
-                    </span>
-                  </Td>
-                  <Td className="rt-acts">
-                    {manage ? (
-                      <ChangeButtons
-                        action={methodActiveAction}
-                        id={m.id}
-                        expect={m.updated_at}
-                        moves={[
-                          m.active
-                            ? {
-                                value: "off",
-                                label: t("rates.turnOff"),
-                                done: t("rates.turnedOff"),
-                                tone: "danger",
-                              }
-                            : { value: "on", label: t("rates.turnOn"), done: t("rates.turnedOn") },
-                        ]}
-                        undo={{ label: t("undo"), done: t("undone") }}
-                      />
-                    ) : null}
-                  </Td>
+          <BulkTable
+            ids={methods.map((m) => m.id)}
+            actions={
+              manage
+                ? [
+                    {
+                      key: "off",
+                      label: t("rates.turnOff"),
+                      tone: "danger",
+                      run: bulkMethodOffAction,
+                      undo: undoMethodOffAction,
+                    },
+                    {
+                      key: "on",
+                      label: t("rates.turnOn"),
+                      run: bulkMethodOnAction,
+                      undo: undoMethodOnAction,
+                    },
+                  ]
+                : []
+            }
+          >
+            <Table cards>
+              <thead>
+                <tr>
+                  {manage ? <SelectAllTh /> : null}
+                  <Th>{t("rates.method")}</Th>
+                  <Th>{t("rates.kind")}</Th>
+                  <Th>{t("rates.node")}</Th>
+                  <Th className="text-right">{t("rates.freeOver")}</Th>
+                  <Th>{t("rates.state")}</Th>
+                  <Th>
+                    <span className="vh">{t("rates.actions")}</span>
+                  </Th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {methods.map((m) => {
+                  const menu: RowMenuItem[] = [];
+                  if (m.kind === "table_rate") {
+                    menu.push({
+                      label: t("rates.viewTable"),
+                      href: `/sales/shipping/rates?method=${m.id}#rates-h`,
+                    });
+                  }
+                  if (manage && m.active) {
+                    menu.push({
+                      label: t("rates.turnOff"),
+                      danger: true,
+                      change: {
+                        action: methodActiveAction,
+                        id: m.id,
+                        expect: m.updated_at,
+                        value: "off",
+                        done: t("rates.turnedOff"),
+                        undo,
+                      },
+                    });
+                  }
+                  return (
+                    <tr key={m.id}>
+                      {manage ? <SelectTd id={m.id} name={name(m)} /> : null}
+                      <Td className="rt-title">
+                        <span className="cell2">
+                          <span>{name(m)}</span>
+                          <span className="sub">
+                            <span className="mono">{m.code}</span>
+                            {m.estimated_min_days !== null && m.estimated_max_days !== null
+                              ? ` · ${
+                                  m.estimated_max_days === 0
+                                    ? t("rates.sameDay")
+                                    : t("rates.days", {
+                                        min: m.estimated_min_days,
+                                        max: m.estimated_max_days,
+                                      })
+                                }`
+                              : ""}
+                            {m.cutoff ? ` · ${t("rates.cutoff", { time: m.cutoff })}` : ""}
+                          </span>
+                        </span>
+                      </Td>
+                      <Td label={t("rates.kind")}>
+                        <span className="cell2">
+                          <span>{t(`kinds.${m.kind}`)}</span>
+                          {m.carrier_name ? (
+                            <span className="sub">
+                              {m.carrier_name}
+                              {m.carrier_status === "error" ? ` · ${t("rates.carrierError")}` : ""}
+                            </span>
+                          ) : null}
+                        </span>
+                      </Td>
+                      <Td label={t("rates.node")}>
+                        <span className="cell2">
+                          <span>{m.org_name}</span>
+                          {m.overrides ? <span className="sub">{t("rates.overrides")}</span> : null}
+                        </span>
+                      </Td>
+                      <Td label={t("rates.freeOver")} className="text-right num">
+                        {m.free_over ? money(m.free_over.amount) : t("rates.noFree")}
+                      </Td>
+                      <Td label={t("rates.state")}>
+                        <span className={m.active ? "badge b-ok" : "badge b-arch"}>
+                          <span className="dot" />
+                          {m.active ? t("rates.on") : t("rates.off")}
+                        </span>
+                      </Td>
+                      <Td className="rt-acts">
+                        <span className="row-acts">
+                          {manage && !m.active ? (
+                            <ChangeButtons
+                              action={methodActiveAction}
+                              id={m.id}
+                              expect={m.updated_at}
+                              moves={[
+                                {
+                                  value: "on",
+                                  label: t("rates.turnOn"),
+                                  done: t("rates.turnedOn"),
+                                },
+                              ]}
+                              undo={undo}
+                            />
+                          ) : null}
+                          {menu.length > 0 ? (
+                            <RowMenu label={tt("moreFor", { name: name(m) })} items={menu} />
+                          ) : null}
+                        </span>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </BulkTable>
         </div>
       </section>
 

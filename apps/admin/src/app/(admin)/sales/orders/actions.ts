@@ -22,7 +22,7 @@ import {
   type OrderStatus,
   readFilters,
 } from "@/lib/orders";
-import { type BulkInput, type BulkResult, bulkBlocked, cleanIds } from "@/lib/table";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import { getProfile, listProfiles, type TierCode } from "@/sample/customers";
 import {
@@ -31,6 +31,8 @@ import {
   countOrders,
   decideProposal,
   decideReturn,
+  listCarts,
+  listReturns,
   matchingIds,
   parseFilterText,
   recordManualPayment,
@@ -333,6 +335,77 @@ export async function remindAction(_state: ChangeState, formData: FormData): Pro
   if (!outcome.ok) return failed(outcome);
   refresh();
   return { done: 1, previous: undo ? "remind" : "undo", updated: new Date().toISOString() };
+}
+
+/**
+ * Chạy một lệnh mẫu cho từng id (hàm mẫu, như core, chỉ có lệnh từng cái), gom lỗi đã dịch theo
+ * `orders.codes.*`; trả thêm id đã đổi (`undo`) cho nút Hoàn tác.
+ */
+async function eachSample(
+  ids: string[],
+  permission: string,
+  run: (id: string) => Promise<SampleOutcome<unknown>>,
+  names: ReadonlyMap<string, string>,
+): Promise<BulkResult> {
+  const blocked = await guard(permission);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const result = await eachId(
+    ids,
+    async (id) => {
+      const outcome = await run(id);
+      return outcome.ok ? null : (await translateCommerce(outcome.problem, "orders")).detail;
+    },
+    (id) => names.get(id) ?? id,
+  );
+  refresh();
+  const failed = new Set(result.errors.map((e) => e.id));
+  return { ...result, undo: ids.filter((id) => !failed.has(id)) };
+}
+
+async function returnNames(): Promise<Map<string, string>> {
+  return new Map((await listReturns()).data.map((r) => [r.id, r.number]));
+}
+
+/** Duyệt nhiều yêu cầu đổi trả (thanh hàng loạt); yêu cầu không ở trạng thái chờ báo lỗi riêng dòng. */
+export async function bulkApproveReturnsAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(
+    cleanIds(input.ids),
+    ORDERS_RETURNS_MANAGE,
+    (id) => decideReturn(id, { step: "approve" }),
+    await returnNames(),
+  );
+}
+
+/** Đóng nhiều yêu cầu đã hoàn tiền / đã đổi hàng. */
+export async function bulkCloseReturnsAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(
+    cleanIds(input.ids),
+    ORDERS_RETURNS_MANAGE,
+    (id) => decideReturn(id, { step: "close" }),
+    await returnNames(),
+  );
+}
+
+async function cartNames(): Promise<Map<string, string>> {
+  return new Map((await listCarts()).data.map((c) => [c.id, c.buyer_name]));
+}
+
+/**
+ * Nhắc nhiều giỏ một lần: giỏ chưa đồng ý nhận tin hay đã nhắc đủ lần báo lỗi riêng dòng (không
+ * nhắc). Trả id đã xếp lịch cho Hoàn tác (huỷ lần nhắc chưa gửi).
+ */
+export async function bulkRemindAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(cleanIds(input.ids), ORDERS_MANAGE, (id) => remindCart(id), await cartNames());
+}
+
+export async function undoBulkRemindAction(ids: string[]): Promise<BulkResult> {
+  const { total, done, errors } = await eachSample(
+    cleanIds(ids),
+    ORDERS_MANAGE,
+    (id) => remindCart(id, true),
+    await cartNames(),
+  );
+  return { total, done, errors };
 }
 
 // ---- Bán tại quầy

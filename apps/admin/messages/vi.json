@@ -8622,8 +8622,9 @@
       "state": "Trạng thái",
       "noTracking": "chưa có mã",
       "noCarrier": "không qua hãng",
-      "more": "Xem thêm vận đơn",
-      "etaRange": "{from} – {to}"
+      "etaRange": "{from} – {to}",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết"
     },
     "detail": {
       "title": "Vận đơn · {order}",
@@ -8686,7 +8687,9 @@
       "cancelLocal": "Vận đơn chưa gửi hãng; chỉ huỷ ở đây.",
       "cancelOrder": "Đơn quay lại “Đang chuẩn bị” để tạo vận đơn khác.",
       "cancelSubmit": "Huỷ vận đơn",
-      "cancelled": "Đã huỷ vận đơn"
+      "cancelled": "Đã huỷ vận đơn",
+      "bulkBookTitle": "Đặt hãng cho các vận đơn đã chọn?",
+      "bulkBookOnly": "Chỉ gửi vận đơn đang chờ đặt hãng; vận đơn khác được liệt kê là chưa làm."
     },
     "manual": {
       "button": "Tạo vận đơn tay",
@@ -8930,7 +8933,8 @@
       "hold": "Giữ",
       "hours": "{count} giờ",
       "holdDays": "{count} ngày",
-      "pickupFoot": "Kho Thủ Đức không phải điểm nhận."
+      "pickupFoot": "Kho Thủ Đức không phải điểm nhận.",
+      "viewTable": "Xem bảng phí"
     },
     "cod": {
       "kpis": "Tóm tắt COD",
@@ -8974,7 +8978,12 @@
       "trackLedger": "Hãng xác nhận đã giao thì vận đơn sang “Đã giao”, sổ cái ghi phải thu và dòng lệch tự khớp.",
       "trackFinal": "Bút toán đã ghi không xoá được; sai thì ghi bút toán điều chỉnh.",
       "trackSubmit": "Hỏi và khớp",
-      "tracked": "Đã hỏi hãng và cập nhật"
+      "tracked": "Đã hỏi hãng và cập nhật",
+      "bulkTrackSkip": "Chỉ hỏi lại được dòng hãng báo chưa giao.",
+      "bulkTrackTitle": "Hỏi lại hãng cho các dòng đã chọn?",
+      "bulkTrackOnly": "Chỉ hỏi dòng hãng báo chưa giao; dòng khác được liệt kê là chưa làm.",
+      "bulkResolveTitle": "Đóng các dòng lệch đã chọn với cùng một lý do?",
+      "bulkResolveFinal": "Lý do và tên bạn được lưu ở từng dòng. Dòng đã đóng không mở lại được."
     },
     "statementStatus": {
       "imported": "Đã nhập, chưa khớp",
@@ -9028,7 +9037,12 @@
       "turnedOff": "Đã tắt; vận đơn đang đi vẫn nhận cập nhật",
       "turnOn": "Bật hãng",
       "turnedOn": "Đã bật hãng",
-      "foot": "Tên hãng là ví dụ. Bộ nối hãng thật là module riêng, làm khi có tài khoản thử của hãng."
+      "foot": "Tên hãng là ví dụ. Bộ nối hãng thật là module riêng, làm khi có tài khoản thử của hãng.",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "testTitle": "Kiểm tra kết nối tới {name}?",
+      "testAsk": "Gửi một yêu cầu thử tới hãng bằng khoá đã lưu.",
+      "testNoOrder": "Không tạo vận đơn, không phát sinh phí."
     },
     "capabilities": {
       "multi_parcel": "nhiều kiện",
@@ -10411,7 +10425,13 @@
       "refundBody": "Hoàn đúng các dòng đã nhận về. Hệ thống ghi bút toán đảo và lập hoá đơn điều chỉnh.",
       "refunded": "Đã gửi lệnh hoàn; đã lập hoá đơn điều chỉnh",
       "close": "Đóng",
-      "closed": "Đã đóng yêu cầu"
+      "closed": "Đã đóng yêu cầu",
+      "actions": "Thao tác",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "openOrder": "Mở đơn",
+      "bulkApproveTitle": "Duyệt các yêu cầu đổi trả đã chọn?",
+      "bulkApproveOnly": "Chỉ duyệt yêu cầu đang chờ trả lời; yêu cầu khác được liệt kê là chưa làm."
     },
     "pos": {
       "button": "Đơn tại quầy",
@@ -10660,7 +10680,13 @@
       "codeHint": "Không ghi lại, không hiện cho nhân viên.",
       "proxyName": "Tên người nhận hộ",
       "proxyHint": "Chỉ khi nhận hộ.",
-      "noProxy": "Đơn này không khai người nhận hộ."
+      "noProxy": "Đơn này không khai người nhận hộ.",
+      "actions": "Thao tác",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "resendTitle": "Gửi lại mã nhận của {number}?",
+      "resendOld": "Người mua nhận mã mới; mã cũ không dùng được nữa.",
+      "bulkResendTitle": "Gửi lại mã nhận cho các đơn đã chọn?"
     },
     "shifts": {
       "kpis": "Tóm tắt ca",
@@ -10673,11 +10699,12 @@
       "title": "Ca",
       "about": "Mỗi quầy chỉ có một ca mở. Mở ca ghi tiền đầu ca; đóng ca đếm tiền trong két. Hệ thống tính tiền mặt dự kiến từ các đơn tại quầy trong ca; lệch thì phải ghi lý do.",
       "filter": "Lọc ca",
-      "recent": "Gần đây",
       "chips": {
         "open": "Đang mở",
         "closed": "Đã đóng",
-        "diff": "Có lệch"
+        "diff": "Có lệch",
+        "attention": "Cần xem",
+        "all": "Tất cả"
       },
       "shift": "Ca",
       "by": "Người mở",
@@ -10709,7 +10736,11 @@
       "closed": "Đã đóng ca; báo cáo ca gửi quản lý cửa hàng",
       "counted": "Tiền đếm được (đồng)",
       "reason": "Lý do chênh lệch",
-      "reasonHint": "Bắt buộc khi số đếm khác số dự kiến."
+      "reasonHint": "Bắt buộc khi số đếm khác số dự kiến.",
+      "empty": "Không có ca nào khớp.",
+      "actions": "Thao tác",
+      "openDetail": "Xem tiền trong ca",
+      "hideDetail": "Ẩn tiền trong ca"
     },
     "returns": {
       "about": "Hàng trả mang tới cửa hàng. Nhận hàng (hoặc ghi nhận khách mang tới thẳng), ghi tình trạng, rồi hoàn tiền — tiền mặt trừ vào ca đang mở — hoặc đổi hàng.",
@@ -10804,7 +10835,12 @@
       },
       "statsTitle": "Phân bố sao",
       "statsHead": "{product} · {mean} ★ từ {total} đánh giá",
-      "starLabel": "{n} sao"
+      "starLabel": "{n} sao",
+      "actions": "Thao tác",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "publishTitle": "Hiện lại đánh giá về {product}?",
+      "publishPoint": "Đánh giá hiện công khai trở lại và người viết được báo."
     }
   },
   "work": {
@@ -11795,7 +11831,9 @@
       "disconnect2": "Không còn đồng bộ tồn, giá, đơn với tài khoản này.",
       "disconnect3": "Lịch sử đơn và đối soát vẫn giữ. Không hoàn tác được: muốn dùng lại phải kết nối với khoá mới.",
       "disconnectSubmit": "Ngắt kết nối",
-      "disconnected": "Đã ngắt; khoá kết nối đã xoá."
+      "disconnected": "Đã ngắt; khoá kết nối đã xoá.",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết"
     },
     "connectors": {
       "title": "Bộ nối đã cài",
@@ -11957,7 +11995,8 @@
       "previewFoot": "{name}: khả dụng {available} ở các kho gắn với tài khoản (đã trừ giữ chỗ đơn), {reserved} giữ riêng cho kênh; website bán được {website}. Số đẩy không bao giờ âm.",
       "warnTitle": "Autoxide không bán quá, nhưng kênh có độ trễ.",
       "warnText": "Mọi đơn web, quầy và kênh đều giữ chỗ trong kho nên tồn không âm. Hai kênh cùng bán cái cuối trong vài giây chưa đồng bộ thì đơn nhập sau thành “Bán quá tồn”. Dùng phần đệm hoặc giữ riêng cho hàng bán chạy để giảm.",
-      "debounce": "Gộp thay đổi trong 5 giây rồi đẩy một lần; đối chiếu toàn bộ mỗi 6 giờ"
+      "debounce": "Gộp thay đổi trong 5 giây rồi đẩy một lần; đối chiếu toàn bộ mỗi 6 giờ",
+      "openAccount": "Mở tài khoản kênh"
     },
     "inboundState": {
       "received": "Đã nhận",
@@ -12031,7 +12070,12 @@
       "cancelWarn": "Không hoàn tác được: đơn bị huỷ ở Autoxide và trên kênh, kênh có thể phạt cửa hàng.",
       "cancelSubmit": "Huỷ trên kênh",
       "cancelled": "Đã xếp job huỷ trên kênh; đơn chuyển huỷ.",
-      "foot": "SĐT người mua do kênh che một phần: chỉ dùng để giao hàng, không dùng chống bom hàng, không tính vào thống kê COD."
+      "foot": "SĐT người mua do kênh che một phần: chỉ dùng để giao hàng, không dùng chống bom hàng, không tính vào thống kê COD.",
+      "all": "Tất cả",
+      "empty": "Không có đơn từ kênh nào khớp.",
+      "openDetail": "Xem chi tiết",
+      "hideDetail": "Ẩn chi tiết",
+      "openOrder": "Mở đơn"
     },
     "map": {
       "button": "Gắn {sku}",
@@ -12127,7 +12171,15 @@
       "credit": "Có",
       "owedTitle": "Kênh còn nợ theo tài khoản",
       "owedAbout": "Tiền kênh đã thu của đơn đã nhập, trừ các dòng bảng kê đã ghi sổ.",
-      "owedTotal": "Tổng phải thu kênh"
+      "owedTotal": "Tổng phải thu kênh",
+      "bulkPostTitle": "Ghi sổ các bảng kê đã chọn?",
+      "bulkPostOnly": "Chỉ ghi sổ bảng kê đã khớp hết dòng; bảng kê khác được liệt kê là chưa làm.",
+      "openDetail": "Xem bảng kê",
+      "hideDetail": "Ẩn bảng kê",
+      "openOrder": "Mở đơn",
+      "noMismatch": "Không còn dòng lệch nào.",
+      "bulkResolveTitle": "Đóng các dòng lệch đã chọn với cùng một ghi chú?",
+      "bulkResolveFinal": "Ghi chú và tên bạn được lưu ở từng dòng. Không hoàn tác được."
     },
     "line": {
       "button": "Đánh dấu đã xử lý",

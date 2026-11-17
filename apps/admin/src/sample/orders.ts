@@ -2967,9 +2967,29 @@ export async function createStoreReturn(input: {
 // ---------------------------------------------------------------- Giỏ hàng bỏ dở
 
 // Thay bằng GET /api/v1/orders/carts?status=abandoned (dự kiến, `docs/prompts/ui-trace-roadmap.md`).
-export async function listCarts(): Promise<{ data: AbandonedCart[] }> {
+/** Cột của bảng giỏ bỏ dở mà hàm mẫu sắp được (dự kiến `?sort=` của core). */
+export const CART_SORTS = ["value", "abandoned"] as const;
+export type CartSort = (typeof CART_SORTS)[number];
+
+/** Giỏ còn nhắc được: người mua đã đồng ý nhận tin, có liên hệ và chưa nhắc đủ số lần. */
+export function canRemindCart(c: AbandonedCart): boolean {
+  return c.consent && c.contact !== null && c.reminders_sent < MAX_CART_REMINDERS;
+}
+
+// Mặc định giữ thứ tự của kho mẫu (mới bỏ dở trước); `sort` sắp theo giá trị hay giờ bỏ dở.
+export async function listCarts(
+  sort: { field: CartSort; dir: SortDir } | null = null,
+): Promise<{ data: AbandonedCart[] }> {
   const s = await store();
-  return { data: s.carts.map((c) => ({ ...c })) };
+  const rows = s.carts.map((c) => ({ ...c }));
+  if (!sort) return { data: rows };
+  return {
+    data: sortRows(
+      rows,
+      (c) => (sort.field === "value" ? Number(c.value.amount) : Date.parse(c.abandoned_at)),
+      sort.dir,
+    ),
+  };
 }
 
 // Dự kiến: POST /api/v1/orders/carts/{id}/reminders — xếp lịch gửi thư nhắc (mẫu "Giỏ hàng bỏ dở"

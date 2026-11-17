@@ -14,17 +14,21 @@ import {
   ORDERS_RETURNS_MANAGE,
   ORDERS_REVIEWS_MODERATE,
 } from "@/lib/orders";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   createStoreReturn,
   handOver,
+  listPickups,
   pickupReady,
   resendPickupCode,
+  type SampleOutcome,
   transitionOrder,
 } from "@/sample/orders";
 import {
   closeShift,
   decideSummary,
+  listReviews,
   markReviewSeen,
   moderateReview,
   openShift,
@@ -201,4 +205,89 @@ export async function dropSummaryAction(state: FormState, formData: FormData): P
   const blocked = await guard(ORDERS_REVIEWS_MODERATE);
   if (blocked) return blocked;
   return finishCommerce("orders", state, await decideSummary(idOf(formData), "drop"), []);
+}
+
+// ---- Hàng loạt
+
+/**
+ * Chạy một lệnh mẫu cho từng id (hàm mẫu chỉ có lệnh từng cái; không bịa endpoint hàng loạt), gom lỗi
+ * đã dịch theo `orders.codes.*`. `undo`: id đã đổi, cho nút Hoàn tác.
+ */
+async function eachSample(
+  ids: string[],
+  permission: string,
+  run: (id: string) => Promise<SampleOutcome<unknown>>,
+  names: ReadonlyMap<string, string>,
+): Promise<BulkResult> {
+  const blocked = await guard(permission);
+  if (blocked) return bulkBlocked(ids, blocked.error ?? "");
+  const result = await eachId(
+    ids,
+    async (id) => {
+      const outcome = await run(id);
+      return outcome.ok ? null : (await translateCommerce(outcome.problem, "orders")).detail;
+    },
+    (id) => names.get(id) ?? id,
+  );
+  refresh();
+  const failed = new Set(result.errors.map((e) => e.id));
+  return { ...result, undo: ids.filter((id) => !failed.has(id)) };
+}
+
+async function pickupNames(): Promise<Map<string, string>> {
+  return new Map((await listPickups()).data.map((o) => [o.id, o.number]));
+}
+
+/** Báo sẵn sàng cho nhiều đơn đang soạn (người mua nhận mã); Hoàn tác đưa về đang soạn. */
+export async function bulkPickupReadyAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(
+    cleanIds(input.ids),
+    ORDERS_MANAGE,
+    (id) => pickupReady(id),
+    await pickupNames(),
+  );
+}
+
+export async function undoPickupReadyAction(ids: string[]): Promise<BulkResult> {
+  const { total, done, errors } = await eachSample(
+    cleanIds(ids),
+    ORDERS_MANAGE,
+    (id) => pickupReady(id, true),
+    await pickupNames(),
+  );
+  return { total, done, errors };
+}
+
+/** Gửi lại mã nhận cho nhiều đơn đã sẵn sàng. */
+export async function bulkResendCodeAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(
+    cleanIds(input.ids),
+    ORDERS_MANAGE,
+    (id) => resendPickupCode(id),
+    await pickupNames(),
+  );
+}
+
+async function reviewNames(): Promise<Map<string, string>> {
+  return new Map((await listReviews()).data.map((r) => [r.id, r.product_name]));
+}
+
+/** Đánh dấu đã xem nhiều đánh giá. */
+export async function bulkSeenAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(
+    cleanIds(input.ids),
+    ORDERS_REVIEWS_MODERATE,
+    (id) => markReviewSeen(id),
+    await reviewNames(),
+  );
+}
+
+/** Hiện lại nhiều đánh giá đã ẩn; đánh giá đang hiện báo lỗi riêng dòng. */
+export async function bulkPublishReviewAction(input: BulkInput): Promise<BulkResult> {
+  return eachSample(
+    cleanIds(input.ids),
+    ORDERS_REVIEWS_MODERATE,
+    (id) => moderateReview(id, { action: "publish" }),
+    await reviewNames(),
+  );
 }

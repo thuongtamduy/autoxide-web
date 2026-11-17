@@ -8,6 +8,7 @@
 // 19/2023: không ẩn vì nội dung chê; chỉ ẩn với lý do trong danh sách cho phép, ghi người ẩn, báo người
 // viết — cần đối chiếu văn bản gốc. Tóm tắt bằng AI chỉ là bản nháp, người duyệt rồi mới hiện (D-109).
 import type { Problem } from "@autoxide/sdk";
+import { type SortDir, sortRows } from "@/lib/table";
 import {
   allVariants,
   listCategories,
@@ -457,12 +458,58 @@ export function resetSampleStores(): void {
 
 // ---------------------------------------------------------------- Ca thu ngân
 
-// Dự kiến: GET /api/v1/orders/pos/shifts?org_id=&status= (đặc tả 45 chỉ có mở / đóng ca). Mới trước.
-export async function listShifts(): Promise<{ data: Shift[] }> {
+// Dự kiến: GET /api/v1/orders/pos/shifts?org_id=&status= (đặc tả 45 chỉ có mở / đóng ca). Mới trước;
+// `sort` sắp theo giờ mở ca hay số lệch (dự kiến `?sort=` của core).
+export async function listShifts(
+  sort: { field: ShiftSort; dir: SortDir } | null = null,
+): Promise<{ data: Shift[] }> {
   const s = await store();
   const { orders } = await ordersState();
   for (const x of s.shifts) if (x.status === "open") tally(x, orders);
-  return { data: s.shifts.map((x) => ({ ...x })) };
+  const rows = s.shifts.map((x) => ({ ...x }));
+  if (!sort) return { data: rows };
+  return {
+    data: sortRows(
+      rows,
+      (x) =>
+        sort.field === "opened"
+          ? Date.parse(x.opened_at)
+          : x.difference
+            ? Number(x.difference.amount)
+            : null,
+      sort.dir,
+    ),
+  };
+}
+
+/** Cột của bảng ca mà hàm mẫu sắp được. */
+export const SHIFT_SORTS = ["opened", "difference"] as const;
+export type ShiftSort = (typeof SHIFT_SORTS)[number];
+
+/**
+ * Bộ lọc của bảng ca. `attention` (mặc định): ca đang mở và ca đã đóng mà tiền đếm lệch — hai thứ
+ * người quản lý cửa hàng cần xem; `all`: mọi ca.
+ */
+export const SHIFT_CHIPS = ["attention", "open", "closed", "diff", "all"] as const;
+export type ShiftChip = (typeof SHIFT_CHIPS)[number];
+
+/** Ca đã đóng mà tiền đếm khác tiền dự kiến. */
+export function shiftLagging(x: Pick<Shift, "difference">): boolean {
+  return x.difference !== null && Number(x.difference.amount) !== 0;
+}
+
+export function shiftMatches(x: Pick<Shift, "status" | "difference">, chip: ShiftChip): boolean {
+  switch (chip) {
+    case "attention":
+      return x.status === "open" || shiftLagging(x);
+    case "open":
+    case "closed":
+      return x.status === chip;
+    case "diff":
+      return shiftLagging(x);
+    default:
+      return true;
+  }
 }
 
 /** Ca đang mở của một cửa hàng (bán tại quầy ghi vào đây). */
