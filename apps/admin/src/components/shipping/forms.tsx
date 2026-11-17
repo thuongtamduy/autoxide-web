@@ -25,6 +25,7 @@ import { CheckField, Field, SelectField, TextareaField } from "@/components/ui/f
 import type { FormState } from "@/lib/form";
 import { formatMoney } from "@/lib/format";
 import { formatWeight } from "@/lib/shipping";
+import { clock, cutoffChoices, longDay } from "@/lib/shipping-calendar";
 import type { Quote } from "@/sample/shipping";
 
 const value = (state: FormState, name: string, fallback = "") => state.values?.[name] ?? fallback;
@@ -387,29 +388,52 @@ function QuoteResult({ quote }: { quote: Quote }) {
   );
 }
 
-/** "Giờ chốt và ngày lấy hàng": thêm một phiên bản lịch có ngày hiệu lực. */
+/**
+ * "Giờ chốt và ngày lấy hàng": thêm một phiên bản lịch áp từ ngày `from` (ngày đang chọn trên lịch,
+ * hay ngày mai). Giờ chốt chọn trong danh sách "HH:mm" 24h, không dùng ô `type=time` (trình duyệt
+ * tiếng Anh hiện "04:00 PM" trong khi bảng ghi "16:00").
+ */
 export function CalendarForm({
   cutoff,
   workdays,
   from,
+  picked = false,
 }: {
   cutoff: string;
   workdays: string;
   from: string;
+  /** `true`: `from` là ngày người dùng bấm trên lịch; `false`: ngày mai (mặc định). */
+  picked?: boolean;
 }) {
   const t = useTranslations("shipping.calendar");
+  const locale = useLocale();
   return (
-    <ActionForm<FormState> action={calendarAction} submit={t("submit")} done={t("done")}>
+    <ActionForm<FormState>
+      action={calendarAction}
+      hidden={{ effective_from: from }}
+      submit={t("submit")}
+      done={t("done")}
+      className="card padded dlg-form sc-form"
+    >
       {(state) => (
         <>
           <h3 className="h2">{t("formTitle")}</h3>
-          <Field
+          <p className="fhint">
+            {picked
+              ? t("fromPicked", { day: longDay(from, locale) })
+              : t("fromTomorrow", { day: longDay(from, locale) })}
+          </p>
+          {state.fields?.effective_from ? (
+            <p className="ferr">{state.fields.effective_from}</p>
+          ) : null}
+          <SelectField
             label={t("cutoff")}
             name="cutoff"
-            type="time"
-            required
-            defaultValue={value(state, "cutoff", cutoff)}
-            hint={t("cutoffHint")}
+            defaultValue={clock(value(state, "cutoff", cutoff))}
+            options={cutoffChoices(value(state, "cutoff", cutoff)).map((c) => ({
+              value: c,
+              label: c,
+            }))}
             error={state.fields?.cutoff}
           />
           <SelectField
@@ -422,31 +446,35 @@ export function CalendarForm({
             }))}
             error={state.fields?.workdays}
           />
-          <Field
-            label={t("from")}
-            name="effective_from"
-            type="date"
-            required
-            min={from}
-            defaultValue={value(state, "effective_from", from)}
-            hint={t("fromHint")}
-            error={state.fields?.effective_from}
-          />
+          <p className="fhint">{t("cutoffHint")}</p>
         </>
       )}
     </ActionForm>
   );
 }
 
-/** "Thêm ngày nghỉ": cả chuỗi hay một nút; ngày giao dự kiến của đơn mới tính lại. */
-export function HolidayDialog({ orgs, label }: { orgs: Option[]; label?: string }) {
+/**
+ * "Thêm ngày nghỉ": cả chuỗi hay một nút; ngày giao dự kiến của đơn mới tính lại. `day`: điền sẵn
+ * ngày đang chọn trên lịch.
+ */
+export function HolidayDialog({
+  orgs,
+  label,
+  day,
+  primary = Boolean(label),
+}: {
+  orgs: Option[];
+  label?: string;
+  day?: string;
+  primary?: boolean;
+}) {
   const t = useTranslations("shipping.holiday");
   return (
     <ActionDialog<FormState>
       label={label ?? t("button")}
       title={t("title")}
       intro={t("intro")}
-      triggerClass={label ? "btn sm pri" : "btn sm"}
+      triggerClass={primary ? "btn sm pri" : "btn sm"}
       action={holidayAction}
       submit={t("submit")}
       done={t("done")}
@@ -459,7 +487,7 @@ export function HolidayDialog({ orgs, label }: { orgs: Option[]; label?: string 
               name="from"
               type="date"
               required
-              defaultValue={value(state, "from")}
+              defaultValue={value(state, "from", day ?? "")}
               error={state.fields?.from}
             />
             <Field
@@ -467,7 +495,7 @@ export function HolidayDialog({ orgs, label }: { orgs: Option[]; label?: string 
               name="to"
               type="date"
               required
-              defaultValue={value(state, "to")}
+              defaultValue={value(state, "to", day ?? "")}
               error={state.fields?.to}
             />
           </div>

@@ -1,0 +1,380 @@
+/* Phân hệ Vận chuyển. Tiền tố `sc-`: tab "Lịch giao" (tóm tắt, lịch tháng, chi tiết ngày). */
+
+/* Tóm tắt lịch đang áp dụng: một câu lớn, ví dụ ngày giao cho đơn đặt hôm nay */
+.ax .sc-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 24px;
+  align-items: start;
+  padding: 18px 20px;
+}
+.ax .sc-sum-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.ax .sc-sum-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.ax .sc-sum-text {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.ax .sc-sum-eg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+}
+.ax .sc-sum-eg > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--panel);
+}
+.ax .sc-sum-eg dt {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.ax .sc-sum-eg dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ax .sc-sum-foot {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* Lịch tháng bên trái, chi tiết ngày đang chọn bên phải; dưới 960px chồng lên nhau */
+.ax .block.sc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+.ax .sc-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.ax .sc-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+.ax .sc-cal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ax .sc-cal-head > .h2 {
+  flex: 1 1 auto;
+}
+.ax .sc-nav {
+  display: inline-flex;
+  gap: 6px;
+}
+.ax .sc-nav .btn {
+  min-width: 32px;
+  justify-content: center;
+}
+.ax .sc-nav .btn[aria-current] {
+  border-color: var(--line-2);
+}
+
+.ax .sc-grid {
+  border-collapse: separate;
+  border-spacing: 4px;
+  table-layout: fixed;
+  margin: -4px;
+  width: calc(100% + 8px);
+}
+.ax .sc-grid th {
+  padding: 2px 0 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+  text-align: left;
+  padding-left: 8px;
+}
+.ax .sc-wd-short {
+  display: none;
+}
+.ax .sc-day {
+  padding: 0;
+  vertical-align: top;
+}
+.ax .sc-day > a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 76px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sheet);
+  color: var(--ink);
+  text-decoration: none;
+  overflow: hidden;
+}
+.ax .sc-day > a:hover {
+  border-color: var(--line-2);
+  background: var(--hover);
+}
+.ax .sc-num {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ax .sc-note {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.ax .sc-pickup .sc-note {
+  color: var(--ok);
+  font-variant-numeric: tabular-nums;
+}
+.ax .sc-pickup .sc-note::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--ok);
+  vertical-align: 1px;
+}
+.ax .sc-holiday > a {
+  background: var(--bad-bg);
+  border-color: transparent;
+}
+.ax .sc-holiday .sc-note {
+  color: var(--bad);
+  font-weight: 500;
+}
+.ax .sc-off > a {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--panel),
+    var(--panel) 6px,
+    var(--sheet) 6px,
+    var(--sheet) 12px
+  );
+}
+.ax .sc-out > a {
+  opacity: 0.45;
+}
+.ax .sc-past:not(.sc-out) > a {
+  opacity: 0.7;
+}
+.ax .sc-day > a[data-today] .sc-num {
+  display: inline-grid;
+  place-items: center;
+  align-self: flex-start;
+  min-width: 22px;
+  height: 22px;
+  margin: -2px 0 0 -4px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.ax .sc-day > a[aria-current] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+  opacity: 1;
+}
+.ax .sc-flags {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  gap: 4px;
+}
+.ax .sc-flag {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 2px;
+}
+.ax .sc-flag-local {
+  background: var(--warn);
+}
+.ax .sc-flag-new {
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.ax .sc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.ax .sc-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ax .sc-key {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.ax .sc-key-pickup {
+  background: var(--sheet);
+  box-shadow:
+    inset 0 0 0 3px var(--sheet),
+    inset 0 0 0 7px var(--ok);
+}
+.ax .sc-key-holiday {
+  background: var(--bad-bg);
+  border-color: transparent;
+}
+.ax .sc-key-off {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--line-2),
+    var(--line-2) 2px,
+    var(--sheet) 2px,
+    var(--sheet) 4px
+  );
+}
+
+/* Chi tiết ngày đang chọn */
+.ax .sc-dayp {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ax .sc-dayp > .note {
+  margin: 0;
+}
+.ax .sc-dayp > .fhint {
+  margin: 0;
+}
+.ax .sc-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ax .sc-plan li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+}
+.ax .sc-plan b {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.ax .sc-day-acts {
+  justify-content: flex-start;
+}
+.ax .sc-form {
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .ax .block.sc-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .ax .sc-summary {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+  .ax .sc-sum-title {
+    font-size: 18px;
+  }
+  .ax .sc-sum-eg > div {
+    flex: 1 1 100%;
+  }
+  .ax .sc-cal {
+    padding: 12px 10px;
+  }
+  .ax .sc-grid {
+    border-spacing: 2px;
+    margin: -2px;
+    width: calc(100% + 4px);
+  }
+  .ax .sc-grid th {
+    padding-left: 0;
+    text-align: center;
+  }
+  .ax .sc-wd-long {
+    display: none;
+  }
+  .ax .sc-wd-short {
+    display: inline;
+  }
+  .ax .sc-day > a {
+    align-items: center;
+    min-height: 48px;
+    padding: 5px 2px;
+    border-radius: 8px;
+  }
+  .ax .sc-note {
+    display: none;
+  }
+  .ax .sc-pickup .sc-num::after {
+    content: "";
+    display: block;
+    width: 5px;
+    height: 5px;
+    margin: 3px auto 0;
+    border-radius: 50%;
+    background: var(--ok);
+  }
+  .ax .sc-day > a[data-today] .sc-num {
+    margin: 0;
+  }
+  .ax .sc-flags {
+    top: 4px;
+    right: 4px;
+  }
+  .ax .sc-flag {
+    width: 6px;
+    height: 6px;
+  }
+}
