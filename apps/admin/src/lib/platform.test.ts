@@ -197,7 +197,7 @@ describe("sổ khách hàng", () => {
       },
       subscription: null,
       plan: null,
-      nearest: { key: "catalog.products", unit: "count", used: 90, max: 100, over_limit: false },
+      nearest: { key: "catalog.products", kind: "count", used: 90, max: 100, over_limit: false },
       children: 0,
     };
     expect(matchesQuery(row, { placement_kind: "shared" })).toBe(true);
@@ -206,10 +206,12 @@ describe("sổ khách hàng", () => {
     expect(matchesQuery(row, { schema_state: "behind", read_only: true })).toBe(false);
     expect(matchesQuery(row, { read_only: false, attention: true })).toBe(true);
     expect(needsAttention(row)).toBe(true);
+    expect(matchesQuery(row, { near_limit: true })).toBe(true);
+    expect(matchesQuery(row, { subscription_status: "trialing" })).toBe(false);
     expect(
       needsAttention({
         ...row,
-        nearest: { key: "catalog.products", unit: "count", used: 10, max: 100, over_limit: false },
+        nearest: { key: "catalog.products", kind: "count", used: 10, max: 100, over_limit: false },
       }),
     ).toBe(false);
     // Khách chỉ đọc luôn cần để ý.
@@ -243,6 +245,11 @@ describe("sổ khách hàng", () => {
       "/platform?read_only=false",
     );
     expect(tenantQueryHref({})).toBe("/platform");
+    // Thuê bao và hạn mức (module `plans`) do core lọc.
+    const plans = parseTenantQuery({ subscription_status: "past_due", near_limit: "true" });
+    expect(coreTenantFilter(plans)).toEqual({ subscription_status: "past_due", near_limit: true });
+    expect(tenantQueryHref(plans)).toBe("/platform?subscription_status=past_due&near_limit=true");
+    expect(parseTenantQuery({ subscription_status: "paid", near_limit: "false" })).toEqual({});
     expect(
       sameQuery({ schema_state: "behind" }, parseTenantQuery({ schema_state: "behind" })),
     ).toBe(true);

@@ -31,7 +31,8 @@ test("chuyển giữa hai không gian; khung riêng; cấp phát khách mới c�
   await page.getByRole("link", { name: "Platform control plane" }).click();
   await expect(page).toHaveURL(/\/platform$/);
   await expect(page.getByRole("heading", { level: 1, name: "Customers" })).toBeVisible();
-  await expect(page.getByText("Sample data · waiting for API step 35")).toBeVisible();
+  // Sổ khách đọc gói và thuê bao từ core (đợt 3b): không còn nhãn dữ liệu mẫu ở đầu trang.
+  await expect(page.getByText("Sample data · waiting for API step 35")).toHaveCount(0);
   const rail = page.getByRole("navigation", { name: "Platform control plane" });
   for (const item of [
     "Customers",
@@ -222,21 +223,6 @@ test("đội database: chạy thử cả đội, migrate cần gõ đúng chữ 
   );
 });
 
-test("vào dữ liệu khách (mẫu): cấp có hạn, có lý do", async ({ page }) => {
-  await signIn(page, "/platform/support");
-  await expect(page.getByText("Sample data · waiting for API step 34")).toBeVisible();
-  await page.getByRole("button", { name: "Grant access" }).click();
-  await dialog(page).getByLabel("Customer", { exact: true }).selectOption({ label: "Bếp Mộc" });
-  await dialog(page).getByLabel("Reason").fill("ngắn");
-  await dialog(page).getByRole("button", { name: "Grant access" }).click();
-  await expect(dialog(page).getByText("Write 10 to 500 characters.")).toBeVisible();
-  await dialog(page).getByLabel("Reason").fill("Khách báo lỗi đồng bộ kho, phiếu #e2e-31");
-  await dialog(page).getByRole("button", { name: "Grant access" }).click();
-  await expect(toast(page)).toContainText("Access granted");
-  await expect(page.locator("tbody tr", { hasText: "phiếu #e2e-31" })).toContainText("In effect");
-  // Phía khách (Phân quyền › Quyền vào hỗ trợ) đọc core thật từ W-046: xem `team.spec.ts`.
-});
-
 /** Bật nhiều khách ở core giả rồi thêm khách `name` trên placement `placement` qua giao diện. */
 async function addTenant(
   page: Page,
@@ -320,14 +306,14 @@ test("sổ khách lọc ở core (D-296): chỉ đọc, loại placement, trạn
 
   // Kết hợp: ghi được + database riêng → không còn Eu Shop.
   const form = page.getByRole("search", { name: "Combine filters" });
-  await form.getByLabel("Read-only").selectOption("false");
+  await form.locator("select[name=read_only]").selectOption("false");
   await form.getByLabel("Placement kind").selectOption("dedicated");
   await form.getByRole("button", { name: "Apply" }).click();
   await expect(page).toHaveURL(/read_only=false&placement_kind=dedicated/);
   await expect(rows.filter({ hasText: "Eu Shop" })).toHaveCount(0);
   await expect(rows.filter({ hasText: "Default" })).toHaveCount(0);
 
-  await form.getByLabel("Read-only").selectOption("true");
+  await form.locator("select[name=read_only]").selectOption("true");
   await form.getByLabel("Migration state").selectOption("ready");
   await form.getByRole("button", { name: "Apply" }).click();
   await expect(page).toHaveURL(/read_only=true&placement_kind=dedicated&schema_state=ready/);

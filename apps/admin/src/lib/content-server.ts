@@ -3,6 +3,8 @@ import "server-only";
 import { ApiError } from "@autoxide/sdk";
 import type { AiState, Author, Entry, Term } from "./content";
 import { load } from "./core";
+import { AI_SUGGESTIONS_FEATURE } from "./plans";
+import { lacksFeature } from "./plans-server";
 
 // Đọc dữ liệu của màn Nội dung cho Server Component.
 
@@ -67,4 +69,13 @@ export async function loadAi(): Promise<AiState> {
     }
     throw error;
   }
+}
+
+/**
+ * AI cho bài viết (gợi ý SEO, dịch): như `loadAi`, nhưng tắt kèm lý do `plan` khi gói của khách chưa
+ * có tính năng `content.ai_suggestions` (bước 35) — core sẽ từ chối `feature_not_enabled`.
+ */
+export async function loadContentAi(): Promise<AiState> {
+  if (await lacksFeature(AI_SUGGESTIONS_FEATURE)) return { enabled: false, reason: "plan" };
+  return loadAi();
 }

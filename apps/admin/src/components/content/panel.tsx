@@ -665,7 +665,13 @@ function SeoPane({
           <p id="ce-aiseo-why" className="fhint">
             {api.ai.enabled
               ? t("suggestHint")
-              : t(api.ai.reason === "forbidden" ? "aiForbidden" : "aiOff")}
+              : t(
+                  api.ai.reason === "forbidden"
+                    ? "aiForbidden"
+                    : api.ai.reason === "plan"
+                      ? "aiPlan"
+                      : "aiOff",
+                )}
           </p>
           {aiError ? (
             <p role="alert" className="falert">
@@ -786,7 +792,9 @@ function LanguagesPane({ data }: { data: EditorData }) {
                   type="button"
                   className="btn sm"
                   disabled={!api.ai.enabled || api.pending || Boolean(request)}
-                  title={api.ai.enabled ? undefined : t("aiOff")}
+                  title={
+                    api.ai.enabled ? undefined : t(api.ai.reason === "plan" ? "aiPlan" : "aiOff")
+                  }
                   onClick={() =>
                     api.run(async () => {
                       const result = await translateWithAi(entry.id, code);
@@ -802,7 +810,9 @@ function LanguagesPane({ data }: { data: EditorData }) {
           </div>
         );
       })}
-      {!api.ai.enabled ? <p className="fhint">{t("aiOff")}</p> : null}
+      {!api.ai.enabled ? (
+        <p className="fhint">{t(api.ai.reason === "plan" ? "aiPlan" : "aiOff")}</p>
+      ) : null}
       <p className="fhint">{t("note")}</p>
     </div>
   );

@@ -453,7 +453,6 @@ export const NAV_PLATFORM: NavGroup[] = [
         id: "platformSupport",
         href: "/platform/support",
         permission: SUPPORT_GRANT,
-        sample: { step: "34" },
       },
     ],
   },

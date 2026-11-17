@@ -41,7 +41,9 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 - **Cài đặt › Gói và thuê bao**: gói đang dùng, mức dùng từng hạn mức, kỳ thanh toán, đổi gói (gói lớn
   hơn có hiệu lực ngay, nhỏ hơn chờ hết kỳ), huỷ và tiếp tục gia hạn. **Nền tảng › Gói và giá**: gói với
   module, tính năng, hạn mức và giá, bán, gói mặc định, ngừng bán; ghi đè theo khách (có Hoàn tác);
-  thuê bao của mọi khách (đổi gói, huỷ, khoá hẳn).
+  thuê bao của mọi khách (đổi gói, huỷ, khoá hẳn). Tổng quan hiện gói của bạn và hạn mức gần chạm nhất;
+  việc gói chưa có (tạo API key, gợi ý AI cho bài viết) bị khoá kèm nhãn "Cần gói cao hơn", và phân hệ
+  ngoài gói không hiện trên thanh bên.
 - **Đăng nhập bằng link qua email** và **Tài khoản › Hồ sơ**: tên, ngôn ngữ và múi giờ ưa thích, nơi
   bạn làm việc (các nút và role của bạn, các khách bạn làm việc được).
 - **Cây tổ chức**: các nút theo loại, ai làm việc ở mỗi nút (cả người được gán ở nút trên), cài đặt
@@ -57,7 +59,9 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 - **Mặt điều khiển nền tảng › Khách hàng và Đội database**: khách và placement của core (kèm nơi lưu
   file riêng của placement, không bao giờ có khoá); thêm, đổi tên, tạm khoá và mở lại một khách; dời
   khách sang placement khác (chạy thử nêu bảng, số dòng, file và lý do chặn, rồi dời bằng job nền và
-  theo dõi tới xong).
+  theo dõi tới xong); với từng khách: thuê bao và hạn mức, xuất toàn bộ dữ liệu để tải về, quyền vào hỗ
+  trợ. Sổ khách lọc theo trạng thái thuê bao và khách gần chạm hạn mức. **Vào dữ liệu khách**: cấp cho
+  nhân sự nền tảng quyền vào dữ liệu một khách có thời hạn và lý do, thu hồi.
 - **Trang mở từ mail** (không cần đăng nhập): xác nhận email, quên và đặt lại mật khẩu, và "không phải
   tôi" khi người khác đổi email của bạn.
 
@@ -65,7 +69,7 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
 sau: Bán hàng (đơn hàng, đổi trả, bán tại quầy, vận chuyển và COD, cửa hàng, kênh bán), Sản phẩm
 (danh mục, giá, nhóm thuế, tồn kho), Tiếp thị (khuyến mại, tiếp thị liên kết), Khách hàng, Sàn và
 Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Tuân thủ và phần còn lại
-của Mặt điều khiển nền tảng (cấp phát, sức khoẻ, vào dữ liệu khách). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
+của Mặt điều khiển nền tảng (cấp phát, sức khoẻ). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
 liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật, trừ production); thay đổi ở đó nằm
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).

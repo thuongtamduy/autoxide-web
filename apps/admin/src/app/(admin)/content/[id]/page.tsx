@@ -5,7 +5,7 @@ import { EntryEditor } from "@/components/content/editor";
 import { MessagePanel } from "@/components/message-panel";
 import { getClientConfig } from "@/lib/client-config";
 import { abilities, postPathPrefix } from "@/lib/content";
-import { loadAi, loadAuthors, loadEntry, loadTerms, optional } from "@/lib/content-server";
+import { loadAuthors, loadContentAi, loadEntry, loadTerms, optional } from "@/lib/content-server";
 import { isForbidden, load } from "@/lib/core";
 import { MEDIA_READ, MEDIA_WRITE } from "@/lib/permissions";
 import { can, getMe } from "@/lib/viewer";
@@ -42,7 +42,7 @@ export default async function EntryPage(props: PageProps<"/content/[id]">) {
     await Promise.all([
       loadAuthors(),
       loadTerms(),
-      loadAi(),
+      loadContentAi(),
       optional(load((c) => c.GET("/api/v1/content/entries/{id}/schedules", path))),
       optional(
         load((c) =>

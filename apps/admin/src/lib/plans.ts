@@ -12,8 +12,12 @@ export type LimitUse = Schemas["LimitUse"];
 export type Entitlements = Schemas["EntitlementsResponse"];
 export type Override = Schemas["OverrideResponse"];
 
+/** Tính năng theo gói mà giao diện khoá nút khi gói chưa có (core khai ở `GET /kernel/modules`). */
+export const API_KEYS_FEATURE = "auth.api_keys";
+export const AI_SUGGESTIONS_FEATURE = "content.ai_suggestions";
+
 /** Phần trăm đã dùng của một hạn mức (0–100, làm tròn); không giới hạn hay giới hạn 0: 0 / 100. */
-export function usagePercent(limit: Pick<LimitUse, "used" | "max">): number {
+export function usagePercent(limit: { used: number; max?: number | null | undefined }): number {
   if (limit.max === null || limit.max === undefined) return 0;
   if (limit.max <= 0) return limit.used > 0 ? 100 : 0;
   return Math.min(100, Math.round((limit.used / limit.max) * 100));

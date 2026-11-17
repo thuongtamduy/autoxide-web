@@ -1,6 +1,6 @@
 // Dữ liệu của mặt điều khiển nền tảng đọc ở máy chủ (W-027): sổ khách và placement THẬT của core
 // (`GET /kernel/tenants`, `/kernel/placements`, bước 33), ghép với phần chỉ có trong dữ liệu mẫu khi
-// bật dữ liệu mẫu (gói, thuê bao, cấp phát… của bước 35 chưa có API).
+// bật dữ liệu mẫu (khách chỉ có trong luồng cấp phát mẫu). Gói và thuê bao: `plans-server.ts`.
 import "server-only";
 
 import { ApiError, type components, type Problem } from "@autoxide/sdk";
@@ -87,6 +87,14 @@ export async function filteredTenants(
     ...found.map((x) => known.get(x.id) ?? fromCoreTenant(x, data.placements)),
     ...data.tenants.filter((x) => x.source === "sample"),
   ];
+}
+
+/**
+ * Khách đang dùng từ 80 % một hạn mức trở lên (`GET /kernel/tenants?near_limit=true`, module
+ * `plans`); rỗng khi bản cài không có module này.
+ */
+export async function nearLimitIds(): Promise<string[]> {
+  return (await coreTenants({ near_limit: true })).map((x) => x.id);
 }
 
 /**

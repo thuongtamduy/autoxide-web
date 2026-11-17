@@ -69,7 +69,7 @@ import {
   resetOrg,
   setRootName,
 } from "./mock-org.ts";
-import { plansRoutes, resetPlans } from "./mock-plans.ts";
+import { plansRoutes, resetPlans, setBasicFeatures, setInstalledModules } from "./mock-plans.ts";
 import {
   finishLoginCeremony,
   fireEvent,
@@ -99,11 +99,16 @@ import {
 } from "./mock-tenants.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
+
+/** Module "đã cài" của core giả (`GET /kernel/modules`); quyền dùng của gói mặc định bật hết. */
+const INSTALLED = [KERNEL, NOTES, CONTENT_MODULE, MENUS_MODULE, ORG_MODULE, ...ENGAGE_MODULES];
+setInstalledModules(INSTALLED.map((m) => m.name));
 const CODE = "123456";
 const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 
 /** Như giá trị mặc định của core (`GET /api/v1/kernel/client-config`; đã đối chiếu với core thật). */
 const CLIENT_CONFIG: Schemas["ClientConfigResponse"] = {
+  auth: { login_link: true, passkeys: false, self_registration: false },
   kernel: { version: "0.15.0", public_url: null },
   mail: { from: "Autoxide <noreply@localhost>", sends: false },
   media: {
@@ -394,6 +399,7 @@ const server = createServer(async (request, response) => {
   if (route === "POST /__tenancy") return setTenancy(request, response);
   if (route === "POST /__org/root-name") return setRootName(request, response);
   if (route === "GET /__team/tokens") return teamTokens(response);
+  if (route === "POST /__plans/basic-features") return setBasicFeatures(request, response);
   if (route === "POST /__own-tenant") return setOwnTenant(request, response);
   if (route === "POST /__domains/dns") return setDnsRecord(request, response);
   if (route === "POST /__webhooks/fire") {
@@ -673,28 +679,14 @@ const server = createServer(async (request, response) => {
       );
     }
     if (url.pathname === "/api/v1/kernel/modules") {
-      const listed = [
-        KERNEL,
-        NOTES,
-        CONTENT_MODULE,
-        MENUS_MODULE,
-        ORG_MODULE,
-        ...ENGAGE_MODULES,
-      ].map((module) => ({
+      const listed = INSTALLED.map((module) => ({
         ...module,
         migrations: module.migrations.map((m) => ({ ...m, applied: null })),
       }));
       return send(response, 200, { data: listed });
     }
     const name = decodeURIComponent(url.pathname.slice("/api/v1/kernel/modules/".length));
-    const module = [
-      KERNEL,
-      NOTES,
-      CONTENT_MODULE,
-      MENUS_MODULE,
-      ORG_MODULE,
-      ...ENGAGE_MODULES,
-    ].find((m) => m.name === name);
+    const module = INSTALLED.find((m) => m.name === name);
     if (!module) {
       return problem(response, 404, "kernel.module_not_found", `No module named \`${name}\`.`);
     }

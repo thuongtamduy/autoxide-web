@@ -22,6 +22,14 @@ let subscriptions: Subscription[] = [];
 let periods: Schemas["BillingPeriodResponse"][] = [];
 let overrides = new Map<string, Schemas["OverrideResponse"][]>();
 let suspended = new Map<string, string>();
+/** Module đã cài (mock-core báo lúc chạy); quyền dùng mặc định bật hết như gói có mọi module. */
+let installed: string[] = [];
+/** `true` sau `POST /__plans/basic-features` có `modules`: quyền dùng chỉ còn module của gói. */
+let strictModules = false;
+
+export function setInstalledModules(names: string[]) {
+  installed = names;
+}
 
 const AT = "2026-11-01T00:00:00Z";
 
@@ -70,6 +78,8 @@ export function resetPlans() {
       code: "co-ban",
       name: "Cơ bản",
       is_default: true,
+      // Mặc định có đủ tính năng để các màn khác thử được; `POST /__plans/basic-features` đổi.
+      features: ["auth.api_keys", "content.ai_suggestions"],
       prices: [price(BASIC_MONTH, 290_000, "month")],
     }),
     plan({
@@ -110,6 +120,7 @@ export function resetPlans() {
   ];
   overrides = new Map();
   suspended = new Map();
+  strictModules = false;
 }
 resetPlans();
 
@@ -131,6 +142,35 @@ function period(id: string, status: string, start: string, end: string) {
     reference: `plans:${id}:${start}:renewal`,
     created_at: AT,
   };
+}
+
+/**
+ * `POST /__plans/basic-features {features, modules?}`: đổi tính năng (và module, nếu có) của gói "Cơ
+ * bản" mà khách đang dùng; có `modules` thì quyền dùng chỉ còn các module đó và module luôn bật.
+ */
+export async function setBasicFeatures(request: IncomingMessage, response: ServerResponse) {
+  const body = (await json(request)) as { features?: string[]; modules?: string[] };
+  const basic = plans.find((p) => p.id === BASIC);
+  if (basic) basic.features = body.features ?? [];
+  if (basic && body.modules) {
+    basic.modules = body.modules;
+    strictModules = true;
+  }
+  empty(response, 204);
+}
+
+/** Trạng thái thuê bao của khách (bộ lọc `subscription_status` của sổ khách); `null`: chưa có. */
+export function subscriptionStatusOf(tenant: string): string | null {
+  if (tenant === OWN_TENANT) return null;
+  return subscriptions.find((s) => s.tenant_id === tenant)?.status ?? null;
+}
+
+/** Khách dùng từ 80 % một hạn mức trở lên (bộ lọc `near_limit`), như core. */
+export function isNearLimit(tenant: string): boolean {
+  if (subscriptionStatusOf(tenant) === null) return false;
+  return usage(tenant).some(
+    (u) => u.max !== null && u.max !== undefined && (u.over_limit || u.used >= u.max * 0.8),
+  );
 }
 
 /** Mức dùng hạn mức của khách: tính từ gói đang dùng và ghi đè. */
@@ -231,7 +271,10 @@ export async function plansRoutes(
     return done(200, {
       data: {
         access: own && ["suspended", "canceled"].includes(own.status) ? "read_only" : "full",
-        modules: current?.modules ?? [],
+        // Như core: gồm cả module luôn bật (`kernel`, `auth`, `organizations`).
+        modules: strictModules
+          ? [...new Set([...(current?.modules ?? []), "kernel", "auth", "organizations"])]
+          : installed,
         features: current?.features ?? [],
         limits: usage(OWN_TENANT),
         unrestricted: !current,

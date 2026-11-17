@@ -223,8 +223,11 @@ export function abilities(viewer: {
 
 export interface AiState {
   enabled: boolean;
-  /** Vì sao tắt: `off` (máy chủ chưa bật AI) hay `forbidden` (thiếu `ai.view`). */
-  reason?: "off" | "forbidden";
+  /**
+   * Vì sao tắt: `off` (máy chủ chưa bật AI), `forbidden` (thiếu `ai.view`) hay `plan` (gói của
+   * khách chưa có tính năng `content.ai_suggestions`, bước 35).
+   */
+  reason?: "off" | "forbidden" | "plan";
 }
 
 // ---------------------------------------------------------------- Thân bài

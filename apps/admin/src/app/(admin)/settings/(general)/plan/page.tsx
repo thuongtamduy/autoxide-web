@@ -1,4 +1,3 @@
-import { ApiError } from "@autoxide/sdk";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
@@ -16,10 +15,10 @@ import {
   isBytes,
   type LimitUse,
   priceChoices,
-  type Subscription,
   tightest,
   usagePercent,
 } from "@/lib/plans";
+import { loadOwnSubscription } from "@/lib/plans-server";
 import { can } from "@/lib/viewer";
 import { sampleDataEnabled } from "@/sample";
 import { SAMPLE_PROVINCES } from "@/sample/org";
@@ -33,16 +32,6 @@ const BADGE: Record<string, string> = {
   paid: "badge b-ok",
   void: "badge b-arch",
 };
-
-/** Thuê bao của khách; `null` khi khách chưa có (core trả 404: dùng gói mặc định hay không giới hạn). */
-async function loadSubscription(): Promise<Subscription | null> {
-  try {
-    return (await load((c) => c.GET("/api/v1/plans/subscription"))).data;
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw error;
-  }
-}
 
 // Tab "Gói và thuê bao" (module `plans` của core, bước 35): gói đang dùng, mức dùng hạn mức, kỳ thanh
 // toán, đổi gói, huỷ / tiếp tục gia hạn. Tiền thuê bao đi qua cổng của nhà vận hành. Hồ sơ xuất hoá
@@ -62,7 +51,7 @@ export default async function PlanPage(props: PageProps<"/settings/plan">) {
   const { status } = await props.searchParams;
   const current = STATUSES.find((s) => s === status);
   const [sub, limits, all, catalog, manage] = await Promise.all([
-    loadSubscription(),
+    loadOwnSubscription(),
     load((c) => c.GET("/api/v1/plans/usage")).then((r) => r.data),
     load((c) => c.GET("/api/v1/plans/billing-periods")).then((r) => r.data),
     load((c) => c.GET("/api/v1/plans/catalog")).then((r) => r.data),

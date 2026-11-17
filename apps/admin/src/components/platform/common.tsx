@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { SampleBadge } from "@/components/sample-badge";
 import { formatBytes, formatCount } from "@/lib/format";
+import { isBytes, usagePercent } from "@/lib/plans";
 import type { GrantStatus } from "@/sample/platform";
 import type {
   BackupRecord,
@@ -12,7 +13,6 @@ import type {
   TenantStatus,
   TenantUsage,
 } from "@/sample/platform-data";
-import { usageRatio } from "@/sample/platform-plans";
 
 // Khối dùng chung của mặt điều khiển nền tảng (Server Component, W-014): đầu trang có nhãn dữ liệu
 // mẫu, màu nhãn trạng thái, thanh mức dùng. Cùng lớp CSS của khung (`.phead`, `.badge`, `.meter`).
@@ -108,43 +108,46 @@ export function StatusBadge({ className, label }: { className: string; label: st
   );
 }
 
+/**
+ * Một hạn mức đem hiện: dữ liệu mẫu (`TenantUsage`, có `unit`) hay của core (`LimitUse`, đo bằng
+ * byte khi khoá kết thúc bằng `bytes`).
+ */
+export type MeterUsage = {
+  key: string;
+  used: number;
+  max?: number | null | undefined;
+  unit?: TenantUsage["unit"];
+  over_limit?: boolean;
+};
+
 /** Số đã dùng / tối đa của một hạn mức theo đơn vị của nó. */
-export function usageText(
-  usage: Pick<TenantUsage, "unit" | "used" | "max">,
-  locale: string,
-  unlimited: string,
-): string {
-  const show = (n: number) =>
-    usage.unit === "bytes" ? formatBytes(n, locale) : formatCount(n, locale);
-  return `${show(usage.used)} / ${usage.max === null ? unlimited : show(usage.max)}`;
+export function usageText(usage: MeterUsage, locale: string, unlimited: string): string {
+  const bytes = usage.unit === "bytes" || (usage.unit === undefined && isBytes(usage.key));
+  const show = (n: number) => (bytes ? formatBytes(n, locale) : formatCount(n, locale));
+  return `${show(usage.used)} / ${usage.max === null || usage.max === undefined ? unlimited : show(usage.max)}`;
 }
 
-/** Thanh mức dùng một hạn mức; từ 85 % thì tô cảnh báo. */
+/** Thanh mức dùng một hạn mức; từ 85 % hay khi đang vượt thì tô cảnh báo. */
 export async function UsageMeter({
   usage,
   compact = false,
 }: {
-  usage: TenantUsage;
+  usage: MeterUsage;
   compact?: boolean;
 }) {
   const t = await getTranslations("platform");
   const locale = await getLocale();
-  const ratio = usageRatio(usage);
-  const name = t(`limits.${usage.key.replaceAll(".", "_")}`);
+  const ratio = usagePercent(usage);
+  const warn = ratio >= 85 || usage.over_limit === true;
+  const id = `limits.${usage.key.replaceAll(".", "_")}`;
+  const name = t.has(id) ? t(id) : usage.key;
   return (
     <div className={compact ? "meter pf-meter compact" : "meter pf-meter"}>
       <div className="meter-head">
         <span className="ell">{name}</span>
-        <b className={ratio >= 85 ? "tone-warn" : undefined}>
-          {usageText(usage, locale, t("unlimited"))}
-        </b>
+        <b className={warn ? "tone-warn" : undefined}>{usageText(usage, locale, t("unlimited"))}</b>
       </div>
-      <progress
-        className={ratio >= 85 ? "bar hi" : "bar"}
-        max={100}
-        value={ratio}
-        aria-label={name}
-      />
+      <progress className={warn ? "bar hi" : "bar"} max={100} value={ratio} aria-label={name} />
     </div>
   );
 }
