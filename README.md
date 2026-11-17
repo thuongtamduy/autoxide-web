@@ -48,7 +48,7 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
   and prices, selling, the default plan, retiring; overrides per customer (with undo); the
   subscription of every customer (change plan, cancel, suspend). The Overview shows your plan and the
   limit closest to full; actions your plan does not include (creating API keys, AI suggestions for
-  posts) are locked with a "Higher plan" tag.
+  posts) are locked with a "Higher plan" tag, and areas of modules outside the plan are not offered.
 - **Sign-in with a link by email** and **My account › Profile**: name, preferred language and time
   zone, and where you work (your units and roles, the customers you can work in).
 - **Organization tree**: units by type, who works at each unit (also through a parent unit), the

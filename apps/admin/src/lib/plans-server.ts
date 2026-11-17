@@ -120,3 +120,19 @@ export async function loadUsageOf(ids: readonly string[]): Promise<Map<string, L
   );
   return new Map(entries);
 }
+
+/**
+ * Tên các module khách đang được dùng: module đã cài (`GET /kernel/modules`) mà gói bật
+ * (`modules` của `GET /plans/entitlements`, gồm cả module luôn bật). Không có gói giới hạn thì là mọi
+ * module đã cài; `null` khi không đọc được sổ module. Thanh bên, Tổng quan và hộp việc dùng để không
+ * mời người dùng vào phần core sẽ từ chối `module_not_enabled`.
+ */
+export async function enabledModuleNames(
+  installed: readonly { name: string; always_enabled?: boolean }[] | null,
+): Promise<string[] | null> {
+  if (!installed) return null;
+  const entitlements = await loadEntitlements();
+  if (!entitlements || entitlements.unrestricted) return installed.map((m) => m.name);
+  const on = new Set(entitlements.modules);
+  return installed.filter((m) => m.always_enabled === true || on.has(m.name)).map((m) => m.name);
+}

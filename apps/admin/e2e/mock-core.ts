@@ -69,7 +69,7 @@ import {
   resetOrg,
   setRootName,
 } from "./mock-org.ts";
-import { plansRoutes, resetPlans, setBasicFeatures } from "./mock-plans.ts";
+import { plansRoutes, resetPlans, setBasicFeatures, setInstalledModules } from "./mock-plans.ts";
 import {
   finishLoginCeremony,
   fireEvent,
@@ -99,6 +99,10 @@ import {
 } from "./mock-tenants.ts";
 
 const PORT = Number(process.env.MOCK_CORE_PORT ?? 4010);
+
+/** Module "đã cài" của core giả (`GET /kernel/modules`); quyền dùng của gói mặc định bật hết. */
+const INSTALLED = [KERNEL, NOTES, CONTENT_MODULE, MENUS_MODULE, ORG_MODULE, ...ENGAGE_MODULES];
+setInstalledModules(INSTALLED.map((m) => m.name));
 const CODE = "123456";
 const TOTP_SECRET = "JBSWY3DPEHPK3PXP";
 
@@ -675,28 +679,14 @@ const server = createServer(async (request, response) => {
       );
     }
     if (url.pathname === "/api/v1/kernel/modules") {
-      const listed = [
-        KERNEL,
-        NOTES,
-        CONTENT_MODULE,
-        MENUS_MODULE,
-        ORG_MODULE,
-        ...ENGAGE_MODULES,
-      ].map((module) => ({
+      const listed = INSTALLED.map((module) => ({
         ...module,
         migrations: module.migrations.map((m) => ({ ...m, applied: null })),
       }));
       return send(response, 200, { data: listed });
     }
     const name = decodeURIComponent(url.pathname.slice("/api/v1/kernel/modules/".length));
-    const module = [
-      KERNEL,
-      NOTES,
-      CONTENT_MODULE,
-      MENUS_MODULE,
-      ORG_MODULE,
-      ...ENGAGE_MODULES,
-    ].find((m) => m.name === name);
+    const module = INSTALLED.find((m) => m.name === name);
     if (!module) {
       return problem(response, 404, "kernel.module_not_found", `No module named \`${name}\`.`);
     }

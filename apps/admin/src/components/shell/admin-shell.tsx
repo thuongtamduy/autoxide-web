@@ -24,6 +24,7 @@ import { initialsOf } from "@/lib/initials";
 import { MARKETPLACE_SELL } from "@/lib/market";
 import { ordered, typeLabel } from "@/lib/org";
 import { currentUnit, loadUnits, loadUnitTypes } from "@/lib/org-server";
+import { enabledModuleNames } from "@/lib/plans-server";
 import { tenantBlock } from "@/lib/tenant-state";
 import { getCurrentTenant, getMe, getModules } from "@/lib/viewer";
 import {
@@ -77,12 +78,13 @@ export async function AdminShell({
     }
     throw error;
   }
-  const [me, modules, current] = loaded;
+  const [me, installed, current] = loaded;
+  const modules = await enabledModuleNames(installed);
   const picker = workspace === "tenant" ? await orgPicker(t, current) : null;
   const viewer: Viewer = {
     allPermissions: me.all_permissions,
     permissions: me.permissions,
-    modules: modules?.map((m) => m.name) ?? null,
+    modules,
     sample: sampleDataEnabled(),
   };
   // Số đếm cạnh tên màn (W-020): từ cùng sổ nguồn việc với hộp việc; chỉ không gian của khách có.

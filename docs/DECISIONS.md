@@ -1966,8 +1966,13 @@ Quyết định:
 - **Khoá theo gói**: gói chưa có `auth.api_keys` thì nút tạo API key bị khoá kèm nhãn "Cần gói cao hơn" (mở tab Gói);
   chưa có `content.ai_suggestions` thì gợi ý SEO và dịch bằng AI của bài viết bị khoá kèm lý do. Không đoán thêm:
   chỉ khoá tính năng core khai ở `features` của `GET /kernel/modules`; core vẫn từ chối `feature_not_enabled`.
+- **Module ngoài gói**: thanh bên, lối vào ở Tổng quan và hộp việc chỉ tính module đã cài mà gói bật (`modules` của
+  `GET /plans/entitlements`, kèm module `always_enabled`). Thử với core thật: gói không bật module nào thì trước đây
+  thanh bên vẫn mời vào Nội dung, Tiếp thị và hộp việc báo 3 nguồn "không trả lời" (`module_not_enabled`).
 
-Lý do: core đã có đủ API (bước 33–35); không giữ mẫu cho thứ core đã có. Nhãn "Pro" cố định không đúng khi nhà vận hành
+Lý do: core đã có đủ API (bước 33–35); không giữ mẫu cho thứ core đã có. Đã chạy thử với core thật (nhiều khách,
+SQLite): sổ khách, chi tiết khách, xuất và tải tệp, cấp / thu hồi quyền vào (câu báo lý do ngắn của core hiện dưới ô),
+lọc thuê bao và gần chạm hạn mức; phía khách: thẻ gói, khoá nút tạo API key, ẩn phân hệ ngoài gói. Nhãn "Pro" cố định không đúng khi nhà vận hành
 đặt tên gói khác, nên nhãn ghi "Cần gói cao hơn".
 
 Đã cân nhắc: gọi `…/usage` cho mọi khách để có cột hạn mức đầy đủ — một lời gọi mỗi khách mỗi lần mở trang; chỉ gọi

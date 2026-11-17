@@ -178,6 +178,21 @@ test("Tổng quan: thẻ gói; gói không có tính năng thì khoá nút tạo
   );
 });
 
+test("gói chỉ bật vài module: Tổng quan và hộp việc không mời vào module ngoài gói", async ({
+  page,
+}) => {
+  await signIn(page, "/");
+  const areas = page.getByRole("region", { name: "Areas" });
+  await expect(areas.getByRole("link", { name: /Marketing › Forms/ })).toBeVisible();
+  await page.request.post(`${CORE}/__plans/basic-features`, {
+    data: { features: [], modules: ["content", "media"] },
+  });
+  await page.reload();
+  await expect(areas.getByRole("link", { name: /Content › Posts/ })).toBeVisible();
+  await expect(areas.getByRole("link", { name: /Marketing › Forms/ })).toHaveCount(0);
+  await expect(page.getByText(/did not answer/)).toHaveCount(0);
+});
+
 test("sổ khách: gói, thuê bao, gần chạm hạn mức lấy từ core; lọc theo thuê bao", async ({
   page,
 }) => {

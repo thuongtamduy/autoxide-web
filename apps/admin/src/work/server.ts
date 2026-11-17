@@ -1,14 +1,15 @@
 import "server-only";
 
-// Đọc hộp việc, số đếm, số liệu, việc thiết lập và hoạt động cho một request (W-020). `cache` của React
-// gộp mọi lời gọi trong cùng một lần render: khung (số đếm trên menu), trang Tổng quan và màn Việc dùng
-// chung một lần đọc mỗi nguồn.
 import type { components } from "@autoxide/sdk";
 import { cache } from "react";
 import { allRoles } from "@/lib/access";
 import { actorNames } from "@/lib/audit";
 import { isForbidden, isNotFound, load } from "@/lib/core";
 import { AUDIT_READ, ROLES_READ, USERS_READ } from "@/lib/permissions";
+// Đọc hộp việc, số đếm, số liệu, việc thiết lập và hoạt động cho một request (W-020). `cache` của React
+// gộp mọi lời gọi trong cùng một lần render: khung (số đếm trên menu), trang Tổng quan và màn Việc dùng
+// chung một lần đọc mỗi nguồn.
+import { enabledModuleNames } from "@/lib/plans-server";
 import { getMe, getModules } from "@/lib/viewer";
 import { holds, NAV, type Viewer } from "@/nav/nav";
 import { sampleDataEnabled } from "@/sample";
@@ -24,11 +25,12 @@ type Role = components["schemas"]["RoleResponse"];
 
 /** Người xem và ngữ cảnh của lần đọc này. */
 export const workContext = cache(async (): Promise<WorkContext> => {
-  const [me, modules] = await Promise.all([getMe(), getModules()]);
+  const [me, installed] = await Promise.all([getMe(), getModules()]);
+  const modules = await enabledModuleNames(installed);
   const viewer: Viewer = {
     allPermissions: me.all_permissions,
     permissions: me.permissions,
-    modules: modules?.map((m) => m.name) ?? null,
+    modules,
     sample: sampleDataEnabled(),
   };
   return {

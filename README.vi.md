@@ -42,7 +42,8 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
   hơn có hiệu lực ngay, nhỏ hơn chờ hết kỳ), huỷ và tiếp tục gia hạn. **Nền tảng › Gói và giá**: gói với
   module, tính năng, hạn mức và giá, bán, gói mặc định, ngừng bán; ghi đè theo khách (có Hoàn tác);
   thuê bao của mọi khách (đổi gói, huỷ, khoá hẳn). Tổng quan hiện gói của bạn và hạn mức gần chạm nhất;
-  việc gói chưa có (tạo API key, gợi ý AI cho bài viết) bị khoá kèm nhãn "Cần gói cao hơn".
+  việc gói chưa có (tạo API key, gợi ý AI cho bài viết) bị khoá kèm nhãn "Cần gói cao hơn", và phân hệ
+  ngoài gói không hiện trên thanh bên.
 - **Đăng nhập bằng link qua email** và **Tài khoản › Hồ sơ**: tên, ngôn ngữ và múi giờ ưa thích, nơi
   bạn làm việc (các nút và role của bạn, các khách bạn làm việc được).
 - **Cây tổ chức**: các nút theo loại, ai làm việc ở mỗi nút (cả người được gán ở nút trên), cài đặt

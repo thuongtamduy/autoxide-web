@@ -8,6 +8,7 @@ import { ActivityList } from "@/components/work/activity-list";
 import { TaskList } from "@/components/work/task-list";
 import { formatCount, formatMoney } from "@/lib/format";
 import { ORDERS_POS_SELL, ORDERS_READ } from "@/lib/orders";
+import { enabledModuleNames } from "@/lib/plans-server";
 import { getMe, getModules } from "@/lib/viewer";
 import { visibleNav } from "@/nav/nav";
 import { sampleDataEnabled } from "@/sample";
@@ -32,7 +33,7 @@ const VN = "Asia/Ho_Chi_Minh";
 // lối vào các phân hệ. Mọi khối theo permission của người xem; số và việc gom từ sổ nguồn ở `src/work/`
 // (bước 51 của core: `kernel/summary`, `kernel/work`, `kernel/setup`, `audit/activity`).
 export default async function DashboardPage() {
-  const [t, w, nav, locale, me, modules, ctx] = await Promise.all([
+  const [t, w, nav, locale, me, installed, ctx] = await Promise.all([
     getTranslations("dashboard"),
     getTranslations("work"),
     getTranslations("nav"),
@@ -42,6 +43,8 @@ export default async function DashboardPage() {
     workContext(),
   ]);
   const sample = sampleDataEnabled();
+  // Module gói của khách bật: lối vào các phân hệ không mời vào phần core sẽ từ chối.
+  const modules = await enabledModuleNames(installed);
   const [{ rows, incomplete, now }, metrics, setup, activity, candidates, revenue] =
     await Promise.all([
       workRows(),
@@ -63,7 +66,7 @@ export default async function DashboardPage() {
   const groups = visibleNav({
     allPermissions: me.all_permissions,
     permissions: me.permissions,
-    modules: modules?.map((m) => m.name) ?? null,
+    modules,
     sample,
   }).filter((group) => group.id !== "home");
 
@@ -90,7 +93,7 @@ export default async function DashboardPage() {
       : metric.value.kind === "count"
         ? formatCount(metric.value.value, locale)
         : `${metric.value.numerator} / ${metric.value.denominator}`;
-  const contentInstalled = modules === null || modules.some((m) => m.name === "content");
+  const contentInstalled = modules === null || modules.includes("content");
   const quick = [
     ...(contentInstalled && ctx.can("content.write")
       ? [{ href: "/content/new", label: t("quick.post") }]

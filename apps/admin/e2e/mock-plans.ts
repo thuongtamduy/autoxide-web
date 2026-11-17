@@ -22,6 +22,14 @@ let subscriptions: Subscription[] = [];
 let periods: Schemas["BillingPeriodResponse"][] = [];
 let overrides = new Map<string, Schemas["OverrideResponse"][]>();
 let suspended = new Map<string, string>();
+/** Module đã cài (mock-core báo lúc chạy); quyền dùng mặc định bật hết như gói có mọi module. */
+let installed: string[] = [];
+/** `true` sau `POST /__plans/basic-features` có `modules`: quyền dùng chỉ còn module của gói. */
+let strictModules = false;
+
+export function setInstalledModules(names: string[]) {
+  installed = names;
+}
 
 const AT = "2026-11-01T00:00:00Z";
 
@@ -112,6 +120,7 @@ export function resetPlans() {
   ];
   overrides = new Map();
   suspended = new Map();
+  strictModules = false;
 }
 resetPlans();
 
@@ -135,11 +144,18 @@ function period(id: string, status: string, start: string, end: string) {
   };
 }
 
-/** `POST /__plans/basic-features {features}`: đổi tính năng của gói "Cơ bản" (khách đang dùng). */
+/**
+ * `POST /__plans/basic-features {features, modules?}`: đổi tính năng (và module, nếu có) của gói "Cơ
+ * bản" mà khách đang dùng; có `modules` thì quyền dùng chỉ còn các module đó và module luôn bật.
+ */
 export async function setBasicFeatures(request: IncomingMessage, response: ServerResponse) {
-  const body = (await json(request)) as { features?: string[] };
+  const body = (await json(request)) as { features?: string[]; modules?: string[] };
   const basic = plans.find((p) => p.id === BASIC);
   if (basic) basic.features = body.features ?? [];
+  if (basic && body.modules) {
+    basic.modules = body.modules;
+    strictModules = true;
+  }
   empty(response, 204);
 }
 
@@ -255,7 +271,10 @@ export async function plansRoutes(
     return done(200, {
       data: {
         access: own && ["suspended", "canceled"].includes(own.status) ? "read_only" : "full",
-        modules: current?.modules ?? [],
+        // Như core: gồm cả module luôn bật (`kernel`, `auth`, `organizations`).
+        modules: strictModules
+          ? [...new Set([...(current?.modules ?? []), "kernel", "auth", "organizations"])]
+          : installed,
         features: current?.features ?? [],
         limits: usage(OWN_TENANT),
         unrestricted: !current,
