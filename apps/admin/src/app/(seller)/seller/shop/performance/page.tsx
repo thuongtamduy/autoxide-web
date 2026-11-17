@@ -1,21 +1,55 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { SampleBadge } from "@/components/sample-badge";
+import { TimeSeriesChart } from "@/components/ui/charts";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Time } from "@/components/ui/time";
+import { dayPoints } from "@/lib/chart";
 import { percentFromBp } from "@/lib/market";
 import { sellerContext } from "@/lib/seller";
-import { sellerPerformance } from "@/sample/market";
+import { sellerMetricHistory, sellerPerformance } from "@/sample/market";
 import { appealAction } from "../../actions";
 
 // Điểm vi phạm: chỉ số 90 ngày, điểm còn hiệu lực, chế tài; mỗi chế tài khiếu nại được một lần.
+// Xu hướng 90 ngày (mỗi tuần một điểm) với vạch ngưỡng của sàn: dữ liệu mẫu, chờ API mới (W-006).
+
+/** Ngưỡng của sàn (theo phần trăm), khớp câu "Mục tiêu từ 95%" và "Mục tiêu dưới 2%". */
+const ON_TIME_GOAL = 95;
+const CANCEL_LIMIT = 2;
 export default async function SellerPerformance() {
   const ctx = await sellerContext();
   if (!ctx) return null;
-  const [t, tm, locale] = await Promise.all([
+  const [t, tm, tc, locale] = await Promise.all([
     getTranslations("seller.performance"),
     getTranslations("market"),
+    getTranslations("charts"),
     getLocale(),
   ]);
-  const { data } = await sellerPerformance(ctx.seller.org_id);
+  const [{ data }, { data: history }] = await Promise.all([
+    sellerPerformance(ctx.seller.org_id),
+    sellerMetricHistory(ctx.seller.org_id),
+  ]);
+  const weeks = dayPoints(
+    history.map((h) => h.day),
+    locale,
+  );
+  const text = (title: string) => ({
+    data: tc("viewData"),
+    x: tc("week"),
+    hint: tc("hintWeeks", { title }),
+  });
+  const trend = (values: readonly number[], name: string) =>
+    tc("trend", {
+      label: name,
+      first: percentFromBp(values[0] ?? 0, locale),
+      last: percentFromBp(values.at(-1) ?? 0, locale),
+    });
+  const onTime = history.map((h) => h.on_time_bp);
+  const cancel = history.map((h) => h.seller_cancel_bp);
+  // Trục giao đúng hạn bắt đầu dưới giá trị thấp nhất (bội 5%) để thấy rõ khoảng cách tới mục tiêu.
+  const onTimeFloor = Math.max(
+    0,
+    Math.floor(Math.min(...onTime, ON_TIME_GOAL * 100) / 500) * 5 - 5,
+  );
   const m = data.metrics;
   return (
     <div className="mk-two">
@@ -62,6 +96,55 @@ export default async function SellerPerformance() {
           <p className="empty">{t("noMetrics")}</p>
         )}
       </section>
+      {history.length > 1 ? (
+        <section className="block card cp-pad mk-wide" aria-labelledby="sl-trend-h">
+          <div className="block-head">
+            <h2 id="sl-trend-h" className="h2">
+              {tc("seller.title")}
+            </h2>
+            <SampleBadge
+              step="46"
+              endpoint="GET /api/v1/marketplace/sellers/{id}/metrics/history?days=90"
+            />
+          </div>
+          <p className="fhint">{tc("seller.about")}</p>
+          <div className="mk-two">
+            <div className="block">
+              <h3 className="chart-title">{t("onTime")}</h3>
+              <TimeSeriesChart
+                label={t("onTime")}
+                summary={trend(onTime, t("onTime"))}
+                x={weeks}
+                series={[
+                  { id: "on_time", label: t("onTime"), values: onTime.map((bp) => bp / 100) },
+                ]}
+                threshold={{ value: ON_TIME_GOAL, label: tc("seller.onTimeGoal") }}
+                from={onTimeFloor}
+                unit="percent"
+                locale={locale}
+                height={160}
+                text={text(t("onTime"))}
+              />
+            </div>
+            <div className="block">
+              <h3 className="chart-title">{t("cancel")}</h3>
+              <TimeSeriesChart
+                label={t("cancel")}
+                summary={trend(cancel, t("cancel"))}
+                x={weeks}
+                series={[
+                  { id: "cancel", label: t("cancel"), values: cancel.map((bp) => bp / 100) },
+                ]}
+                threshold={{ value: CANCEL_LIMIT, label: tc("seller.cancelLimit") }}
+                unit="percent"
+                locale={locale}
+                height={160}
+                text={text(t("cancel"))}
+              />
+            </div>
+          </div>
+        </section>
+      ) : null}
       <section className="block" aria-labelledby="sl-points-h">
         <p className={data.points > 0 ? "note warn" : "note"}>
           <b id="sl-points-h">{t("points", { points: data.points })}</b> {t("pointsText")}

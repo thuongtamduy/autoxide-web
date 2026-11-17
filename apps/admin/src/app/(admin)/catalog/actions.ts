@@ -3,8 +3,9 @@
 // Server Action của màn "Sản phẩm và giá" (module `catalog` của core chưa có, bước 41): gọi hàm mẫu
 // của `src/sample/catalog.ts` thay cho API (W-006), cùng cách trả lỗi như phần gọi core thật — lỗi
 // theo ô, gom mọi lỗi một lần, mã lỗi `catalog.*`. Khi có API chỉ thay lời gọi hàm mẫu.
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   commerceGuard,
   finishChange,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/commerce-action";
 import type { ChangeState } from "@/lib/engage";
 import type { FormState } from "@/lib/form";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import {
   type AttributeType,
   addDocument,
@@ -26,6 +28,7 @@ import {
   deleteProduct,
   type ImportMode,
   type ImportPreview,
+  listProducts,
   moveCategory,
   type PriceResolution,
   type ProductKind,
@@ -108,6 +111,35 @@ export async function productStatusAction(
     String(formData.get("status") ?? "") as ProductStatus,
   );
   return finishChange("catalog", outcome, (data) => data.previous);
+}
+
+/** Đổi trạng thái nhiều sản phẩm: hàm mẫu (và core, bước 41) chỉ có lệnh từng cái, nên lặp và gom lỗi. */
+async function bulkStatus(input: BulkInput, status: ProductStatus): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const off = await commerceGuard();
+  if (off) return bulkBlocked(ids, off.error ?? "");
+  const { data } = await listProducts({ locale: await getLocale(), limit: 1000 });
+  const names = new Map(data.map((p) => [p.id, p.name]));
+  const result = await eachId(
+    ids,
+    async (id) => {
+      const outcome = await setProductStatus(id, status);
+      return outcome.ok ? null : (await translateCommerce(outcome.problem, "catalog")).detail;
+    },
+    (id) => names.get(id) ?? id,
+  );
+  refresh();
+  return result;
+}
+
+/** "Mở bán" hàng loạt; sản phẩm còn thiếu điều kiện báo lỗi riêng từng dòng. */
+export async function bulkPublishAction(input: BulkInput): Promise<BulkResult> {
+  return bulkStatus(input, "active");
+}
+
+/** "Ngừng bán" hàng loạt (ẩn khỏi website, đơn cũ giữ nguyên). */
+export async function bulkUnpublishAction(input: BulkInput): Promise<BulkResult> {
+  return bulkStatus(input, "inactive");
 }
 
 export async function archiveProductAction(

@@ -26,6 +26,7 @@ import {
   parseCodes,
   parsePercentBp,
 } from "@/lib/promotions";
+import { type SortDir, sortRows } from "@/lib/table";
 import {
   allVariants,
   CATEGORY_ID,
@@ -141,6 +142,8 @@ export interface PromotionCode {
   /** Dự kiến: mã đặt tay hay sinh theo lô. */
   source: "manual" | "batch";
   created_at: string;
+  /** Dự kiến: lúc mã bị vô hiệu (không dùng được nữa, giữ để đối soát); chưa vô hiệu thì không có. */
+  disabled_at?: string | null;
 }
 
 export interface FlashItem {
@@ -1793,7 +1796,7 @@ export async function setFlashPrice(
 
 // ---------------------------------------------------------------- Mã giảm giá
 
-export type CodeState = "usable" | "exhausted" | "expired" | "not_started";
+export type CodeState = "usable" | "exhausted" | "expired" | "not_started" | "disabled";
 
 export interface CodeRow extends PromotionCode {
   promotion_title: string;
@@ -1812,6 +1815,7 @@ export interface CodeRow extends PromotionCode {
 }
 
 export function codeState(code: PromotionCode, p: Promotion, at = Date.now()): CodeState {
+  if (code.disabled_at) return "disabled";
   if (p.status === "ended" || p.status === "cancelled" || Date.parse(p.ends_at) <= at)
     return "expired";
   const codeLeft = code.usage_limit === null ? null : code.usage_limit - code.usage_count;
@@ -1830,7 +1834,12 @@ export interface CodeQuery {
   locale?: string;
   limit?: number;
   cursor?: string | null;
+  /** Dự kiến (`?sort=code|used|created&order=`): mặc định mới tạo trước. */
+  sort?: { field: CodeSort; dir: SortDir };
 }
+
+export const CODE_SORTS = ["code", "used", "created"] as const;
+export type CodeSort = (typeof CODE_SORTS)[number];
 
 // Thay bằng GET /api/v1/promotions/promotions/{id}/codes (bước 43) khi core có. Core liệt kê mã theo
 // từng chương trình; danh sách mọi mã của khách là dự kiến.
@@ -1873,7 +1882,17 @@ export async function listCodes(query: CodeQuery = {}): Promise<SamplePage<CodeR
     })
     .filter((r) => !query.state || r.state === query.state)
     .sort((a, b) => b.created_at.localeCompare(a.created_at) || a.code.localeCompare(b.code));
-  return samplePage(rows, { limit: query.limit ?? 20, cursor: query.cursor ?? null });
+  const sort = query.sort;
+  const sorted =
+    !sort || (sort.field === "created" && sort.dir === "desc")
+      ? rows
+      : sortRows(
+          rows,
+          (r) =>
+            sort.field === "code" ? r.code : sort.field === "used" ? r.usage_count : r.created_at,
+          sort.dir,
+        );
+  return samplePage(sorted, { limit: query.limit ?? 20, cursor: query.cursor ?? null });
 }
 
 /** Số mã theo trạng thái (cho chip lọc). */
@@ -1885,6 +1904,7 @@ export async function codeCounts(): Promise<Record<CodeState | "all", number>> {
     exhausted: 0,
     expired: 0,
     not_started: 0,
+    disabled: 0,
   };
   for (const c of s.codes) {
     const p = s.promotions.find((x) => x.id === c.promotion_id);
@@ -1964,14 +1984,25 @@ export function csvCell(value: string): string {
   return /[",\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
 }
 
-// Thay bằng GET /api/v1/promotions/promotions/{id}/codes/export (bước 43).
+// Dự kiến (bước 43 chưa có): vô hiệu một mã. Mã đã dùng giữ lại để đối soát, chỉ không áp được nữa.
+// Vô hiệu lại mã đã vô hiệu thì không đổi gì.
+export async function disableCode(id: string): Promise<SampleOutcome<PromotionCode>> {
+  const code = store().codes.find((c) => c.id === id);
+  if (!code) return fail(404, "promotions.code_not_found", "Code not found.");
+  code.disabled_at ??= now();
+  return { ok: true, data: { ...code } };
+}
+
+// Thay bằng GET /api/v1/promotions/promotions/{id}/codes/export (bước 43). `ids`: chỉ các mã đã chọn.
 export async function exportCodes(
   promotionId?: string,
+  ids: readonly string[] | null = null,
 ): Promise<{ data: { file_name: string; csv: string } }> {
   const s = store();
   const header = ["code", "promotion", "usage_limit", "usage_count", "created_at"];
   const rows = s.codes
     .filter((c) => !promotionId || c.promotion_id === promotionId)
+    .filter((c) => !ids || ids.includes(c.id))
     .map((c) => {
       const p = s.promotions.find((x) => x.id === c.promotion_id);
       return [
@@ -2335,7 +2366,7 @@ export function evaluateWith(cart: Cart, ctx: EvalContext): Evaluation {
   for (const key of cart.codes.map(codeKey)) {
     const code = ctx.codes.find((c) => c.code_key === key);
     const p = code ? ctx.promotions.find((x) => x.id === code.promotion_id) : undefined;
-    if (!code || !p) {
+    if (!code || !p || code.disabled_at) {
       rejected.push({ code: key, reason: reason("promotions.code_invalid", { code: key }) });
     } else if (!live(p)) {
       rejected.push({ code: key, reason: reason("promotions.code_expired", { code: key }) });

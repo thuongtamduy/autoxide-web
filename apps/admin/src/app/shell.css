@@ -2035,3 +2035,217 @@ td.empty::before,
 .ax td .sub time {
   white-space: nowrap;
 }
+
+/* Bộ công cụ bảng: ô chọn, thanh hàng loạt, menu "⋯", tiêu đề cột sắp được, phân trang có tổng */
+.ax th.t-sel,
+.ax td.t-sel {
+  width: 40px;
+  padding-right: 0;
+  vertical-align: middle;
+}
+.ax .t-box {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.ax .t-hit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.ax tr:has(> td.t-sel .t-box:checked) > td {
+  background: var(--panel);
+}
+.ax .bulkbar {
+  /* Cố định ở đáy màn hình (khung bảng có overflow nên `sticky` không bám được). */
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  bottom: 16px;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--sheet);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+.ax .bulkbar-count {
+  font-weight: 600;
+}
+.ax .bulkbar-acts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ax .bulkbar .btn {
+  min-height: 36px;
+}
+.ax .bulkbar .linkish {
+  background: none;
+  border: 0;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  padding: 6px 4px;
+}
+.ax .bulkbar-wait {
+  opacity: 0.8;
+}
+.ax .bulkbar-errors {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+.ax .bulkbar-errors ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+.ax .rmenu-wrap {
+  display: inline-flex;
+}
+.ax .rmenu-btn {
+  font-size: 18px;
+  line-height: 1;
+}
+.ax .rmenu {
+  /* Popover nằm ở lớp trên cùng; toạ độ đặt bằng JavaScript theo nút mở. */
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  min-width: 180px;
+  max-width: min(320px, calc(100vw - 8px));
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+  z-index: 40;
+}
+.ax .rmenu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ax .rmenu-item:hover,
+.ax .rmenu-item:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+.ax .rmenu-item.danger {
+  color: var(--bad);
+}
+.ax .rmenu-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ax .sort-th {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+  text-transform: inherit;
+}
+.ax .sort-th:hover,
+.ax .sort-th.on {
+  color: var(--ink);
+}
+.ax .sort-ic {
+  opacity: 0.45;
+  font-size: 11px;
+}
+.ax .sort-th.on .sort-ic {
+  opacity: 1;
+}
+.ax th.text-right .sort-th {
+  flex-direction: row-reverse;
+}
+.ax .tpager {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.ax .tpager-range {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.ax .tpager-per {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ax .tpager-per .lab {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ax .tpager-per .inp {
+  width: auto;
+  min-height: 32px;
+}
+.ax .tpager-nav {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.ax .tpager .btn[aria-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+@media (max-width: 720px) {
+  /* Thẻ trên điện thoại: ô chọn ở góc trên trái (vùng bấm 44px), nội dung lùi vào; "⋯" giữ nút 44px. */
+  .rtable tr:has(> td.t-sel) {
+    position: relative;
+    padding-left: 44px;
+  }
+  .rtable td.t-sel {
+    position: absolute;
+    top: 4px;
+    left: 0;
+    width: 44px;
+  }
+  .ax .t-hit {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .ax tr:has(> td.t-sel .t-box:checked) {
+    background: var(--panel);
+  }
+  .ax tr:has(> td.t-sel .t-box:checked) > td {
+    background: transparent;
+  }
+  .ax .rmenu-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .ax .rmenu-item {
+    min-height: 44px;
+  }
+  .ax .bulkbar {
+    bottom: 84px;
+    width: calc(100vw - 32px);
+  }
+  .ax .tpager-nav {
+    margin-left: 0;
+  }
+}

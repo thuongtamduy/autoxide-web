@@ -5,18 +5,29 @@ import { Chips } from "@/components/engage/common";
 import { BACKUP_BADGE, PlatformHead, StatusBadge } from "@/components/platform/common";
 import { SampleBadge } from "@/components/sample-badge";
 import { Icon } from "@/components/shell/icon";
+import { BarChart, Sparkline } from "@/components/ui/charts";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
+import { hourPoints } from "@/lib/chart";
 import { oneOf, type SearchParams } from "@/lib/engage";
 import { formatBytes, formatCount } from "@/lib/format";
 import { OPS_READ, TENANTS_READ } from "@/lib/permissions";
 import { roughAge } from "@/lib/platform";
 import { can } from "@/lib/viewer";
-import { getOpsStatus, listAlerts, listBackups, listTenants } from "@/sample/platform";
+import {
+  getOpsHistory,
+  getOpsStatus,
+  listAlerts,
+  listBackups,
+  listTenants,
+  newDeadPerHour,
+} from "@/sample/platform";
 import type { BackupRecord } from "@/sample/platform-data";
 
 const BACKUP_STATES: readonly BackupRecord["status"][] = ["succeeded", "failed"];
 const ENDPOINTS = "GET /api/v1/kernel/ops/backlog, GET /api/v1/kernel/ops/backups (bước 39)";
+const HISTORY = "GET /api/v1/kernel/ops/backlog/history?hours=24";
+const VN = "Asia/Ho_Chi_Minh";
 
 // Màn "Sức khoẻ" (dữ liệu mẫu, W-014): tồn đọng job và event theo database và module, khách nhiều
 // job chờ nhất (chỗ tra theo khách, vì `tenant_id` không làm nhãn số đo), backup gần nhất, cảnh báo.
@@ -25,15 +36,17 @@ export default async function HealthPage(props: { searchParams: Promise<SearchPa
   if (gate) return gate;
   const t = await getTranslations("platform.health");
   const tp = await getTranslations();
+  const tc = await getTranslations("charts");
   const locale = await getLocale();
   const backupState = oneOf(await props.searchParams, "backup", BACKUP_STATES);
-  const [{ data: ops }, { data: alerts }, backups, { data: tenants }, tenantsRead] =
+  const [{ data: ops }, { data: alerts }, backups, { data: tenants }, tenantsRead, history] =
     await Promise.all([
       getOpsStatus(),
       listAlerts(),
       listBackups(backupState ? { status: backupState } : {}),
       listTenants(),
       can(TENANTS_READ),
+      getOpsHistory().then((r) => r.data),
     ]);
   const allBackups = await listBackups();
   const now = Date.now();
@@ -56,6 +69,29 @@ export default async function HealthPage(props: { searchParams: Promise<SearchPa
     return good ? (now - Date.parse(good.started_at)) / 1000 : Number.POSITIVE_INFINITY;
   });
   const worstBackup = Math.max(...lastGood);
+  // Xu hướng 24 giờ cho ô số liệu (dữ liệu mẫu, đề xuất API mới): job chờ và dead-letter.
+  const count = (n: number) => formatCount(n, locale);
+  const trendOf = (values: number[], name: string) => ({
+    values,
+    label: tc("trend", {
+      label: name,
+      first: count(values[0] ?? 0),
+      last: count(values.at(-1) ?? 0),
+    }),
+  });
+  const trends: ({ values: number[]; label: string } | null)[] = [
+    trendOf(
+      history.map((h) => h.jobs_pending),
+      tc("health.jobsTrend"),
+    ),
+    trendOf(
+      history.map((h) => h.jobs_dead),
+      tc("health.deadTrend"),
+    ),
+    null,
+    null,
+  ];
+  const newDead = newDeadPerHour(history);
   const kpis: [string, string, string][] = [
     [
       t("kpiJobs"),
@@ -94,13 +130,50 @@ export default async function HealthPage(props: { searchParams: Promise<SearchPa
         endpoint={ENDPOINTS}
       />
       <section className="kpis pf-kpis" aria-label={t("kpiLabel")}>
-        {kpis.map(([label, value, sub]) => (
-          <div key={label} className="card kpi">
-            <span className="kpi-label">{label}</span>
-            <b className="kpi-value">{value}</b>
-            <span className="kpi-sub">{sub}</span>
-          </div>
-        ))}
+        {kpis.map(([label, value, sub], index) => {
+          const trend = trends[index];
+          return (
+            <div key={label} className="card kpi">
+              <span className="kpi-label">{label}</span>
+              <b className="kpi-value">{value}</b>
+              {trend ? <Sparkline values={trend.values} label={trend.label} /> : null}
+              <span className="kpi-sub">{sub}</span>
+            </div>
+          );
+        })}
+      </section>
+
+      <section className="block" aria-labelledby="pf-dead-h">
+        <div className="block-head">
+          <h2 id="pf-dead-h" className="h2">
+            {tc("health.deadTitle")}
+          </h2>
+          <SampleBadge step="mới" endpoint={HISTORY} />
+        </div>
+        <div className="card padded">
+          <BarChart
+            label={tc("health.deadTitle")}
+            summary={tc("health.deadSummary", {
+              total: count(newDead.reduce((a, b) => a + b, 0)),
+              max: count(Math.max(0, ...newDead)),
+            })}
+            x={hourPoints(
+              history.map((h) => h.at),
+              locale,
+              VN,
+            )}
+            values={newDead}
+            seriesLabel={tc("health.deadSeries")}
+            unit="count"
+            locale={locale}
+            text={{
+              data: tc("viewData"),
+              x: tc("hour"),
+              hint: tc("hintHours", { title: tc("health.deadTitle") }),
+            }}
+          />
+        </div>
+        <p className="fhint">{tc("health.deadAbout")}</p>
       </section>
 
       <section className="block" aria-labelledby="pf-alerts-h">

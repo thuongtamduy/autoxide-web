@@ -52,15 +52,8 @@
 .ax .ord-table th.ord-check {
   width: 36px;
 }
-.ax .ord-table td.ord-check input {
-  width: 18px;
-  height: 18px;
-}
 .ax .ord-table .ord-m {
   display: none;
-}
-.ax .ord-table tr[data-checked] td {
-  background: var(--panel);
 }
 @media (max-width: 720px) {
   /* Điện thoại: mỗi đơn một thẻ — mã đơn và tổng ở dòng đầu, người mua · nơi bán · giờ và trạng thái
@@ -72,23 +65,17 @@
       "chk who status";
     gap: 4px 10px;
   }
-  .ax .ord-table tr[data-checked] {
-    background: var(--panel);
-  }
-  .ax .ord-table tr[data-checked] td {
-    background: transparent;
+  /* Ô chọn chung (`SelectTd`) nằm ở ô lưới `chk` thay vì góc trên trái như các bảng khác. */
+  .ax .ord-table tr:has(> td.t-sel) {
+    padding-left: 4px;
   }
   .ax .ord-table td.ord-check {
     grid-area: chk;
+    position: static;
     width: auto;
     justify-content: center;
   }
   .ax .ord-table td.ord-check label {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    min-height: 44px;
     margin: -12px 0 0 -8px;
   }
   .ax .ord-table td.rt-title {
@@ -118,47 +105,6 @@
   }
   .ax .ord-table td.ord-d {
     display: none;
-  }
-}
-
-/* Thanh thao tác hàng loạt: dính đáy khi đã chọn */
-.ax .ord-bulk {
-  /* Cố định ở đáy màn hình (khung bảng có overflow nên `sticky` không bám được). */
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: calc(100vw - 32px);
-  bottom: 16px;
-  z-index: 30;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--ink);
-  color: var(--sheet);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
-}
-.ax .ord-bulk .btn {
-  min-height: 36px;
-}
-.ax .ord-bulk .linkish {
-  background: none;
-  border: 0;
-  color: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-  font: inherit;
-  padding: 6px 4px;
-}
-
-@media (max-width: 720px) {
-  /* Trên điện thoại thanh đáy của khung che 12px dưới cùng: đặt thanh hàng loạt cao hơn. */
-  .ax .ord-bulk {
-    bottom: 84px;
-    width: calc(100vw - 32px);
   }
 }
 

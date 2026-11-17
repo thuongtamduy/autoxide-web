@@ -3,9 +3,17 @@
 // Server Action của màn "Tồn kho" (module `inventory` của core chưa có, bước 42): gọi hàm mẫu của
 // `src/sample/inventory.ts` thay cho API (W-006), cùng cách trả lỗi như phần gọi core thật — lỗi
 // theo ô, gom mọi lỗi một lần, mã lỗi `inventory.*`. Khi có API chỉ thay lời gọi hàm mẫu.
-import { commerceGuard, finishChange, finishCommerce, typed } from "@/lib/commerce-action";
+import { refresh } from "next/cache";
+import {
+  commerceGuard,
+  finishChange,
+  finishCommerce,
+  translateCommerce,
+  typed,
+} from "@/lib/commerce-action";
 import type { ChangeState } from "@/lib/engage";
 import type { FormState } from "@/lib/form";
+import { type BulkInput, type BulkResult, bulkBlocked, cleanIds, eachId } from "@/lib/table";
 import {
   adjustStock,
   changeCount,
@@ -18,6 +26,7 @@ import {
   createSupplierReturn,
   createTransfer,
   decideSerial,
+  listSuppliers,
   putCountLines,
   receivePurchaseOrder,
   receiveTransfer,
@@ -240,6 +249,33 @@ export async function supplierActiveAction(
   if (off) return off;
   const outcome = await setSupplierActive(idOf(formData), formData.get("status") === "on");
   return finishChange("inventory", outcome, (data) => (data.previous ? "on" : "off"));
+}
+
+/** Ngừng / giao dịch lại với nhiều nhà cung cấp: hàm mẫu (và core) chỉ có lệnh từng cái, lặp và gom lỗi. */
+async function bulkSupplierActive(input: BulkInput, active: boolean): Promise<BulkResult> {
+  const ids = cleanIds(input.ids);
+  const off = await commerceGuard();
+  if (off) return bulkBlocked(ids, off.error ?? "");
+  const { data } = await listSuppliers();
+  const names = new Map(data.map((s) => [s.id, s.name]));
+  const result = await eachId(
+    ids,
+    async (id) => {
+      const outcome = await setSupplierActive(id, active);
+      return outcome.ok ? null : (await translateCommerce(outcome.problem, "inventory")).detail;
+    },
+    (id) => names.get(id) ?? id,
+  );
+  refresh();
+  return result;
+}
+
+export async function bulkSupplierOffAction(input: BulkInput): Promise<BulkResult> {
+  return bulkSupplierActive(input, false);
+}
+
+export async function bulkSupplierOnAction(input: BulkInput): Promise<BulkResult> {
+  return bulkSupplierActive(input, true);
 }
 
 const PO_FIELDS = ["supplier_id", "org_id", "lines", "expected_on"] as const;

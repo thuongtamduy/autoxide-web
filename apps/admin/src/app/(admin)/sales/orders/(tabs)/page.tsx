@@ -4,9 +4,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { TipHeading } from "@/components/help/info-tip";
 import { IntroCard } from "@/components/help/intro-card";
 import { ORDER_BADGE } from "@/components/orders/badges";
-import { AskFilter, BulkForm, SaveViewDialog } from "@/components/orders/forms";
+import { AskFilter, SaveViewDialog } from "@/components/orders/forms";
 import { SampleBadge } from "@/components/sample-badge";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
+import { Pager } from "@/components/ui/pager";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { hintDismissed } from "@/help/flags";
@@ -26,8 +29,10 @@ import {
   readFilters,
   without,
 } from "@/lib/orders";
+import { readPage, readSort, slicePage } from "@/lib/table";
 import { can } from "@/lib/viewer";
-import { countOrders, listOrders, listViews } from "@/sample/orders";
+import { countOrders, listOrders, listViews, ORDER_SORTS } from "@/sample/orders";
+import { acceptOrdersAction, undoAcceptOrdersAction } from "../actions";
 import { ORDER_TABS, sellingNodes } from "../shared";
 
 const GROUPS = {
@@ -38,7 +43,8 @@ const GROUPS = {
 
 // Tab "Đơn hàng": view đã lưu (của hệ thống, của nút, của tôi) với số đếm thật; lọc theo trạng thái,
 // kênh, nút bán, dòng tiền, thanh toán, ngày đặt; "Hỏi bằng lời" khi AI bật; chọn nhiều đơn để xác
-// nhận hay in phiếu giao. Bộ lọc nằm trên địa chỉ trang: sao chép liên kết là chia sẻ đúng bộ lọc.
+// nhận hay in phiếu giao (bộ công cụ bảng chung); sắp theo giờ đặt / tổng tiền; phân trang có tổng. Bộ
+// lọc nằm trên địa chỉ trang: sao chép liên kết là chia sẻ đúng bộ lọc.
 export default async function OrdersPage(props: PageProps<"/sales/orders">) {
   if (!(await can(ORDER_TABS.orders))) {
     for (const tab of ["returns", "pos", "carts"] as const) {
@@ -51,10 +57,11 @@ export default async function OrdersPage(props: PageProps<"/sales/orders">) {
     props.searchParams,
   ]);
   const filters = readFilters(params);
-  const cursor = typeof params.cursor === "string" ? params.cursor : null;
+  const sort = readSort(params, ORDER_SORTS, { field: "placed", dir: "desc" });
+  const paging = readPage(params);
   const query = filterQuery(filters);
-  const [page, matching, views, nodes, ai, manage, flags] = await Promise.all([
-    listOrders(filters, { cursor }),
+  const [listed, matching, views, nodes, ai, manage, flags] = await Promise.all([
+    listOrders(filters, { limit: 1000, sort }),
     countOrders(filters),
     listViews(),
     sellingNodes(t("market")),
@@ -69,6 +76,12 @@ export default async function OrdersPage(props: PageProps<"/sales/orders">) {
     })),
   );
   const active = counted.find((v) => v.query === query) ?? null;
+  const page = slicePage(listed.data, paging.page, paging.per);
+  // Tham số giữ khi sắp và đổi trang: bộ lọc và cách sắp người xem đã chọn.
+  const keep = {
+    ...Object.fromEntries(new URLSearchParams(query)),
+    ...(typeof params.sort === "string" ? { sort: sort.field, dir: sort.dir } : {}),
+  };
   const money = (amount: string) => formatMoney(amount, "VND", locale);
   const statusLabel = (list: readonly string[]) => {
     const joined = list.join(",");
@@ -265,50 +278,58 @@ export default async function OrdersPage(props: PageProps<"/sales/orders">) {
             </Link>
           </div>
         ) : null}
-        <p className="fhint" aria-live="polite">
-          {t("list.count", {
-            shown: formatCount(page.data.length, locale),
-            total: formatCount(matching, locale),
-          })}{" "}
-          · {t("list.sorted")}
-        </p>
         <div className="card tcard">
           {page.data.length === 0 ? (
             <p className="empty">{t("list.empty")}</p>
           ) : (
-            <BulkForm query={query} matching={matching}>
+            <BulkTable
+              ids={page.data.map((o) => o.id)}
+              matching={{ count: matching, query }}
+              actions={[
+                {
+                  key: "accept",
+                  label: t("bulk.accept"),
+                  tone: "pri",
+                  run: acceptOrdersAction,
+                  undo: undoAcceptOrdersAction,
+                },
+                { key: "print", label: t("bulk.print"), href: "/sales/orders/print" },
+              ]}
+            >
               <Table cards className="ord-table">
                 <thead>
                   <tr>
-                    <Th className="ord-check">
-                      {manage ? (
-                        <input type="checkbox" data-all aria-label={t("bulk.page")} />
-                      ) : null}
-                    </Th>
-                    <Th>{t("list.number")}</Th>
+                    {manage ? <SelectAllTh className="ord-check" /> : null}
+                    <SortTh
+                      field="placed"
+                      sort={sort}
+                      base="/sales/orders"
+                      keep={keep}
+                      first="desc"
+                    >
+                      {t("list.number")}
+                    </SortTh>
                     <Th>{t("list.buyer")}</Th>
                     <Th>{t("list.node")}</Th>
                     <Th>{t("list.channel")}</Th>
                     <Th>{t("list.payment")}</Th>
                     <Th>{t("list.status")}</Th>
-                    <Th className="ord-total">{t("list.total")}</Th>
+                    <SortTh
+                      field="total"
+                      sort={sort}
+                      base="/sales/orders"
+                      keep={keep}
+                      first="desc"
+                      className="ord-total"
+                    >
+                      {t("list.total")}
+                    </SortTh>
                   </tr>
                 </thead>
                 <tbody>
                   {page.data.map((o) => (
                     <tr key={o.id}>
-                      <Td className="ord-check">
-                        {manage ? (
-                          <label>
-                            <input
-                              type="checkbox"
-                              name="ids"
-                              value={o.id}
-                              aria-label={t("bulk.one", { number: o.number })}
-                            />
-                          </label>
-                        ) : null}
-                      </Td>
+                      {manage ? <SelectTd id={o.id} name={o.number} className="ord-check" /> : null}
                       <Td className="rt-title">
                         <span className="cell2">
                           <Link className="open mono" href={`/sales/orders/${o.id}`}>
@@ -353,19 +374,16 @@ export default async function OrdersPage(props: PageProps<"/sales/orders">) {
                   ))}
                 </tbody>
               </Table>
-            </BulkForm>
+            </BulkTable>
           )}
         </div>
-        {page.pagination.next_cursor ? (
-          <p>
-            <Link
-              className="btn"
-              href={ordersHref(filters, { cursor: page.pagination.next_cursor })}
-            >
-              {t("list.more")}
-            </Link>
-          </p>
-        ) : null}
+        <Pager
+          total={page.total}
+          page={page.page}
+          per={paging.per}
+          base="/sales/orders"
+          keep={keep}
+        />
         <p className="fhint">
           <SampleBadge
             step="52"

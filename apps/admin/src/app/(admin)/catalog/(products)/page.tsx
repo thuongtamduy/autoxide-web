@@ -1,19 +1,32 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import {
+  archiveProductAction,
+  bulkPublishAction,
+  bulkUnpublishAction,
+  productStatusAction,
+} from "@/app/(admin)/catalog/actions";
 import { PRODUCT_BADGE } from "@/components/catalog/badges";
 import { SuggestionActions } from "@/components/catalog/suggestion-actions";
 import { Thumb } from "@/components/catalog/thumb";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
+import { ConfirmAction } from "@/components/ui/confirm";
 import { Flash } from "@/components/ui/flash";
+import { Pager } from "@/components/ui/pager";
+import { RowMenu, type RowMenuItem } from "@/components/ui/row-menu";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { CATALOG_PRODUCTS_WRITE, formatDay, vatLabel } from "@/lib/catalog";
 import { formatCount, formatMoney } from "@/lib/format";
+import { readPage, readSort, slicePage } from "@/lib/table";
 import { can } from "@/lib/viewer";
 import {
   listCategories,
   listProducts,
   listSuggestions,
+  PRODUCT_SORTS,
   type ProductKind,
   type ProductStatus,
   type ProductSummary,
@@ -25,10 +38,12 @@ const STATUSES: ProductStatus[] = ["active", "draft", "inactive", "archived"];
 const KINDS: ProductKind[] = ["physical", "digital", "service", "bundle"];
 
 // Tab "Sản phẩm": số liệu đầu màn, danh sách lọc theo trạng thái / danh mục / loại, tìm không dấu
-// theo tên và SKU, phân trang theo con trỏ; bản nháp AI chờ người xem.
+// theo tên và SKU, sắp theo tên / giá, phân trang có tổng; chọn nhiều để mở bán, ngừng bán, xuất CSV;
+// menu "⋯" trên dòng; bản nháp AI chờ người xem.
 export default async function ProductsPage(props: PageProps<"/catalog">) {
-  const [t, locale, params] = await Promise.all([
+  const [t, tt, locale, params] = await Promise.all([
     getTranslations("catalog"),
+    getTranslations("table"),
     getLocale(),
     props.searchParams,
   ]);
@@ -38,8 +53,9 @@ export default async function ProductsPage(props: PageProps<"/catalog">) {
   const kind = KINDS.find((k) => k === one("kind"));
   const q = one("q").slice(0, 200);
   const category = one("category");
-  const cursor = one("cursor") || null;
-  const [page, { data: stats }, { data: categories }, { data: rates }, { data: drafts }, write] =
+  const sort = readSort(params, PRODUCT_SORTS, { field: "updated", dir: "desc" });
+  const paging = readPage(params);
+  const [listed, { data: stats }, { data: categories }, { data: rates }, { data: drafts }, write] =
     await Promise.all([
       listProducts({
         ...(status ? { status } : {}),
@@ -48,8 +64,8 @@ export default async function ProductsPage(props: PageProps<"/catalog">) {
         ...(category ? { category_id: category } : {}),
         q,
         locale,
-        cursor,
-        limit: 25,
+        sort,
+        limit: 1000,
       }),
       productStats(),
       listCategories(locale),
@@ -57,17 +73,15 @@ export default async function ProductsPage(props: PageProps<"/catalog">) {
       listSuggestions({ status: "pending" }),
       can(CATALOG_PRODUCTS_WRITE),
     ]);
-  const total = (
-    await listProducts({
-      ...(status ? { status } : {}),
-      ...(blocked ? { blocked } : {}),
-      ...(kind ? { kind } : {}),
-      ...(category ? { category_id: category } : {}),
-      q,
-      locale,
-      limit: 1000,
-    })
-  ).data.length;
+  const page = slicePage(listed.data, paging.page, paging.per);
+  // Tham số giữ khi sắp và đổi trang: bộ lọc, cách sắp người xem đã chọn, số dòng mỗi trang.
+  const keep = {
+    status: one("status"),
+    kind: kind ?? "",
+    category,
+    q,
+    ...(one("sort") ? { sort: sort.field, dir: sort.dir } : {}),
+  };
   const reduced = rates.find(
     (r) => r.category_code === "vat.standard_reducible" && r.rate_percent === "8",
   );
@@ -101,6 +115,54 @@ export default async function ProductsPage(props: PageProps<"/catalog">) {
     );
   };
   const all = Object.values(stats.by_status).reduce((a, b) => a + b, 0);
+  const undo = { label: t("undo"), done: t("undone") };
+  // Menu "⋯" của một dòng: mở để sửa; mở bán / ngừng bán (có Hoàn tác); lưu trữ (hỏi lại).
+  const productMenu = (row: ProductSummary): RowMenuItem[] => {
+    const items: RowMenuItem[] = [
+      { label: t("products.edit"), href: `/catalog/products/${row.id}` },
+    ];
+    if (!write) return items;
+    const change = (value: ProductStatus, label: string, done: string): RowMenuItem => ({
+      label,
+      change: {
+        action: productStatusAction,
+        id: row.id,
+        expect: row.updated_at,
+        value,
+        done,
+        undo,
+      },
+    });
+    if (row.status === "active") {
+      items.push(change("inactive", t("product.unpublish"), t("product.unpublished")));
+    } else if (row.status === "draft" || row.status === "inactive") {
+      items.push(
+        change(
+          "active",
+          row.status === "draft" ? t("product.publish") : t("product.republish"),
+          t("product.published"),
+        ),
+      );
+    }
+    if (row.status === "inactive") {
+      items.push({
+        label: t("product.archive"),
+        danger: true,
+        dialog: (
+          <ConfirmAction
+            action={archiveProductAction}
+            id={row.id}
+            label={t("product.archive")}
+            title={t("product.archiveTitle", { name: row.name })}
+            points={[t("product.archiveFinal")]}
+            submit={t("product.archiveSubmit")}
+            done={t("product.archived")}
+          />
+        ),
+      });
+    }
+    return items;
+  };
 
   return (
     <div className="blocks">
@@ -213,78 +275,117 @@ export default async function ProductsPage(props: PageProps<"/catalog">) {
           {page.data.length === 0 ? (
             <p className="empty">{t("products.empty")}</p>
           ) : (
-            <Table cards>
-              <thead>
-                <tr>
-                  <Th>{t("products.product")}</Th>
-                  <Th>{t("products.category")}</Th>
-                  <Th className="text-right">{t("products.price")}</Th>
-                  <Th>{t("products.tax")}</Th>
-                  <Th>{t("products.status")}</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {page.data.map((row) => (
-                  <tr key={row.id}>
-                    <Td className="rt-title">
-                      <span className="cat-prod">
-                        <Thumb
-                          mediaId={row.image_media_id}
-                          name={row.name}
-                          categoryPath={row.category_path}
-                        />
-                        <span className="cell2">
-                          <Link className="open" href={`/catalog/products/${row.id}`}>
-                            {row.name}
-                          </Link>
-                          <span className="sub">
-                            {t("products.variants", { count: row.variant_count })} ·{" "}
-                            <span className="mono">{row.skus.slice(0, 3).join(", ")}</span>
-                            {row.lot_tracked ? ` · ${t("products.lot")}` : ""}
-                            {row.serial_tracked ? ` · ${t("products.serial")}` : ""}
-                            {row.allow_backorder ? ` · ${t("products.backorder")}` : ""}
-                            {row.kind !== "physical" ? ` · ${t(`kinds.${row.kind}`)}` : ""}
-                          </span>
-                        </span>
-                      </span>
-                    </Td>
-                    <Td label={t("products.category")}>{row.category_path || "—"}</Td>
-                    <Td label={t("products.price")} className="text-right whitespace-nowrap">
-                      {money(row)}
-                    </Td>
-                    <Td label={t("products.tax")}>{vat(row.tax_category)}</Td>
-                    <Td label={t("products.status")}>
-                      <span className="cell2">
-                        <span className={PRODUCT_BADGE[row.status]}>
-                          <span className="dot" />
-                          {t(`status.${row.status}`)}
-                        </span>
-                        {row.issues.length > 0 ? (
-                          <span
-                            className="badge b-bad"
-                            title={row.issues
-                              .map((i) => t(`issues.${i.code.replaceAll(".", "_")}`, i.params))
-                              .join(" · ")}
-                          >
-                            {t("products.blockedBadge", { count: row.issues.length })}
-                          </span>
-                        ) : null}
-                      </span>
-                    </Td>
+            <BulkTable
+              ids={page.data.map((row) => row.id)}
+              actions={
+                write
+                  ? [
+                      { key: "publish", label: t("bulk.publish"), run: bulkPublishAction },
+                      { key: "unpublish", label: t("bulk.unpublish"), run: bulkUnpublishAction },
+                      {
+                        key: "export",
+                        label: t("bulk.export"),
+                        href: "/catalog/export.csv",
+                        download: true,
+                      },
+                    ]
+                  : [
+                      {
+                        key: "export",
+                        label: t("bulk.export"),
+                        href: "/catalog/export.csv",
+                        download: true,
+                      },
+                    ]
+              }
+            >
+              <Table cards>
+                <thead>
+                  <tr>
+                    <SelectAllTh />
+                    <SortTh field="name" sort={sort} base="/catalog" keep={keep}>
+                      {t("products.product")}
+                    </SortTh>
+                    <Th>{t("products.category")}</Th>
+                    <SortTh
+                      field="price"
+                      sort={sort}
+                      base="/catalog"
+                      keep={keep}
+                      className="text-right"
+                    >
+                      {t("products.price")}
+                    </SortTh>
+                    <Th>{t("products.tax")}</Th>
+                    <Th>{t("products.status")}</Th>
+                    <Th>
+                      <span className="vh">{t("products.actions")}</span>
+                    </Th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {page.data.map((row) => (
+                    <tr key={row.id}>
+                      <SelectTd id={row.id} name={row.name} />
+                      <Td className="rt-title">
+                        <span className="cat-prod">
+                          <Thumb
+                            mediaId={row.image_media_id}
+                            name={row.name}
+                            categoryPath={row.category_path}
+                          />
+                          <span className="cell2">
+                            <Link className="open" href={`/catalog/products/${row.id}`}>
+                              {row.name}
+                            </Link>
+                            <span className="sub">
+                              {t("products.variants", { count: row.variant_count })} ·{" "}
+                              <span className="mono">{row.skus.slice(0, 3).join(", ")}</span>
+                              {row.lot_tracked ? ` · ${t("products.lot")}` : ""}
+                              {row.serial_tracked ? ` · ${t("products.serial")}` : ""}
+                              {row.allow_backorder ? ` · ${t("products.backorder")}` : ""}
+                              {row.kind !== "physical" ? ` · ${t(`kinds.${row.kind}`)}` : ""}
+                            </span>
+                          </span>
+                        </span>
+                      </Td>
+                      <Td label={t("products.category")}>{row.category_path || "—"}</Td>
+                      <Td label={t("products.price")} className="text-right whitespace-nowrap">
+                        {money(row)}
+                      </Td>
+                      <Td label={t("products.tax")}>{vat(row.tax_category)}</Td>
+                      <Td label={t("products.status")}>
+                        <span className="cell2">
+                          <span className={PRODUCT_BADGE[row.status]}>
+                            <span className="dot" />
+                            {t(`status.${row.status}`)}
+                          </span>
+                          {row.issues.length > 0 ? (
+                            <span
+                              className="badge b-bad"
+                              title={row.issues
+                                .map((i) => t(`issues.${i.code.replaceAll(".", "_")}`, i.params))
+                                .join(" · ")}
+                            >
+                              {t("products.blockedBadge", { count: row.issues.length })}
+                            </span>
+                          ) : null}
+                        </span>
+                      </Td>
+                      <Td className="rt-acts">
+                        <RowMenu
+                          label={tt("moreFor", { name: row.name })}
+                          items={productMenu(row)}
+                        />
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </BulkTable>
           )}
         </div>
-        <div className="pager">
-          <span className="fhint">{t("products.foot", { shown: page.data.length, total })}</span>
-          {page.pagination.next_cursor ? (
-            <Link className="btn sm" href={href({ cursor: page.pagination.next_cursor })}>
-              {t("products.next")}
-            </Link>
-          ) : null}
-        </div>
+        <Pager total={page.total} page={page.page} per={paging.per} base="/catalog" keep={keep} />
       </section>
 
       <section className="block" aria-labelledby="ai-h">

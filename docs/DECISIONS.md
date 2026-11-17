@@ -2191,3 +2191,28 @@ Quyết định:
 Lý do: core đã có các API này (bước 33–34); đây là bốn việc còn lại trong `NEXT.md`. Đã chạy thử với core thật: bật app
 xác thực rồi đổi email bằng mã; khoá người mua thì người đó không đăng nhập được, mở lại được; tìm không dấu; khách tự
 xuất và tải tệp; website hiện 34 tỉnh, Đà Nẵng 95 phường, tính phí và sang bước thanh toán.
+
+## W-058 · Chuẩn hoá giao diện đợt 3: bộ công cụ bảng, biểu đồ, trang gói của nền tảng — 2026-11-17 — chủ dự án yêu cầu
+
+Tiếp W-054, W-056.
+
+- **Bộ công cụ bảng** (`src/components/ui/`, như Shopify Polaris IndexTable): `BulkTable` + `SelectAllTh` / `SelectTd`
+  (chọn nhiều, Shift chọn dải, thanh dính "Đã chọn N", hỏi lại, Hoàn tác, gom lỗi "Xong 8/10, 2 lỗi" và giữ dòng
+  hỏng được chọn), `RowMenu` ("⋯", role menu, phím mũi tên; hộp thoại của mục dựng ngoài menu qua
+  `DialogHostContext`), `SortTh` (`?sort=&dir=`, `aria-sort`), `Pager` (có tổng "1–25 trong 312" khi nguồn có tổng;
+  nguồn theo con trỏ chỉ Trước / Sau, không bịa tổng). **Quy ước:** dòng bảng hiện tối đa một nút phụ, còn lại vào
+  "⋯". Thao tác hàng loạt trên core thật lặp lệnh từng cái (core chưa có endpoint hàng loạt); sắp theo cột chỉ bật
+  khi nguồn sắp được (core: chỉ `order` theo thời gian). Đã áp: sản phẩm, khách hàng, nhà cung
+  cấp, đơn hàng (thay `ord-bulk`), bình luận, người đăng ký, mã giảm giá (mẫu có thêm "Đã vô hiệu"). Tài khoản người
+  mua giữ bản của W-057 (API thật `/auth/customers`); áp bộ bảng cho màn đó ở bước sau.
+- **Biểu đồ** (`src/components/ui/charts/`, SVG vẽ ở máy chủ, không thêm thư viện): đường / vùng có kỳ trước nét đứt và
+  vạch ngưỡng, cột, sparkline; `role="img"` có nhãn, bảng "Xem số liệu", phím mũi tên xem từng mốc. Màu chuỗi
+  `--viz-1…6` ở `globals.css` (đạt kiểm phân biệt màu; luôn có chú giải và bảng). Áp ở Tổng quan (doanh thu 7/30
+  ngày), Báo cáo kênh, Sức khoẻ nền tảng, Hiệu suất người bán — đều từ dữ liệu mẫu.
+- **Gói / Thuê bao / Hỗ trợ của nền tảng**: gói thành thẻ; thuê bao và hỗ trợ khi rỗng là một `EmptyState`; giữ mọi
+  lời gọi API của W-055.
+
+Cần ở core: endpoint hàng loạt (ít nhất duyệt / chặn bình luận, người đăng ký); tham số `sort` và số đếm tổng cho
+danh sách; lịch sử backlog job theo giờ; lịch sử chỉ số người bán; lệnh vô hiệu mã giảm giá.
+
+Lý do: chủ dự án yêu cầu (17/11).

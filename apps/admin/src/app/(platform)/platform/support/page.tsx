@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Chips } from "@/components/engage/common";
 import { PlatformHead } from "@/components/platform/common";
 import { SupportGrantDialog, SupportGrantTable } from "@/components/platform/support-grants";
+import { EmptyState } from "@/components/ui/empty-state";
 import { allRoles } from "@/lib/access";
 import { oneOf, type SearchParams } from "@/lib/engage";
 import { SUPPORT_GRANT } from "@/lib/permissions";
@@ -12,7 +14,9 @@ import { loadGrants, loadStaff, supportHours } from "@/lib/support-server";
 // Màn "Vào dữ liệu khách" (bước 34 của core, đợt 3b): nhân sự nền tảng chỉ vào dữ liệu một khách khi
 // được cấp quyền có lý do và thời hạn; khách thấy mọi lần cấp và lần vào. Khách tắt hỗ trợ thì chỉ cấp
 // được theo văn bản của cơ quan có thẩm quyền (core từ chối `auth.support_access_disabled`). Danh sách:
-// 200 lần cấp mới nhất của mọi khách (`GET /auth/support-grants`, D-335).
+// 200 lần cấp mới nhất của mọi khách (`GET /auth/support-grants`, D-335). Rỗng thì chỉ một trạng thái
+// rỗng: chưa có khách (mở sổ khách) hay chưa có lần cấp nào (nút cấp ở đầu trang); không chồng câu
+// báo lên bảng rỗng.
 export default async function SupportPage(props: { searchParams: Promise<SearchParams> }) {
   const gate = await platformGate(SUPPORT_GRANT);
   if (gate) return gate;
@@ -60,31 +64,55 @@ export default async function SupportPage(props: { searchParams: Promise<SearchP
           ) : undefined
         }
       />
-      <p className="note">
+      {customers.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon="key"
+            title={t("noCustomersTitle")}
+            actions={
+              <Link className="btn" href="/platform">
+                {t("openRegister")}
+              </Link>
+            }
+          >
+            {t("noCustomersText")}
+          </EmptyState>
+        </div>
+      ) : all.length === 0 ? (
+        <div className="card">
+          <EmptyState icon="shield" title={t("noneYet")}>
+            {t("noneYetText")}
+          </EmptyState>
+        </div>
+      ) : (
+        <section className="block" aria-labelledby="pf-grants-h">
+          <h2 id="pf-grants-h" className="h2">
+            {t("listTitle")}
+          </h2>
+          <Chips
+            label={t("filter")}
+            chips={[
+              { href: "/platform/support", label: tp("all"), on: !state, count: all.length },
+              ...GRANT_STATES.map((s) => ({
+                href: `/platform/support?status=${s}`,
+                label: tp(`grantStatus.${s}`),
+                on: s === state,
+                count: all.filter((g) => grantState(g, now) === s).length,
+              })),
+            ]}
+          />
+          <div className="card tcard">
+            {grants.length > 0 ? (
+              <SupportGrantTable grants={grants} tenantName={name} roleName={roleName} manage />
+            ) : (
+              <p className="empty">{t("none")}</p>
+            )}
+          </div>
+        </section>
+      )}
+      <p className="fhint">
         {t("basisLaw")} {t("review")}
       </p>
-      {customers.length === 0 ? <p className="note">{t("noCustomers")}</p> : null}
-
-      <section className="block" aria-labelledby="pf-grants-h">
-        <h2 id="pf-grants-h" className="h2">
-          {t("listTitle")}
-        </h2>
-        <Chips
-          label={t("filter")}
-          chips={[
-            { href: "/platform/support", label: tp("all"), on: !state, count: all.length },
-            ...GRANT_STATES.map((s) => ({
-              href: `/platform/support?status=${s}`,
-              label: tp(`grantStatus.${s}`),
-              on: s === state,
-              count: all.filter((g) => grantState(g, now) === s).length,
-            })),
-          ]}
-        />
-        <div className="card tcard">
-          <SupportGrantTable grants={grants} tenantName={name} roleName={roleName} manage />
-        </div>
-      </section>
     </div>
   );
 }

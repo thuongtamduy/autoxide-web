@@ -11,6 +11,7 @@ import { BAN_KINDS } from "@/lib/comments";
 import type { DataState } from "@/lib/engage";
 import { type ChangeState, field, versioned } from "@/lib/engage-server";
 import { type FormState, nextDone, problemState } from "@/lib/form";
+import { type BulkInput, type BulkResult, cleanIds, eachId } from "@/lib/table";
 
 const COMMENTS = "/marketing/comments";
 const MOVES = ["published", "rejected", "spam", "pending"] as const;
@@ -39,6 +40,51 @@ export async function moderateComment(
     updated: result.data.data.updated_at,
     previous: result.before.status,
   };
+}
+
+/**
+ * Kiểm duyệt nhiều bình luận (thanh hàng loạt). Core chỉ có `PATCH /comments/{id}`: lặp từng id, mỗi
+ * lần đọc ETag rồi ghi kèm `If-Match` (không bịa endpoint hàng loạt); lỗi từng dòng là `detail` của core.
+ */
+async function bulkModerate(input: BulkInput, status: (typeof MOVES)[number]): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const written = await versioned(
+      (client) => client.GET("/api/v1/comments/{id}", { params: { path: { id } } }),
+      undefined,
+      (client, etag) =>
+        client.PATCH("/api/v1/comments/{id}", {
+          params: { path: { id }, header: { "If-Match": etag } },
+          body: { status },
+        }),
+    );
+    return written.ok ? null : written.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkApproveComments(input: BulkInput): Promise<BulkResult> {
+  return bulkModerate(input, "published");
+}
+
+export async function bulkRejectComments(input: BulkInput): Promise<BulkResult> {
+  return bulkModerate(input, "rejected");
+}
+
+export async function bulkSpamComments(input: BulkInput): Promise<BulkResult> {
+  return bulkModerate(input, "spam");
+}
+
+/** Xoá hẳn nhiều bình luận (gốc thì cả luồng); lặp `DELETE /comments/{id}`. Không đảo được. */
+export async function bulkPurgeComments(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const deleted = await send((client) =>
+      client.DELETE("/api/v1/comments/{id}", { params: { path: { id } } }),
+    );
+    return deleted.ok ? null : deleted.problem.detail;
+  });
+  refresh();
+  return result;
 }
 
 /** Xoá hẳn (gỡ theo yêu cầu): bình luận gốc thì cả luồng. Không đảo được; core ghi audit. */

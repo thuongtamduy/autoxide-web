@@ -7,7 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import type { ChangeState } from "@/lib/engage";
 import type { FormState } from "@/lib/form";
 
-type ChangeAction = (state: ChangeState, formData: FormData) => Promise<ChangeState>;
+export type ChangeAction = (state: ChangeState, formData: FormData) => Promise<ChangeState>;
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
 export interface Move {
@@ -44,35 +44,7 @@ export function ChangeButtons({
   undo: { label: string; done: string };
   small?: boolean;
 }) {
-  const toast = useToast();
-  const [state, setState] = useState<ChangeState>({});
-  const [pending, start] = useTransition();
-  const call = (status: string, version: string) => {
-    const formData = new FormData();
-    formData.set("id", id);
-    formData.set("expect", version);
-    formData.set("status", status);
-    for (const [name, value] of Object.entries(extra)) formData.set(name, value);
-    return action({}, formData);
-  };
-  const run = (move: Move) =>
-    start(async () => {
-      const next = await call(move.value, expect);
-      setState(next);
-      if (!next.done) return;
-      const { previous, updated } = next;
-      if (!previous || !updated || previous === move.value) {
-        toast(move.done);
-        return;
-      }
-      toast(move.done, {
-        label: undo.label,
-        run: async () => {
-          const back = await call(previous, updated);
-          toast(back.done ? undo.done : (back.error ?? ""));
-        },
-      });
-    });
+  const [state, run, pending] = useChange({ action, id, expect, undo, extra });
   return (
     <div className="eg-acts">
       {moves.map((move) => (
@@ -89,6 +61,61 @@ export function ChangeButtons({
       {state.error ? <FormAlert state={state} /> : null}
     </div>
   );
+}
+
+/**
+ * Chạy một lần đổi trạng thái đảo được (`move`), báo `move.done` kèm Hoàn tác. Dùng chung cho
+ * `ChangeButtons` và mục của menu "⋯" trên dòng; lỗi nằm trong `state` (nút hiện dưới nút, menu báo
+ * bằng thông báo nổi).
+ */
+export function useChange({
+  action,
+  id,
+  expect,
+  undo,
+  extra = {},
+  onError,
+}: {
+  action: ChangeAction;
+  id: string;
+  expect: string;
+  undo?: { label: string; done: string } | undefined;
+  extra?: Record<string, string> | undefined;
+  onError?: (error: string) => void;
+}): [ChangeState, (move: Move) => void, boolean] {
+  const toast = useToast();
+  const [state, setState] = useState<ChangeState>({});
+  const [pending, start] = useTransition();
+  const call = (status: string, version: string) => {
+    const formData = new FormData();
+    formData.set("id", id);
+    formData.set("expect", version);
+    formData.set("status", status);
+    for (const [name, value] of Object.entries(extra)) formData.set(name, value);
+    return action({}, formData);
+  };
+  const run = (move: Move) =>
+    start(async () => {
+      const next = await call(move.value, expect);
+      setState(next);
+      if (!next.done) {
+        if (next.error) onError?.(next.error);
+        return;
+      }
+      const { previous, updated } = next;
+      if (!undo || !previous || !updated || previous === move.value) {
+        toast(move.done);
+        return;
+      }
+      toast(move.done, {
+        label: undo.label,
+        run: async () => {
+          const back = await call(previous, updated);
+          toast(back.done ? undo.done : (back.error ?? ""));
+        },
+      });
+    });
+  return [state, run, pending];
 }
 
 /**

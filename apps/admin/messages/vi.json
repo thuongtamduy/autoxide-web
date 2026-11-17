@@ -3765,7 +3765,10 @@
       "asSentAbout": "Máy chủ dựng đúng như khi gửi, kèm chân thư. Link mang mã giữ chỗ thay cho mã riêng của từng người nhận.",
       "previewUnavailable": "Máy chủ chưa dựng được thư:",
       "textVersion": "Bản chữ",
-      "blockedFilter": "Bị chặn"
+      "blockedFilter": "Bị chặn",
+      "openSubscriber": "Mở",
+      "bulkBlockTitle": "Chặn những người đăng ký đã chọn?",
+      "bulkDeleteTitle": "Xoá hẳn những người đăng ký đã chọn?"
     },
     "comments": {
       "crumb": "Tiếp thị · module comments",
@@ -3819,7 +3822,8 @@
         "until": "Tới",
         "reportReason": "Lý do",
         "note": "Ghi chú",
-        "when": "Lúc"
+        "when": "Lúc",
+        "sent": "Gửi lúc"
       },
       "noText": "(không có chữ)",
       "noName": "(không có tên)",
@@ -4031,7 +4035,9 @@
       "filterTargets": "Lọc theo trạng thái",
       "withPending": "Có bình luận chờ duyệt",
       "targetUrl": "Địa chỉ",
-      "targetNotPublic": "Đang không công khai (ẩn tiêu đề và địa chỉ)"
+      "targetNotPublic": "Đang không công khai (ẩn tiêu đề và địa chỉ)",
+      "bulkPurgeTitle": "Xoá hẳn các bình luận đã chọn?",
+      "bulkPurgeThreads": "Bình luận mở đầu một luồng bị xoá cùng mọi trả lời của nó."
     },
     "data": {
       "title": "Dữ liệu theo email",
@@ -5522,7 +5528,8 @@
       "noLimitsShort": "Chưa đặt hạn mức.",
       "moreLimits": "{count, plural, other {và # hạn mức khác}}",
       "noneYet": "Chưa có gói nào",
-      "noneYetText": "Chưa có gói thì mọi khách dùng được mọi module, không giới hạn (chế độ một khách). Tạo gói để bán module và hạn mức theo kỳ."
+      "noneYetText": "Chưa có gói thì mọi khách dùng được mọi module, không giới hạn (chế độ một khách). Tạo gói để bán module và hạn mức theo kỳ.",
+      "moreModules": "và {count} module khác"
     },
     "overrides": {
       "title": "Ghi đè cho từng khách",
@@ -5624,7 +5631,9 @@
       "noSubscription": "Chưa có thuê bao",
       "emptyTitle": "Chưa có thuê bao nào",
       "emptyText": "Thuê bao gắn một khách với một gói và kỳ thanh toán. Hiện chưa có khách nào ngoài khách nền tảng; thêm khách ở sổ khách hàng rồi gán gói ở đây.",
-      "openRegister": "Mở sổ khách hàng"
+      "openRegister": "Mở sổ khách hàng",
+      "openPlans": "Thiết lập gói",
+      "withoutHint": "Chưa khách nào có thuê bao. Các khách dưới đây đang dùng gói mặc định; gán gói để bắt đầu thuê bao và các kỳ thanh toán."
     },
     "prov": {
       "crumb": "Nền tảng Autoxide · khách mới",
@@ -5817,7 +5826,13 @@
       },
       "noCustomersTitle": "Chưa có khách nào để hỗ trợ",
       "noCustomersText": "Lần cấp cho một nhân sự vào dữ liệu của một khách trong thời hạn, có lý do. Hiện chưa có khách nào ngoài khách nền tảng; khi có, các lần cấp và lần vào hiện ở đây.",
-      "openRegister": "Mở sổ khách hàng"
+      "openRegister": "Mở sổ khách hàng",
+      "validity": "Trạng thái, thời hạn",
+      "hoursLeft": "{count, plural, other {còn # giờ}}",
+      "revokedAt": "Thu hồi lúc",
+      "endedAt": "Hết hạn lúc",
+      "noneYet": "Chưa cấp quyền vào lần nào",
+      "noneYetText": "Khi nhân sự cần xem dữ liệu của một khách, hãy cấp quyền vào có lý do và thời hạn. Mỗi lần cấp hiện ở đây cùng người được cấp, khách và hạn; khách thấy nó trong nhật ký của mình."
     },
     "platformOnly": "Chỉ nhân sự của khách nền tảng (của chính nhà vận hành) dùng được mặt điều khiển. Bạn đang đăng nhập vào tài khoản của một khách hàng.",
     "newTenant": {
@@ -5952,8 +5967,8 @@
       "backorder": "cho bán khi hết",
       "noPrice": "Chưa có giá",
       "blockedBadge": "Thiếu {count} điều",
-      "foot": "Hiện {shown} trong {total} sản phẩm.",
-      "next": "Trang sau"
+      "edit": "Mở để sửa",
+      "actions": "Thao tác"
     },
     "ai": {
       "title": "Bản nháp AI chờ người xem",
@@ -6561,6 +6576,11 @@
       "catalog_import_too_many_rows": "Quá {value} dòng.",
       "missing_column": "Dòng tiêu đề thiếu cột “{value}”.",
       "reference_reused": "Đã dùng với nội dung khác; đặt mã khác."
+    },
+    "bulk": {
+      "publish": "Mở bán",
+      "unpublish": "Ngừng bán",
+      "export": "Xuất CSV"
     }
   },
   "inventory": {
@@ -8027,7 +8047,8 @@
       "usable": "Dùng được",
       "not_started": "Chưa bắt đầu",
       "exhausted": "Hết lượt",
-      "expired": "Hết hạn"
+      "expired": "Hết hạn",
+      "disabled": "Đã vô hiệu"
     },
     "programs": {
       "kpis": "Tóm tắt chương trình",
@@ -8370,9 +8391,21 @@
       "matching": "So khớp",
       "matchingText": "Không phân biệt hoa thường, bỏ khoảng trắng",
       "listedPrice": "Mã phải nhập thì giá niêm yết giữ nguyên; website chỉ hiện thêm dòng giá khi dùng mã, không gạch giá.",
-      "more": "Xem thêm mã",
       "holdStrong": "Lượt dùng được giữ như tồn kho.",
-      "holdText": "Đặt hàng giữ một lượt; thanh toán xong thì xác nhận, huỷ hay hết hạn thanh toán thì trả lại. Nhiều người dùng mã cùng lúc cũng không vượt giới hạn."
+      "holdText": "Đặt hàng giữ một lượt; thanh toán xong thì xác nhận, huỷ hay hết hạn thanh toán thì trả lại. Nhiều người dùng mã cùng lúc cũng không vượt giới hạn.",
+      "actions": "Thao tác",
+      "view": "Xem chi tiết",
+      "hide": "Ẩn chi tiết",
+      "copy": "Sao chép mã",
+      "copyOne": "Sao chép mã",
+      "copied": "Đã chép mã",
+      "exportSelected": "Xuất CSV",
+      "disable": "Vô hiệu",
+      "disableTitle": "Vô hiệu mã {code}?",
+      "bulkDisableTitle": "Vô hiệu các mã đã chọn?",
+      "disableKeep": "Người mua không dùng mã được nữa; đơn đã dùng mã vẫn giữ phần giảm.",
+      "disableNoUndo": "Mã đã vô hiệu không bật lại được; muốn dùng tiếp thì tạo mã mới.",
+      "disabled": "Đã vô hiệu mã."
     },
     "generate": {
       "title": "Sinh lô mã",
@@ -8457,7 +8490,8 @@
       "promotions_invalid_transition": "Không chuyển được chương trình sang trạng thái đó.",
       "promotions_invalid_window": "Thời gian kết thúc phải sau thời gian bắt đầu và còn ở tương lai.",
       "promotions_reference_price_missing": "Thiếu giá ngay trước khuyến mại ({detail}); không kiểm được trần nên không bật.",
-      "promotions_targets_missing": "Chương trình chưa có mục tiêu (biến thể, hàng tặng)."
+      "promotions_targets_missing": "Chương trình chưa có mục tiêu (biến thể, hàng tặng).",
+      "promotions_code_not_found": "Mã này không còn."
     },
     "fields": {
       "required": "Hãy điền ô này.",
@@ -10054,29 +10088,18 @@
       "applied": "Đang lọc:",
       "removeFilter": "Bỏ bộ lọc {name}",
       "clear": "Xoá bộ lọc",
-      "count": "Hiện {shown} trong {total} đơn khớp bộ lọc",
-      "sorted": "mới nhất trước",
       "empty": "Không có đơn nào khớp bộ lọc.",
       "number": "Mã đơn",
       "buyer": "Người mua",
       "total": "Tổng",
-      "more": "Trang sau",
       "fromChip": "Từ {day}",
       "viewsNote": "View đã lưu và lọc bằng lời chờ API view và bộ lọc AI của core."
     },
     "bulk": {
-      "page": "Chọn mọi đơn trên trang này",
-      "one": "Chọn đơn {number}",
-      "label": "Thao tác hàng loạt",
-      "selected": "Đã chọn {count} đơn trên trang này",
-      "allSelected": "Đã chọn cả {count} đơn khớp bộ lọc",
-      "selectAll": "Chọn cả {count} đơn khớp bộ lọc",
       "accept": "Xác nhận",
       "print": "In phiếu giao",
-      "clear": "Bỏ chọn",
       "noneAwaiting": "Không có đơn nào đang chờ xác nhận trong lựa chọn",
       "accepted": "Đã xác nhận {count} đơn; {skipped} đơn ở trạng thái khác được bỏ qua",
-      "undo": "Hoàn tác",
       "undone": "Đã đưa {count} đơn về chờ xác nhận"
     },
     "ask": {
@@ -11251,7 +11274,9 @@
       "activity": "Ghi chú và điểm",
       "noteAccount": "SĐT và email che bớt trên màn hình. Tổng chi chỉ cộng đơn đã hoàn tất (qua hạn đổi trả) trừ tiền đã hoàn; đơn đang giao chưa cộng.",
       "notePhone": "Hồ sơ theo số điện thoại (HMAC theo khách, không so được với khách khác). Nhân viên đăng ký tại quầy không làm hồ sơ thuộc tài khoản nào cho tới khi chủ số xác thực.",
-      "legal": "Hồ sơ, nhóm và lịch sử mua là xử lý dữ liệu cá nhân: mục đích và căn cứ ghi trong sổ của Tuân thủ; khách xem và xoá được dữ liệu của mình (Luật BVDLCN 91/2025, NĐ 356/2025 — cần đối chiếu văn bản gốc)."
+      "legal": "Hồ sơ, nhóm và lịch sử mua là xử lý dữ liệu cá nhân: mục đích và căn cứ ghi trong sổ của Tuân thủ; khách xem và xoá được dữ liệu của mình (Luật BVDLCN 91/2025, NĐ 356/2025 — cần đối chiếu văn bản gốc).",
+      "openDetail": "Mở chi tiết",
+      "actions": "Thao tác"
     },
     "add": {
       "button": "Thêm khách tại quầy",
@@ -11326,7 +11351,6 @@
       "lockedAt": "Khoá lúc",
       "lockReason": "Lý do",
       "noPassword": "Tài khoản chưa xác thực SĐT vẫn mua được; chưa gắn được với hồ sơ theo số điện thoại.",
-      "shown": "Đang hiện {shown} trên {total} tài khoản.",
       "signupTitle": "Đăng ký tài khoản người mua",
       "signupOn": "Người mua tự đăng ký được.",
       "signupOff": "Đang tắt tự đăng ký.",
@@ -11347,6 +11371,9 @@
       "empty": "Không có tài khoản nào khớp.",
       "emptySearch": "Không có tài khoản nào khớp “{q}”.",
       "clearSearch": "Xoá chữ tìm",
+      "bulkLockTitle": "Khoá các tài khoản đã chọn?",
+      "bulkLockSessions": "Mọi phiên đăng nhập của từng người bị thu hồi; họ không đăng nhập được tới khi mở khoá.",
+      "bulkLockUndo": "Mở khoá lại được; tài khoản không đổi gì khác.",
       "aboutCore": "Người mua đăng nhập bằng tài khoản riêng ở cửa hàng của bạn, không có permission nào. Nhân viên cần auth.customers.read để xem, auth.customers.manage để khoá / mở. Không ai xem được mật khẩu.",
       "all": "Tất cả",
       "none": "Không có tài khoản người mua nào.",
@@ -11673,6 +11700,12 @@
       "customers_block_until_past": "Chọn ngày trong tương lai.",
       "customers_block_too_long": "Tối đa một năm.",
       "customers_already_blocked": "Số này đang bị chặn."
+    },
+    "bulk": {
+      "addToGroup": "Thêm vào nhóm",
+      "group": "Nhóm thủ công",
+      "addTag": "Gắn nhãn",
+      "tag": "Nhãn"
     }
   },
   "channels": {
@@ -13039,5 +13072,81 @@
     "support": {
       "body": "Khi khách cho phép đội hỗ trợ vào xem dữ liệu của họ, lần cấp quyền hiện ở đây kèm người được cấp và thời hạn."
     }
+  },
+  "charts": {
+    "viewData": "Xem số liệu",
+    "day": "Ngày",
+    "hour": "Giờ",
+    "week": "Tuần tính tới",
+    "hintDays": "Biểu đồ {title}: dùng phím mũi tên trái, phải để xem từng ngày",
+    "hintHours": "Biểu đồ {title}: dùng phím mũi tên trái, phải để xem từng giờ",
+    "hintWeeks": "Biểu đồ {title}: dùng phím mũi tên trái, phải để xem từng tuần",
+    "vsPrevious": "so với {days} ngày trước đó",
+    "noPrevious": "Kỳ trước chưa có số liệu để so",
+    "trend": "{label}: từ {first} tới {last}",
+    "dashboard": {
+      "title": "Doanh thu",
+      "about": "Tiền thu thành công theo ngày thu (giờ Việt Nam), gồm thuế, chưa trừ hoàn tiền. Nét đứt là kỳ liền trước cùng độ dài.",
+      "period": "Kỳ doanh thu",
+      "days": "{days} ngày",
+      "current": "{days} ngày qua",
+      "previous": "{days} ngày trước đó",
+      "summary": "Tổng {total}; {change}",
+      "tileTrend": "Doanh thu 14 ngày qua"
+    },
+    "channels": {
+      "presets": "Chọn nhanh kỳ báo cáo",
+      "days": "{days} ngày",
+      "title": "Doanh thu theo ngày",
+      "about": "Mỗi kênh một đường, cùng cách tính với bảng theo kênh: theo ngày đặt, đã trừ đơn huỷ và tiền hoàn.",
+      "summary": "{count, plural, other {# kênh}}, tổng {total}",
+      "empty": "Không có đơn nào trong kỳ này."
+    },
+    "health": {
+      "jobsTrend": "Job chờ 24 giờ qua",
+      "deadTrend": "Dead-letter 24 giờ qua",
+      "deadTitle": "Job mới vào dead-letter theo giờ",
+      "deadAbout": "Số job hỏng hết lượt thử lại trong từng giờ của 24 giờ qua, mọi database.",
+      "deadSeries": "Job hỏng mới",
+      "deadSummary": "{total} job hỏng mới trong 24 giờ, nhiều nhất {max} trong một giờ"
+    },
+    "seller": {
+      "title": "Xu hướng 90 ngày",
+      "about": "Chỉ số 90 ngày cuốn chiếu, mỗi tuần một điểm. Nét đứt đỏ là ngưỡng của sàn.",
+      "onTimeGoal": "Mục tiêu 95%",
+      "cancelLimit": "Ngưỡng 2%"
+    }
+  },
+  "table": {
+    "selectPage": "Chọn mọi dòng trên trang này",
+    "selectRow": "Chọn {name}",
+    "selected": "Đã chọn {count}",
+    "allSelected": "Đã chọn cả {count} dòng khớp bộ lọc",
+    "selectAllMatching": "Chọn cả {count} dòng khớp bộ lọc",
+    "clear": "Bỏ chọn",
+    "working": "Đang làm…",
+    "done": "Xong {done}/{total}",
+    "doneErrors": "Xong {done}/{total}, {count} lỗi",
+    "failed": "Chưa làm được:",
+    "moreErrors": "…và {count} dòng khác",
+    "affects": "Áp cho {count} dòng.",
+    "required": "Điền ô này.",
+    "copied": "Đã chép {count}",
+    "copyFailed": "Không chép được: trình duyệt chặn bộ nhớ tạm.",
+    "undo": "Hoàn tác",
+    "more": "Thao tác khác",
+    "moreFor": "Thao tác khác cho {name}",
+    "sortHint": "Bấm để sắp theo cột này",
+    "sortedAsc": "Đang sắp tăng dần; bấm để sắp giảm dần",
+    "sortedDesc": "Đang sắp giảm dần; bấm để sắp tăng dần",
+    "pages": "Phân trang",
+    "range": "{from}–{to} trong {total}",
+    "rangeEmpty": "Không có dòng nào",
+    "prev": "Trước",
+    "next": "Sau",
+    "first": "Trang đầu",
+    "nextPage": "Trang sau",
+    "perPage": "Số dòng mỗi trang",
+    "show": "Hiện"
   }
 }

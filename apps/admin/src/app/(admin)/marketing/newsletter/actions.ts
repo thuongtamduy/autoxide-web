@@ -13,6 +13,7 @@ import type { DataState } from "@/lib/engage";
 import { type ChangeState, field, versioned } from "@/lib/engage-server";
 import { type FormState, nextDone, problemState } from "@/lib/form";
 import { IMPORT_MAX, NEW_POSTS, parseSubscriberCsv } from "@/lib/newsletter";
+import { type BulkInput, type BulkResult, cleanIds, eachId } from "@/lib/table";
 
 type Schemas = components["schemas"];
 
@@ -408,6 +409,47 @@ export async function setSubscriberStatus(
     updated: result.data.data.updated_at,
     previous: result.before.status,
   };
+}
+
+/**
+ * Chặn / bỏ chặn nhiều người đăng ký (thanh hàng loạt). Core chỉ có `PATCH /subscribers/{id}`: lặp
+ * từng id, đọc ETag rồi ghi kèm `If-Match`; lỗi từng dòng là `detail` của core.
+ */
+async function bulkStatus(input: BulkInput, blocked: boolean): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const written = await versioned(
+      (client) => client.GET("/api/v1/newsletter/subscribers/{id}", { params: { path: { id } } }),
+      undefined,
+      (client, etag) =>
+        client.PATCH("/api/v1/newsletter/subscribers/{id}", {
+          params: { path: { id }, header: { "If-Match": etag } },
+          body: blocked ? { status: "blocked" } : { status: "active", blocked_reason: null },
+        }),
+    );
+    return written.ok ? null : written.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
+export async function bulkBlockSubscribers(input: BulkInput): Promise<BulkResult> {
+  return bulkStatus(input, true);
+}
+
+export async function bulkUnblockSubscribers(input: BulkInput): Promise<BulkResult> {
+  return bulkStatus(input, false);
+}
+
+/** Xoá hẳn nhiều người đăng ký; lặp `DELETE /subscribers/{id}`. */
+export async function bulkDeleteSubscribers(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const deleted = await send((client) =>
+      client.DELETE("/api/v1/newsletter/subscribers/{id}", { params: { path: { id } } }),
+    );
+    return deleted.ok ? null : deleted.problem.detail;
+  });
+  refresh();
+  return result;
 }
 
 /** Huỷ đăng ký người này khỏi các danh sách đã chọn (quản trị viên không đăng ký thay ai được). */
