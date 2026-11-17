@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ORDER_BADGE } from "@/components/orders/badges";
-import { PosForm, type PosStore } from "@/components/orders/forms";
+import { type PosStore, PosTerminal } from "@/components/orders/pos";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { formatMoney } from "@/lib/format";
@@ -23,17 +23,26 @@ export default async function PosPage() {
     storeOptions(),
   ]);
   const [catalogs, shifts, recent] = await Promise.all([
-    Promise.all(stores.map((s) => posCatalog(s.value))),
+    Promise.all(stores.map((s) => posCatalog(s.value, locale))),
     Promise.all(stores.map((s) => openShiftAt(s.value))),
     listOrders({ ...NO_FILTERS, channel: "pos" }, { limit: 10 }),
   ]);
   const data: PosStore[] = stores.map((s, i) => ({
     id: s.value,
     name: s.label,
-    shift: shifts[i]?.id ?? null,
+    shift: shifts[i]
+      ? {
+          id: shifts[i].id,
+          register: shifts[i].register_code,
+          cashier: shifts[i].opened_by.name,
+          since: shifts[i].opened_at,
+        }
+      : null,
     items: (catalogs[i]?.data ?? []).map((c) => ({
       sku: c.sku,
       name: c.name,
+      barcode: c.barcode,
+      category: c.category,
       price: Number(c.price.amount),
       vat: c.vat_percent,
       available: c.available,
@@ -49,7 +58,7 @@ export default async function PosPage() {
           </h2>
         </div>
         <p className="fhint">{t("pos.about")}</p>
-        <PosForm stores={data} />
+        <PosTerminal stores={data} />
       </section>
       <section className="block" aria-labelledby="pos-recent-h">
         <div className="block-head">

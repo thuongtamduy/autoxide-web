@@ -2066,3 +2066,26 @@ Quyết định (học cách Linear, Vercel, GitHub, Raycast làm bảng lệnh)
 
 Đã cân nhắc: tô đậm chữ khớp — tìm không dấu (`fold`) làm vị trí khớp trong chữ có dấu khó tính đúng, lợi ít; xếp hạng
 trộn mọi nhóm như Linear — cần điểm khớp, để sau khi danh sách dài thêm.
+
+## W-053 · Quầy bán làm lại theo khung 3 của thiết kế — 2026-11-17 — chủ dự án yêu cầu
+
+Chủ dự án thấy màn "Bán tại quầy" sơ sài so với phần mềm bán hàng trên thị trường. Bản thiết kế cũ chỉ có hộp thoại
+760px (danh sách tên + nút −/+); code kéo nó ra cả trang nên càng trống. Đã vẽ khung mới vào artifact thiết kế
+("2b · Bán hàng › Quầy bán (khung 3)") rồi làm theo.
+
+Quyết định:
+
+- **Bố cục**: lưới ô sản phẩm (chữ cái đầu thay ảnh, màu theo nhóm hàng, số đang trong giỏ, tồn; hàng hết mờ và xếp
+  cuối, có "Ẩn hàng hết"), chip nhóm hàng; giỏ dính bên phải (dưới 900px xuống dưới) liệt kê từng dòng.
+- **Máy quét mã vạch**: ô tìm nhận mã vạch hoặc SKU trùng khít rồi Enter thì thêm một; lọc còn đúng một hàng thì
+  Enter cũng thêm. Phím tắt F2 (tìm hàng), F4 (tìm khách), F9 (thanh toán). Nút "Toàn màn hình" dùng Fullscreen API.
+- **Khách**: tìm theo SĐT hoặc tên (`listProfiles` của dữ liệu mẫu), SĐT che giữa; trống = khách lẻ. Đơn ghi tên khách.
+- **Khuyến mại**: tạm tính bằng `evaluateCart` (như "Thử giỏ hàng", không giữ lượt); mã sai hiện lý do của máy chủ và
+  không gửi khi tạo đơn. Máy chủ vẫn tính lại khi tạo đơn.
+- **Tiền mặt**: ô khách đưa, nút số tiền nhanh (đủ tiền, làm tròn lên mệnh giá chẵn), tiền thối; thiếu tiền thì chặn.
+  Tiền khách đưa chỉ ở giao diện (core bước 45 nhận `payments` thì gửi kèm).
+- **Đơn đang giữ**: lưu trong `localStorage` của máy quầy (`ax.pos.held`), không lên máy chủ — giỏ chưa thành đơn.
+- Khi core có bước 45: `POST /orders/pos/sales` cần nhận mã giảm giá và khách (`customer_id`); giá theo nhóm khách ở
+  quầy chưa làm (dữ liệu mẫu không truyền nhóm).
+
+Lý do: chủ dự án yêu cầu (17/11); giữ đúng luật cũ — máy chủ là nguồn sự thật về giá, khuyến mại, tồn.

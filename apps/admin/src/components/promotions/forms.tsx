@@ -20,7 +20,10 @@ import type { Option } from "@/components/catalog/forms";
 import { CheckField, Field, SelectField, TextareaField } from "@/components/ui/form";
 import type { FormState } from "@/lib/form";
 import { formatMoney } from "@/lib/format";
-import type { CartView, Reason } from "@/sample/promotions";
+import type { CartView } from "@/sample/promotions";
+import { useReason } from "./reason";
+
+export { useReason };
 
 const value = (state: FormState, name: string, fallback = "") => state.values?.[name] ?? fallback;
 
@@ -392,57 +395,6 @@ export function GenerateCodesForm({ promotions }: { promotions: Option[] }) {
       )}
     </ActionForm>
   );
-}
-
-const MONEY_PARAMS = new Set(["amount", "min_order", "missing", "price"]);
-/** Mọi tham số các câu lý do có thể dùng: thiếu thì để trống thay vì lỗi định dạng. */
-const BLANK: Record<string, string> = Object.fromEntries(
-  [
-    "percent",
-    "amount",
-    "min_order",
-    "missing",
-    "price",
-    "slots",
-    "code",
-    "title",
-    "buy",
-    "have",
-    "max",
-    "group",
-    "sku",
-    "condition",
-    "starts_at",
-  ].map((k) => [k, ""]),
-);
-
-/**
- * Câu của một lý do (`Reason` của core: `code` + `params`), theo ngôn ngữ giao diện. Mã chưa đủ điều
- * kiện (`promotions.code_not_applicable`) mang `condition` là một lý do bỏ qua (`promotions.skip.*`),
- * dịch lồng vào câu.
- */
-export function useReason(): (reason: Reason) => string {
-  const t = useTranslations("promotions.why");
-  const locale = useLocale();
-  return (reason) => {
-    const fmt: Record<string, string> = { ...BLANK };
-    for (const [key, raw] of Object.entries(reason.params)) {
-      if (MONEY_PARAMS.has(key) && /^\d+$/.test(raw)) fmt[key] = formatMoney(raw, "VND", locale);
-      else if (key === "starts_at")
-        fmt[key] = new Intl.DateTimeFormat(locale, {
-          dateStyle: "short",
-          timeStyle: "short",
-          timeZone: "Asia/Ho_Chi_Minh",
-        }).format(new Date(raw));
-      else fmt[key] = raw;
-    }
-    const condition = reason.params.condition;
-    if (condition && t.has(`promotions_skip_${condition}`)) {
-      fmt.condition = t(`promotions_skip_${condition}`, fmt);
-    }
-    const key = reason.code.replaceAll(".", "_");
-    return t.has(key) ? t(key, fmt) : reason.code;
-  };
 }
 
 /** "Thử giỏ hàng": tính như lúc đặt hàng nhưng không giữ lượt, không ghi gì; nêu vì sao áp hay không. */

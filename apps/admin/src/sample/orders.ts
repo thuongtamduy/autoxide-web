@@ -3083,6 +3083,9 @@ export async function placePosOrder(input: {
   org_name: string;
   items: readonly (readonly [string, number])[];
   method: PaymentMethod;
+  codes?: readonly string[];
+  /** Tên khách đã chọn ở quầy; `null` = khách lẻ. */
+  buyer?: string | null;
   shift_id: string;
   reference: string;
 }): Promise<SampleOutcome<{ order: Order; replayed: boolean }>> {
@@ -3098,9 +3101,9 @@ export async function placePosOrder(input: {
     org_name: input.org_name,
     channel: "pos",
     seller: null,
-    buyer: "Khách tại quầy",
+    buyer: input.buyer || "Khách tại quầy",
     items: input.items,
-    codes: [],
+    codes: input.codes ?? [],
     method: input.method,
     fee: 0,
     status: "delivered",

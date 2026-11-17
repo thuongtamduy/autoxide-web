@@ -8,7 +8,15 @@
 // 19/2023: không ẩn vì nội dung chê; chỉ ẩn với lý do trong danh sách cho phép, ghi người ẩn, báo người
 // viết — cần đối chiếu văn bản gốc. Tóm tắt bằng AI chỉ là bản nháp, người duyệt rồi mới hiện (D-109).
 import type { Problem } from "@autoxide/sdk";
-import { allVariants, type Money, ORG, PRODUCT_ID, pricesAt, type Ref } from "./catalog";
+import {
+  allVariants,
+  listCategories,
+  type Money,
+  ORG,
+  PRODUCT_ID,
+  pricesAt,
+  type Ref,
+} from "./catalog";
 import { listLevels } from "./inventory";
 import {
   num,
@@ -542,6 +550,10 @@ export interface PosItem {
   variant_id: string;
   sku: string;
   name: string;
+  /** Mã vạch in trên hàng (máy quét gõ vào ô tìm rồi Enter). */
+  barcode: string | null;
+  /** Nhóm hàng đầu tiên của sản phẩm, để lọc nhanh ở quầy. */
+  category: { id: string; name: string } | null;
   price: Money;
   /** Thuế suất GTGT đang áp (%), giá đã gồm thuế. */
   vat_percent: number;
@@ -551,9 +563,12 @@ export interface PosItem {
 
 // Dự kiến: danh mục bán tại quầy của một cửa hàng — giá theo bảng giá của cửa hàng (`catalog`, bước 41),
 // tồn bán được của cửa hàng (`inventory`, bước 42).
-export async function posCatalog(orgId: string): Promise<{ data: PosItem[] }> {
+export async function posCatalog(orgId: string, locale = "vi"): Promise<{ data: PosItem[] }> {
   const s = await store();
-  const { data: snaps } = await allVariants();
+  const [{ data: snaps }, { data: cats }] = await Promise.all([
+    allVariants(locale),
+    listCategories(locale),
+  ]);
   const sellable = snaps.filter(
     (v) => v.status === "active" && v.variant_active && v.kind === "physical",
   );
@@ -572,10 +587,13 @@ export async function posCatalog(orgId: string): Promise<{ data: PosItem[] }> {
     if (!price) continue;
     const level = levels.data.find((l) => l.variant_id === v.variant_id);
     const rate = v.tax_category ? rateOn(rates.data, v.tax_category, day) : null;
+    const cat = cats.find((c) => c.id === v.category_ids[0]);
     out.push({
       variant_id: v.variant_id,
       sku: v.sku,
       name: `${v.name}${v.variant_label ? ` ${v.variant_label}` : ""}`,
+      barcode: v.barcode,
+      category: cat ? { id: cat.id, name: cat.names[locale] ?? cat.names.vi ?? cat.id } : null,
       price,
       vat_percent: rate ? Number(rate.rate_percent) : 0,
       available: Math.max(
@@ -596,12 +614,15 @@ const POS_METHODS: readonly PaymentMethod[] = ["cash", "card_terminal", "vietqr"
 
 // Thay bằng POST /api/v1/orders/pos/sales {shift_id, reference, lines, payments} (bước 45): cần ca đang
 // mở ở cửa hàng, đủ tồn; đơn vào thẳng "đã giao", lập hoá đơn từ máy tính tiền. Trùng `reference` trả
-// đơn cũ (máy quầy gửi lại khi mất mạng).
+// đơn cũ (máy quầy gửi lại khi mất mạng). `codes`: mã giảm giá (máy chủ xét như lúc thử giỏ; mã không
+// áp được thì bỏ qua). `buyer`: tên khách đã chọn ở quầy, trống = khách lẻ.
 export async function createPosSale(input: {
   org_id: string;
   lines: string;
   method: string;
   reference: string;
+  codes?: readonly string[];
+  buyer?: string;
 }): Promise<SampleOutcome<{ order: Order; replayed: boolean }>> {
   const s = await store();
   const { data: units } = await listUnits();
@@ -630,6 +651,8 @@ export async function createPosSale(input: {
     org_name: unit.name,
     items,
     method: input.method as PaymentMethod,
+    codes: input.codes ?? [],
+    buyer: input.buyer?.trim() || null,
     shift_id: shift.id,
     reference: input.reference || `${Date.now()}`,
   });
