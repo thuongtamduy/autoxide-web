@@ -5,6 +5,7 @@ import {
   entryErrors,
   entryPath,
   filtersHref,
+  filtersKeep,
   hasFilters,
   isEmptyBody,
   isSafeHref,
@@ -50,6 +51,21 @@ describe("parseFilters / filtersHref / listQuery", () => {
       `/content?status=draft&site=${site}`,
     );
     expect(listQuery(parseFilters({ site }))).not.toHaveProperty("site");
+  });
+
+  it("sắp theo giờ sửa: cũ nhất trước là `order=asc` của core, giữ khi đổi bộ lọc", () => {
+    const filters = parseFilters({ status: "draft", sort: "updated", dir: "asc", cursor: "c1" });
+    expect(filters.oldest).toBe(true);
+    expect(listQuery(filters)).toMatchObject({ sort: "updated_at", order: "asc" });
+    expect(listQuery(parseFilters({ sort: "updated", dir: "desc" })).order).toBe("desc");
+    // Cột lạ không đổi cách sắp.
+    expect(parseFilters({ sort: "title", dir: "asc" }).oldest).toBeUndefined();
+    expect(filtersHref(filters, { kind: "post" })).toBe(
+      "/content?status=draft&kind=post&sort=updated&dir=asc",
+    );
+    // Tham số giữ lại cho tiêu đề cột: bộ lọc, không con trỏ, không cách sắp.
+    expect(filtersKeep(filters)).toEqual({ status: "draft" });
+    expect(filtersKeep(parseFilters({ q: "dao", mine: "1" }))).toEqual({ q: "dao", mine: "1" });
   });
 
   it("tab chờ duyệt và các chip là tham số lọc của core, không lọc trên trang", () => {
@@ -132,17 +148,21 @@ describe("abilities", () => {
       write: true,
       publish: true,
       publishAll: true,
+      delete: true,
     });
     expect(
       abilities({
         all_permissions: false,
         permissions: ["content.read", "content.write_own", "content.publish_own"],
       }),
-    ).toEqual({ write: true, publish: true, publishAll: false });
-    expect(abilities({ all_permissions: false, permissions: ["content.read"] })).toEqual({
+    ).toEqual({ write: true, publish: true, publishAll: false, delete: false });
+    expect(
+      abilities({ all_permissions: false, permissions: ["content.read", "content.delete"] }),
+    ).toEqual({
       write: false,
       publish: false,
       publishAll: false,
+      delete: true,
     });
   });
 });

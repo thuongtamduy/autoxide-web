@@ -1,17 +1,33 @@
 import Form from "next/form";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import {
+  archiveFromList,
+  bulkArchiveEntries,
+  bulkDeleteEntries,
+  bulkPublishEntries,
+  bulkUnpublishEntries,
+  deleteFromList,
+  unpublishFromList,
+} from "@/app/(admin)/content/actions";
+import { type BulkActionSpec, BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
+import { ConfirmAction } from "@/components/ui/confirm";
+import { RowMenu, type RowMenuItem } from "@/components/ui/row-menu";
+import { SortTh } from "@/components/ui/sort-th";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import {
+  type ContentAbilities,
   type Entry,
   entryPath,
   filtersHref,
   hasFilters,
   type ListFilters,
   type Schedule,
+  type StatusTab,
   upcomingRows,
 } from "@/lib/content";
+import type { Keep, SortState } from "@/lib/table";
 import { ApproveDialog } from "./approve-dialog";
 import { EntryStatusBadges } from "./status";
 
@@ -126,88 +142,216 @@ function FilterForm({
   );
 }
 
-/** Bảng bài viết; trên điện thoại mỗi bài là một thẻ, mỗi ô có nhãn cột. */
+/**
+ * Bảng bài viết; trên điện thoại mỗi bài là một thẻ, mỗi ô có nhãn cột. Chọn nhiều để đăng (duyệt và
+ * đăng), gỡ đăng, lưu trữ, xoá — core chỉ có lệnh từng bài nên thanh hàng loạt lặp từng cái. Mỗi dòng
+ * có "⋯" (mở, duyệt và đăng, gỡ, lưu trữ, xoá theo trạng thái và quyền); không còn nút trên dòng bị cắt
+ * ở mép bảng. Chỉ cột "Sửa lần cuối" sắp được (`sort=updated_at` + `order` của core).
+ */
 export function EntryTable({
   entries,
   authors,
   filtered,
-  canPublish = false,
+  can,
+  status,
+  sort,
+  keep,
 }: {
   entries: Entry[];
   /** Tên hiển thị theo id hồ sơ tác giả. */
   authors: Record<string, string>;
   filtered: boolean;
-  /** Người xem đăng được bài: bài chờ duyệt có nút "Duyệt và đăng" ngay trên dòng. */
-  canPublish?: boolean;
+  /** Việc người xem làm được (chỉ để không bày nút chắc chắn bị từ chối; core vẫn kiểm). */
+  can: ContentAbilities;
+  /** Tab đang xem: tab "Chờ duyệt" gọi nút hàng loạt là "Duyệt và đăng". */
+  status: StatusTab;
+  sort: SortState;
+  /** Bộ lọc đang có trên địa chỉ, giữ khi đổi chiều sắp. */
+  keep: Keep;
 }) {
   const t = useTranslations("content.list");
+  const ta = useTranslations("content.approve");
+  const tt = useTranslations("table");
   const kinds = useTranslations("content.kinds");
   if (entries.length === 0) {
     return <p className="empty">{filtered ? t("noMatch") : t("empty")}</p>;
   }
-  // Cột thao tác chỉ khi trang có bài chờ duyệt mà người xem duyệt được.
-  const approving = canPublish && entries.some((entry) => entry.review_requested_at);
+  const actions: BulkActionSpec[] = [];
+  if (can.publish) {
+    actions.push(
+      {
+        key: "publish",
+        label: status === "review" ? ta("open") : t("bulk.publish"),
+        tone: "pri",
+        run: bulkPublishEntries,
+        confirm: {
+          title: t("bulk.publishTitle"),
+          points: [t("bulk.publishNow"), t("bulk.publishAi")],
+          submit: status === "review" ? ta("submit") : t("bulk.publish"),
+        },
+      },
+      {
+        key: "unpublish",
+        label: t("bulk.unpublish"),
+        run: bulkUnpublishEntries,
+        confirm: {
+          title: t("bulk.unpublishTitle"),
+          points: [t("bulk.unpublishPoint")],
+          submit: t("bulk.unpublish"),
+        },
+      },
+    );
+  }
+  if (can.publishAll) {
+    actions.push({
+      key: "archive",
+      label: t("bulk.archive"),
+      run: bulkArchiveEntries,
+      confirm: {
+        title: t("bulk.archiveTitle"),
+        points: [t("bulk.archivePoint")],
+        submit: t("bulk.archive"),
+      },
+    });
+  }
+  if (can.delete) {
+    actions.push({
+      key: "delete",
+      label: t("bulk.delete"),
+      tone: "danger",
+      run: bulkDeleteEntries,
+      confirm: {
+        title: t("bulk.deleteTitle"),
+        points: [t("bulk.deleteRevisions"), t("bulk.deletePages"), t("bulk.deleteNoUndo")],
+        submit: t("bulk.delete"),
+      },
+    });
+  }
+  const selectable = actions.length > 0;
+  const menu = (entry: Entry): RowMenuItem[] => {
+    const title = entry.title || t("untitled");
+    const items: RowMenuItem[] = [{ label: t("open"), href: `/content/${entry.id}` }];
+    if (can.publish && entry.review_requested_at) {
+      items.push({
+        label: ta("open"),
+        dialog: <ApproveDialog id={entry.id} title={title} aiGenerated={entry.ai_generated} />,
+      });
+    }
+    if (can.publish && entry.status === "published") {
+      items.push({
+        label: t("bulk.unpublish"),
+        dialog: (
+          <ConfirmAction
+            action={unpublishFromList}
+            id={entry.id}
+            label={t("bulk.unpublish")}
+            title={t("row.unpublishTitle", { title })}
+            points={[t("bulk.unpublishPoint")]}
+            submit={t("bulk.unpublish")}
+            done={t("row.unpublished")}
+            danger={false}
+          />
+        ),
+      });
+    }
+    if (can.publishAll && entry.status !== "archived") {
+      items.push({
+        label: t("bulk.archive"),
+        dialog: (
+          <ConfirmAction
+            action={archiveFromList}
+            id={entry.id}
+            label={t("bulk.archive")}
+            title={t("row.archiveTitle", { title })}
+            points={[t("bulk.archivePoint")]}
+            submit={t("bulk.archive")}
+            done={t("row.archived")}
+            danger={false}
+          />
+        ),
+      });
+    }
+    if (can.delete) {
+      items.push({
+        label: t("bulk.delete"),
+        danger: true,
+        dialog: (
+          <ConfirmAction
+            action={deleteFromList}
+            id={entry.id}
+            label={t("bulk.delete")}
+            title={t("row.deleteTitle", { title })}
+            points={[t("bulk.deleteRevisions"), t("bulk.deletePages"), t("bulk.deleteNoUndo")]}
+            submit={t("bulk.delete")}
+            done={t("row.deleted")}
+          />
+        ),
+      });
+    }
+    return items;
+  };
   return (
-    <Table cards>
-      <thead>
-        <tr>
-          <Th>{t("colTitle")}</Th>
-          <Th>{t("colStatus")}</Th>
-          <Th>{t("colLocale")}</Th>
-          <Th>{t("colAuthors")}</Th>
-          <Th>{t("colUpdated")}</Th>
-          {approving ? <Th>{t("colActions")}</Th> : null}
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map((entry) => {
-          const names = entry.author_ids.map((id) => authors[id]).filter(Boolean);
-          return (
-            <tr key={entry.id}>
-              <Td className="rt-title">
-                <span className="cell2">
-                  <Link href={`/content/${entry.id}`} className="ce-title-link">
-                    {entry.title || t("untitled")}
-                  </Link>
-                  <span className="sub ell">
-                    {kinds(entry.kind)} · <span className="mono">{entryPath(entry)}</span>
-                    {entry.ai_generated ? ` · ${t("ai")}` : ""}
-                  </span>
-                </span>
-              </Td>
-              <Td label={t("colStatus")}>
-                <span className="cell2">
-                  <EntryStatusBadges entry={entry} />
-                  {entry.published_at ? (
-                    <span className="sub">
-                      {t("publishedAt")} <Time value={entry.published_at} />
+    <BulkTable ids={entries.map((entry) => entry.id)} actions={actions}>
+      <Table cards>
+        <thead>
+          <tr>
+            {selectable ? <SelectAllTh /> : null}
+            <Th>{t("colTitle")}</Th>
+            <Th>{t("colStatus")}</Th>
+            <Th>{t("colLocale")}</Th>
+            <Th>{t("colAuthors")}</Th>
+            <SortTh field="updated" sort={sort} base="/content" keep={keep} first="desc">
+              {t("colUpdated")}
+            </SortTh>
+            <Th>
+              <span className="vh">{t("colActions")}</span>
+            </Th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => {
+            const names = entry.author_ids.map((id) => authors[id]).filter(Boolean);
+            const title = entry.title || t("untitled");
+            return (
+              <tr key={entry.id}>
+                {selectable ? <SelectTd id={entry.id} name={title} /> : null}
+                <Td className="rt-title">
+                  <span className="cell2">
+                    <Link href={`/content/${entry.id}`} className="ce-title-link">
+                      {title}
+                    </Link>
+                    <span className="sub ell">
+                      {kinds(entry.kind)} · <span className="mono">{entryPath(entry)}</span>
+                      {entry.ai_generated ? ` · ${t("ai")}` : ""}
                     </span>
-                  ) : null}
-                </span>
-              </Td>
-              <Td label={t("colLocale")}>
-                <span className="loc">{entry.locale.toUpperCase()}</span>
-              </Td>
-              <Td label={t("colAuthors")}>{names.length > 0 ? names.join(", ") : "—"}</Td>
-              <Td label={t("colUpdated")} className="ce-nowrap">
-                <Time value={entry.updated_at} />
-              </Td>
-              {approving ? (
-                <Td label={t("colActions")}>
-                  {entry.review_requested_at ? (
-                    <ApproveDialog
-                      id={entry.id}
-                      title={entry.title || t("untitled")}
-                      aiGenerated={entry.ai_generated}
-                    />
-                  ) : null}
+                  </span>
                 </Td>
-              ) : null}
-            </tr>
-          );
-        })}
-      </tbody>
-    </Table>
+                <Td label={t("colStatus")}>
+                  <span className="cell2">
+                    <EntryStatusBadges entry={entry} />
+                    {entry.published_at ? (
+                      <span className="sub">
+                        {t("publishedAt")} <Time value={entry.published_at} />
+                      </span>
+                    ) : null}
+                  </span>
+                </Td>
+                <Td label={t("colLocale")}>
+                  <span className="loc">{entry.locale.toUpperCase()}</span>
+                </Td>
+                <Td label={t("colAuthors")}>{names.length > 0 ? names.join(", ") : "—"}</Td>
+                <Td label={t("colUpdated")} className="ce-nowrap">
+                  <Time value={entry.updated_at} />
+                </Td>
+                <Td label={t("colActions")}>
+                  <RowMenu label={tt("moreFor", { name: title })} items={menu(entry)} />
+                </Td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </Table>
+    </BulkTable>
   );
 }
 

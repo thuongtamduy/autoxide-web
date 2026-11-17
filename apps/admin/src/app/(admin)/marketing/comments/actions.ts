@@ -133,6 +133,18 @@ export async function liftBan(state: FormState, formData: FormData): Promise<For
   return { done: nextDone(state) };
 }
 
+/** Gỡ nhiều lệnh cấm (thanh hàng loạt); lặp `DELETE /comments/bans/{id}`, core ghi audit từng lệnh. */
+export async function bulkLiftBans(input: BulkInput): Promise<BulkResult> {
+  const result = await eachId(cleanIds(input.ids), async (id) => {
+    const lifted = await send((client) =>
+      client.DELETE("/api/v1/comments/bans/{id}", { params: { path: { id } } }),
+    );
+    return lifted.ok ? null : lifted.problem.detail;
+  });
+  refresh();
+  return result;
+}
+
 /**
  * Mở, đóng hay ẩn bình luận của một đích (`state` = `open` / `closed` / `hidden`). Đảo được:
  * trả trạng thái cũ cho Hoàn tác. Ẩn cũng đóng đích; mở lại thì bỏ ẩn.

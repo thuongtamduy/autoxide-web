@@ -2119,7 +2119,33 @@
       },
       "aiReviewed": "AI content reviewed",
       "entryGone": "(post not found)",
-      "colActions": "Actions"
+      "colActions": "Actions",
+      "open": "Open",
+      "bulk": {
+        "publish": "Publish",
+        "publishTitle": "Publish the selected posts?",
+        "publishNow": "Readers see each draft as it is now.",
+        "publishAi": "For posts labelled AI, publishing here confirms you have read what AI wrote.",
+        "unpublish": "Unpublish",
+        "unpublishTitle": "Unpublish the selected posts?",
+        "unpublishPoint": "Readers stop seeing them at once; each becomes a draft and can be published again. Pending scheduled publishes are cancelled.",
+        "archive": "Archive",
+        "archiveTitle": "Archive the selected posts?",
+        "archivePoint": "Their addresses answer 410 (gone) so search engines drop them; pending schedules are cancelled. They can be published again later.",
+        "delete": "Delete",
+        "deleteTitle": "Delete the selected posts?",
+        "deleteRevisions": "Revisions and schedules go too; a published address answers 410.",
+        "deletePages": "A page that still has subpages is not deleted.",
+        "deleteNoUndo": "This cannot be undone."
+      },
+      "row": {
+        "unpublishTitle": "Unpublish “{title}”?",
+        "unpublished": "Unpublished: readers no longer see it",
+        "archiveTitle": "Archive “{title}”?",
+        "archived": "Archived",
+        "deleteTitle": "Delete “{title}”?",
+        "deleted": "Deleted"
+      }
     },
     "status": {
       "draft": "Draft",
@@ -2652,7 +2678,18 @@
       "remove": "Remove",
       "unavailable": "The media library is not available to you."
     },
-    "librarySummary": "{count, plural, one {# file} other {# files}} · {size} · {noAlt, plural, =0 {every image has alt text} one {# image without alt text} other {# images without alt text}}{trashed, plural, =0 {} other { · # in the trash}}"
+    "librarySummary": "{count, plural, one {# file} other {# files}} · {size} · {noAlt, plural, =0 {every image has alt text} one {# image without alt text} other {# images without alt text}}{trashed, plural, =0 {} other { · # in the trash}}",
+    "bulk": {
+      "open": "Open details",
+      "actions": "Actions",
+      "move": "Move to folder",
+      "trashTitle": "Move the selected files to the trash?",
+      "purgeTitle": "Delete the selected files for good?",
+      "purged": "Deleted for good",
+      "restoreTitle": "Restore “{name}”?",
+      "restorePoint": "The file goes back to its folder and its address works again.",
+      "gridHint": "To select several files at once, switch the view to Table."
+    }
   },
   "structure": {
     "crumb": "Content",
@@ -2742,7 +2779,10 @@
       "searchHint": "Name in any language",
       "find": "Find",
       "clear": "Show all",
-      "more": "Showing the first 200. Search by name to find the others."
+      "more": "Showing the first 200. Search by name to find the others.",
+      "bulkDeleteCategories": "Delete the selected categories?",
+      "bulkDeleteTags": "Delete the selected tags?",
+      "viewPosts": "View posts"
     },
     "authors": {
       "title": "Author profiles",
@@ -2846,7 +2886,8 @@
       "pages": "Pages",
       "first": "First page",
       "next": "Next page",
-      "toCol": "To"
+      "toCol": "To",
+      "bulkDeleteTitle": "Delete the selected redirects?"
     },
     "history": {
       "title": "Revision history",
@@ -3187,7 +3228,8 @@
         "status": "Status",
         "sender": "Sender",
         "content": "Message",
-        "sent": "Sent"
+        "sent": "Sent",
+        "actions": "Actions"
       },
       "fieldsVersion": "{count, plural, one {# field} other {# fields}} · v{version}",
       "retentionDefault": "Server default",
@@ -3393,7 +3435,14 @@
         "download": "Download the CSV file",
         "deletedAt": "the file is deleted",
         "failed": "The export failed; start a new one."
-      }
+      },
+      "open": "Open",
+      "copyKey": "Copy form key",
+      "copiedKey": "Form key copied",
+      "copyApi": "Copy public API address",
+      "copiedApi": "Public API address copied: the website reads the form here",
+      "bulkDeleteTitle": "Delete the selected forms for good?",
+      "bulkDeleteSubmissionsTitle": "Delete the selected submissions for good?"
     },
     "newsletter": {
       "crumb": "Marketing · module newsletter",
@@ -3768,7 +3817,13 @@
       "blockedFilter": "Blocked",
       "openSubscriber": "Open",
       "bulkBlockTitle": "Block the selected subscribers?",
-      "bulkDeleteTitle": "Delete the selected subscribers for good?"
+      "bulkDeleteTitle": "Delete the selected subscribers for good?",
+      "open": "Open",
+      "bulkCancelTitle": "Cancel the selected campaigns for good?",
+      "bulkCancelSkipped": "Mails not sent yet are skipped.",
+      "bulkDeleteSent": "A campaign that has already sent mail is not deleted.",
+      "bulkUnsuppressTitle": "Take the selected addresses off the do-not-mail list?",
+      "bulkDeleteCampaignsTitle": "Delete the selected campaigns?"
     },
     "comments": {
       "crumb": "Marketing · module comments",
@@ -4037,7 +4092,8 @@
       "targetUrl": "Address",
       "targetNotPublic": "Not public now (title and address hidden)",
       "bulkPurgeTitle": "Delete the selected comments for good?",
-      "bulkPurgeThreads": "A comment that starts a thread is removed with all its replies."
+      "bulkPurgeThreads": "A comment that starts a thread is removed with all its replies.",
+      "bulkLiftTitle": "Lift the selected bans?"
     },
     "data": {
       "title": "Data by email",
@@ -12469,7 +12525,10 @@
       "undoReason": "Reopening undone",
       "legal": "Affiliates and livestream hosts must verify their identity (E-commerce Law 122/2025/QH15, from 1 July 2026; the guiding decree’s exact articles — check the original text). Accounts must be verified before livestreaming (Decree 147/2024/ND-CP).",
       "oneLevelTitle": "One level only.",
-      "oneLevelText": "No multi-level commissions: they easily become multi-level marketing, which has its own law."
+      "oneLevelText": "No multi-level commissions: they easily become multi-level marketing, which has its own law.",
+      "view": "View details",
+      "bulkSuspendTitle": "Suspend the selected partners?",
+      "bulkTerminateTitle": "Terminate the selected partners?"
     },
     "suspend": {
       "button": "Suspend with reason",
@@ -12597,7 +12656,10 @@
       "adjustAbout": "A refund after approval or payment adds a negative line deducted from the next payout. If it exceeds the period’s commission, it carries over; the affiliate is never asked to pay back.",
       "noAdjust": "No negative adjustments: no attributed order was refunded after approval.",
       "reason": "Reason",
-      "ledgerNote": "Approving posts Debit commission expense / Credit payable to the affiliate; a refund after approval posts the reverse."
+      "ledgerNote": "Approving posts Debit commission expense / Credit payable to the affiliate; a refund after approval posts the reverse.",
+      "openOrder": "Open order",
+      "openPartner": "View partner",
+      "openPayout": "View payout"
     },
     "payouts": {
       "kpis": "Payout figures",
@@ -12650,7 +12712,13 @@
       "rateFrom": "{pct}% when a payment is {threshold} or more",
       "rateAll": "{pct}% on every payment",
       "verify": "check the original text",
-      "pitLegal": "PIT on commissions of individuals without a labour contract: 10% per payment from 2,000,000 ₫ (Circular 111/2013/TT-BTC, Article 25); sources say Decree 253/2026 raises the threshold to 5,000,000 ₫ — check the original text. Electronic withholding certificates: Decree 123/2020 amended by Decree 70/2025 — check the form. {n} rows of tax data."
+      "pitLegal": "PIT on commissions of individuals without a labour contract: 10% per payment from 2,000,000 ₫ (Circular 111/2013/TT-BTC, Article 25); sources say Decree 253/2026 raises the threshold to 5,000,000 ₫ — check the original text. Electronic withholding certificates: Decree 123/2020 amended by Decree 70/2025 — check the form. {n} rows of tax data.",
+      "bulkPaid": "Mark paid",
+      "bulkPaidTitle": "Record the selected payouts as paid?",
+      "bulkReference": "Bank transaction code of the batch transfer",
+      "bulkPaidSame": "Every selected payout gets this code and today's date.",
+      "bulkPaidOnly": "Only manual payouts still being built are recorded; the others are listed as not done.",
+      "bulkRetryTitle": "Send the selected failed payouts again?"
     },
     "paid": {
       "button": "Mark paid manually",

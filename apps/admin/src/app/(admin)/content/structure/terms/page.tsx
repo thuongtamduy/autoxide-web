@@ -3,7 +3,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { MessagePanel } from "@/components/message-panel";
 import { TermDialog } from "@/components/structure/forms";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { BulkTable, SelectAllTh, SelectTd } from "@/components/ui/bulk";
 import { ConfirmAction } from "@/components/ui/confirm";
+import { RowMenu } from "@/components/ui/row-menu";
 import { Table, Td, Th } from "@/components/ui/table";
 import { contentLocaleFor } from "@/lib/client-config";
 import type { Term } from "@/lib/content";
@@ -11,14 +13,16 @@ import { isForbidden, load } from "@/lib/core";
 import { CONTENT_MANAGE, CONTENT_READ } from "@/lib/permissions";
 import { descendants, flattenTree, termName, termSlug } from "@/lib/structure";
 import { can } from "@/lib/viewer";
-import { deleteTerm } from "../actions";
+import { bulkDeleteTerms, deleteTerm } from "../actions";
 
 // Tab "Danh mục và thẻ": cây danh mục (cha con) và danh sách thẻ, tên theo từng ngôn ngữ, số bài
 // của từng mục (`entry_count` của core; bấm để xem các bài đó). Ô tìm gửi `q` cho core (tên ở mọi
 // ngôn ngữ, không dấu vẫn tìm ra). Thêm, sửa, xoá cần `content.manage`; core từ chối xoá danh mục
-// còn danh mục con.
+// còn danh mục con. Dòng có nút Sửa và "⋯" (xem bài, xoá); chọn nhiều để xoá (lặp lệnh từng cái của
+// core, danh mục còn con báo lỗi đúng dòng). Không sắp theo cột: cây danh mục xếp theo tên.
 export default async function TermsTab(props: PageProps<"/content/structure/terms">) {
   const t = await getTranslations("structure.terms");
+  const tt = await getTranslations("table");
   const uiLocale = await getLocale();
   const locale = await contentLocaleFor(uiLocale);
   const raw = (await props.searchParams).q;
@@ -73,73 +77,113 @@ export default async function TermsTab(props: PageProps<"/content/structure/term
     list.length === 0 ? (
       <p className="empty">{t(taxonomy === "category" ? "noCategories" : "noTags")}</p>
     ) : (
-      <Table cards>
-        <thead>
-          <tr>
-            <Th>{t(taxonomy === "category" ? "category" : "tag")}</Th>
-            <Th>{t("slug")}</Th>
-            <Th>{t("languages")}</Th>
-            <Th>{t("posts")}</Th>
-            {manage ? <Th className="text-right">{t("actions")}</Th> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {list.map(({ node: term, depth, parent }) => (
-            <tr key={term.id}>
-              <Td className="rt-title">
-                <span className="cell2" style={{ paddingInlineStart: `${depth * 22}px` }}>
-                  <span className="open">
-                    {depth > 0 ? (
-                      <span aria-hidden="true" className="st-branch">
-                        └{" "}
-                      </span>
+      <BulkTable
+        ids={list.map((row) => row.node.id)}
+        actions={
+          manage
+            ? [
+                {
+                  key: "delete",
+                  label: t("delete"),
+                  tone: "danger",
+                  run: bulkDeleteTerms,
+                  confirm: {
+                    title: t(taxonomy === "category" ? "bulkDeleteCategories" : "bulkDeleteTags"),
+                    points: [
+                      t("deletePosts"),
+                      ...(taxonomy === "category" ? [t("deleteChildren")] : []),
+                    ],
+                    submit: t("delete"),
+                  },
+                },
+              ]
+            : []
+        }
+      >
+        <Table cards>
+          <thead>
+            <tr>
+              {manage ? <SelectAllTh /> : null}
+              <Th>{t(taxonomy === "category" ? "category" : "tag")}</Th>
+              <Th>{t("slug")}</Th>
+              <Th>{t("languages")}</Th>
+              <Th>{t("posts")}</Th>
+              {manage ? <Th className="text-right">{t("actions")}</Th> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {list.map(({ node: term, depth, parent }) => (
+              <tr key={term.id}>
+                {manage ? <SelectTd id={term.id} name={termName(term, locale)} /> : null}
+                <Td className="rt-title">
+                  <span className="cell2" style={{ paddingInlineStart: `${depth * 22}px` }}>
+                    <span className="open">
+                      {depth > 0 ? (
+                        <span aria-hidden="true" className="st-branch">
+                          └{" "}
+                        </span>
+                      ) : null}
+                      {termName(term, locale)}
+                    </span>
+                    {parent ? (
+                      <span className="sub">{t("under", { name: termName(parent, locale) })}</span>
                     ) : null}
-                    {termName(term, locale)}
-                  </span>
-                  {parent ? (
-                    <span className="sub">{t("under", { name: termName(parent, locale) })}</span>
-                  ) : null}
-                </span>
-              </Td>
-              <Td label={t("slug")}>
-                <span className="mono ell">{termSlug(term, locale)}</span>
-              </Td>
-              <Td label={t("languages")}>{languages(term)}</Td>
-              <Td label={t("posts")} className="tabular-nums">
-                {term.entry_count ? (
-                  <Link href={`/content?term=${term.id}`}>{term.entry_count}</Link>
-                ) : (
-                  (term.entry_count ?? "—")
-                )}
-              </Td>
-              {manage ? (
-                <Td className="text-right">
-                  <span className="row-acts">
-                    <TermDialog
-                      taxonomy={taxonomy}
-                      term={term}
-                      parents={parentsFor(term)}
-                      defaultLocale={locale}
-                    />
-                    <ConfirmAction
-                      action={deleteTerm}
-                      id={term.id}
-                      label={t("delete")}
-                      title={t("deleteTitle", { name: termName(term, locale) })}
-                      points={[
-                        t("deletePosts"),
-                        ...(taxonomy === "category" ? [t("deleteChildren")] : []),
-                      ]}
-                      submit={t("delete")}
-                      done={t("deleted")}
-                    />
                   </span>
                 </Td>
-              ) : null}
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+                <Td label={t("slug")}>
+                  <span className="mono ell">{termSlug(term, locale)}</span>
+                </Td>
+                <Td label={t("languages")}>{languages(term)}</Td>
+                <Td label={t("posts")} className="tabular-nums">
+                  {term.entry_count ? (
+                    <Link href={`/content?term=${term.id}`}>{term.entry_count}</Link>
+                  ) : (
+                    (term.entry_count ?? "—")
+                  )}
+                </Td>
+                {manage ? (
+                  <Td className="text-right">
+                    <span className="row-acts">
+                      <TermDialog
+                        taxonomy={taxonomy}
+                        term={term}
+                        parents={parentsFor(term)}
+                        defaultLocale={locale}
+                      />
+                      <RowMenu
+                        label={tt("moreFor", { name: termName(term, locale) })}
+                        items={[
+                          ...(term.entry_count
+                            ? [{ label: t("viewPosts"), href: `/content?term=${term.id}` }]
+                            : []),
+                          {
+                            label: t("delete"),
+                            danger: true,
+                            dialog: (
+                              <ConfirmAction
+                                action={deleteTerm}
+                                id={term.id}
+                                label={t("delete")}
+                                title={t("deleteTitle", { name: termName(term, locale) })}
+                                points={[
+                                  t("deletePosts"),
+                                  ...(taxonomy === "category" ? [t("deleteChildren")] : []),
+                                ]}
+                                submit={t("delete")}
+                                done={t("deleted")}
+                              />
+                            ),
+                          },
+                        ]}
+                      />
+                    </span>
+                  </Td>
+                ) : null}
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </BulkTable>
     );
 
   return (

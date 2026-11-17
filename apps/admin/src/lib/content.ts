@@ -72,6 +72,8 @@ export interface ListFilters {
   /** Chỉ bài của hồ sơ tác giả này (`author_id`). */
   author?: string;
   cursor?: string;
+  /** Cũ nhất trước (`?sort=updated&dir=asc`, gửi `order=asc`); mặc định mới sửa gần nhất trước. */
+  oldest?: boolean;
   /** Website đang chọn (phần dữ liệu mẫu, W-006); không gửi cho core. */
   site?: string;
 }
@@ -113,6 +115,7 @@ export function parseFilters(params: SearchParams): ListFilters {
   const author = one(params, "author");
   if (author && UUID.test(author)) filters.author = author;
   if (cursor) filters.cursor = cursor;
+  if (one(params, "sort") === "updated" && one(params, "dir") === "asc") filters.oldest = true;
   if (site && UUID.test(site)) filters.site = site;
   return filters;
 }
@@ -148,10 +151,24 @@ export function filtersHref(filters: ListFilters, change: Partial<ListFilters> =
   if (next.missing) query.set("missing", next.missing);
   if (next.term) query.set("term", next.term);
   if (next.author) query.set("author", next.author);
+  if (next.oldest) {
+    query.set("sort", "updated");
+    query.set("dir", "asc");
+  }
   if (next.cursor) query.set("cursor", next.cursor);
   if (next.site) query.set("site", next.site);
   const text = query.toString();
   return text ? `/content?${text}` : "/content";
+}
+
+/**
+ * Bộ lọc dưới dạng tham số địa chỉ, không có con trỏ và cách sắp: để tiêu đề cột sắp được
+ * (`SortTh`) giữ bộ lọc khi đổi chiều sắp.
+ */
+export function filtersKeep(filters: ListFilters): Record<string, string> {
+  const { cursor: _cursor, oldest: _oldest, ...rest } = filters;
+  const href = filtersHref(rest);
+  return Object.fromEntries(new URLSearchParams(href.split("?")[1] ?? ""));
 }
 
 /** Tham số gửi `GET /api/v1/content/entries`: mới sửa gần nhất lên đầu. */
@@ -160,7 +177,7 @@ export function listQuery(filters: ListFilters) {
   return {
     limit: PAGE_SIZE,
     sort: "updated_at" as const,
-    order: "desc" as const,
+    order: filters.oldest ? ("asc" as const) : ("desc" as const),
     ...(status === "draft" || status === "published" || status === "archived" ? { status } : {}),
     ...(status === "review" ? { review_requested: true } : {}),
     ...(filters.kind ? { kind: filters.kind } : {}),
@@ -202,6 +219,8 @@ export interface ContentAbilities {
   publish: boolean;
   /** Lưu trữ và hẹn giờ cần `content.publish` thật, không nhận `content.publish_own`. */
   publishAll: boolean;
+  /** Xoá bài cần `content.delete`. */
+  delete: boolean;
 }
 
 /**
@@ -218,6 +237,7 @@ export function abilities(viewer: {
     write: has("content.write") || has("content.write_own"),
     publish: has("content.publish") || has("content.publish_own"),
     publishAll: has("content.publish"),
+    delete: has("content.delete"),
   };
 }
 

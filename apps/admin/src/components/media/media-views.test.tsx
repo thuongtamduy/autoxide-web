@@ -1,10 +1,26 @@
 // @vitest-environment jsdom
-import { cleanup, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SampleBadge } from "@/components/sample-badge";
 import type { MediaItem } from "@/lib/media";
 import { renderIntl } from "@/test/render";
+import { ToastProvider } from "../ui/toast";
 import { MediaGrid, MediaTable } from "./media-list";
+
+// Server Action không chạy được trong jsdom; bảng chỉ cần tham chiếu tới nó.
+vi.mock("@/app/(admin)/content/media/actions", () => ({
+  bulkMoveMedia: vi.fn(),
+  bulkPurgeMedia: vi.fn(),
+  bulkRestoreMedia: vi.fn(),
+  bulkTrashMedia: vi.fn(),
+  purgeMedia: vi.fn(),
+  restoreMedia: vi.fn(),
+  trashMedia: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/content/media",
+}));
 
 afterEach(cleanup);
 
@@ -57,7 +73,11 @@ describe("lưới và bảng của thư viện media", () => {
   });
 
   it("bảng có nhãn cột cho thẻ điện thoại", () => {
-    renderIntl(<MediaTable items={[item({ alt: "Chảo gang" })]} filters={{}} folders={[]} />);
+    renderIntl(
+      <ToastProvider>
+        <MediaTable items={[item({ alt: "Chảo gang" })]} filters={{}} folders={[]} />
+      </ToastProvider>,
+    );
     const cells = screen.getAllByRole("cell");
     expect(cells.map((c) => c.getAttribute("data-label")).filter(Boolean)).toEqual([
       "Type",
@@ -65,9 +85,58 @@ describe("lưới và bảng của thư viện media", () => {
       "Size",
       "Alt",
       "Uploaded",
+      "Actions",
     ]);
     expect(screen.getByText("Chảo gang")).toBeTruthy();
     expect(screen.getByText("Root")).toBeTruthy();
+    // Chỉ đọc: không ô chọn; sắp theo tên / kích thước / giờ tải lên (mặc định mới trước).
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.getByRole("columnheader", { name: /Uploaded/ }).getAttribute("aria-sort")).toBe(
+      "descending",
+    );
+    expect(
+      within(screen.getByRole("columnheader", { name: /Size/ }))
+        .getByRole("link")
+        .getAttribute("href"),
+    ).toBe("/content/media?sort=size&dir=desc");
+  });
+
+  it("chọn nhiều: chuyển thư mục và thùng rác; trong thùng rác thì khôi phục, xoá hẳn", () => {
+    const folder = { id: "0193a0c4-7d1e-7c2a-9b1e-3f2d5c6b7a70", name: "Banner" };
+    renderIntl(
+      <ToastProvider>
+        <MediaTable
+          items={[item()]}
+          filters={{ view: "table" }}
+          folders={[folder as never]}
+          can={{ write: true, purge: true }}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select chao-gang.jpg" }));
+    const bar = within(screen.getByRole("region", { name: "1 selected" }));
+    expect(bar.getByRole("button", { name: "Move to folder" })).toBeTruthy();
+    expect(bar.getByRole("button", { name: "Move to trash" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "More actions for chao-gang.jpg" }));
+    expect(screen.getAllByRole("menuitem").map((m) => m.textContent)).toEqual([
+      "Open details",
+      "Move to trash",
+    ]);
+    cleanup();
+    renderIntl(
+      <ToastProvider>
+        <MediaTable
+          items={[item({ trashed_at: "2026-11-16T00:00:00Z" })]}
+          filters={{ trash: true, view: "table" }}
+          folders={[]}
+          can={{ write: true, purge: true }}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select chao-gang.jpg" }));
+    const trash = within(screen.getByRole("region", { name: "1 selected" }));
+    expect(trash.getByRole("button", { name: "Restore" })).toBeTruthy();
+    expect(trash.getByRole("button", { name: "Delete for good" })).toBeTruthy();
   });
 });
 

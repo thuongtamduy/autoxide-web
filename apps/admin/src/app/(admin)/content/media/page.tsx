@@ -7,6 +7,7 @@ import { MediaGrid, MediaTable } from "@/components/media/media-list";
 import { MessagePanel } from "@/components/message-panel";
 import { Icon } from "@/components/shell/icon";
 import { AutoFilter } from "@/components/ui/auto-filter";
+import { Pager } from "@/components/ui/pager";
 import { getClientConfig } from "@/lib/client-config";
 import { FALLBACK_CONTENT_LOCALES } from "@/lib/content";
 import { optional } from "@/lib/content-server";
@@ -29,6 +30,8 @@ import { can } from "@/lib/viewer";
 // (`?item=`). Số ở đầu trang là tóm tắt cả thư viện (`GET /media/summary`). Ngôn ngữ alt và giới
 // hạn tải lên theo cấu hình của máy chủ (`GET /kernel/client-config`). Bộ lọc nằm trên địa chỉ nên
 // mở thẳng được và nút quay lại chạy đúng. Ảnh hiện qua route `/media/{id}/content` của giao diện.
+// Dạng bảng có chọn nhiều (chuyển thư mục, thùng rác), "⋯" trên dòng và sắp theo tên / kích thước / giờ
+// tải lên (`sort` của core); phân trang theo con trỏ, không tổng.
 export default async function MediaPage(props: PageProps<"/content/media">) {
   const t = await getTranslations("media");
   const locale = await getLocale();
@@ -270,29 +273,29 @@ export default async function MediaPage(props: PageProps<"/content/media">) {
             </div>
           ) : filters.view === "table" ? (
             <div className="card tcard">
-              <MediaTable items={items} filters={filters} folders={folderList} />
+              <MediaTable
+                items={items}
+                filters={filters}
+                folders={folderList}
+                can={{ write: canWrite, purge: canPurge }}
+              />
             </div>
           ) : (
-            <MediaGrid items={items} filters={filters} />
+            <>
+              <MediaGrid items={items} filters={filters} />
+              {/* Chọn nhiều nằm ở dạng bảng (bộ công cụ bảng, W-058); lưới chỉ để xem nhanh. */}
+              {canWrite ? <p className="fhint">{t("bulk.gridHint")}</p> : null}
+            </>
           )}
-          {filters.cursor || page.pagination.next_cursor ? (
-            <nav className="pager" aria-label={t("pages")}>
-              {filters.cursor ? (
-                <Link className="btn" href={mediaHref(filters, { cursor: undefined })}>
-                  {t("first")}
-                </Link>
-              ) : null}
-              {page.pagination.next_cursor ? (
-                <Link
-                  className="btn"
-                  rel="next"
-                  href={mediaHref(filters, { cursor: page.pagination.next_cursor })}
-                >
-                  {t("next")}
-                </Link>
-              ) : null}
-            </nav>
-          ) : null}
+          {/* Core phân trang theo con trỏ, không trả tổng: chỉ "Trang đầu" / "Trang sau". */}
+          <Pager
+            first={filters.cursor ? mediaHref(filters, { cursor: undefined }) : null}
+            next={
+              page.pagination.next_cursor
+                ? mediaHref(filters, { cursor: page.pagination.next_cursor })
+                : null
+            }
+          />
         </section>
         {filters.item && !selected ? (
           <aside className="card md-pane" aria-label={t("detail.title")}>

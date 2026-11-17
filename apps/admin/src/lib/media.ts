@@ -2,6 +2,7 @@
 // giao diện, định dạng kích thước, và câu báo lỗi tải lên theo `code` của core (docs/MEDIA.md của
 // core). Dùng được cả ở máy chủ lẫn trình duyệt.
 import type { components } from "@autoxide/sdk";
+import { readSort, type SortDir } from "./table";
 
 type Schemas = components["schemas"];
 export type MediaItem = Schemas["MediaItemResponse"];
@@ -39,7 +40,19 @@ export interface MediaFilters {
   /** Tệp đang mở ở khung chi tiết. */
   item?: string | undefined;
   cursor?: string | undefined;
+  /** Cách sắp người xem chọn (`?sort=name&dir=asc`); không có = mới tải lên trước. */
+  sort?: { field: MediaSort; dir: SortDir } | undefined;
 }
+
+/** Cột sắp được: đúng các giá trị `sort` của `GET /media` (`created_at`, `name`, `size`). */
+export const MEDIA_SORTS = ["created", "name", "size"] as const;
+export type MediaSort = (typeof MEDIA_SORTS)[number];
+const SORT_PARAM: Record<MediaSort, "created_at" | "name" | "size"> = {
+  created: "created_at",
+  name: "name",
+  size: "size",
+};
+const DEFAULT_SORT = { field: "created", dir: "desc" } as const;
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -75,7 +88,25 @@ export function parseMediaFilters(params: SearchParams): MediaFilters {
   if (isUuid(item)) filters.item = item;
   const cursor = one(params, "cursor");
   if (cursor) filters.cursor = cursor;
+  if (MEDIA_SORTS.some((f) => f === one(params, "sort"))) {
+    filters.sort = readSort(params, MEDIA_SORTS, DEFAULT_SORT);
+  }
   return filters;
+}
+
+/** Cách sắp đang dùng (cho `SortTh`): người xem chọn, hoặc mặc định mới tải lên trước. */
+export function mediaSort(filters: MediaFilters): { field: MediaSort; dir: SortDir } {
+  return filters.sort ?? DEFAULT_SORT;
+}
+
+/**
+ * Bộ lọc dưới dạng tham số địa chỉ cho tiêu đề cột sắp được: không con trỏ, không cách sắp, không tệp
+ * đang mở (đổi cách sắp thì về trang đầu).
+ */
+export function mediaKeep(filters: MediaFilters): Record<string, string> {
+  const { cursor: _c, sort: _s, item: _i, ...rest } = filters;
+  const href = mediaHref(rest);
+  return Object.fromEntries(new URLSearchParams(href.split("?")[1] ?? ""));
 }
 
 /**
@@ -97,6 +128,10 @@ export function mediaHref(filters: MediaFilters, change: Partial<MediaFilters> =
   if (next.visibility) query.set("visibility", next.visibility);
   if (next.trash) query.set("trash", "1");
   if (next.view === "table") query.set("view", "table");
+  if (next.sort) {
+    query.set("sort", next.sort.field);
+    query.set("dir", next.sort.dir);
+  }
   if (next.cursor) query.set("cursor", next.cursor);
   if (next.item) query.set("item", next.item);
   const text = query.toString();
@@ -110,8 +145,8 @@ export function mediaHref(filters: MediaFilters, change: Partial<MediaFilters> =
 export function mediaQuery(filters: MediaFilters) {
   return {
     limit: MEDIA_PAGE_SIZE,
-    sort: "created_at" as const,
-    order: "desc" as const,
+    sort: SORT_PARAM[mediaSort(filters).field],
+    order: mediaSort(filters).dir,
     include: "uploader" as const,
     ...(filters.noAlt ? { alt_missing: true } : {}),
     ...(filters.folder ? { folder_id: filters.folder } : {}),
