@@ -38,7 +38,7 @@ export async function PlanSubscriptionActions({
     }),
   }));
   return (
-    <div className="eg-acts">
+    <div className="eg-acts pf-rowacts">
       {live && options.length > 0 ? (
         <FormDialog
           action={assignPlanAction}

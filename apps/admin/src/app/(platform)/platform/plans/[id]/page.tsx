@@ -11,7 +11,7 @@ import {
 } from "@/app/(platform)/platform/plan-actions";
 import { Back, DetailHead, Facts } from "@/components/engage/common";
 import { PLAN_BADGE, StatusBadge } from "@/components/platform/common";
-import { planFields } from "@/components/platform/plan-fields";
+import { editPlanFields } from "@/components/platform/plan-fields";
 import { ConfirmAction, InlineAction } from "@/components/ui/confirm";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
@@ -19,7 +19,7 @@ import { Time } from "@/components/ui/time";
 import { load } from "@/lib/core";
 import { formatBytes, formatCount, formatMoney } from "@/lib/format";
 import { PLANS_MANAGE } from "@/lib/permissions";
-import { isBytes, limitsText, type Plan } from "@/lib/plans";
+import { isBytes, type Plan } from "@/lib/plans";
 import { loadAllSubscriptions } from "@/lib/plans-server";
 import { can } from "@/lib/viewer";
 
@@ -93,21 +93,7 @@ export default async function PlanPage(props: { params: Promise<{ id: string }> 
                   intro={t("editIntro")}
                   submit={t("editSubmit")}
                   done={t("edited")}
-                  fields={[
-                    { kind: "hidden", name: "plan_id", value: plan.id },
-                    ...(await planFields(
-                      {
-                        name: plan.name,
-                        description: plan.description,
-                        modules: plan.modules.join(", "),
-                        features: plan.features.join(", "),
-                        limits: limitsText(plan.limits as Record<string, number | null>),
-                        trial_days: String(plan.trial_days),
-                        placement: plan.placement,
-                      },
-                      false,
-                    )),
-                  ]}
+                  fields={await editPlanFields(plan)}
                 />
               ) : null}
               {editable ? (

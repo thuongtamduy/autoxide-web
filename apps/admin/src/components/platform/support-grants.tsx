@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
-import { grantState, type SupportGrant } from "@/lib/support";
+import { grantState, hoursLeft, type SupportGrant } from "@/lib/support";
 
 type Option = { value: string; label: string };
 
@@ -82,7 +82,10 @@ export async function SupportGrantDialog({
   );
 }
 
-/** Bảng các lần cấp: khách (khi có nhiều khách), nhân sự, căn cứ và lý do, hạn, trạng thái, thu hồi. */
+/**
+ * Bảng các lần cấp, gọn mỗi lần một dòng: ai được cấp (role), vào khách nào (khi có nhiều khách), trạng
+ * thái và hạn (còn mấy giờ, đã vào chưa), căn cứ và lý do, nút thu hồi.
+ */
 export async function SupportGrantTable({
   grants,
   tenantName,
@@ -109,11 +112,10 @@ export async function SupportGrantTable({
     <Table cards>
       <thead>
         <tr>
-          {tenantName ? <Th>{t("tenant")}</Th> : null}
           <Th>{t("staff")}</Th>
+          {tenantName ? <Th>{t("tenant")}</Th> : null}
+          <Th>{t("validity")}</Th>
           <Th>{t("basisReason")}</Th>
-          <Th>{t("expires")}</Th>
-          <Th>{t("colStatus")}</Th>
           {manage ? (
             <Th>
               <span className="vh">{tp("tenant.actions")}</span>
@@ -127,29 +129,39 @@ export async function SupportGrantTable({
           const staff = g.staff_name ?? g.staff_user_id.slice(0, 8);
           return (
             <tr key={g.id}>
+              <Td className="rt-title">
+                <span className="cell2">
+                  <b>{staff}</b>
+                  <span className="sub">{roleName(g.role_id)}</span>
+                </span>
+              </Td>
               {tenantName ? (
-                <Td className="rt-title">
+                <Td label={t("tenant")}>
                   <Link href={`/platform/tenants/${g.tenant_id}`} className="open">
                     {tenantName(g.tenant_id)}
                   </Link>
                 </Td>
               ) : null}
-              <Td label={t("staff")}>
+              <Td label={t("validity")}>
                 <span className="cell2">
-                  <span>{staff}</span>
-                  <span className="sub">{roleName(g.role_id)}</span>
-                </span>
-              </Td>
-              <Td label={t("basisReason")}>
-                <span className="cell2">
-                  <b>{tp.has(`basis.${g.basis}`) ? tp(`basis.${g.basis}`) : g.basis}</b>
-                  <span className="sub">{g.reason}</span>
-                  {g.legal_reference ? <span className="sub mono">{g.legal_reference}</span> : null}
-                </span>
-              </Td>
-              <Td label={t("expires")}>
-                <span className="cell2">
-                  <Time value={g.expires_at} />
+                  <StatusBadge className={GRANT_BADGE[state]} label={tp(`grantStatus.${state}`)} />
+                  <span className="sub">
+                    {state === "active" ? (
+                      <>
+                        {t("hoursLeft", { count: hoursLeft(g.expires_at, now) })} ·{" "}
+                        <Time value={g.expires_at} />
+                      </>
+                    ) : state === "revoked" && g.revoked_at ? (
+                      <>
+                        {g.revoked_by_tenant ? t("revokedByTenant") : t("revokedAt")}{" "}
+                        <Time value={g.revoked_at} />
+                      </>
+                    ) : (
+                      <>
+                        {t("endedAt")} <Time value={g.expires_at} />
+                      </>
+                    )}
+                  </span>
                   <span className="sub">
                     {g.first_used_at ? (
                       <>
@@ -161,14 +173,21 @@ export async function SupportGrantTable({
                   </span>
                 </span>
               </Td>
-              <Td label={t("colStatus")}>
+              <Td label={t("basisReason")}>
                 <span className="cell2">
-                  <StatusBadge className={GRANT_BADGE[state]} label={tp(`grantStatus.${state}`)} />
-                  {g.revoked_by_tenant ? <span className="sub">{t("revokedByTenant")}</span> : null}
+                  <span>
+                    {tp.has(`basis.${g.basis}`) ? tp(`basis.${g.basis}`) : g.basis}
+                    {g.legal_reference ? (
+                      <span className="sub mono"> · {g.legal_reference}</span>
+                    ) : null}
+                  </span>
+                  <span className="sub pf-grant-reason" title={g.reason}>
+                    {g.reason}
+                  </span>
                 </span>
               </Td>
               {manage ? (
-                <Td>
+                <Td className="rt-acts">
                   {state === "active" ? (
                     <ConfirmAction
                       action={revokeSupport}
