@@ -65,6 +65,9 @@ Core phát triển trên `main` của nó, không chờ bản phát hành (W-025
 
 - **Còn lại của bước 34:** xác nhận lại danh tính (`/auth/me/reauth`) cho lệnh nhạy cảm của tài khoản chỉ có
   passkey; người mua tách khỏi nhân sự (`/auth/customers`); đổi `requires_mfa` của role `admin`.
+- **Bước 36 của core bắt đầu** (D-341, core `4785b50`): module `tax` — engine thuế từ dữ liệu. Nối vào màn Tài chính ›
+  Thuế (đang dữ liệu mẫu) khi SDK ghim tới bản đó.
+- Build release của core `main` đang hỏng (`autoxide-plans`, recursion limit) — đã báo core; thử thật dùng bản debug.
 - Khách tự xuất dữ liệu của mình (`POST /kernel/tenants/{id}/exports` với `kernel.data.export`) ở Cài đặt.
 - Website: ô địa chỉ khi đặt hàng dùng danh mục hành chính công khai của core (`GET /address/provinces`,
   `…/communes`) thay `src/sample/address.ts`; danh sách cửa hàng (`/organizations/public/stores`) thay phần mẫu khi
