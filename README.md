@@ -67,7 +67,12 @@ per account by the core (`/api/v1/me/flags`), so they stay dismissed on every de
   passkey; administrators see and revoke everyone's keys), developer tools.
 - **My account**: profile, email and password (cancel a pending email change; an account without a
   password gets a link to set one), two-step sign-in, passkeys with their kind, devices with how and
-  from which country they signed in, your data.
+  from which country they signed in, your data. Sensitive changes (new email, two-step sign-in, a
+  passkey, deleting the account) are confirmed with a password, an authenticator code or an existing
+  passkey, so passkey-only accounts can make them too.
+- **Customers › Buyer accounts**: the shop's buyer accounts (search, lock and unlock, self sign-up on
+  or off), also when sample data is off. **Settings › Your data**: export everything of your business
+  to one file.
 - **Platform console › Customers and Database fleet**: the customers and placements of the core
   (with each placement's own file storage, never its keys); add, rename, suspend and resume a
   customer; move a customer to another placement (dry run with tables, rows, files and blockers,
@@ -208,6 +213,8 @@ four looks (`AUTOXIDE_STOREFRONT_THEME`).
   and its seller shops with the legally required seller details (`/nguoi-ban`, `/nguoi-ban/<slug>`).
   Nothing is charged or shipped; the core never holds buyers' money (payments go through a licensed
   partner).
+- **From the core**: the province and ward lists at checkout and in the address book (the official
+  administrative list of the core's `address` module).
 - **On sample data** (marked with a small "sample" tag and a notice bar), until the core has the
   APIs: products, prices, discount codes, stock per store, stores, the cart, sellers. Pages built on
   it: all products and product categories (`/danh-muc`, `/danh-muc/<slug>`: filters for material,

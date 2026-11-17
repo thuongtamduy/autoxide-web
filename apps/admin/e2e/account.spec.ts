@@ -413,3 +413,29 @@ test("core nhiều khách: đăng nhập hỏi không gian làm việc, nhớ ch
     await request.post(`${CORE}/__tenancy`, { data: { mode: "single" } });
   }
 });
+
+test("lệnh nhạy cảm xác nhận bằng mã của app xác thực thay mật khẩu (`/auth/me/reauth`)", async ({
+  page,
+}) => {
+  await page.goto("/login?next=%2Faccount");
+  await page.getByLabel("Email").fill("mfa@example.com");
+  await page.getByLabel("Password").fill("mfa password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByLabel("Code").fill("123456");
+  await page.getByRole("button", { name: "Verify" }).click();
+  await expect(page).toHaveURL(/\/account$/);
+
+  await page.getByRole("button", { name: "Change email" }).click();
+  const box = dialog(page);
+  await box.getByLabel("New email").fill("mfa.moi@example.com");
+  await box
+    .getByRole("radiogroup", { name: "Confirm it is you" })
+    .getByText("Authenticator code")
+    .click();
+  await box.getByLabel("Code from your authenticator app").fill("000000");
+  await box.getByRole("button", { name: "Send verification mail" }).click();
+  await expect(box.getByText("is not a current code from your app")).toBeVisible();
+  await box.getByLabel("Code from your authenticator app").fill("123456");
+  await box.getByRole("button", { name: "Send verification mail" }).click();
+  await expect(toast(page)).toContainText("mfa.moi@example.com");
+});

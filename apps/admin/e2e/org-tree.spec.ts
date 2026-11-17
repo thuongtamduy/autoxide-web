@@ -166,7 +166,7 @@ test("hồ sơ công khai: địa chỉ theo danh mục hành chính, giờ mở
   await expect(toast(page)).toContainText("Saved");
   await expect(row("Kho Thủ Đức")).toContainText("Public");
   await page.reload();
-  await expect(form.getByLabel("Ward or commune")).toHaveValue("26734");
+  await expect(form.getByLabel("Ward or commune")).toHaveValue("26743");
 });
 
 test("điện thoại: danh sách nút → chi tiết → quay lại", async ({ page }) => {

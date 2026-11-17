@@ -7,6 +7,7 @@ import { Icon } from "@/components/shell/icon";
 import { Table, Td, Th } from "@/components/ui/table";
 import { Time } from "@/components/ui/time";
 import { getClientConfig } from "@/lib/client-config";
+import { loadConfirmMethods } from "@/lib/confirm-server";
 import { load } from "@/lib/core";
 import { getMe } from "@/lib/viewer";
 
@@ -58,7 +59,7 @@ export default async function SecurityPage() {
               {totp ? t("totp.on") : t("totp.off")}
             </span>
             <span className="item-acts">
-              <TotpActions enabled={totp} />
+              <TotpActions enabled={totp} methods={await loadConfirmMethods()} />
             </span>
           </div>
         </div>
@@ -77,7 +78,7 @@ export default async function SecurityPage() {
           <h2 id="passkeys-h" className="h2">
             {t("passkeys.title")}
           </h2>
-          <AddPasskeyDialog />
+          <AddPasskeyDialog methods={await loadConfirmMethods()} />
         </div>
         <p className="fhint">{t("passkeys.about")}</p>
         <div className="card tcard">

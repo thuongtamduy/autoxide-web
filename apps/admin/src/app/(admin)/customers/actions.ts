@@ -6,7 +6,6 @@ import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { commerceGuard, finishCommerce, translateCommerce, typed } from "@/lib/commerce-action";
 import {
-  AUTH_CUSTOMERS_MANAGE,
   CUSTOMERS_ENGAGEMENT_MANAGE,
   CUSTOMERS_LOYALTY_ADJUST,
   CUSTOMERS_LOYALTY_MANAGE,
@@ -33,9 +32,7 @@ import {
   previewRule,
   readRule,
   saveGroup,
-  setAccountLocked,
   setBlockLifted,
-  setRegistrationOpen,
   setTags,
 } from "@/sample/customers";
 
@@ -110,27 +107,6 @@ export async function adjustPointsAction(state: FormState, formData: FormData): 
 // ---- Tài khoản người mua (bước 34)
 
 /** Khoá / mở khoá (đảo được: `status` = `locked` hoặc `active`). */
-export async function lockAction(_state: ChangeState, formData: FormData): Promise<ChangeState> {
-  const blocked = await guard(AUTH_CUSTOMERS_MANAGE);
-  if (blocked) return blocked;
-  const locked = formData.get("status") === "locked";
-  const outcome = await setAccountLocked(idOf(formData), locked);
-  if (!outcome.ok) return problemState(await translateCommerce(outcome.problem, "customers"), []);
-  refresh();
-  return { done: 1, previous: locked ? "active" : "locked", updated: outcome.data.updated_at };
-}
-
-export async function registrationAction(state: FormState, formData: FormData): Promise<FormState> {
-  const blocked = await guard(AUTH_CUSTOMERS_MANAGE);
-  if (blocked) return blocked;
-  return finishCommerce(
-    "customers",
-    state,
-    await setRegistrationOpen(formData.get("open") === "on"),
-    [],
-  );
-}
-
 // ---- Nhóm khách
 
 const GROUP_FIELDS = ["name", "kind", "spent", "orders", "days", "tier", "org"] as const;

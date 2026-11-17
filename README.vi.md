@@ -61,7 +61,11 @@ tính năng mới cho tới khi bạn bấm "Đã hiểu". Thẻ đã tắt và 
   thu hồi key của mọi người), công cụ cho lập trình viên.
 - **Tài khoản của tôi**: hồ sơ, email và mật khẩu (huỷ yêu cầu đổi email đang chờ; tài khoản chưa có
   mật khẩu nhận link để đặt), xác thực hai bước, passkey kèm loại thiết bị, thiết bị kèm cách đăng nhập
-  và quốc gia, dữ liệu của bạn.
+  và quốc gia, dữ liệu của bạn. Thay đổi nhạy cảm (email mới, xác thực hai bước, passkey, xoá tài khoản)
+  xác nhận bằng mật khẩu, mã app xác thực hay passkey đã có, nên tài khoản chỉ có passkey cũng làm được.
+- **Khách hàng › Tài khoản người mua**: tài khoản người mua của cửa hàng (tìm, khoá và mở, bật / tắt tự
+  đăng ký), cả khi tắt dữ liệu mẫu. **Cài đặt › Dữ liệu của bạn**: xuất mọi thứ của doanh nghiệp ra một
+  tệp.
 - **Mặt điều khiển nền tảng › Khách hàng và Đội database**: khách và placement của core (kèm nơi lưu
   file riêng của placement, không bao giờ có khoá); thêm, đổi tên, tạm khoá và mở lại một khách; dời
   khách sang placement khác (chạy thử nêu bảng, số dòng, file và lý do chặn, rồi dời bằng job nền và
@@ -199,6 +203,8 @@ diện (`AUTOXIDE_STOREFRONT_THEME`).
   trang sàn và gian hàng người bán kèm thông tin người bán bắt buộc công khai (`/nguoi-ban`,
   `/nguoi-ban/<slug>`). Không thu tiền, không giao hàng thật; core không bao giờ giữ tiền của người mua
   (thanh toán qua đối tác có giấy phép).
+- **Từ core**: danh sách tỉnh, phường khi đặt hàng và trong sổ địa chỉ (danh mục hành chính chính thức của
+  module `address` của core).
 - **Dùng dữ liệu mẫu** (có dấu "mẫu" nhỏ và một dải thông báo) tới khi core có API: sản phẩm, giá,
   mã giảm giá, tồn theo cửa hàng, cửa hàng, giỏ hàng, người bán. Các trang dựng trên đó: tất cả sản
   phẩm và danh mục sản phẩm (`/danh-muc`, `/danh-muc/<slug>`: lọc chất liệu, loại bếp, giá, đánh giá,

@@ -524,7 +524,8 @@ describe("Khách hàng, Kênh bán, Tiếp thị liên kết (dữ liệu mẫu,
     // Tắt dữ liệu mẫu: không còn nhóm Khách hàng, không có Kênh bán hay Tiếp thị liên kết.
     const admin: Viewer = { allPermissions: true, permissions: [], modules: [], sample: false };
     const off = visibleNav(admin, real);
-    expect(off.some((g) => g.id === "buyers")).toBe(false);
+    // Tắt mẫu: Khách hàng còn tab thật "Tài khoản người mua" (`realWith`), nên vẫn hiện cho admin.
+    expect(off.some((g) => g.id === "buyers")).toBe(true);
     expect(off.flatMap((g) => g.pages).some((p) => p.id === "affiliate")).toBe(false);
     // Kế toán chỉ có quyền đối soát kênh thấy Kênh bán; nhân viên rủi ro COD thấy Khách hàng.
     const accountant = visibleNav(
@@ -546,5 +547,15 @@ describe("Khách hàng, Kênh bán, Tiếp thị liên kết (dữ liệu mẫu,
     expect(activePage(real, "/customers/cod")?.page.id).toBe("customers");
     expect(activePage(real, "/sales/channels/inbound")?.page.id).toBe("channels");
     expect(activePage(real, "/marketing/affiliate/payouts")?.page.id).toBe("affiliate");
+  });
+
+  it("màn mẫu có phần thật (`realWith`): tắt dữ liệu mẫu vẫn hiện cho người có permission đó", () => {
+    const ids = (viewer: Partial<Viewer>) =>
+      visibleNav({ allPermissions: false, permissions: [], modules: null, ...viewer })
+        .flatMap((g) => g.pages)
+        .map((p) => p.id);
+    expect(ids({ permissions: ["auth.customers.read"], sample: false })).toContain("customers");
+    expect(ids({ permissions: ["customers.read"], sample: false })).not.toContain("customers");
+    expect(ids({ permissions: ["customers.read"], sample: true })).toContain("customers");
   });
 });

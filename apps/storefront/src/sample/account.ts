@@ -92,6 +92,9 @@ export interface SavedAddress {
   street: string;
   province: string;
   ward: string;
+  /** Tên lưu kèm khi thêm từ danh mục của core; không có thì tra danh sách mẫu theo mã. */
+  province_name?: string;
+  ward_name?: string;
   default: boolean;
 }
 
@@ -103,7 +106,7 @@ export const SAMPLE_ADDRESSES: readonly SavedAddress[] = [
     phone: "0901234567",
     street: "[Số nhà, đường mẫu]",
     province: "79",
-    ward: "79-01",
+    ward: "26743",
     default: true,
   },
   {
@@ -113,7 +116,7 @@ export const SAMPLE_ADDRESSES: readonly SavedAddress[] = [
     phone: "0901234567",
     street: "[Toà nhà mẫu, tầng 5]",
     province: "79",
-    ward: "79-04",
+    ward: "27139",
     default: false,
   },
 ];

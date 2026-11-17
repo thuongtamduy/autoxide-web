@@ -75,7 +75,7 @@ describe("kho đơn đặt trên website mẫu", () => {
     name: "Khách",
     phone: "0912 345 678",
     province: "79",
-    ward: "79-01",
+    ward: "26743",
     street: "[Số nhà mẫu]",
     payment: "vietqr" as const,
     terms: true,

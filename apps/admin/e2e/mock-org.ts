@@ -82,6 +82,12 @@ const CATALOG: Schemas["SettingResponse"][] = [
     schema: shape({ type: "boolean" }),
   },
   {
+    key: "auth.customer_registration",
+    description: "Whether customers can create their own accounts on this tenant's shop.",
+    default: true,
+    schema: shape({ type: "boolean" }),
+  },
+  {
     key: "organizations.languages",
     description: "Languages of the website, the first is the default.",
     default: ["en"],
@@ -97,8 +103,9 @@ const PROVINCES: Schemas["AdministrativeUnit"][] = [
 const COMMUNES: Schemas["AdministrativeUnit"][] = [
   admin("00004", "Phường Ba Đình", "ward", 2, "01"),
   admin("00070", "Phường Hoàn Kiếm", "ward", 2, "01"),
-  admin("26734", "Phường Bến Thành", "ward", 2, "79"),
-  admin("27004", "Phường Xuân Hoà", "ward", 2, "79"),
+  admin("00166", "Phường Cầu Giấy", "ward", 2, "01"),
+  admin("26743", "Phường Bến Thành", "ward", 2, "79"),
+  admin("27139", "Phường Xuân Hòa", "ward", 2, "79"),
 ];
 
 function admin(

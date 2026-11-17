@@ -21,6 +21,7 @@ Cập nhật file này mỗi khi gửi đợt yêu cầu mới, khi core làm xo
 | 17/11/2026 | [thuongtamduy/autoxide#75](https://github.com/thuongtamduy/autoxide/pull/75) | Đã dùng các API của D-331 – D-334 (W-050); không có yêu cầu mới                                                                                                                                                      | Đã gửi                                                                                                                              |
 | 17/11/2026 | [thuongtamduy/autoxide#76](https://github.com/thuongtamduy/autoxide/pull/76) | Đã nối chuyển khách (W-051); xin quyền của người dùng ở khách đang vào (`GET /auth/me` trả 401 ở đó)                                                                                                                 | Đã gửi; cần nhất                                                                                                                    |
 | 17/11/2026 | [thuongtamduy/autoxide#81](https://github.com/thuongtamduy/autoxide/pull/81) | Đã dùng D-335 – D-339 (W-055); build release của core hỏng ở `autoxide-plans` (recursion limit)                                                                                                                      | Đã gửi; chặn phát hành                                                                                                              |
+| 17/11/2026 | [thuongtamduy/autoxide#83](https://github.com/thuongtamduy/autoxide/pull/83) | Đã dùng reauth, `/auth/customers`, danh mục địa chỉ cho website (W-057); reauth báo mã sai ở ô `code` thay `totp_code` | Đã gửi; nhỏ |
 | 17/11/2026 | [thuongtamduy/autoxide#78](https://github.com/thuongtamduy/autoxide/pull/78) | Quầy bán làm lại (W-053): mã giảm giá và khách khi bán tại quầy, tiền khách đưa / tiền thối, tạm tính giỏ và tìm khách bằng quyền bán tại quầy, mã vạch và nhóm hàng trong danh mục quầy                             | Đã gửi; không gấp (bước 45)                                                                                                         |
 
 ## Còn nợ (đếm ngày 16/11/2026; bước 34, 35 đã xong ngày 17/11)
@@ -58,7 +59,9 @@ placement bằng API, số người giữ role, `reason` khi sửa khách.
    trong thuê bao.
 6. **Gặp khi nối chuyển khách (17/11, W-051):** **đã có** (D-339) và **đã dùng** (W-055): `GET /auth/me` ở khách đang
    vào trả quyền ở đó.
-7. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
+7. **Gặp khi nối xác nhận lại danh tính (17/11, W-057):** `POST /auth/me/reauth` với mã sai báo lỗi ở ô `code`, trong khi
+   ô gửi lên là `totp_code` — giao diện đổi tên ô; nên báo đúng tên ô đã gửi.
+8. **Mô tả OpenAPI chưa khớp** (17/11): tham số `inherited` của `GET /auth/memberships` — **đã có mô tả** (D-332).
 
 ### Nhắc khi core tới bước
 
