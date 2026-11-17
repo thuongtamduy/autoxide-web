@@ -208,3 +208,39 @@ export function parseSubscriberCsv(text: string): ImportParse {
   });
   return { people, skipped, tooMany: people.length > IMPORT_MAX };
 }
+
+// ---------------------------------------------------------------- Xem trước khi soạn
+
+/** Tiêu đề như hộp thư người nhận thấy: thư quảng cáo có nhãn của máy chủ ở đầu. */
+export function subjectAsSent(subject: string, advertising: boolean, label: string): string {
+  const clean = subject.trim();
+  return advertising && label ? `${label} ${clean}`.trim() : clean;
+}
+
+/**
+ * Dòng mờ sau tiêu đề trong hộp thư: preheader nếu có; không có thì hầu hết hộp thư lấy những chữ
+ * đầu của thân thư. Gộp khoảng trắng, cắt ở `max` ký tự.
+ */
+export function inboxSnippet(preheader: string, bodyText: string, max = 140): string {
+  const flat = (preheader.trim() || bodyText).replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1).trimEnd()}…` : flat;
+}
+
+const ESCAPES: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+/**
+ * Bản chữ thành một trang HTML để xem trước trong `<iframe sandbox srcdoc>`: thoát mọi ký tự HTML
+ * (chữ người dùng gõ không bao giờ thành thẻ), giữ xuống dòng, chữ hệ thống như hộp thư hiện bản chữ.
+ */
+export function textPreviewDoc(text: string, lang: string): string {
+  const safe = text.replace(/[&<>"']/g, (c) => ESCAPES[c] ?? c);
+  const style =
+    "body{margin:0;padding:20px 22px;font:15px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#14171f;background:#fff;white-space:pre-wrap;overflow-wrap:anywhere}";
+  return `<!doctype html><html lang="${lang === "en" ? "en" : "vi"}"><head><meta charset="utf-8"><style>${style}</style></head><body>${safe}</body></html>`;
+}

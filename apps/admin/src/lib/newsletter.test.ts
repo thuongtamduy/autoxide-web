@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   campaignActions,
   IMPORT_MAX,
+  inboxSnippet,
   type NewsletterList,
   parseSubscriberCsv,
   progressPercent,
+  subjectAsSent,
   sumSubscriptions,
+  textPreviewDoc,
 } from "./newsletter";
 
 const progress = {
@@ -107,5 +110,30 @@ describe("đọc CSV người đăng ký", () => {
   it(`quá ${IMPORT_MAX} người thì báo`, () => {
     const text = Array.from({ length: IMPORT_MAX + 1 }, (_, i) => `p${i}@example.com`).join("\n");
     expect(parseSubscriberCsv(text).tooMany).toBe(true);
+  });
+});
+
+describe("xem trước khi soạn chiến dịch", () => {
+  it("tiêu đề khi gửi: nhãn quảng cáo đứng đầu, chỉ với thư quảng cáo", () => {
+    expect(subjectAsSent(" Ưu đãi ", true, "[QC]")).toBe("[QC] Ưu đãi");
+    expect(subjectAsSent("Ưu đãi", false, "[QC]")).toBe("Ưu đãi");
+    expect(subjectAsSent("Ưu đãi", true, "")).toBe("Ưu đãi");
+  });
+
+  it("dòng mờ trong hộp thư: preheader trước, không có thì đầu thân thư, gộp khoảng trắng và cắt", () => {
+    expect(inboxSnippet("Chỉ tuần này", "Thân thư")).toBe("Chỉ tuần này");
+    expect(inboxSnippet("  ", "Xin chào,\n\n  Giảm 10%")).toBe("Xin chào, Giảm 10%");
+    expect(inboxSnippet("", "a".repeat(200), 10)).toBe(`${"a".repeat(9)}…`);
+    expect(inboxSnippet("", "")).toBe("");
+  });
+
+  it("bản chữ thành trang xem trước: thoát hết thẻ, không thể chèn script", () => {
+    const doc = textPreviewDoc("<script>alert(1)</script>\nA & B \"x\" 'y'", "vi");
+    expect(doc).not.toContain("<script>");
+    expect(doc).toContain(
+      "&lt;script&gt;alert(1)&lt;/script&gt;\nA &amp; B &quot;x&quot; &#39;y&#39;",
+    );
+    expect(doc).toContain('lang="vi"');
+    expect(textPreviewDoc("", "en")).toContain('lang="en"');
   });
 });

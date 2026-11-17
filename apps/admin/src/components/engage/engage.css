@@ -214,18 +214,308 @@
 .ax .eg-foot > .falert {
   flex: 1 1 280px;
 }
-.ax .eg-preview {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
 .ax .eg-frame {
   width: 100%;
   height: 420px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #ffffff;
+}
+
+/* Soạn bản tin (lớp `nlc-`): trái là các trường chia nhóm, phải là bản xem trước hộp thư dính khi
+   cuộn; dưới 900px thành một cột. Thanh nút dính ở đáy (trên điện thoại nằm trên thanh đáy). */
+.ax .nlc {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ax .nlc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+.ax .nlc-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.ax .nlc-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+}
+.ax .nlc-group-h {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ax .nlc-group-head,
+.ax .nlc-side-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.ax .nlc-group [role="tabpanel"][hidden] {
+  display: none;
+}
+
+/* Công tắc nhiều lựa chọn (tab Soạn / HTML, Máy tính / Điện thoại) */
+.ax .nlc-seg {
+  display: inline-flex;
+  gap: 2px;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--hover);
+}
+.ax .nlc-seg > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ax .nlc-seg > button:hover {
+  color: var(--ink);
+}
+.ax .nlc-seg > button.on {
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(20, 23, 31, 0.14);
+}
+.ax .nlc-seg > button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.ax .nlc-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--bad);
+}
+
+/* Bản xem trước */
+.ax .nlc-side {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.ax .nlc-device {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ax .nlc-device.phone {
+  width: 100%;
+  max-width: 360px;
+  margin-inline: auto;
+  padding: 16px 10px 20px;
+  border: 8px solid color-mix(in srgb, var(--ink) 86%, transparent);
+  border-radius: 34px;
+}
+.ax .nlc-inbox,
+.ax .nlc-mail {
+  border-radius: 10px;
+  background: var(--sheet);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ax .nlc-inbox {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.ax .nlc-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+.ax .nlc-avatar.sm {
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+}
+.ax .nlc-inbox-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+.ax .nlc-inbox-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.ax .nlc-inbox-top > b {
+  flex: 1;
+}
+.ax .nlc-time {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ax .nlc-inbox-subject {
+  font-weight: 600;
+}
+.ax .nlc-inbox-snippet {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--ink-3);
+}
+.ax .nlc-ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ax .nlc-mail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  min-width: 0;
+}
+.ax .nlc-mail-subject {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.ax .nlc-mail-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ax .nlc-mail-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 13px;
+}
+.ax .nlc-mail-who > span {
+  color: var(--ink-3);
+}
+.ax .nlc-version {
+  align-self: flex-start;
+}
+.ax .nlc-frame {
+  width: 100%;
+  /* Vừa màn hình để cả khung xem trước dính được khi cuộn */
+  height: clamp(300px, calc(100vh - 400px), 520px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+.ax .nlc-device.phone .nlc-frame {
+  height: clamp(360px, calc(100vh - 360px), 560px);
+}
+.ax .nlc-empty {
+  margin: 0;
+  padding: 48px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--ink-3);
+  font-size: 13.5px;
+  text-align: center;
+}
+.ax .nlc-mail-foot {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+/* Thanh nút dính đáy */
+.ax .nlc-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sheet) 92%, transparent);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    0 6px 24px rgba(20, 23, 31, 0.1);
+  backdrop-filter: saturate(1.6) blur(12px);
+}
+.ax .nlc-bar > .falert {
+  flex: 1 1 100%;
+}
+.ax .nlc-bar-note {
+  flex: 1 1 220px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .ax .nlc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ax .nlc-side {
+    position: static;
+  }
+}
+@media (max-width: 720px) {
+  .ax .nlc-group {
+    padding: 16px;
+  }
+  .ax .nlc-bar {
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    padding: 10px;
+  }
+  /* Điện thoại: chỉ hai nút chia đôi hàng; câu giải thích ẩn cho thanh gọn */
+  .ax .nlc-bar-note {
+    display: none;
+  }
+  .ax .nlc-bar .btn {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+  .ax .nlc-bar .btn,
+  .ax .nlc-seg > button {
+    min-height: 44px;
+  }
 }
 
 /* Thanh tiến độ gửi */

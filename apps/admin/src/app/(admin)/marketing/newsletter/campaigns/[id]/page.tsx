@@ -28,7 +28,7 @@ import {
   progressPercent,
 } from "@/lib/newsletter";
 import { loadNewsletterSettings } from "@/lib/newsletter-server";
-import { can } from "@/lib/viewer";
+import { can, getCurrentTenant } from "@/lib/viewer";
 
 // Một chiến dịch: tiến độ gửi (số thật của core, kèm số bị trả về và số huỷ đăng ký từ thư này),
 // thao tác theo trạng thái (gửi thử, hẹn giờ, gửi ngay, tạm dừng / tiếp tục có Hoàn tác, huỷ, xoá),
@@ -58,10 +58,11 @@ export default async function CampaignPage(
     if (isNotFound(error)) notFound();
     throw error;
   }
-  const [manage, sender, settings, preview] = await Promise.all([
+  const [manage, sender, settings, tenant, preview] = await Promise.all([
     can(NEWSLETTER_MANAGE),
     can(NEWSLETTER_SEND),
     loadNewsletterSettings(),
+    getCurrentTenant(),
     // Thiếu cấu hình gửi thì core báo cùng lỗi 503 như khi gửi: hiện câu đó thay cho bản xem trước.
     send((client) =>
       client.GET("/api/v1/newsletter/campaigns/{id}/preview", { params: { path: { id } } }),
@@ -276,6 +277,8 @@ export default async function CampaignPage(
                 bodyHtml: campaign.body_html ?? "",
               }}
               ads={ads}
+              sender={tenant?.name || t("editor.senderFallback")}
+              note={t("editor.editNote")}
             />
           ) : (
             <div className="card padded eg-stack">

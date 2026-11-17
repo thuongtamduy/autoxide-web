@@ -147,9 +147,23 @@ test("bản tin: soạn, gửi thử (lỗi cấu hình hiện rõ), hẹn giờ
   await page.getByLabel("Advertising mail").check();
   await expect(page.getByText("Sent as: [QC] Ưu đãi chảo gang no-config")).toBeVisible();
   await page.getByLabel("Text version").fill("Giảm 10% tới 30/11.");
+  // Xem trước hộp thư sống: người gửi (tên khách), tiêu đề có nhãn, đầu thân thư, bản chữ trong sandbox.
+  const compose = page.getByTestId("compose-preview");
+  const inbox = compose.getByRole("region", { name: "Inbox" });
+  await expect(inbox).toContainText("[QC] Ưu đãi chảo gang no-config");
+  await expect(inbox).toContainText("Giảm 10% tới 30/11.");
+  await expect(compose).toContainText("To: Weekly");
+  await expect(compose.locator("iframe.nlc-frame")).toHaveAttribute("sandbox", "");
+  await page.getByLabel("Preview line").fill("Chỉ tuần này");
+  await expect(inbox).toContainText("Chỉ tuần này");
+  // Bản HTML ở tab riêng; xem trước chỉ trong iframe sandbox (script không chạy).
+  await page.getByRole("tab", { name: "HTML" }).click();
   await page.getByLabel("HTML version (optional)").fill("<h1>Ưu đãi</h1><script>alert(1)</script>");
-  await page.getByRole("button", { name: "Show preview" }).click();
-  await expect(page.locator("iframe.eg-frame")).toHaveAttribute("sandbox", "");
+  const frame = compose.locator("iframe.nlc-frame");
+  await expect(frame).toHaveAttribute("sandbox", "");
+  await expect(page.frameLocator("iframe.nlc-frame").getByRole("heading")).toHaveText("Ưu đãi");
+  await page.getByRole("button", { name: "Phone" }).click();
+  await expect(compose).toHaveAttribute("data-device", "phone");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page).toHaveURL(/\/marketing\/newsletter\/campaigns\/[0-9a-f-]{36}$/);
   await expect(toast(page)).toContainText("Draft saved.");
