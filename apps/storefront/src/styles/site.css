@@ -437,8 +437,10 @@ html[data-theme="dark"] .sp .th-moon {
   line-height: 1.7;
   color: var(--band-ink-2);
 }
-.sp .moit span {
-  max-width: 220px;
+.sp .moit img {
+  display: block;
+  width: 150px;
+  height: auto;
 }
 .sp .ftr-base {
   display: flex;

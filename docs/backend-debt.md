@@ -51,7 +51,8 @@ placement bằng API, số người giữ role, `reason` khi sửa khách.
 1. **Danh sách loại đối tượng** cho menu (sổ đối tượng).
 2. **Hồ sơ công khai cho website** (gặp khi nối W-045, 17/11): logo và thông tin pháp lý — core quyết để ở
    `compliance` (bước 37) và "Thông tin cửa hàng công khai" (bước 68), D-331. Hồ sơ của website đang được gọi **đã có**
-   (`GET /organizations/public/site`, D-331) và **đã dùng** (W-050).
+   (`GET /organizations/public/site`, D-331) và **đã dùng** (W-050). Thông tin pháp lý và logo Bộ Công Thương
+   **đã có** (`GET /compliance/public/owner`, `GET /compliance/public/badge`) và **đã dùng** ở chân trang website (W-060).
 3. **Gặp khi nối đợt 2 (17/11, W-046):** **đã có cả ba** (D-333) và **đã dùng** (W-050): tên nút trong membership,
    danh sách khách cấp dưới, `auth` trong client-config.
 4. **Gặp khi nối bước 35 (17/11, W-047):** **đã có cả ba** (D-335) và **đã dùng** (W-055): kỳ thanh toán của một khách

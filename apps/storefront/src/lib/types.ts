@@ -25,3 +25,5 @@ export type CommentSettings = Schemas["Data_CommentSettings"]["data"];
 export type NewsletterLists = Schemas["Data_PublicListsResponse"]["data"];
 export type Preferences = Schemas["Data_PreferencesResponse"]["data"];
 export type Pagination = Schemas["Pagination"];
+export type PublicOwner = Schemas["CompliancePublicOwner"];
+export type PublicBadge = Schemas["ComplianceBadge"];

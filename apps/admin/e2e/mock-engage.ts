@@ -30,6 +30,9 @@ function module(name: string, position: number, permissions: string[]): ModuleIn
     name,
     internal: false,
     always_enabled: false,
+    description: "",
+    prompts: [],
+    resources: [],
     features: [],
     limits: [],
     requires: [],
@@ -205,6 +208,7 @@ export function resetEngage() {
       body_text: "Chào bạn,\nTuần này: vệ sinh thớt gỗ.",
       body_html: null,
       advertising: false,
+      format: "static",
       locale: "vi",
       status: "draft",
       progress: {
@@ -624,6 +628,7 @@ export async function engageRoutes(
       body_text: text(body, "body_text"),
       body_html: (body.body_html as string | null) ?? null,
       advertising: body.advertising === true,
+      format: "static",
       locale: body.locale === "en" ? "en" : "vi",
       status: "draft",
       progress: {

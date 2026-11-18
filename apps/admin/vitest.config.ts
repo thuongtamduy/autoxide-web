@@ -8,5 +8,7 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.{ts,tsx}"],
     environment: "node",
+    // Dữ liệu mẫu mặc định tắt (W-060); test của phần mẫu cần bật, như Playwright.
+    env: { AUTOXIDE_WEB_SAMPLE_DATA: "true" },
   },
 });

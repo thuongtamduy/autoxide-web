@@ -34,10 +34,18 @@ test("trang chủ tiếng Việt: menu thật của core, khối mẫu, bài vi�
     "/blog/category/chon-mua",
   );
   await expect(nav.getByRole("link", { name: /Khuyến mại/ })).toBeVisible();
-  // Chân trang: menu `footer` của core, thông tin pháp lý để trống.
+  // Chân trang: menu `footer` của core; thông tin pháp lý và logo Bộ Công Thương từ hồ sơ của core.
   const footer = page.getByRole("contentinfo");
   await expect(footer.getByRole("link", { name: "Về chúng tôi" })).toBeVisible();
-  await expect(footer).toContainText("Mã số thuế [MÃ SỐ THUẾ]");
+  await expect(footer).toContainText(
+    "Công ty TNHH Bếp Mộc Ví Dụ (Bếp Mộc) · Mã số thuế 0000000000",
+  );
+  await expect(footer).toContainText("Địa chỉ 1 Phố Ví Dụ, Phường Ba Đình, Hà Nội");
+  await expect(footer).not.toContainText("[");
+  await expect(footer.getByRole("link", { name: "Đã thông báo Bộ Công Thương" })).toHaveAttribute(
+    "href",
+    "https://online.gov.vn/Home/WebDetails/0",
+  );
   // Bài viết thật mới nhất.
   await expect(
     page.getByRole("link", { name: /Chảo gang, chảo inox hay chống dính/ }),

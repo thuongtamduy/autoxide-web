@@ -7,8 +7,10 @@ lâu dài vẫn ghi ở [`DECISIONS.md`](DECISIONS.md), nợ của core ở [`ba
 
 - Trang quản trị (`apps/admin`) và website bán hàng (`apps/storefront`) đã dựng đủ màn theo bản thiết kế. Phần core
   có API thì dùng API thật; phần chưa có dùng dữ liệu mẫu theo W-006 (nhãn "sample").
-- SDK ghim core ở commit `f702a85` của `main` (bước 34 cây tổ chức và danh tính, bước 35 gói và thuê bao, xuất dữ liệu
-  một khách — D-303 tới D-340). Quyết định mới nhất của repo này: W-057.
+- SDK ghim core ở commit `b7dc16f` của `main` (nâng ở đợt 16 để có hồ sơ pháp lý công khai `compliance/public/*`; các
+  endpoint mới khác của core chưa nối). Quyết định mới nhất của repo này: W-060.
+- Đợt 16 (18/11, W-060): chân trang website lấy thông tin pháp lý và logo Bộ Công Thương từ core (không có thì ẩn);
+  dữ liệu mẫu mặc định tắt; cảnh báo HTTP ở trang đăng nhập; CI chạy `./gate.sh` trên mỗi pull request.
 - Đợt 8 (17/11): nối đợt 1 của bước 34 (W-045): màn Cây tổ chức thật, bộ chọn nút góc trên trái (lọc bài, media, form,
   menu theo nút), tab Hồ sơ công khai thật (địa chỉ theo danh mục hành chính của core), tên cửa hàng của website lấy
   từ hồ sơ công khai của nút gốc. Đã chạy thử với core thật.

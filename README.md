@@ -89,7 +89,8 @@ sales channels), Products (catalog, prices, tax groups, inventory), Marketing (p
 affiliate marketing), Customers, Marketplace and the Seller Center, Finance (ledger, e-invoices,
 tax), Compliance, and the rest of the Platform console (health). Parts of the real screens the core
 has no API for yet use sample data the same way. Sample data shows only when
-`AUTOXIDE_WEB_SAMPLE_DATA` is on (the default outside production); changes there are kept in the
+`AUTOXIDE_WEB_SAMPLE_DATA=true` is set (off by default, so a new install never shows made-up
+revenue or orders); changes there are kept in the
 app's memory and lost on restart. The sample records agree across screens (an order, its
 shipment, its ledger entries and its invoice are the same order).
 
@@ -122,8 +123,8 @@ Open <http://localhost:3000> and sign in with your core account.
 | Variable                      | Default                 | Meaning                                                                                                                                                                                                                                                        |
 | ----------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080` | Address of the core, without `/api/v1`. Only this app's server calls it; browsers never do.                                                                                                                                                                    |
-| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` in production    | Send session cookies only over HTTPS. Turn it off only when serving over plain HTTP.                                                                                                                                                                           |
-| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false` in production   | Show screens and tabs that use sample data while the core has no API for them.                                                                                                                                                                                 |
+| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` in production    | Send session cookies only over HTTPS. Turn it off only when serving over plain HTTP; the sign-in page warns when it is on and the page is open over HTTP.                                                                                                      |
+| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false`                 | `true`: show screens and tabs that use sample data while the core has no API for them.                                                                                                                                                                         |
 | `AUTOXIDE_ADMIN_TENANT`       | empty                   | Only for a core with several tenants: the slug or ID of the one tenant this admin is for. Empty: the sign-in form asks for the workspace when the core needs it (remembered for next time), or the core picks the tenant by the domain the admin is served on. |
 
 ### Mail links
@@ -242,7 +243,7 @@ pnpm --filter @autoxide/storefront dev                       # http://localhost:
 | `AUTOXIDE_STOREFRONT_NAME`   | sample shop / Autoxide  | Name of the shop when the root unit's public profile is not public.                                                                                                  |
 | `AUTOXIDE_STOREFRONT_THEME`  | `default`               | Look: `default`, `market`, `minimal` or `luxe`.                                                                                                                      |
 | `AUTOXIDE_STOREFRONT_TENANT` | empty                   | Customer (slug or ID) of a core that runs several; empty: chosen by the domain the visitor opened (needs this server in the core's `AUTOXIDE_HTTP_TRUSTED_PROXIES`). |
-| `AUTOXIDE_WEB_SAMPLE_DATA`   | `false` in production   | Show the shop sections that use sample data.                                                                                                                         |
+| `AUTOXIDE_WEB_SAMPLE_DATA`   | `false`                 | `true`: show the shop sections that use sample data.                                                                                                                 |
 
 Set these **on the core** so its mails link to the website:
 
@@ -261,8 +262,11 @@ website behind a reverse proxy that sets that header, and list the website's ser
 `AUTOXIDE_HTTP_TRUSTED_PROXIES` (with `AUTOXIDE_HTTP_CLIENT_IP_HEADER=X-Forwarded-For`). The
 newsletter form shows when the core has at least one public list. Draft previews open at
 `/preview?token=…`. In production: `pnpm build`, then
-`PORT=3000 AUTOXIDE_API_URL=… AUTOXIDE_STOREFRONT_URL=… pnpm --filter @autoxide/storefront start`,
-or `docker build --build-arg APP=storefront -t autoxide-storefront .`.
+`PORT=3300 AUTOXIDE_API_URL=… AUTOXIDE_STOREFRONT_URL=… pnpm --filter @autoxide/storefront start`,
+or `docker build --build-arg APP=storefront -t autoxide-storefront .` and
+`docker run -p 3300:3000 -e AUTOXIDE_API_URL=http://core:8080 autoxide-storefront`. The admin and
+the website are two servers on the same machine, so give them different ports: these examples use
+3000 for the admin and 3300 for the website.
 
 ### Several shops on one website
 
@@ -293,7 +297,7 @@ https:// {
     tls {
         on_demand
     }
-    reverse_proxy 127.0.0.1:3000
+    reverse_proxy 127.0.0.1:3300
 }
 ```
 

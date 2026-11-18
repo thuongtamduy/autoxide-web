@@ -55,6 +55,7 @@ function price(id: string, amount: number, interval: string): Schemas["PriceResp
 function plan(fields: Partial<Plan> & Pick<Plan, "id" | "code" | "name">): Plan {
   return {
     description: "",
+    self_signup: false,
     kind: "base",
     status: "active",
     is_default: false,

@@ -56,8 +56,16 @@
     "about": "Mua online, nhận tại cửa hàng hoặc giao tận nơi.",
     "links": "Liên kết",
     "sampleMenu": "Core chưa có menu `footer`: đang hiện menu mẫu.",
-    "legal": "Công ty [TÊN PHÁP LÝ] · Mã số thuế [MÃ SỐ THUẾ] · Địa chỉ [ĐỊA CHỈ TRỤ SỞ] · Điện thoại [SỐ ĐIỆN THOẠI] · Email [EMAIL] · Người đại diện [HỌ TÊN]",
-    "moit": "Logo “Đã thông báo Bộ Công Thương” do cơ quan cấp, hiện tại đây",
+    "sampleLegal": "Core chưa có hồ sơ pháp lý (Tuân thủ → Hồ sơ pháp lý): đang hiện hồ sơ mẫu. Bản chạy thật không hiện dòng này.",
+    "owner": {
+      "taxCode": "Mã số thuế {value}",
+      "registration": "Số đăng ký kinh doanh {value}",
+      "registrationIssued": "Số đăng ký kinh doanh {value}, cấp ngày {date} tại {by}",
+      "address": "Địa chỉ {value}",
+      "phone": "Điện thoại {value}",
+      "email": "Email {value}",
+      "representative": "Người đại diện {value}"
+    },
     "copyright": "© {year} {name}",
     "poweredBy": "Vận hành trên Autoxide, mã nguồn mở",
     "rss": "RSS",
