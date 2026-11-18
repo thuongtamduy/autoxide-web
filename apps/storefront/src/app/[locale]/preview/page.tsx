@@ -40,6 +40,7 @@ export default async function PreviewPage(props: PageProps<"/[locale]/preview">)
     id,
     url: `/api/v1/media/${id}/content`,
     alt: "",
+    alt_ai_assisted: false,
     variants: [],
   }));
   return (

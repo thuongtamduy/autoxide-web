@@ -18,13 +18,10 @@ export function siteUrlSetting(): string {
 
 /**
  * Dữ liệu mẫu cho phần core chưa có API (W-006, W-026): cùng biến với trang quản trị. Mặc định
- * bật khi chạy thử, tắt ở production; `true` / `false` để ép.
+ * TẮT ở mọi chế độ (W-060); `true` để bật.
  */
 export function sampleDataSetting(): boolean {
   const value = process.env.AUTOXIDE_WEB_SAMPLE_DATA;
-  if (value === undefined || value === "") {
-    return process.env.NODE_ENV !== "production";
-  }
   return value === "true" || value === "1";
 }
 

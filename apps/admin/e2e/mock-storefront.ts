@@ -125,6 +125,9 @@ function entry(n: number, fields: Partial<Entry> & { title: string; slug: string
   return {
     id,
     kind: "post",
+    ai_assisted: false,
+    custom_fields: {},
+    embeds: {},
     locale: "vi",
     translation_group_id: id,
     parent_id: null,
@@ -255,6 +258,50 @@ export async function storefrontRoutes(
   if (route === "POST /__storefront/reset") {
     resetStorefront();
     send(response, 204);
+    return true;
+  }
+  // Hồ sơ pháp lý và logo Bộ Công Thương cho chân trang website (module `compliance` của core).
+  // Dữ liệu ví dụ, không phải doanh nghiệp thật (repo công khai).
+  if (route === "GET /api/v1/compliance/public/owner") {
+    send(response, 200, {
+      data: {
+        entity_type: "organization",
+        legal_name: "Công ty TNHH Bếp Mộc Ví Dụ",
+        trade_name: "Bếp Mộc",
+        tax_code: "0000000000",
+        registration_number: null,
+        registration_issued_on: null,
+        registration_issued_by: null,
+        address: {
+          country: "VN",
+          province_code: "01",
+          province_name: "Hà Nội",
+          commune_code: "00004",
+          commune_name: "Phường Ba Đình",
+          line: "1 Phố Ví Dụ",
+        },
+        phone: "0000 000 000",
+        email: "hotro@example.com",
+        representative_name: "Nguyễn Văn Ví Dụ",
+      },
+    } satisfies Schemas["Data_CompliancePublicOwner"]);
+    return true;
+  }
+  if (route === "GET /api/v1/compliance/public/badge") {
+    const vi = url.searchParams.get("locale") !== "en";
+    send(response, 200, {
+      data: {
+        website_id: "01a1f000-0000-7000-8000-00000000b0c7",
+        domain: "localhost",
+        kind: "sales",
+        status: "notified",
+        color: "blue",
+        link_url: "https://online.gov.vn/Home/WebDetails/0",
+        image_url: "https://online.gov.vn/Content/EndUser/LogoCCDVSaleNoti/logoSaleNoti.png",
+        alt: vi ? "Đã thông báo Bộ Công Thương" : "Notified to the Ministry of Industry and Trade",
+        snippet: "",
+      },
+    } satisfies Schemas["Data_ComplianceBadge"]);
     return true;
   }
   if (route === "GET /api/v1/antispam/token") {

@@ -143,7 +143,8 @@
     "passkeyCancelled": "Đã huỷ đăng nhập bằng passkey.",
     "passkeyFailed": "Không dùng được passkey. Thử lại, hoặc đăng nhập bằng mật khẩu.",
     "passkeyExpired": "Yêu cầu passkey đã hết hạn. Thử lại.",
-    "linkSignIn": "Đăng nhập bằng link qua email"
+    "linkSignIn": "Đăng nhập bằng link qua email",
+    "insecureOrigin": "Trang này đang mở qua HTTP, nhưng trang quản trị chỉ gửi cookie đăng nhập qua HTTPS, nên trình duyệt sẽ bỏ cookie và bạn bị đưa lại về đây sau khi đăng nhập. Hãy mở trang quản trị qua HTTPS, hoặc (chỉ trong mạng bạn tin cậy) đặt AUTOXIDE_WEB_SECURE_COOKIES=false rồi khởi động lại."
   },
   "modules": {
     "title": "Module",

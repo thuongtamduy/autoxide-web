@@ -18,14 +18,12 @@ export function secureCookies(): boolean {
 }
 
 /**
- * Dữ liệu mẫu cho phần core chưa có API (W-006). Mặc định bật khi chạy thử, tắt ở production;
- * `AUTOXIDE_WEB_SAMPLE_DATA=true` / `false` để ép.
+ * Dữ liệu mẫu cho phần core chưa có API (W-006). Mặc định TẮT ở mọi chế độ (W-060): khách mới
+ * chạy bản dev không được thấy doanh thu, đơn hàng giả như thật. Bật bằng
+ * `AUTOXIDE_WEB_SAMPLE_DATA=true` (Playwright bật sẵn).
  */
 export function sampleDataSetting(): boolean {
   const value = process.env.AUTOXIDE_WEB_SAMPLE_DATA;
-  if (value === undefined || value === "") {
-    return process.env.NODE_ENV !== "production";
-  }
   return value === "true" || value === "1";
 }
 

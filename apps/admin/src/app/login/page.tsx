@@ -3,9 +3,10 @@ import { getTranslations } from "next-intl/server";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Card } from "@/components/ui/card";
 import { getClientConfig } from "@/lib/client-config";
-import { adminTenantSetting } from "@/lib/env";
+import { adminTenantSetting, secureCookies } from "@/lib/env";
 import { MFA_COOKIE, safeNext } from "@/lib/session";
 import { TENANT_COOKIE } from "@/lib/tenant";
+import { InsecureOriginWarning } from "./insecure-warning";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage(props: PageProps<"/login">) {
@@ -24,6 +25,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
       <p className="text-sm font-semibold tracking-wide text-muted-foreground">
         {app("name")} · {app("admin")}
       </p>
+      <InsecureOriginWarning secure={secureCookies()} />
       {deleted ? (
         <p role="status" className="w-full max-w-sm text-sm text-muted-foreground">
           {t("deleted")}

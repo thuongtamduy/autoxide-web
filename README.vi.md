@@ -80,7 +80,8 @@ sau: Bán hàng (đơn hàng, đổi trả, bán tại quầy, vận chuyển v�
 (danh mục, giá, nhóm thuế, tồn kho), Tiếp thị (khuyến mại, tiếp thị liên kết), Khách hàng, Sàn và
 Trung tâm người bán, Tài chính (sổ cái, hoá đơn điện tử, thuế), Tuân thủ và phần còn lại
 của Mặt điều khiển nền tảng (sức khoẻ). Phần nào của màn thật mà core chưa có API cũng dùng dữ liệu mẫu theo cùng cách. Dữ
-liệu mẫu chỉ hiện khi bật `AUTOXIDE_WEB_SAMPLE_DATA` (mặc định bật, trừ production); thay đổi ở đó nằm
+liệu mẫu chỉ hiện khi đặt `AUTOXIDE_WEB_SAMPLE_DATA=true` (mặc định tắt, để bản cài mới không hiện doanh thu
+hay đơn hàng bịa); thay đổi ở đó nằm
 trong bộ nhớ của ứng dụng và mất khi khởi động lại. Bản ghi mẫu khớp nhau giữa các màn (một đơn hàng,
 vận đơn, bút toán và hoá đơn của nó là cùng một đơn).
 
@@ -110,12 +111,12 @@ Mở <http://localhost:3000> và đăng nhập bằng tài khoản core.
 
 ### Cấu hình
 
-| Biến                          | Mặc định                    | Ý nghĩa                                                                                                                                                                                                                                    |
-| ----------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080`     | Địa chỉ của core, không có `/api/v1`. Chỉ máy chủ của ứng dụng này gọi tới; trình duyệt không bao giờ gọi.                                                                                                                                 |
-| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` khi chạy production  | Chỉ gửi cookie phiên qua HTTPS. Chỉ tắt khi phục vụ qua HTTP thường.                                                                                                                                                                       |
-| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false` khi chạy production | Hiện các màn và tab dùng dữ liệu mẫu trong lúc core chưa có API cho chúng.                                                                                                                                                                 |
-| `AUTOXIDE_ADMIN_TENANT`       | trống                       | Chỉ cho core chạy nhiều khách: slug hay ID của khách duy nhất mà trang quản trị này phục vụ. Để trống: form đăng nhập hỏi không gian làm việc khi core cần (nhớ cho lần sau), hoặc core nhận khách theo tên miền đang chạy trang quản trị. |
+| Biến                          | Mặc định                   | Ý nghĩa                                                                                                                                                                                                                                    |
+| ----------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AUTOXIDE_API_URL`            | `http://127.0.0.1:8080`    | Địa chỉ của core, không có `/api/v1`. Chỉ máy chủ của ứng dụng này gọi tới; trình duyệt không bao giờ gọi.                                                                                                                                 |
+| `AUTOXIDE_WEB_SECURE_COOKIES` | `true` khi chạy production | Chỉ gửi cookie phiên qua HTTPS. Chỉ tắt khi phục vụ qua HTTP thường; trang đăng nhập cảnh báo khi biến này bật mà trang mở qua HTTP.                                                                                                       |
+| `AUTOXIDE_WEB_SAMPLE_DATA`    | `false`                    | `true`: hiện các màn và tab dùng dữ liệu mẫu trong lúc core chưa có API cho chúng.                                                                                                                                                         |
+| `AUTOXIDE_ADMIN_TENANT`       | trống                      | Chỉ cho core chạy nhiều khách: slug hay ID của khách duy nhất mà trang quản trị này phục vụ. Để trống: form đăng nhập hỏi không gian làm việc khi core cần (nhớ cho lần sau), hoặc core nhận khách theo tên miền đang chạy trang quản trị. |
 
 ### Link trong thư
 
@@ -231,7 +232,7 @@ pnpm --filter @autoxide/storefront dev                       # http://localhost:
 | `AUTOXIDE_STOREFRONT_NAME`   | cửa hàng mẫu / Autoxide | Tên cửa hàng khi hồ sơ công khai của nút gốc không công khai.                                                                                               |
 | `AUTOXIDE_STOREFRONT_THEME`  | `default`               | Kiểu giao diện: `default`, `market`, `minimal` hoặc `luxe`.                                                                                                 |
 | `AUTOXIDE_STOREFRONT_TENANT` | trống                   | Khách (slug hay ID) của core chạy nhiều khách; trống: chọn theo tên miền người đọc mở (cần máy chủ này nằm trong `AUTOXIDE_HTTP_TRUSTED_PROXIES` của core). |
-| `AUTOXIDE_WEB_SAMPLE_DATA`   | `false` khi chạy thật   | Hiện các khối bán hàng dùng dữ liệu mẫu.                                                                                                                    |
+| `AUTOXIDE_WEB_SAMPLE_DATA`   | `false`                 | `true`: hiện các khối bán hàng dùng dữ liệu mẫu.                                                                                                            |
 
 Đặt các biến này **ở core** để thư của core trỏ về website:
 
@@ -250,8 +251,11 @@ reverse proxy có gắn header đó, và khai máy chủ website trong `AUTOXIDE
 core (cùng `AUTOXIDE_HTTP_CLIENT_IP_HEADER=X-Forwarded-For`). Ô đăng ký bản tin hiện khi core có ít
 nhất một danh sách công khai. Bản nháp xem trước ở
 `/preview?token=…`. Chạy thật: `pnpm build`, rồi
-`PORT=3000 AUTOXIDE_API_URL=… AUTOXIDE_STOREFRONT_URL=… pnpm --filter @autoxide/storefront start`,
-hoặc `docker build --build-arg APP=storefront -t autoxide-storefront .`.
+`PORT=3300 AUTOXIDE_API_URL=… AUTOXIDE_STOREFRONT_URL=… pnpm --filter @autoxide/storefront start`,
+hoặc `docker build --build-arg APP=storefront -t autoxide-storefront .` rồi
+`docker run -p 3300:3000 -e AUTOXIDE_API_URL=http://core:8080 autoxide-storefront`. Trang quản trị và
+website là hai máy chủ trên cùng máy, nên mỗi cái một cổng: các ví dụ ở đây dùng 3000 cho trang quản
+trị và 3300 cho website.
 
 ### Nhiều cửa hàng trên một website
 
@@ -280,7 +284,7 @@ https:// {
     tls {
         on_demand
     }
-    reverse_proxy 127.0.0.1:3000
+    reverse_proxy 127.0.0.1:3300
 }
 ```
 

@@ -56,8 +56,16 @@
     "about": "Shop online, pick up in store or get it delivered.",
     "links": "Links",
     "sampleMenu": "The core has no `footer` menu yet: showing a sample menu.",
-    "legal": "Company [LEGAL NAME] · Tax code [TAX CODE] · Address [REGISTERED ADDRESS] · Phone [PHONE] · Email [EMAIL] · Legal representative [FULL NAME]",
-    "moit": "The “Notified to the Ministry of Industry and Trade” logo issued by the authority goes here",
+    "sampleLegal": "The core has no legal profile yet (Compliance → Legal profile): showing a sample. A live website hides this line.",
+    "owner": {
+      "taxCode": "Tax code {value}",
+      "registration": "Business registration no. {value}",
+      "registrationIssued": "Business registration no. {value}, issued on {date} by {by}",
+      "address": "Address {value}",
+      "phone": "Phone {value}",
+      "email": "Email {value}",
+      "representative": "Legal representative {value}"
+    },
     "copyright": "© {year} {name}",
     "poweredBy": "Runs on Autoxide, open source",
     "rss": "RSS",

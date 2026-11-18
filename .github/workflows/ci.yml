@@ -1,0 +1,44 @@
+# CI của autoxide-web: chạy đúng `./gate.sh` (lockfile, Biome, tsc, gitleaks, Vitest, next build,
+# Playwright với core giả) trên mỗi pull request và mỗi lần đẩy lên `main` (W-060). `./gate.sh` trên
+# máy vẫn là định nghĩa "xong"; CI là lưới thứ hai, như CI của core.
+#
+# Chỉ chạy khi repo công khai (như D-197 của core): repo riêng tư thì GitHub tính phí runner.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Chạy tay (Actions → Run workflow).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # gitleaks quét toàn bộ lịch sử git.
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      # pnpm đúng bản ghim ở `packageManager` của package.json.
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      # Chromium cho Playwright, cùng phiên bản với gói `@playwright/test` trong lockfile.
+      - run: pnpm --filter @autoxide/admin exec playwright install --with-deps chromium
+      # gitleaks chạy bằng image Docker có sẵn trên runner (gate tự chọn khi máy không cài).
+      - run: ./gate.sh

@@ -58,6 +58,7 @@ describe("BodyView", () => {
         media={[
           {
             id,
+            alt_ai_assisted: false,
             url: `/api/v1/media/${id}/content?v=1`,
             alt: "x",
             width: 1200,

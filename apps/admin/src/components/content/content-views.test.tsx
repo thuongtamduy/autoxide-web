@@ -55,6 +55,11 @@ function entry(change: Partial<Entry> = {}): Entry {
   return {
     id: "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11",
     kind: "post",
+    ai_assisted: false,
+    custom_fields: {},
+    path: null,
+    published_at: null,
+    tags: [],
     version: '"1"',
     locale: "vi",
     translation_group_id: "0193e3a4-7b1c-7f00-9a51-6f2b8c0d4e11",
@@ -259,6 +264,7 @@ describe("BodyView với ảnh của bản xem trước", () => {
         media={[
           {
             id: PUBLIC,
+            alt_ai_assisted: false,
             url: `/api/v1/media/${PUBLIC}/content?v=v1`,
             alt: "Chảo gang",
             width: 1200,

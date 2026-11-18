@@ -2235,3 +2235,29 @@ Cần ở core (cộng vào yêu cầu đã gửi ở autoxide#84): `q` cho `GET
 biểu mẫu; gửi lại thư xác minh email cho người khác; endpoint nhãn vận đơn (bước 44).
 
 Lý do: chủ dự án yêu cầu (17/11).
+
+## W-060 · Chân trang theo hồ sơ pháp lý thật, dữ liệu mẫu mặc định tắt, cảnh báo HTTP, CI — 2026-11-18 — chủ dự án yêu cầu
+
+Chủ dự án giao tám việc sau rà soát (18/11); bốn việc của repo này:
+
+- **Chân trang website** không còn in chữ giữ chỗ "Công ty [TÊN PHÁP LÝ] · Mã số thuế […]" và dòng "Đã thông báo Bộ
+  Công Thương" ở mọi bản. Lấy từ hồ sơ pháp lý của core: `GET /compliance/public/owner` (tên, mã số thuế, số / ngày /
+  nơi cấp đăng ký, địa chỉ, điện thoại, email, người đại diện; chỉ in ô có dữ liệu) và `GET /compliance/public/badge`
+  (logo chỉ khi core trả `notified` / `registered`, link và ảnh phải `https:`; không chèn `snippet` HTML). Core trả 404
+  hay không trả lời: **không in dòng pháp lý**. Bật dữ liệu mẫu thì hiện hồ sơ mẫu kèm dấu "mẫu", như menu mẫu.
+  Căn cứ: NĐ 52/2013/NĐ-CP, sửa bởi NĐ 85/2021/NĐ-CP (thông tin người sở hữu website, logo thông báo / đăng ký) — cần
+  đối chiếu văn bản gốc. In chữ giữ chỗ trên website chạy thật là công bố thông tin sai, rủi ro cho khách.
+  SDK nâng lên core `b7dc16f` (`main`) để có hai endpoint này; core giả của e2e và fixture theo schema mới
+  (`alt_ai_assisted`, `format` của chiến dịch, `kind` của API key, `description` / `prompts` / `resources` của module…).
+- **`AUTOXIDE_WEB_SAMPLE_DATA` mặc định tắt ở mọi chế độ** (thay phần "mặc định bật khi `NODE_ENV !== "production"`"
+  của W-006; phần còn lại của W-006 giữ nguyên). Lý do: khách mới chạy bản dev thấy doanh thu, đơn hàng giả ngay lần
+  đầu đăng nhập. Muốn xem màn mẫu thì đặt `AUTOXIDE_WEB_SAMPLE_DATA=true`; Playwright bật sẵn.
+- **Cảnh báo HTTP ở trang đăng nhập:** khi `AUTOXIDE_WEB_SECURE_COOKIES` bật (mặc định ở production) mà trang mở qua
+  `http://` (không phải localhost), trình duyệt bỏ cookie `Secure` và người dùng bị đưa lại trang đăng nhập không lời
+  nào. Trang đăng nhập đọc địa chỉ ở trình duyệt sau hydration và hiện cảnh báo nói cách sửa (HTTPS, hoặc tắt biến
+  trong mạng tin cậy). Kiểm ở trình duyệt vì đó là địa chỉ người dùng thật sự thấy, kể cả sau proxy.
+- **CI:** `.github/workflows/ci.yml` chạy `./gate.sh` trên mỗi pull request và mỗi lần đẩy lên `main`; chỉ chạy khi repo
+  công khai (như D-197 của core). `./gate.sh` trên máy vẫn là định nghĩa "xong".
+- Tài liệu: website chạy thật ở cổng 3300 trong ví dụ (trang quản trị 3000), Caddy trỏ website sang 3300.
+
+Lý do: chủ dự án yêu cầu (18/11).

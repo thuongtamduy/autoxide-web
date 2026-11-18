@@ -395,6 +395,7 @@ export async function settingsRoutes(
         owner: account.id,
         org_id: ROOT_UNIT,
         name: text(body, "name"),
+        kind: "human",
         prefix: secretKey.slice(0, 12),
         permissions: [...permissions].sort(),
         created_at: new Date().toISOString(),

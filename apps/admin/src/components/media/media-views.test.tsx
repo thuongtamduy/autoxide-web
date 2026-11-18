@@ -30,6 +30,7 @@ function item(change: Partial<MediaItem> = {}): MediaItem {
     id,
     name: "chao-gang.jpg",
     content_type: "image/jpeg",
+    alt_ai_assisted: false,
     size: 1843 * 1024,
     sha256: "0".repeat(64),
     alt: "",
